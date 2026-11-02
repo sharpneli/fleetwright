@@ -66,29 +66,29 @@ gyro-stabilised; mass kg per m² of base.
 ## Computers
 
 Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
-bias (% of range, mil); own speed's lag s; first ladder step m; and the filters'
+bias (% of range, mil); own course's and speed's lags s (course 0: geared to the gyro); first ladder step m; and the filters'
 own numbers. Mass t, crew, power kW.
 
-| Block | Tracker | Latency | q | Limits | Prior | Bias | Speed lag | Step | Filter | t, crew, kW |
+| Block | Tracker | Latency | q | Limits | Prior | Bias | Own lags | Step | Filter | t, crew, kW |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Judgement | judgement | 5 | 0 | - | 5, 30 | 2.5, 4 | 0 | 550 | looks again 60 s | 0, 0, 0 |
-| Eye and hand plot | rate_clock | 20 | 0.02 | - | 5, 30 | 2.5, 4 | 0 | 550 | - | 0.2, 3, 0 |
-| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | 0 | 366 | - | 0.2, 3, 0 |
-| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | - | 0.8, 4, 0 |
-| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | 0 | 366 | - | 0.8, 4, 0 |
-| Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 0 | 366 | - | 4, 10, 1 |
-| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 30 | 366 | - | 4, 10, 1 |
-| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | 30 | 366 | - | 4, 10, 1 |
-| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | 30 | 366 | - | 2, 4, 1 |
-| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 3 | 366 | - | 5, 8, 5 |
-| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 3 | 366 | - | 3, 4, 3 |
-| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 3 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
-| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | 3 | 366 | - | 5, 8, 5 |
-| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 20 | 366 | - | 4, 15, 2 |
-| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 2, 12 | 0.4, 1 | 3 | 366 | - | 3, 4, 10 |
-| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | 3 | 366 | - | 3, 4, 10 |
-| Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | 2 | 366 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
-| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
+| Judgement | judgement | 5 | 0 | - | 5, 30 | 2.5, 4 | -, 0 | 550 | looks again 60 s | 0, 0, 0 |
+| Eye and hand plot | rate_clock | 20 | 0.02 | - | 5, 30 | 2.5, 4 | -, 0 | 550 | - | 0.2, 3, 0 |
+| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | -, 0 | 366 | - | 0.2, 3, 0 |
+| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
+| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
+| Dreyer table Mk I-II | rate_clock | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 0 | 366 | - | 4, 10, 1 |
+| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
+| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
+| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 2.5, 15 | 1.2, 2 | -, 30 | 366 | - | 2, 4, 1 |
+| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
+| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | - | 3, 4, 3 |
+| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
+| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 2, 12 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
+| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 0.5, 20 | 366 | - | 4, 15, 2 |
+| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
+| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
+| Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | -, 2 | 366 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
+| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | -, 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
 
 ## Mounts
 
@@ -129,7 +129,7 @@ own numbers. Mass t, crew, power kW.
 - **Admiralty Fire Control Clock:** The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the table's numbers [EST]; mass and crew [EST].
 - **Admiralty Fire Control Table, turn setting:** The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a computer option anyone may fit, decision 5).
 - **German Rechenstelle (1930s):** The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's table puts them with the AFCT, whose numbers they take [EST].
-- **Type 92 Shagekiban:** The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST].
+- **Type 92 Shagekiban:** The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer ("Follow up compass course as received from the gyrocompass": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man following a pointer, the user]; own speed set by crank, 20 s [EST].
 - **Ford Mk 8 rangekeeper:** The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4).
 - **Ford Mk 8 rangekeeper, radar ranging (stand-in):** The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass.
 - **Mk 1A computer:** The 1950s analog with a curved-course (acceleration) predictor and the "target just turned" button (level 7, designer C5).

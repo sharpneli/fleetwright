@@ -34,9 +34,9 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL2 | the opening | | a longer base and a better first guess open and straddle sooner | the first 5 min, every error on (on the readings rung 193 v 266 s already; every error on 143 v 141 s): first suspect the open's longest wait, `GunneryOpenS` 120 s | |
 | FL3 | 0 → 1 | the eye (20% of range) → FA 2 m; eye and hand plot → hand plot; open sights 1.15 → telescopic 0.73 mil | ranges found at once, not by long ranging; a tighter pattern | the opening at 6-8 km | |
 | FL4 | 1 → 2 | FA → FQ/FT 4 m; hand plot → Dumaresq and Vickers clock; telescopic 0.73 → 0.35 mil | the clock runs the range on between sparse readings from her course and speed | a crossing or closing target, readings 2 a minute; haze that loses readings | |
-| FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed | |
+| FL5 | 2 → 3 | Dumaresq → Dreyer Mk III-V (helm-free, the bearing gear); local laying → director 0.5 mil | through her own turns (FL1); the director's layer above the smoke and spray, one fall to spot | her own zigzag; a seaway; her own and the enemy's smoke, spray at speed. On the way: the catalogue's "Dreyer table Mk I-II" (not helm-free) fits the Mk I only; the Mk I* took her heading automatically and the Mk II probably (own-motion-inputs.md §2): split the row | |
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | |
-| FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway | a seaway, rate of fire in it | |
+| FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | |
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | |
 | FL9 | 6 → 7 | Mk 8 → Mk 1A (acceleration, turn detection) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | |
 | FL10 | 7 → 8 | Mk 1A → digital turn filter | the same, quicker; a zigzag | a target circling and zigzagging | |
@@ -49,7 +49,14 @@ lumped stand-in for something the chain now models?
 
 - `own_turn_kick_m`: FL1.
 - `resid_pct`, `defl_bias_mil`: the residual ballistic bias as the corrections a machine computes (wind, density, drift);
-  per machine is right if it says which corrections it has; checked when wind and density come in.
+  per machine is right if it says which corrections it has; checked when wind and density come in. Then too: a machine
+  whose wind correction was set by hand from the apparent wind (the Ford Mk 1, likely the Dreyer) keeps its old setting
+  through a turn until reset; "the later rangekeepers ... need not be corrected for changes in course" (own-motion-inputs.md §4).
+- `own_speed_lag_s`: 30 s hand-fed [EST] sits in the sources' 10-30 s; the AFCT family's 3 s "automatic" has no source, one
+  weak clue says set by hand (own-motion-inputs.md §1): revisit if its path turns up.
+- Drift angle: a ship's track lags her heading in a turn, 1-3.5 kn of her velocity in a hard one, more than the speed lag;
+  not in the motion model (`ShipMotion` moves ships along their heading). If it comes in, every machine's own velocity
+  (heading times log speed) picks it up with no change to `Reckon`.
 - `lay_mil` by mount: a director (0.5 mil) lays worse than a turret's telescopic sights (0.35), and a stable vertical with
   RPC (0.5) worse than a director's power drive (0.4), on a steady platform. Check the sources' split (BL1l) in FL5 and FL7.
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
@@ -81,3 +88,15 @@ amplifier):** that error put back by hand into the readings' bearings, one duel 
 the line off by 50-220 m, where her rate of turn (at most 0.47°/s) times 2 s at 14.6 km is 100-250 m, one for one; the
 range untouched, no reading set aside by the gate, no return to ranging. The cliff is the target: broadside to us she is
 some 190 m long, so a quarter of the error (65 m) falls along her and the whole (260 m) off her ends. Hits 96 → 24.
+
+**The research** (`research/simulation/ship-motion/own-motion-inputs.md`, 2026-11-02): FL1 stands. The gyrocompass's own
+error after a turn (≤ 1.3° at 50-60°N, decaying over hours) turns her course and every bearing together, since the same gyro
+fed the Dumaresq and the bearing plot, so only its rate reaches the solution, ≤ 15 m at 15 km: not built. Course "at once" is
+sourced for the Dreyer Mk I*-V, the Pollen plotter and the Mk 8. **One exception built:** the Type 92's operator follows the
+gyro's pointer by hand ("Follow up compass course as received from the gyrocompass"), so its course is late while the
+director's train comes in at once, and its bearings turn by the lag: `own_course_lag_s` (0 everywhere else), 0.5 s [EST, the
+user: "I definitely don't have that much latency if I just follow something"]. Measured in the levels' zigzag (readings'
+rung): 83.8% with her course exact, 83.8 at 0.5 s, 73.4 at 1 s; every error on 16.8, 17.0, 14.7
+(`GunneryTests.The_Type_92_follows_her_course_by_hand_half_a_second_behind`). The rest went where each belongs: the stable
+vertical in a turn to FL7, the apparent wind to the `resid_pct` audit, the speed lags and the drift angle to the audit list,
+the Dreyer Mk I/II split to FL5.

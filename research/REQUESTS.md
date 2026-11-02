@@ -12,25 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-02 - Own course and speed into the fire-control table, and the gyrocompass in a turn
-- Question: how own ship's motion reached each fire-control machine, and what errors her turns put into it. (1) Own
-  speed: on the Dreyer Mk III-V, the German WWI plot, the Argo, the AFCT, the Type 92 and the Ford Mk 8, was it fed by
-  hand from the log (the Forbes log "manually fed to Dumaresq" on the Dreyer) or automatically, and how often or how
-  late a hand setting followed a change (in a hard turn a ship sheds 20-30% of her speed in a minute); the logs' own
-  response and error in a turn (Forbes, pitometer, Chernikeeff). (2) Own course: confirm the gyro's repeat motors drove
-  the tables directly (step-by-step: the step size, any lag), and which machines took course by hand. (3) The
-  gyrocompass's own error after a change of course or speed (ballistic deflection, the speed error changing with heading):
-  its size for the Anschütz and Sperry compasses of 1910-45 and how long it took to settle, and whether tables corrected
-  for it. (4) Any measured cost of own turns to helm-free fire (the research's "1927-28, 20-30° turns at 25 kyd put the
-  aim point 400 yd off"; North Carolina 1945 "several hundred yards" through 450° turns): what caused it, if known.
-- Context / relevant files: `docs/battle/fc-ladder-check.md` FL1 (the own-turn kick, a lumped draw a salvo, replaced
-  by the table's own reckoning: her course at once, her speed late by `own_speed_lag_s`, all [EST]: 30 s hand-fed,
-  3 s automatic); `GunnerySystem.Reckon`; research `ship-motion/own-ship-speed.md` §5. A 2° course error at 15 km
-  turned the Dreyer's hits in a zigzag from 83 to 16% on the readings' rung, so the gyro's error matters if it's that
-  big. If the answer is that there's nothing substantial past what's built, FL1 stays as it is (the user).
-- Wanted output: by machine, how course and speed were fed and how late; the gyro's manoeuvre error by compass and
-  period; sources.
-
 ### 2026-11-01 - Fire distribution and cripples, 1890-1925 first
 - Question: what the fleets' doctrine said about whom the guns fire on, and what they did. (1) Fire distribution: the
   rules each navy gave its lines (the Grand Fleet Battle Orders' ship for ship from the van or the rear, concentrating,
@@ -275,6 +256,10 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-02 - Own course and speed into the fire-control table, and the gyrocompass in a turn
+- Done: [ship-motion/own-motion-inputs.md](simulation/ship-motion/own-motion-inputs.md). FL1 stands; the Type 92's
+  hand-followed course built (0.5 s); the stable vertical in a turn to FL7 (docs/battle/fc-ladder-check.md).
 
 ### 2026-10-31 - Striking colours, abandoning and scuttling, 1890-1925 first
 - Done 2026-10-31 (draft): [simulation/striking-colours.md](simulation/striking-colours.md), its seven strands as

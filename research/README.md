@@ -81,6 +81,7 @@ Ship motion and speed in [simulation/ship-motion/](simulation/ship-motion/) (202
 | [roll-physics.md](simulation/ship-motion/roll-physics.md) | Roll period coefficients, warship GM and roll data, amplitude vs sea state, bilge keels, tanks, gyros, fins |
 | [stabilisation-tech.md](simulation/ship-motion/stabilisation-tech.md) | Level, cross-level and trunnion tilt; each navy's stabilisation; selected-level firing; loading angles |
 | [heavy-weather-cases.md](simulation/ship-motion/heavy-weather-cases.md) | Coronel, Lofoten, Denmark Strait, Bismarck's end, North Cape and other actions where weather decided the shooting |
+| [own-motion-inputs.md](simulation/ship-motion/own-motion-inputs.md) | Own course and speed into each fire-control machine (hand or automatic, how late), the logs, the gyrocompass's error after a turn and how little of it reaches a helm-free table, the USN's measured costs of own turns and the stable vertical behind them (2026-11-02) | [own_motion_ref.py](simulation/ship-motion/own_motion_ref.py) |
 
 Ballistics has no note of its own: the point-mass ballistics fitted to each gun live in [fire_control_ref.py](simulation/fire_control_ref.py) and are summarised in the companion-code paragraph of [fire-control-research.md](simulation/fire-control-research.md); penetration formulas were first gathered in [05-mechanics-and-games.md](simulation/damage-research/05-mechanics-and-games.md) and are superseded by [simulation/armor/](simulation/armor/00-overview.md).
 

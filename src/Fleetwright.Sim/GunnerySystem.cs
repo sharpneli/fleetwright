@@ -106,10 +106,11 @@ public sealed class GunnerySystem : IWorldSystem
         /// (rad), the computer's own residual bias with nothing carried.</summary>
         public double CarryR, ResidShare, DeflDoubtRad;
         /// <summary>A machine that takes own ship's motion in (helm-free, or in true motion): own ship as it reckons her
-        /// (docs/battle/fc-ladder-check.md FL1), her course by the gyro's repeat (at once) and her speed by log (late by its
-        /// lag), her place dead reckoned from them; as of when (ms).</summary>
+        /// (docs/battle/fc-ladder-check.md FL1), her course by the gyro's repeat (at once, or late by its lag where a man
+        /// follows the gyro's pointer) and her speed by log (late by its lag), her place dead reckoned from them; as of when
+        /// (ms).</summary>
         public Vec3d OwnHatP, OwnHatV;
-        public double OwnHatSpeed;
+        public double OwnHatHeadingDeg, OwnHatSpeed;
         public long OwnHatMs;
         /// <summary>Its fire discipline (F6): the phase, the spots' bracket, and the computer's doubt of the range rate
         /// along the line of fire (m/s: the bracket widens at it).</summary>
@@ -506,7 +507,7 @@ public sealed class GunnerySystem : IWorldSystem
             var rb = stream.Derive(0xB1A5u).Derive((ulong)(uint)shooter).Derive((ulong)b);
             (fc.BiasR, fc.BiasD) = (rb.NextGaussian(), rb.NextGaussian());
             var own = store[slot];
-            (fc.OwnHatP, fc.OwnHatV, fc.OwnHatSpeed, fc.OwnHatMs) = (own.Position, own.Forward * own.Speed, own.Speed, now);
+            (fc.OwnHatP, fc.OwnHatV, fc.OwnHatHeadingDeg, fc.OwnHatSpeed, fc.OwnHatMs) = (own.Position, own.Forward * own.Speed, own.HeadingDeg, own.Speed, now);
             var carried = store.Combat.Carried(slot, b);
             (fc.CarryR, fc.CorrD, fc.ResidShare, fc.DeflDoubtRad) = carried.Known
                 ? (carried.RangeShare, carried.LineRad, carried.RangeDoubtShare, carried.LineDoubtRad)
@@ -889,10 +890,12 @@ public sealed class GunnerySystem : IWorldSystem
             // stress); never a fresh draw each reading, nor a wander (the user, 2026-11-02: each moved the guns)
             double ek = settings.GunneryErrors.Readings;
             double zr = Math.Max(range + ek * bias + ek * sr * s.RangeZ, 100), zb = brg + double.RadiansToDegrees(ek * sb * s.BearingZ);
-            // a machine fed her motion has the instrument where it reckons her (FL1)
+            // a machine fed her motion has the instrument where it reckons her, and the bearing off her head (the director's
+            // train, at once) made true by the course it has (a hand-followed course late: FL1)
             var atC = inputs ? Reckoned(fc, ship, at) : at;
+            double zbC = inputs ? zb + Wrap(fc.OwnHatHeadingDeg - ship.HeadingDeg) : zb;
             var fromC = inputs ? fc.OwnHatP : ship.Position;
-            var (z, r11, r12, r22) = Track.Reading(atC, zr, zb, sr, sb);
+            var (z, r11, r12, r22) = Track.Reading(atC, zr, zbC, sr, sb);
             if (fc.PendCount == PendingCap)
                 PopReading(ref fc, f, target, now, ship.Position, ownV);   // the computer's queue is full: the oldest goes in now
             int at2 = f * PendingCap + (fc.PendHead + fc.PendCount++) % PendingCap;
@@ -926,7 +929,7 @@ public sealed class GunnerySystem : IWorldSystem
         // solve, and order the mounts
         fc.Sees = sees;
         store.Combat.SetSees(slot, fc.Battery, sees);
-        var aim = Aim(ref fc, f, table, muzzle, now, ship.Position, ownV, target, crew);
+        var aim = Aim(ref fc, f, table, muzzle, now, ship.Position, ownV, ship.HeadingDeg, target, crew);
         bool laid = FireControl.Solve(table, muzzle, ship.Forward * ship.Speed, aim, out var lay, fc.ElevationDeg);
         double bearing = Mod((laid ? Earth.Heading(muzzle, lay.GunHorizontal) : Earth.Bearing(ship.Position, aim)) - ship.HeadingDeg);
         double elevation = laid ? lay.GunElevationDeg : double.PositiveInfinity;
@@ -1259,16 +1262,16 @@ public sealed class GunnerySystem : IWorldSystem
     /// bias: what spotting would take off), the range is that present range,
     /// laid on the middle of her side, and there's no ranging (fire-control-research/emergency-eyeball.md §6: "a hit is
     /// essentially guaranteed if the line is right"). A battery that sees nothing lays where its computer says.</summary>
-    Vec3d Aim(ref Fc fc, int f, BallisticTable table, Vec3d muzzle, long now, Vec3d ownP, Vec3d ownV, in ShipState target, in GunneryCrew crew)
+    Vec3d Aim(ref Fc fc, int f, BallisticTable table, Vec3d muzzle, long now, Vec3d ownP, Vec3d ownV, double headingDeg, in ShipState target, in GunneryCrew crew)
     {
-        var c = Predict(ref fc, table, muzzle, now, ownP, ownV);
+        var c = Predict(ref fc, table, muzzle, now, ownP, ownV, headingDeg);
         fc.PointBlank = false;
         if (!fc.Sees || double.IsNaN(fc.ElevationDeg))
             return c;
         // the lead is the way the solution has her move in the time of flight, not her velocity now times it: a turn
         // filter's arc (a straight lead threw away ½·v·ω·T², 70 m at 14 km on a 1°/s circle), a clock's rates
         fc.Tracker.At(fc.Fit.Computer, now, now, ownP, ownV, out var here, out _);
-        here = Ordered(fc, here, ownP);
+        here = Ordered(fc, here, ownP, headingDeg);
         var lead = (target.Position + (c - here)).Normalized() * Earth.Radius;
         double range = Earth.Distance(ownP, c), present = Earth.Distance(ownP, lead);
         double h0 = muzzle.Length - Earth.Radius;
@@ -1333,12 +1336,12 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>Where the track says the target will be when a shell fired now from a muzzle comes down: the time of
     /// flight iterated through the range table, from last second's.</summary>
-    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now, Vec3d ownPosition, Vec3d ownVelocity)
+    Vec3d Predict(ref Fc fc, BallisticTable table, Vec3d muzzle, long now, Vec3d ownPosition, Vec3d ownVelocity, double headingDeg)
     {
         double h0 = muzzle.Length - Earth.Radius;
         var computer = fc.Fit.Computer;
         fc.Tracker.At(computer, now + (long)(fc.TofS * 1000), now, ownPosition, ownVelocity, out var p, out _);
-        p = Ordered(fc, p, ownPosition);
+        p = Ordered(fc, p, ownPosition, headingDeg);
         for (int i = 0, n = fc.TofS > 0 ? 2 : 3; i < n; i++)
         {
             double e = table.ElevationFor(Earth.Distance(muzzle, p), h0, 1, fc.ElevationDeg);
@@ -1347,49 +1350,52 @@ public sealed class GunnerySystem : IWorldSystem
             fc.ElevationDeg = e;
             fc.TofS = table.Fall(e, h0).Tof;
             fc.Tracker.At(computer, now + (long)(fc.TofS * 1000), now, ownPosition, ownVelocity, out p, out _);
-            p = Ordered(fc, p, ownPosition);
+            p = Ordered(fc, p, ownPosition, headingDeg);
         }
         return p;
     }
 
     /// <summary>Own ship as a machine fed her motion reckons her (docs/battle/fc-ladder-check.md FL1), carried on to now: her
     /// place dead reckoned from where it had her, on her course (the gyro's repeat motor drives the table through gearing:
-    /// it has her course as she turns) at the speed it has, brought toward hers by a first-order lag (a Forbes log read and
-    /// set by hand, a pitometer's own response; the ladder's own rung scales it). With no lag it has her exactly. The
-    /// gyrocompass's own error after a manoeuvre isn't in it yet (research/REQUESTS.md).</summary>
+    /// it has her course as she turns, unless a man follows the gyro's pointer by hand, the Type 92) at the speed it has,
+    /// each brought toward hers by a first-order lag (her speed a Forbes log read and set by hand, a pitometer's own
+    /// response; the ladder's own rung scales them). With no lag it has her exactly. The gyrocompass's own error after a
+    /// manoeuvre is left out: it turns her course and every bearing together, so only its rate reaches the solution, some
+    /// 15 m at 15 km at most (research/simulation/ship-motion/own-motion-inputs.md §3).</summary>
     void Reckon(ref Fc fc, in ShipState ship, long now)
     {
         var c = fc.Fit.Computer;
-        double ts = settings.GunneryErrors.Own * c.OwnSpeedLagS, dt = (now - fc.OwnHatMs) / 1000.0;
+        double ek = settings.GunneryErrors.Own, tc = ek * c.OwnCourseLagS, ts = ek * c.OwnSpeedLagS, dt = (now - fc.OwnHatMs) / 1000.0;
         fc.OwnHatMs = now;
-        if (!c.HelmFree || ts <= 0)
+        if (!c.HelmFree || tc <= 0 && ts <= 0)
         {
-            (fc.OwnHatP, fc.OwnHatV, fc.OwnHatSpeed) = (ship.Position, ship.Forward * ship.Speed, ship.Speed);
+            (fc.OwnHatP, fc.OwnHatV, fc.OwnHatHeadingDeg, fc.OwnHatSpeed) = (ship.Position, ship.Forward * ship.Speed, ship.HeadingDeg, ship.Speed);
             return;
         }
         if (dt <= 0)
             return;
-        double speed = fc.OwnHatSpeed + (ship.Speed - fc.OwnHatSpeed) * (1 - Math.Exp(-dt / ts));
-        // on along her course over the second (the mean of the one it had her on and hers now), at the mean speed it had
+        double heading = tc > 0 ? Mod(fc.OwnHatHeadingDeg + Wrap(ship.HeadingDeg - fc.OwnHatHeadingDeg) * (1 - Math.Exp(-dt / tc))) : ship.HeadingDeg;
+        double speed = ts > 0 ? fc.OwnHatSpeed + (ship.Speed - fc.OwnHatSpeed) * (1 - Math.Exp(-dt / ts)) : ship.Speed;
+        // on along the course it has her on over the second (the mean of the one it had and has now), at the mean speed
         var p = fc.OwnHatP;
-        double was = Earth.Heading(fc.OwnHatP, fc.OwnHatV);
-        var fw = Earth.Forward(p, was + 0.5 * Wrap(ship.HeadingDeg - was));
+        var fw = Earth.Forward(p, fc.OwnHatHeadingDeg + 0.5 * Wrap(heading - fc.OwnHatHeadingDeg));
         Earth.Advance(ref p, ref fw, 0.5 * (fc.OwnHatSpeed + speed) * dt);
-        (fc.OwnHatP, fc.OwnHatSpeed) = (p, speed);
-        fc.OwnHatV = Earth.Forward(p, ship.HeadingDeg) * speed;
+        (fc.OwnHatP, fc.OwnHatHeadingDeg, fc.OwnHatSpeed) = (p, heading, speed);
+        fc.OwnHatV = Earth.Forward(p, heading) * speed;
     }
 
     /// <summary>A point by own ship (an instrument's) where a machine fed her motion reckons it: as far off her reference
     /// point as it truly is (FL1).</summary>
     static Vec3d Reckoned(in Fc fc, in ShipState ship, Vec3d at) => (fc.OwnHatP + (at - ship.Position)).Normalized() * Earth.Radius;
 
-    /// <summary>A machine's point (where it has the target) as its gun orders put it from own ship: its range and bearing
-    /// from where it reckons her, laid off from where she is (FL1); a machine not fed her motion works from her as she is.</summary>
-    static Vec3d Ordered(in Fc fc, Vec3d p, Vec3d ownP)
+    /// <summary>A machine's point (where it has the target) as its gun orders put it from own ship: its range, and its
+    /// bearing off her head by the course it has, from where it reckons her, laid off from where she is (FL1); a machine not
+    /// fed her motion works from her as she is.</summary>
+    static Vec3d Ordered(in Fc fc, Vec3d p, Vec3d ownP, double headingDeg)
     {
         if (!fc.Fit.Computer.HelmFree)
             return p;
-        double range = Earth.Distance(fc.OwnHatP, p), bearing = Earth.Bearing(fc.OwnHatP, p);
+        double range = Earth.Distance(fc.OwnHatP, p), bearing = Earth.Bearing(fc.OwnHatP, p) - fc.OwnHatHeadingDeg + headingDeg;
         var q = ownP;
         var fw = Earth.Forward(q, bearing);
         Earth.Advance(ref q, ref fw, range);
@@ -1484,7 +1490,7 @@ public sealed class GunnerySystem : IWorldSystem
         var velocity = ship.Forward * ship.Speed;
         var muzzle0 = Muzzle(cls, frame, mounts[0]);
         double h0 = muzzle0.Length - Earth.Radius;
-        var p = Aim(ref fc, f, table, muzzle0, now, ship.Position, velocity, store[tslot], crew);
+        var p = Aim(ref fc, f, table, muzzle0, now, ship.Position, velocity, ship.HeadingDeg, store[tslot], crew);
         bool pointBlank = fc.PointBlank && phase == FirePhase.Effect;   // the phase as the salvo was thinned (Run: point blank fires for effect)
         var up = p.Normalized();
         var line = p - ship.Position;
@@ -2034,8 +2040,9 @@ public sealed class GunnerySystem : IWorldSystem
         double tau = fc.OnRoll ? mount.RollTauS * crew.RollTiming : mount.StableVertical ? mount.RollTauS : settings.ContinuousAimTauS;
         double sea = Sq(lay * perRad) + Sq(tau * Math.Sqrt(2) * fc.Roll.RateSigmaRadS * perRad);
         // her own turn as he sees its cost (FL1): his table's own speed off hers over the flight and the plot's latency (what
-        // the track takes into her motion)
-        double kick = Math.Abs(fc.OwnHatSpeed - ship.Speed) * (fc.TofS + computer.LatencyS);
+        // the track takes into her motion), and a hand-followed course's in the line as it turns the bearings
+        double kick = Math.Sqrt(Sq(Math.Abs(fc.OwnHatSpeed - ship.Speed) * (fc.TofS + computer.LatencyS)) +
+                                Sq(double.DegreesToRadians(Wrap(ship.HeadingDeg - fc.OwnHatHeadingDeg)) * range));
         double rSteady = aim * aim + sea + sr * sr, rCould = could * could + sea + sr * sr;
         // and in line: his deflection's residual bias until a spot has corrected it, the laying, the pattern
         double defl = fc.DeflDoubtRad * range * (fc.LastSign < 0 ? 1 : 0.5);
@@ -2127,7 +2134,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 var own = ships.Store[slot];
                 fcs[i].Tracker.At(fcs[i].Fit.Computer, ms, ships.Store.NowMs, own.Position, own.Forward * own.Speed, out position, out velocity);
-                position = Ordered(fcs[i], position, own.Position);
+                position = Ordered(fcs[i], position, own.Position, own.HeadingDeg);
                 return true;
             }
         (position, velocity) = (default, default);

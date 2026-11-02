@@ -117,6 +117,8 @@ At high power, especially with coal plus oil sprays, funnel smoke was a first-or
 
 ## 5. Own speed in the ballistic solution, own-speed inputs and log errors
 
+*Followed up 2026-11-02 in [own-motion-inputs.md](own-motion-inputs.md): how each machine took own speed and course, the logs, and the gyrocompass in a turn.*
+
 ### Takeaway
 Own speed enters the solution only through the velocity the shell inherits at the muzzle. NavPers resolves it into along-LOS (range) and across-LOS (deflection) components, which partly cancel against the ship-made apparent wind. The correction is computed automatically from the log (Forbes in the RN WWI, pitometer in the USN WWII). Errors therefore scale with **log error × time of flight** and are small unless the log is badly wrong or speed is changing.
 

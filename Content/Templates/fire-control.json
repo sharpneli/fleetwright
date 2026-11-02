@@ -602,7 +602,7 @@
   {
    "name": "Type 92 Shagekiban",
    "group": "computer",
-   "note": "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST].",
+   "note": "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer (\"Follow up compass course as received from the gyrocompass\": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man following a pointer, the user]; own speed set by crank, 20 s [EST].",
    "value": {
     "computer": {
      "tracker": "rate_clock",
@@ -621,6 +621,7 @@
      "prior_deg": 12,
      "resid_pct": 0.6,
      "defl_bias_mil": 1.5,
+     "own_course_lag_s": 0.5,
      "own_speed_lag_s": 20,
      "first_step_m": 366,
      "mass_t": 4,

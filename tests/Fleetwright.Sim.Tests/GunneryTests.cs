@@ -108,6 +108,29 @@ public class GunneryTests(ITestOutputHelper output)
     /// With every error on, the zigzag shows it too since fc-ladder-check.md FL1 took the own-turn kick (one lumped draw a
     /// salvo, which took level 3 to 10.6%) for the table's own reckoning (level 1 12.1%, level 3 14.6%); the opening is
     /// FL2's (both straddle at about 140 s).</summary>
+    /// <summary>The Type 92's own course is followed by hand from the gyro's pointer (fc-ladder-check.md FL1;
+    /// ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST, the user: "I definitely don't have that much latency if I
+    /// just follow something"], while the director's train comes in at once: her turns turn its bearings by the lag. In the
+    /// levels' zigzag (QE on QE at 16 kyd, 10° either side every 90 s, at most 0.47°/s) half a second is a quarter of a
+    /// degree, 60 m along a target 190 m long, and costs nothing; twice the lag costs (readings' rung, 16 duels: 83.8% with
+    /// her course exact, 83.8 at 0.5 s, 73.4 at 1 s).</summary>
+    [Fact]
+    public void The_Type_92_follows_her_course_by_hand_half_a_second_behind()
+    {
+        var qe = Class("super_dreadnought");
+        int level = FireControlPresets.Find("japanese-plot");
+        double Zig(string errors)
+        {
+            var (h, sh, _, _) = Duels(qe, qe, 16 * Kyd, 90, level, 16, zigDeg: 10,
+                with: Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse(errors) });
+            return 100.0 * h / sh;
+        }
+        double exact = Zig("all=0,readings=1,own=0"), half = Zig("all=0,readings=1"), one = Zig("all=0,readings=1,own=2");
+        output.WriteLine($"zigzagging, the readings only: her course exact {exact:F1}%, 0.5 s behind {half:F1}%, 1 s {one:F1}%");
+        Assert.InRange(half, 0.97 * exact, 1.03 * exact);
+        Assert.True(one < 0.95 * exact, "a hand-followed course late enough turns the bearings off her");
+    }
+
     [Fact]
     public void Where_the_levels_differ_level_3_does_better()
     {

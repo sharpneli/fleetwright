@@ -146,9 +146,11 @@ public static class FireControlTemplates
         C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 2, 12, 0.6, 1.5, 3, 366, 5, 8, 5),
             "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's " +
             "table puts them with the AFCT, whose numbers they take [EST]."),
-        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 20, 366, 4, 15, 2),
+        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },
             "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt " +
-            "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]."),
+            "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer " +
+            "(\"Follow up compass course as received from the gyrocompass\": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man " +
+            "following a pointer, the user]; own speed set by crank, 20 s [EST]."),
         C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 2, 12, 0.4, 1, 3, 366, 3, 4, 10),
             "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md " +
             "§3; level 5, designer C4)."),
@@ -246,7 +248,7 @@ public static class FireControlTemplates
     static readonly string[] OpticsFields = ["kind", "delta_arcsec", "rigid_base_m", "flex_exp", "magnification", "m_max", "readings_per_min", "coated",
         "gyro_stabilised", "mass_kg_m2"];
     static readonly string[] ComputerFields = ["tracker", "helm_free", "latency_s", "q", "max_range_rate_ms", "max_bearing_rate_deg_s", "accel_tau_s",
-        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_speed_lag_s",
+        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_course_lag_s", "own_speed_lag_s",
         "first_step_m", "mass_t", "crew", "power_kw"];
     static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil"];
     /// <summary>Fields once given, read no more, so a design saved with them still checks: the salvo-to-salvo error, each
@@ -300,7 +302,7 @@ public static class FireControlTemplates
                     errs.Add($"{at}.computer.tracker = {Style.Quote(c.Tracker ?? "")}: use {string.Join(", ", Trackers)}");
                 Numbers("computer", [("latency_s", c.LatencyS), ("q", c.Q), ("max_range_rate_ms", c.MaxRangeRateMs), ("max_bearing_rate_deg_s", c.MaxBearingRateDegS),
                     ("accel_tau_s", c.AccelTauS), ("accel_sigma_ms2", c.AccelSigmaMs2), ("turn_q", c.TurnQ), ("speed_q", c.SpeedQ), ("rejudge_s", c.RejudgeS),
-                    ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("resid_pct", c.ResidPct), ("defl_bias_mil", c.DeflBiasMil), ("own_speed_lag_s", c.OwnSpeedLagS),
+                    ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("resid_pct", c.ResidPct), ("defl_bias_mil", c.DeflBiasMil), ("own_course_lag_s", c.OwnCourseLagS), ("own_speed_lag_s", c.OwnSpeedLagS),
                     ("first_step_m", c.FirstStepM), ("mass_t", c.MassT), ("crew", c.Crew), ("power_kw", c.PowerKw)],
                     ["latency_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "first_step_m"]);
             }
