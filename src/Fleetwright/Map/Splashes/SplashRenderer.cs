@@ -2,6 +2,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Fleetwright.Gpu;
 using Fleetwright.Sim;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 using SDL;
@@ -37,7 +38,7 @@ public sealed unsafe class SplashRenderer : IDisposable
     const double Gravity = 9.81;
     /// <summary>The column's peak height and the shaft's width per metre of calibre (research/vfx/shell-splashes.md:
     /// a 16" 73 m and 10 m), and the lean at the shallowest fall.</summary>
-    const double HeightPerM = 180, WidthPerM = 25, LeanDeg = 25;
+    const double LeanDeg = 25;   // the column's size and clock: Sim.Combat.SplashColumn, the sim's
     /// <summary>Each splash's own share (the user, 2026-10-15: identical columns starting together read as clones):
     /// its height and width up or down by up to these, its rise and fall as much longer or shorter, and its start up to
     /// <see cref="DelayS"/> after the impact. All from its seed, so a splash is the same from frame to frame; scaled by
@@ -139,10 +140,9 @@ public sealed unsafe class SplashRenderer : IDisposable
         for (int i = 0; i < book.Count; i++)
         {
             ref readonly var e = ref book[i];
-            double cal = e.CalibreMm / 1000;
-            double steep = SmoothStep(3, 15, e.FallDeg), vary = SplashLook.Vary;
-            double h = HeightPerM * cal * (0.5 + 0.5 * steep) * (1 + vary * VaryHeight * SplashBook.Signed(e.Seed, 1));
-            double w0 = WidthPerM * cal * (1 + vary * VaryWidth * SplashBook.Signed(e.Seed, 2)) * (e.TorpedoHit ? TorpedoWidth : 1);
+            double steep = SplashColumn.Steep(e.FallDeg), vary = SplashLook.Vary;
+            double h = SplashColumn.PeakM(e.CalibreMm, e.FallDeg) * (1 + vary * VaryHeight * SplashBook.Signed(e.Seed, 1));
+            double w0 = SplashColumn.WidthM(e.CalibreMm) * (1 + vary * VaryWidth * SplashBook.Signed(e.Seed, 2)) * (e.TorpedoHit ? TorpedoWidth : 1);
             double ta = Math.Sqrt(2 * h / Gravity) * (1 + vary * VaryTime * SplashBook.Signed(e.Seed, 3));
             double delay = vary * DelayS * (0.5 + 0.5 * SplashBook.Signed(e.Seed, 4));
             double tau = (colClock - e.ColumnT0 - delay) / ta, foamAge = foamClock - e.FoamT0 - delay;

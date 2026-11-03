@@ -38,7 +38,7 @@ public sealed partial class MapScene
     const double FlashS = 0.35, FlashPx = 7;
     // the splash: a column H = 180 x calibre (research/vfx/shell-splashes.md), rising in sqrt(2H/g) and down by twice
     // that and a second; the column's glow and the foam ring, px at a 12"
-    const double ColumnPerM = 180, ColumnPx = 3.2, FoamPx = 7;
+    const double ColumnPx = 3.2, FoamPx = 7;
     // a hit: the flash, its sparks and the smoke after it
     const double HitFlashS = 1.2, HitPx = 7, SparkS = 0.7, SparkPx = 16, HitSmokeS = 6;
     // a torpedo's hit: its column, px, and how long it stands (the track itself is Torpedoes.TorpedoTrack's)
@@ -209,7 +209,7 @@ public sealed partial class MapScene
                 continue;
             }
             // the column: up in sqrt(2H/g), down by twice that and a second (12": 3.3 s, 7.7 s)
-            double rise = Math.Sqrt(2 * ColumnPerM * w.CalibreMm[i] / 1000 / 9.81), fall = Floor(s, 2 * rise + 1);
+            double rise = SplashColumn.RiseS(SplashColumn.PeakM(w.CalibreMm[i], 90)), fall = Floor(s, 2 * rise + 1);
             if (table <= 0)
                 continue;
             if (age < fall)

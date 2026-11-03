@@ -936,4 +936,21 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(t.Salvos >= 6);
         Assert.Equal(0, allocated);
     }
+
+    /// <summary>The splash columns (docs/battle/error-sources.md ES2): a WWI boat's guns laid by their own layers on a boat
+    /// 4 km off. At their own size her masts show over a 4-inch short's column (some 10 m at that flat fall) and the shorts
+    /// scatter tens of metres across the line, so nothing hides her (generous to the gunner); forty times the size, the
+    /// columns hide her from the layers some of the time and the guns fire less and hit less.</summary>
+    [Fact]
+    public void Splash_columns_hide_her_from_the_layers_only_when_they_cover_her()
+    {
+        var b97 = Fleet.Scenario("b97");
+        var v25 = Fleet.Scenario("v25");
+        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 8);
+        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 8);
+        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 8);
+        output.WriteLine($"masking off {off.Hits} hits of {off.Shells}, at size {real.Hits} of {real.Shells}, forty times {strong.Hits} of {strong.Shells}");
+        Assert.Equal(off, real);
+        Assert.True(strong.Shells < off.Shells && strong.Hits < off.Hits, "hidden behind the columns, the layers hold their fire");
+    }
 }

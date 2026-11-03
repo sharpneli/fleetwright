@@ -333,11 +333,14 @@ public sealed class GunnerySystem : IWorldSystem
     readonly Stack<int> freeSalvo;
     int highSalvo;
     // the splashes about each ship (BL1c), by her slot: a ring of the last few, when each came down, its calibre and the
-    // ship that fired it; grown with the ships' slots when a battery engages (never in a fall)
+    // ship that fired it, and where it came down with its column's peak (ES2: 0 for a hit, which throws none); grown with
+    // the ships' slots when a battery engages (never in a fall)
     const int SplashRing = 32;
     long[] splashMs = new long[64 * SplashRing];
     int[] splashShooter = new int[64 * SplashRing];
     float[] splashCal = new float[64 * SplashRing];
+    Vec3d[] splashAt = new Vec3d[64 * SplashRing];
+    float[] splashPeak = new float[64 * SplashRing];
     int[] splashHead = new int[64];
     bool ticking, ever;
     // each side's men's experience in thousandths (docs/battle/crew.md decision 6: whole numbers in commands, so a replay
@@ -668,8 +671,34 @@ public sealed class GunnerySystem : IWorldSystem
         in ShipFrame frame)
     {
         ref readonly var m = ref cls.Mounts[mount];
-        var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = cls.Components[m.Component].Bounds.Top - cls.Vertical.Waterline, BearingMil = settings.EyeBearingMil };
+        var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = LayerHeightM(cls, mount), BearingMil = settings.EyeBearingMil };
         return MarginOf(cls, s, optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
+    }
+
+    /// <summary>A mount's layer's eye over the water, m: on its gunhouse's roof.</summary>
+    static double LayerHeightM(ShipClass cls, int mount) => cls.Components[cls.Mounts[mount].Component].Bounds.Top - cls.Vertical.Waterline;
+
+    /// <summary>Whether any column may stand about a ship now (ES2): a miss in her ring within the longest a column
+    /// stands (a 20" shell's at full height, under 9 s).</summary>
+    bool Standing(int tslot, long now)
+    {
+        if (tslot < 0 || tslot >= splashHead.Length || settings.GunneryErrors.Masking <= 0)
+            return false;
+        for (int k = tslot * SplashRing, end = k + SplashRing; k < end; k++)
+            if (splashPeak[k] > 0 && now - splashMs[k] < SplashColumn.WithinMs)
+                return true;
+        return false;
+    }
+
+    /// <summary>Whether the columns of the falls aimed at her (her ring) hide her from an eye (<see cref="SplashColumn.Hides"/>),
+    /// their size scaled by <see cref="GunneryErrorScale.Masking"/>.</summary>
+    bool Masked(Vec3d at, double eyeM, int tslot, in ShipState target, long now)
+    {
+        var tc = target.Handling.Class;
+        int k = tslot * SplashRing;
+        return SplashColumn.Hides(at, eyeM, target.Position, target.Forward, tc.Motion.LengthM, tc.Motion.BeamM, tc.Silhouette.TopM,
+            splashAt.AsSpan(k, SplashRing), splashPeak.AsSpan(k, SplashRing), splashCal.AsSpan(k, SplashRing), splashMs.AsSpan(k, SplashRing),
+            now, settings.GunneryErrors.Masking);
     }
 
     /// <summary>Whether a battery of the same ship on another target holds a unit.</summary>
@@ -875,6 +904,7 @@ public sealed class GunnerySystem : IWorldSystem
         bool sees = false, aired = false;
         double bestMargin = 0;
         var smoke = dueTau.AsSpan(i * SmokeSystem.PairTaus, SmokeSystem.PairTaus);
+        bool columns = inSight && Standing(tslot, now);
         for (int k = 0; k < fc.SensorCount; k++)
         {
             ref var s = ref sensors[f * MaxSensors + k];
@@ -892,8 +922,8 @@ public sealed class GunnerySystem : IWorldSystem
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
             s.NextMs = now + (long)(60_000 / (Rate(optics, s) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)) * r.NextDouble(0.7, 1.3));   // short-handed, slower (crew.md N2)
-            if (!seen)
-                continue;
+            if (!seen || columns && Masked(at, s.HeightM, tslot, target, now))
+                continue;   // nothing to read; or she stands behind the shorts' columns, no cut till they fall (ES2)
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
             double st = Steadiness.Stress(cls, cond, s.Eye >= 0 ? cls.Eyes[s.Eye].Component : cls.Mounts[mounts[0]].Component, now, settings);   // BL1d
             st *= Vibration(cls, ship, s.Support, s.X);   // BL1h: the ship's own shaking at speed
@@ -977,6 +1007,7 @@ public sealed class GunnerySystem : IWorldSystem
         bool ownSight = !fc.Fit.Mount.DirectorFiring && sees;
         if (ownSight && !aired)
             (air, aired) = (AirAt(world, ship.Position, slot, tslot, smoke, i, worker), true);
+        bool ownColumns = ownSight && columns;   // nor while the shorts' columns hide her from his sight (ES2)
         ownSight &= air.Smoked;
         for (int j = 0; j < mounts.Length; j++)
         {
@@ -988,6 +1019,8 @@ public sealed class GunnerySystem : IWorldSystem
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg && !Awash(world, ship, cls, cond, mounts[j]);
             if (firing[j] && ownSight)
                 firing[j] = LayerSees(cls, mounts[j], optics, ship, target, air, smoke, slot, frame);
+            if (firing[j] && ownColumns)
+                firing[j] = !Masked(frame.ToWorld(mr.X, mr.Y, 0), LayerHeightM(cls, mounts[j]), tslot, target, now);
             bears |= firing[j];
         }
         // fire discipline (F6): the bracket widens at the computer's doubt of the range rate along the line of fire; the
@@ -1756,6 +1789,8 @@ public sealed class GunnerySystem : IWorldSystem
         Array.Resize(ref splashMs, n * SplashRing);
         Array.Resize(ref splashShooter, n * SplashRing);
         Array.Resize(ref splashCal, n * SplashRing);
+        Array.Resize(ref splashAt, n * SplashRing);
+        Array.Resize(ref splashPeak, n * SplashRing);
     }
 
     /// <summary>Whether a spotter tells a salvo's fall from the others about its target (BL1c): a salvo of
@@ -1790,9 +1825,9 @@ public sealed class GunnerySystem : IWorldSystem
         freeSalvo.Push(i);
     }
 
-    /// <summary>A shell of a salvo down (from the shell system, at its end): where it fell against the target, as it
-    /// is and as the spotter will judge it; the last one schedules the spot.</summary>
-    internal void Landed(World world, int si, Vec3d end, int hit)
+    /// <summary>A shell of a salvo down (from the shell system, at its end, with the angle it fell at): where it fell
+    /// against the target, as it is and as the spotter will judge it; the last one schedules the spot.</summary>
+    internal void Landed(World world, int si, Vec3d end, int hit, double fallDeg)
     {
         ref var sv = ref salvos[si];
         if (!sv.Alive)
@@ -1826,6 +1861,7 @@ public sealed class GunnerySystem : IWorldSystem
             {
                 int k = tslot * SplashRing + splashHead[tslot];
                 (splashMs[k], splashShooter[k], splashCal[k]) = (down, sv.Shooter, (float)sv.CalibreMm);
+                (splashAt[k], splashPeak[k]) = (end, hit >= 0 ? 0 : (float)SplashColumn.PeakM(sv.CalibreMm, fallDeg));
                 splashHead[tslot] = (splashHead[tslot] + 1) % SplashRing;
             }
             sv.SumY += y;

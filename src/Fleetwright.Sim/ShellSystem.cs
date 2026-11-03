@@ -302,7 +302,8 @@ public sealed class ShellSystem : IWorldSystem
             AddSplash(SplashOf(ref s, s.WaterPoint, world.Time.Ms, -1));   // a hit under the water: its splash, as it met it
         else if (e.Code == EndEvent)
         {
-            AddSplash(SplashOf(ref s, s.End, world.Time.Ms, s.Hit));
+            var splash = SplashOf(ref s, s.End, world.Time.Ms, s.Hit);
+            AddSplash(splash);
             if (s.Hit >= 0)
             {
                 Hits++;
@@ -325,7 +326,7 @@ public sealed class ShellSystem : IWorldSystem
             alive--;
             free[freeCount++] = e.Entity;
             if (s.Record >= 0)
-                Gunnery?.Landed(world, s.Record, s.End, s.Hit);
+                Gunnery?.Landed(world, s.Record, s.End, s.Hit, splash.FallDeg);
         }
     }
 

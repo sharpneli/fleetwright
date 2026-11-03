@@ -61,6 +61,51 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 in the troughs; coal ships' rate of fire at full power (stokers from the guns' crews, qualitative). Each one where its
 source or system lands.
 
+## ES0-ES1 The baseline and the record's weather (done 2026-11-03)
+
+**ES0:** the duel bench had the weather already (`duel --wind FROM,KN --swell M`, the tests' `swellHs`); each step adds
+its own rung to `--errors` as it lands. The baseline is the panel at c54e255e (`balance/es0.json`): fc-history 6 of 23
+(17 HIGH), the scenarios 7 of 14 sides within twice the record, the record's loser losing more in 33 of 44 seeds.
+
+**ES1:** every historical scenario at its record's sea (each file's weather line says where from), the launch screen's
+conditions taking the swell (from, height by 0.5 m, period by the second) as they take the wind; the tests' scenarios
+left as they were. The panel after (`balance/es1.json`, 8 seeds, Jutland 4; the battles take their own courses):
+
+| | before (1 m swell everywhere) | after |
+|---|---|---|
+| Tsushima (2 m at 9 s) | Japan 2,258 hits at 14.3%, Russia 558 at 10.5%; lost 5.0 v 2.5 | Japan 1,451 at 10.4%, Russia 921 at 13.2%; 5.3 v 4.5 |
+| Coronel (4 m at 12 s under a 28 kn gale) | Germany 462 at 11.3%, Britain 214 at 16.2%; lost 1.6 v 1.0 | Germany 986 at 18.5%, Britain 127 at 14.2%; 1.6 v 0.5 |
+| the Jutland (0.5 m) | Britain 3,916 at 12.9%, Germany 2,455 at 8.1% | Britain 5,754 at 15.2%, Germany 2,239 at 8.1% |
+| fc-history (its own seas, unchanged) | 6 of 23 | 6 of 23 |
+
+Coronel's rise is the battle's course, not the sea's physics: the same pair in a duel at 7 km (armoured cruiser on
+Devonshire) hits 11.9% in a calm and 6.6% in the gale's sea; in the scenario the British casemates are awash and their
+fire weak, and the Germans close (their light guns fire 15% of their shells at 2-4 km, against 2% before), where hits
+come easily. The record's Coronel was fought at 10-11 km closing to 5; the closing is the AI's (BL5), noted.
+
+## ES2 Splash columns on the line of sight (built 2026-11-03)
+
+**Built:** `SplashColumn` (Sim.Combat), one model for the sim and both drawings (the world view's `SplashRenderer` and
+the table's marks now read it): peak 180 calibres, half at a 3° fall and full above 15°, shaft 25 calibres wide, up in
+√(2H/g), down by that and a second; its shaft dense through its rise and thinning as it falls, half its water gone at
+τ = 1.35 (the drawing's e^−2(τ−1)) [EST: research/vfx/shell-splashes.md, "design estimates from scaling and period
+photographs"]. Each target's ring of falls (BL1c) keeps where each came down and its column's peak (none for a hit).
+`SplashColumn.Hides`: the columns in front of her whose dense shafts stand over the line from an eye to her top each
+cover a band of her, widened to her range; she's hidden while the bands cover her end to end as she lies. Asked for each
+rangefinder's cut (a hidden one takes none; the computer runs on) and each gun laid by its own layer (he holds his fire).
+`--errors masking=K` scales the columns' size (0 off).
+
+**Generous to the gunner** (decision 3): her masthead is enough to cut or lay on, and only the falls aimed at her count.
+
+**Found:** at their own size the columns hide nothing anyone fires by. A 4" short at 4 km falls at 2-3° and stands about
+10 m against a destroyer's 31 m mast, and a boat's shorts scatter 10-70 m across the line; heavy shorts on a stern chase
+at 14-22 km hide her now and then from a director's rangefinder, a cut lost that the clock covers (4.8% hits either way).
+Forty times the size, the layers lose her 4% of the time (b97 on v25 at 4 km: 32.5 → 30.0%, rate 5.83 → 5.80). The
+mechanism stands, mild, as asked; what would make it bite is a rule the record would have to give: that the hull, not the
+masthead, is what a layer must see (the target's hull lost behind shorts is what the accounts describe).
+`SplashColumnTests` (the geometry: side by side end on, never broadside, overs, rising, thinned, a gap, off),
+`GunneryTests.Splash_columns_hide_her_from_the_layers_only_when_they_cover_her`.
+
 ## Decided (the user, 2026-11-03)
 
 1. **The order** as above.
