@@ -106,6 +106,55 @@ masthead, is what a layer must see (the target's hull lost behind shorts is what
 `SplashColumnTests` (the geometry: side by side end on, never broadside, overs, rising, thinned, a gap, off),
 `GunneryTests.Splash_columns_hide_her_from_the_layers_only_when_they_cover_her`.
 
+## ES3 The day's ballistics, the residual bias taken apart (built 2026-11-03)
+
+The user: "it's good that we get rid of another grabbag error term." `resid_pct` and `defl_bias_mil` are gone (retired
+keys, as `salvo_pct` in BL1ac: an old design still checks); every computer says instead what it knows of the day's
+ballistics, and the fall's error is the difference, at the salvo's own flight (`BallisticResidual`, Sim.Combat):
+
+- **The wind** (`wind_input`: none, deck or ballistic; `wind_err_kn`, its measuring 1σ each way). The world's wind along
+  the shell's path, the sea's profile up it (`SmokeAir.Profile`, the smoke's power 0.11 to 300 m: 1.34-1.45 of the 10 m
+  wind over a flight), carries it across by the lag rule W(T − X/V₀cos θ₀) and along exactly in the air's frame (a wind
+  from behind is a slower muzzle velocity through the air and the air's carry W·T: the lag rule gives two thirds of
+  it). `BallisticsTests`: within 1% across and 2% along of a flight integrated through the wind. A machine with no
+  input corrects none, the deck's takes its anemometer's wind (30 m [EST]: short of the wind aloft), the ballistic the
+  path's; each off by its measuring.
+- **The air's density** (`density_err_pct`) and **the muzzle velocity** (`mv_err_pct`), as the machine has them, through
+  the table's own flights (its density and speed rows).
+- Drift and the Earth's turning: corrected by every machine (the flights have the Earth's turning, no shell drifts).
+
+Each battery draws its measuring errors once (as the bias was, BL1ad: a shift keeps them), so its fall moves with the
+line of fire against the wind as the fight turns. The machine's doubt of all this (the opening's and the carried
+correction's σb, point blank's check) comes from the same parts at the range it fires at. `--errors wind=K` is the
+wind's rung; the density and muzzle velocity stay on `bias`.
+
+**The sizes** [EST], generous to the gunner, each machine's in the catalogue's note: no wind input before the clocks
+(density 1.5%, MV 1%), the deck's from the Dumaresq (3 kn, 1.0%, 0.8%) and the Dreyer's day (2 kn, 0.7, 0.6), interwar
+(1.5 kn, 0.4, 0.3), the Ford Mk 8 (1 kn, 0.3, 0.25); the ballistic wind from the 1950s analog (2 kn, 0.3, 0.25) and
+the digital (1.5 kn, 0.25, 0.1).
+
+**What the flights say** (the 16"/50, `BallisticsTests`): at 20 kyd a 10 kn wind from behind 46 yd steady, 67 yd on the
+sea's profile; 1% of muzzle velocity 335 yd; 1% of density 48 yd; at 30 kyd 150, 493 and 99. The muzzle velocity is
+the big part: the research's 2 ft/s a °F of the charge, 55 yd at 40 kyd, is 690 yd a 1%, as ours runs. Its wind,
+"10 kn of range wind about 200 yd" at 20 kyd for a 15-16" gun (fire-control-research.md §5.1), is three times what the
+flights give a 16" shell; it doesn't say for which shell, and a light one (the 5"/54's "1 kn ≈ 125 yd at 25 kyd") feels
+the wind far more. So the Dreyer's sum at 20 kyd: the velocity about 1% of the range, the density and the wind's
+residual a tenth of that, under the old 1.2%; across, only the wind's residual (a few yards against the old 2 mil, which
+lumped what has no mechanism here).
+
+**Found** (QE on QE at 16 km in a 20 kn wind, 24 duels): the wind's rung costs 13.6 → 12.6% of hits and the first hit
+salvo 3 → 5 (the spots walk a steady error out; four times the wind costs no more); the velocity and the density
+(bias=0 against 1) 14.7 → 13.6%. The panel (`balance/es3.json` against es1): fc-history 6 of 23 again, its long range
+cases a little lower (Falklands 8.1 → 5.9%, the Dogger Bank's Germans 3.2 → 2.2%, the LRBP 3.8 → 3.4%), close in as
+before; the orderings 3 → 4 of 7. The scenarios within their seeds' spread (7 of 14 sides within twice the record).
+
+**On the way:** the Dreyer-like refit test takes the AFCT's sizes in place of its residual; three tests' thresholds that
+sat inside their own noise widened with their reasons (the shift's carried correction 0.5 → 0.7 of a fresh fall, the
+pattern now a larger share; the stable vertical's ratio to two binomial sigmas; the columns' run at their size within
+3% of masking off); the fall-out smoke test asks that the line's other ship makes none unless she's going home herself
+(the enemy's other guns now hit her). Not built: a hand-set wind left stale through a turn (each machine resolves the
+true wind it measured along the moving line), gusts over the flight.
+
 ## Decided (the user, 2026-11-03)
 
 1. **The order** as above.

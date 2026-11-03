@@ -203,7 +203,12 @@ public readonly record struct SmokeAir
 
     /// <summary>The wind at a height, m/s: the 10 m wind on the sea's profile (power <see cref="ProfilePower"/>), from 2 m
     /// to <see cref="ProfileTopM"/>.</summary>
-    public double DriftAt(double z) => Math.Max(WindMs, 0) * Math.Pow(Math.Clamp(z, 2, ProfileTopM) / 10, ProfilePower);
+    public double DriftAt(double z) => Math.Max(WindMs, 0) * Profile(z);
+
+    /// <summary>The sea's wind profile: the wind at a height over the 10 m wind (power <see cref="ProfilePower"/>, from 2 m
+    /// to <see cref="ProfileTopM"/>; 1.45 at the top, about the log law's at a kilometre over the sea, z₀ 0.2 mm). The
+    /// smoke's drift and the shells' wind (<see cref="BallisticResidual"/>) read it.</summary>
+    public static double Profile(double z) => Math.Pow(Math.Clamp(z, 2, ProfileTopM) / 10, ProfilePower);
 
     /// <summary>Smoke at a height drifts this much faster along the wind than the air's frame (which moves at the steering
     /// height's), m/s: negative below it, positive above (8 m/s at 10 m: -0.9 at 20 m, +0.8 at 100 m).</summary>

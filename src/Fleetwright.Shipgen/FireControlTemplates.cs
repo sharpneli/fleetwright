@@ -49,13 +49,20 @@ public static class FireControlTemplates
         });
 
     /// <summary>A computer's numbers: the tracker and the error budget every block gives (the clocks' and filters'
-    /// own numbers are added with `with`).</summary>
-    static ComputerTechInput K(string tracker, bool helmFree, double latency, double q, double priorKn, double priorDeg, double resid, double defl,
-        double speedLag, double step, double massT, double crew, double powerKw) =>
+    /// own numbers are added with `with`). Its ballistics (docs/battle/error-sources.md ES3), each [EST], generous to the
+    /// gunner (the user, 2026-11-03), sized so their sum at a moderate wind sits at or under the research's residual by era
+    /// (fire-control-research.md §5.1: 2.5% the eye, 1.2-1.5 WWI, 0.6 interwar, 0.4 WWII, 0.3 digital): no wind input
+    /// before the clocks, the deck's from the Dumaresq (its anemometer, 3 kn; 2 by the Dreyer's day; 1.5 interwar; 1 the
+    /// Ford's), the ballistic wind from the post-war machines (met messages, 2 kn; 1.5 digital); the density from deck
+    /// readings, 1.5% to 0.25% as the corrections came in; the muzzle velocity from 1% (no calibration, the charges'
+    /// heat uncorrected) to 0.1% (the digital's velocimeters).</summary>
+    static ComputerTechInput K(string tracker, bool helmFree, double latency, double q, double priorKn, double priorDeg, string wind, double windErrKn,
+        double densityErrPct, double mvErrPct, double speedLag, double step, double massT, double crew, double powerKw) =>
         new()
         {
             Tracker = tracker, HelmFree = helmFree, LatencyS = latency, Q = q, MaxRangeRateMs = 0, MaxBearingRateDegS = 0, AccelTauS = 0, AccelSigmaMs2 = 0,
-            TurnQ = 0, SpeedQ = 0, Detect = false, RejudgeS = 0, PriorKn = priorKn, PriorDeg = priorDeg, ResidPct = resid, DeflBiasMil = defl,
+            TurnQ = 0, SpeedQ = 0, Detect = false, RejudgeS = 0, PriorKn = priorKn, PriorDeg = priorDeg, WindInput = wind, WindErrKn = windErrKn,
+            DensityErrPct = densityErrPct, MvErrPct = mvErrPct,
             OwnSpeedLagS = speedLag, FirstStepM = step, MassT = massT, Crew = crew, PowerKw = powerKw,
         };
 
@@ -98,74 +105,74 @@ public static class FireControlTemplates
             coated: true, gyro: true),
 
         // ---- computers
-        C("Judgement", K("judgement", false, 5, 0, 4, 25, 2, 3, 0, 366, 0, 0, 0) with { RejudgeS = 60 },
+        C("Judgement", K("judgement", false, 5, 0, 4, 25, "none", 0, 1.5, 1, 0, 366, 0, 0, 0) with { RejudgeS = 60 },
             "A sailor's eye and head: the range guessed, the target's course and speed guessed from her look and led by it, looked at again " +
             "each minute, never a rate learnt (F2: the worst computer there is). The eye's guess and the tables' corrections as the hand " +
             "plot's: the same eye, the same tables (docs/battle/fc-ladder-check.md FL3)."),
-        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, 2, 3, 0, 366, 0.2, 3, 0) with { CourseRate = false, RangeClock = false },
+        C("Hand plot", K("rate_clock", false, 15, 0.02, 4, 25, "none", 0, 1.5, 1, 0, 366, 0.2, 3, 0) with { CourseRate = false, RangeClock = false },
             "Ranges, by rangefinder or by eye, plotted by hand, no machine (levels 0 and 1: the Tsushima era; designer C0). Its rates are " +
             "the plot's trend alone (no Dumaresq to make them from her course and speed: \"range rate was ignored, or guessed by rule of " +
             "thumb\"), and the range passed at each plot stays on the sights until the next (no clock to run it on): manual-gunnery-" +
             "research.md §3.2, computing.md §2 (docs/battle/fc-ladder-check.md FL4). The reference's level 0 had an \"eye and hand plot\" " +
             "of its own, slower and with worse guesses and corrections for no difference in the plot: gone (FL3)."),
-        C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
+        C("Dumaresq and Vickers clock", K("rate_clock", false, 15, 0.03, 3, 20, "deck", 3, 1, 0.8, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The Dumaresq's rates run on by the Vickers range clock (1906): constant rates only, the roller slipping on a change (computing.md " +
             "§3; level 2, designer C1)."),
-        C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, 1.5, 2.5, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
+        C("German range clock (EU-Anzeiger)", K("rate_clock", false, 15, 0.03, 3, 20, "deck", 3, 1, 0.8, 0, 366, 0.8, 4, 0) with { MaxRangeRateMs = DreyerRangeRate },
             "The German WWI range-rate indicator and clock without the plot, the cruisers' (computing.md §3): no specifications found; taken as " +
             "the Dumaresq and Vickers clock's [EST]."),
-        C("Dreyer table Mk I", K("rate_clock", false, 15, 0.03, 3, 20, 1.2, 2, 0, 366, 4, 10, 1) with
+        C("Dreyer table Mk I", K("rate_clock", false, 15, 0.03, 3, 20, "deck", 2, 0.7, 0.6, 0, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The first Dreyer table's range and bearing plots and clock (1911), her course set on it by handwheel: the Mk III's numbers without " +
             "helm-free, so own ship's turns are re-learnt (ship-motion/own-motion-inputs.md §2: the 1918 handbook has the Mk I's course by " +
             "\"handwheel input\", the Mk I* on \"automatic\", the Mk II \"automatic ?\"; docs/battle/fc-ladder-check.md FL5)."),
-        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 3, 20, 1.2, 2, 30, 366, 4, 10, 1) with
+        C("Dreyer table Mk III-V", K("rate_clock", true, 15, 0.03, 3, 20, "deck", 2, 0.7, 0.6, 30, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The Dreyer table from the Mk I* (1912-22; named for the Mk III, the marks most ships had), helm-free by the gyro: a rate clock " +
             "limited to ±1,200 yd/min and ±15°/min, its bearing plot the weak point (computing.md §3; level 3, designer C2). Crew 7-8 at the " +
             "table, up to 30 in the station. Its first guess at her course and speed the Dumaresq's in it, from the same eye (FL5)."),
-        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 3, 20, 1.2, 2, 30, 366, 4, 10, 1) with
+        C("German clock and plot (EU-Anzeiger, C12)", K("rate_clock", true, 15, 0.03, 3, 20, "deck", 2, 0.7, 0.6, 30, 366, 4, 10, 1) with
             {
                 MaxRangeRateMs = DreyerRangeRate, MaxBearingRateDegS = DreyerBearingRate,
             },
             "The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by " +
             "the gyro [EST], the two navies' 1916 machines doing the same job."),
-        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 3, 20, 1.2, 2, 30, 366, 2, 4, 1),
+        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 3, 20, "deck", 2, 0.7, 0.6, 30, 366, 2, 4, 1),
             "Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN " +
             "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]. Its first guess at her course and " +
             "speed the Dumaresq's, from the same eye behind the same ×28 (docs/battle/fc-ladder-check.md FL11)."),
-        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
+        C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 3, 20, "deck", 1.5, 0.4, 0.3, 3, 366, 5, 8, 5),
             "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3). " +
             "Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL6)."),
-        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 3, 4, 3),
+        C("Admiralty Fire Control Clock", K("true_course", true, 8, 0.03, 3, 20, "deck", 1.5, 0.4, 0.3, 3, 366, 3, 4, 3),
             "The AFCC, the AFCT without its plot, for destroyers and secondaries (computing.md §3; Haida's Mk III limited to 16,000 yd): the " +
             "table's numbers [EST]; mass and crew [EST]."),
-        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5) with
+        C("Admiralty Fire Control Table, turn setting", K("turn_rate", true, 8, 0.03, 3, 20, "deck", 1.5, 0.4, 0.3, 3, 366, 5, 8, 5) with
             {
                 TurnQ = 1e-7, SpeedQ = 0.1,
             },
             "The AFCT with a hand-set enemy rate of turn: a turn filter whose rate adapts slowly (level 4t; [UNCERTAIN] in the research, a " +
             "computer option anyone may fit, decision 5)."),
-        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
+        C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 3, 20, "deck", 1.5, 0.4, 0.3, 3, 366, 5, 8, 5),
             "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's " +
             "table puts them with the AFCT, whose numbers they take [EST]."),
-        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 3, 20, 0.6, 1.5, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },
+        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 3, 20, "deck", 1.5, 0.4, 0.3, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },
             "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt " +
             "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer " +
             "(\"Follow up compass course as received from the gyrocompass\": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man " +
             "following a pointer, the user]; own speed set by crank, 20 s [EST]. Its first guess at her course and speed the Dumaresq's, " +
             "from the same eye (docs/battle/fc-ladder-check.md FL11)."),
-        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 3, 20, 0.4, 1, 3, 366, 3, 4, 10),
+        C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 3, 20, "deck", 1, 0.3, 0.25, 3, 366, 3, 4, 10),
             "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md " +
             "§3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/" +
             "fc-ladder-check.md FL7)."),
-        C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, 0.4, 1, 3, 366, 3, 4, 10),
+        C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, "deck", 1, 0.3, 0.25, 3, 366, 3, 4, 10),
             "The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass."),
-        C("Curved-course analog computer (1950s)", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 2, 366, 2.5, 3, 10) with
+        C("Curved-course analog computer (1950s)", K("acceleration", true, 1, 0.02, 2, 12, "ballistic", 2, 0.3, 0.25, 2, 366, 2.5, 3, 10) with
             {
                 AccelTauS = 20, AccelSigmaMs2 = 0.25, Detect = true,
             },
@@ -174,7 +181,7 @@ public static class FireControlTemplates
             "computer, which took a straight-line target and had the \"target just turned\" button (NavPers Ch. 19-F; docs/battle/" +
             "fc-ladder-check.md FL9). The acceleration it allows, 0.25 m/s² 1σ, is a capital ship's in a hard turn, her speed times her " +
             "rate of turn (25 kn at 1°/s about 0.22, the reference's own figure; QE at 18 kn with 15° of helm 0.14)."),
-        C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, 0.3, 0.5, 1, 366, 0.8, 2, 8) with
+        C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, "ballistic", 1.5, 0.25, 0.1, 1, 366, 0.8, 2, 8) with
             {
                 TurnQ = 2e-5, SpeedQ = 0.1, Detect = true,
             },
@@ -264,13 +271,17 @@ public static class FireControlTemplates
     static readonly string[] OpticsFields = ["kind", "delta_arcsec", "rigid_base_m", "flex_exp", "magnification", "m_max", "readings_per_min", "coated",
         "gyro_stabilised", "mass_kg_m2"];
     static readonly string[] ComputerFields = ["tracker", "helm_free", "latency_s", "q", "max_range_rate_ms", "max_bearing_rate_deg_s", "accel_tau_s",
-        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "course_rate", "range_clock", "rejudge_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "own_course_lag_s", "own_speed_lag_s",
+        "accel_sigma_ms2", "turn_q", "speed_q", "detect", "course_rate", "range_clock", "rejudge_s", "prior_kn", "prior_deg", "wind_input", "wind_err_kn", "density_err_pct", "mv_err_pct", "own_course_lag_s", "own_speed_lag_s",
         "first_step_m", "mass_t", "crew", "power_kw"];
     static readonly string[] MountFields = ["director_firing", "stable_vertical", "lay_mil"];
     /// <summary>Fields once given, read no more, so a design saved with them still checks: the salvo-to-salvo error, each
     /// of its parts drawn where it arises since docs/battle/balance.md BL1ac; the own-turn kick, its own speed's lag since
-    /// docs/battle/fc-ladder-check.md FL1.</summary>
-    static readonly string[] Retired = ["salvo_pct", "salvo_defl_mil", "own_turn_kick_m"];
+    /// docs/battle/fc-ladder-check.md FL1; the residual ballistic bias, its parts each the machine's own since
+    /// docs/battle/error-sources.md ES3.</summary>
+    static readonly string[] Retired = ["salvo_pct", "salvo_defl_mil", "own_turn_kick_m", "resid_pct", "defl_bias_mil"];
+
+    /// <summary>The winds a computer may correct for (docs/battle/error-sources.md ES3).</summary>
+    public static readonly string[] WindInputs = ["none", "deck", "ballistic"];
 
     /// <summary>The design's fire_control_tech blocks: each one kind, its fields known, its numbers given and 0 or more; and
     /// each battery's fit: names that resolve, one block of each kind.</summary>
@@ -318,9 +329,11 @@ public static class FireControlTemplates
                     errs.Add($"{at}.computer.tracker = {Style.Quote(c.Tracker ?? "")}: use {string.Join(", ", Trackers)}");
                 Numbers("computer", [("latency_s", c.LatencyS), ("q", c.Q), ("max_range_rate_ms", c.MaxRangeRateMs), ("max_bearing_rate_deg_s", c.MaxBearingRateDegS),
                     ("accel_tau_s", c.AccelTauS), ("accel_sigma_ms2", c.AccelSigmaMs2), ("turn_q", c.TurnQ), ("speed_q", c.SpeedQ), ("rejudge_s", c.RejudgeS),
-                    ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("resid_pct", c.ResidPct), ("defl_bias_mil", c.DeflBiasMil), ("own_course_lag_s", c.OwnCourseLagS), ("own_speed_lag_s", c.OwnSpeedLagS),
+                    ("prior_kn", c.PriorKn), ("prior_deg", c.PriorDeg), ("wind_err_kn", c.WindErrKn), ("density_err_pct", c.DensityErrPct), ("mv_err_pct", c.MvErrPct), ("own_course_lag_s", c.OwnCourseLagS), ("own_speed_lag_s", c.OwnSpeedLagS),
                     ("first_step_m", c.FirstStepM), ("mass_t", c.MassT), ("crew", c.Crew), ("power_kw", c.PowerKw)],
-                    ["latency_s", "prior_kn", "prior_deg", "resid_pct", "defl_bias_mil", "first_step_m"]);
+                    ["latency_s", "prior_kn", "prior_deg", "density_err_pct", "mv_err_pct", "first_step_m"]);
+                if (c.WindInput is { } wi && !WindInputs.Contains(wi))
+                    errs.Add($"{at}.computer.wind_input = {Style.Quote(wi)}: use {string.Join(", ", WindInputs)}");
             }
             if (b.Mount is { } m)
             {

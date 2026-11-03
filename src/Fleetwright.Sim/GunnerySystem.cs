@@ -104,7 +104,11 @@ public sealed class GunnerySystem : IWorldSystem
         /// computer's priors' sigmas, drawn once a target: each look at her misjudges her the same way.</summary>
         public long JudgeMs;
         public double GuessSpeedZ, GuessCourseZ;
-        public double BiasR, BiasD, CorrR, CorrD, SpotHeightM;
+        public double MvZ, DensityZ, CorrR, CorrD, SpotHeightM;
+        // the machine's measuring errors in the day's ballistics, in its own σ (ES3: the battery's, as the residual bias
+        // was), and its doubt of them at the range it last fired at (a share of the range; rad across)
+        public Vec3d WindZ;
+        public double BallR, BallD;
         /// <summary>What its battery carried from its last target (docs/battle/balance.md BL1ad): the correction in range it
         /// opens its bracket about, a share of the range, and its doubt of the residual bias in range (a share) and in line
         /// (rad), the computer's own residual bias with nothing carried.</summary>
@@ -515,17 +519,20 @@ public sealed class GunnerySystem : IWorldSystem
                 Table = shells.TableOf(store.Combat.Loadout(slot), b), ElevationDeg = double.NaN, SetCourseDeg = double.NaN, SpoiledMs = -1,
             };
             fc.Bracket = FireControl.Bracket.Open(fit.Computer.FirstStepM);
-            // the residual ballistic bias is the guns' and the day's air (wind, density, the powder's lot, drift), not the
-            // target's: one draw a ship's battery (BL1ad); and what its spots learnt of it on its last target goes with it
+            // the day's ballistics as the machine has them (docs/battle/error-sources.md ES3): its wind's measuring error,
+            // its air's density and its guns' muzzle velocity, each off by its own error; the guns' and the day's, not the
+            // target's: one draw a ship's battery (BL1ad); and what its spots learnt on its last target goes with it
             var rb = stream.Derive(0xB1A5u).Derive((ulong)(uint)shooter).Derive((ulong)b);
-            (fc.BiasR, fc.BiasD) = (rb.NextGaussian(), rb.NextGaussian());
+            (fc.MvZ, fc.DensityZ) = (rb.NextGaussian(), rb.NextGaussian());
             var own = store[slot];
+            fc.WindZ = Earth.East(own.Position) * rb.NextGaussian() + Earth.North(own.Position) * rb.NextGaussian();
+            BallisticDoubt(world, ref fc, cls, slot, Earth.Distance(own.Position, store[store.SlotOf(target)].Position));
             (fc.OwnHatP, fc.OwnHatV, fc.OwnHatHeadingDeg, fc.OwnHatSpeed, fc.OwnHatMs) = (own.Position, own.Forward * own.Speed, own.HeadingDeg, own.Speed, now);
             fc.SvMs = now;
             var carried = store.Combat.Carried(slot, b);
             (fc.CarryR, fc.CorrD, fc.ResidShare, fc.DeflDoubtRad) = carried.Known
                 ? (carried.RangeShare, carried.LineRad, carried.RangeDoubtShare, carried.LineDoubtRad)
-                : (0, 0, fit.Computer.ResidPct / 100, fit.Computer.DeflBiasMil * FireControl.Mil);
+                : (0, 0, fc.BallR, fc.BallD);
             var r = stream.Derive((ulong)f).Derive((ulong)gen);
             (fc.GuessSpeedZ, fc.GuessCourseZ) = (r.NextGaussian(), r.NextGaussian());
             AddSensors(ref fc, f, cls, row, store.Combat.Condition(slot), now, ref r);
@@ -673,6 +680,22 @@ public sealed class GunnerySystem : IWorldSystem
         ref readonly var m = ref cls.Mounts[mount];
         var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = LayerHeightM(cls, mount), BearingMil = settings.EyeBearingMil };
         return MarginOf(cls, s, optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
+    }
+
+    /// <summary>The battery's machine's doubt of its ballistics (ES3) at a range, from its first mount's muzzle; kept as it
+    /// was where the range is out of the guns' reach.</summary>
+    void BallisticDoubt(World world, ref Fc fc, ShipClass cls, int slot, double rangeM)
+    {
+        var store = ships.Store;
+        var mounts = cls.Links(cls.Batteries[fc.Battery].Mounts);
+        if (mounts.Length == 0)
+            return;
+        var table = shells.Ballistics[fc.Table];
+        double h0 = Muzzle(cls, store[slot].Frame, mounts[0]).Length - Earth.Radius, e = table.ElevationFor(rangeM, h0);
+        if (double.IsNaN(e))
+            e = table.MaxElevationDeg - 2;
+        var wx = world.Weather.At(store[slot].Position, world.Time);
+        (fc.BallR, fc.BallD) = BallisticResidual.Doubt(fc.Fit.Computer, BallisticResidual.Of(table, e, h0), wx.WindMs, rangeM);
     }
 
     /// <summary>A mount's layer's eye over the water, m: on its gunhouse's roof.</summary>
@@ -1391,7 +1414,7 @@ public sealed class GunnerySystem : IWorldSystem
         double fall = table.Fall(e, h0).FallDeg;
         danger = side / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.05)));
         (sigma, bias) = PresentRangeError(fc, f, crew, present);
-        double resid = fc.Fit.Computer.ResidPct / 100 * present;
+        double resid = fc.BallR * present;
         double own = settings.SpotOpticK * settings.GunneryCombat * present * present / Math.Max(h0, 1);
         double margin = fc.WasPointBlank ? 0.75 : 1;
         return danger * margin >= 2 * Math.Sqrt(sigma * sigma + bias * bias + resid * resid) || own <= 0.25 * danger / margin;
@@ -1650,8 +1673,15 @@ public sealed class GunnerySystem : IWorldSystem
         // in place, the computer's wander (its track, the plot), the director's laying (above), the stable element's and
         // the pointers' lag at the roll (below), the salvo's mean muzzle velocity and each gun's calibration (its shells'
         // own draws, the measured pattern's)
-        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + errs.Bias * fc.BiasR * computer.ResidPct / 100 * range;
-        double dl = fc.CorrD * range + eTr + errs.Bias * fc.BiasD * computer.DeflBiasMil * FireControl.Mil * range;
+        // the day's ballistics the machine hasn't (ES3): the wind it doesn't know along the shells' path, its air's
+        // density and its guns' muzzle velocity as off as it has them, at this flight's own sensitivities
+        var flight = BallisticResidual.Of(table, e0, h0);
+        var wx = world.Weather.At(ship.Position, world.Time);
+        var wind10 = Earth.Forward(p, wx.WindFromDeg + 180) * wx.WindMs;
+        var (br, bl) = BallisticResidual.Fall(computer, flight, wind10, fc.WindZ, fc.DensityZ, fc.MvZ, u, w, errs.Wind, errs.Bias);
+        (fc.BallR, fc.BallD) = BallisticResidual.Doubt(computer, flight, wx.WindMs, range);
+        double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + br;
+        double dl = fc.CorrD * range + eTr + bl;
         if (mount.StableVertical && (fc.SvTiltE != 0 || fc.SvTiltN != 0))
         {
             // the vertical's own tilt (FL7): along the line of fire it lays the guns' elevation off, across it cants their
@@ -2101,8 +2131,8 @@ public sealed class GunnerySystem : IWorldSystem
             if (s.Cuts > 0)
                 weight += s.WRange;
         double held = weight > 0 ? 1 / weight : 0;
-        double bR = c.ResidPct / 100, eR = Math.Sqrt(Sq(fc.PosSigmaM) + held + Sq(SpotStep(fc)) / 3) / fc.RangeM;
-        double g = settings.SpotDeflectionGain, bD = c.DeflBiasMil * FireControl.Mil, eD = settings.SpotDeflectionMil * FireControl.Mil * Math.Sqrt(g / (2 - g));
+        double bR = fc.BallR, eR = Math.Sqrt(Sq(fc.PosSigmaM) + held + Sq(SpotStep(fc)) / 3) / fc.RangeM;
+        double g = settings.SpotDeflectionGain, bD = fc.BallD, eD = settings.SpotDeflectionMil * FireControl.Mil * Math.Sqrt(g / (2 - g));
         static (double Keep, double Doubt) Shrink(double b, double e) =>
             b <= 0 ? (0, 0) : (b * b / (b * b + e * e), b * e / Math.Sqrt(b * b + e * e));
         var (kR, dR) = Shrink(bR, eR);

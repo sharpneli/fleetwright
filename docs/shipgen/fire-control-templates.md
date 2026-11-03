@@ -65,29 +65,29 @@ gyro-stabilised; mass kg per m² of base.
 
 ## Computers
 
-Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
-bias (% of range, mil); own course's and speed's lags s (course 0: geared to the gyro); first ladder step m; and the filters'
+Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); its
+ballistics: the wind it corrects for and its error, kn, its density's and muzzle velocity's errors, % (docs/battle/error-sources.md ES3); own course's and speed's lags s (course 0: geared to the gyro); first ladder step m; and the filters'
 own numbers. Mass t, crew, power kW.
 
-| Block | Tracker | Latency | q | Limits | Prior | Bias | Own lags | Step | Filter | t, crew, kW |
+| Block | Tracker | Latency | q | Limits | Prior | Ballistics | Own lags | Step | Filter | t, crew, kW |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Judgement | judgement | 5 | 0 | - | 4, 25 | 2, 3 | -, 0 | 366 | looks again 60 s | 0, 0, 0 |
-| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | 2, 3 | -, 0 | 366 | -; rates by the plot alone; no clock | 0.2, 3, 0 |
-| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
-| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | 1.5, 2.5 | -, 0 | 366 | - | 0.8, 4, 0 |
-| Dreyer table Mk I | rate_clock | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 0 | 366 | - | 4, 10, 1 |
-| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
-| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | 1.2, 2 | -, 30 | 366 | - | 4, 10, 1 |
-| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 3, 20 | 1.2, 2 | -, 30 | 366 | - | 2, 4, 1 |
-| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
-| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | - | 3, 4, 3 |
-| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
-| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 3, 20 | 0.6, 1.5 | -, 3 | 366 | - | 5, 8, 5 |
-| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 3, 20 | 0.6, 1.5 | 0.5, 20 | 366 | - | 4, 15, 2 |
-| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 3, 20 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
-| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
-| Curved-course analog computer (1950s) | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | -, 2 | 366 | τ 20 s, σ 0.25 m/s²; detects turns | 2.5, 3, 10 |
-| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | -, 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
+| Judgement | judgement | 5 | 0 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | looks again 60 s | 0, 0, 0 |
+| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | -; rates by the plot alone; no clock | 0.2, 3, 0 |
+| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | - | 0.8, 4, 0 |
+| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | - | 0.8, 4, 0 |
+| Dreyer table Mk I | rate_clock | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 0 | 366 | - | 4, 10, 1 |
+| Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 4, 10, 1 |
+| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 4, 10, 1 |
+| Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 2, 4, 1 |
+| Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | - | 5, 8, 5 |
+| Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | - | 3, 4, 3 |
+| Admiralty Fire Control Table, turn setting | turn_rate, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | turn 0, speed 0.1 | 5, 8, 5 |
+| German Rechenstelle (1930s) | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | - | 5, 8, 5 |
+| Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | 0.5, 20 | 366 | - | 4, 15, 2 |
+| Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 3, 20 | deck 1 kn, 0.3%, 0.25% | -, 3 | 366 | - | 3, 4, 10 |
+| Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | deck 1 kn, 0.3%, 0.25% | -, 3 | 366 | - | 3, 4, 10 |
+| Curved-course analog computer (1950s) | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | ballistic 2 kn, 0.3%, 0.25% | -, 2 | 366 | τ 20 s, σ 0.25 m/s²; detects turns | 2.5, 3, 10 |
+| Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | ballistic 1.5 kn, 0.25%, 0.1% | -, 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
 
 ## Mounts
 

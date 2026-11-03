@@ -169,7 +169,9 @@ public class FallOutTests(ITestOutputHelper output)
             smoked = w.Smoke.Screening(1);
         }
         Assert.True(smoked, "under fire on her way home, she makes smoke");
-        Assert.False(w.Smoke.Screening(2), "her line's other ship doesn't");
+        // her line's other ship makes none unless she's going home under fire herself (any damage puts her out too: the enemy's
+        // other guns may hit her, as they have since the day's ballistics, docs/battle/error-sources.md ES3)
+        Assert.True(!w.Smoke.Screening(2) || ai.Captains.Of(2).Order == CaptainOrder.Home, "her line's other ship doesn't, staying in the line");
         w.Apply(DamageSystem.Sink(3, LossKind.Foundered));
         w.AdvanceTo(w.Time + 60_000);
         Assert.False(w.Smoke.Screening(1), "out of touch, she stops");

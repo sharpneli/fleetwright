@@ -52,6 +52,9 @@ lumped stand-in for something the chain now models?
   per machine is right if it says which corrections it has; checked when wind and density come in. Then too: a machine
   whose wind correction was set by hand from the apparent wind (the Ford Mk 1, likely the Dreyer) keeps its old setting
   through a turn until reset; "the later rangekeepers ... need not be corrected for changes in course" (own-motion-inputs.md §4).
+  **Done in error-sources.md ES3 (2026-11-03):** both gone, each machine's wind input (none, deck, ballistic) and its
+  errors in the wind, the density and the muzzle velocity in their place. The hand-set wind's staleness through a turn
+  isn't built: each machine sets the true wind it measured, resolved along the line as the line moves.
 - `own_speed_lag_s`: 30 s hand-fed [EST] sits in the sources' 10-30 s; the AFCT family's 3 s "automatic" has no source, one
   weak clue says set by hand (own-motion-inputs.md §1): revisit if its path turns up.
 - Drift angle: a ship's track lags her heading in a turn, 1-3.5 kn of her velocity in a hard one, more than the speed lag;

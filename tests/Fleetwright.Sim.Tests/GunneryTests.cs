@@ -336,7 +336,7 @@ public class GunneryTests(ITestOutputHelper output)
         const string fq = "Barr & Stroud FQ/FT (O2)", o3 = "Stereo, long base (O3)", dreyer = "Dreyer table Mk III-V", afct = "Admiralty Fire Control Table",
             pointer = "Director, follow the pointer", power = "Director, power drive";
         var byDreyer = Refit("super_dreadnought", fq, dreyer, pointer);
-        var byLike = Refit("super_dreadnought", fq, dreyer, pointer, c => c with { ResidPct = 0.6, DeflBiasMil = 1.5, LatencyS = 8 });
+        var byLike = Refit("super_dreadnought", fq, dreyer, pointer, c => c with { WindErrKn = 1.5, DensityErrPct = 0.4, MvErrPct = 0.3, LatencyS = 8 });
         var byAfct = Refit("super_dreadnought", fq, afct, pointer);
         double passD = Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, readings), passL = Engaged(byLike, dd, 30, 8_000, 180, 30, 6, readings),
             passA = Engaged(byAfct, dd, 30, 8_000, 180, 30, 6, readings);
@@ -432,7 +432,8 @@ public class GunneryTests(ITestOutputHelper output)
         output.WriteLine($"a 450° turn at 20 kyd in {drift.Minutes:F1} min: the vertical {drift.Tilt:F1}′ off at its end, the falls after it {drift.Fall:F0} m rms " +
                          $"(exact {exact.Fall:F0})");
         Assert.True(vs > 1.15 * ps, "in a swell the vertical fires anywhere in the roll, the director waits for it");
-        Assert.True((double)ps / pss < 0.95 * pc / pcs && (double)vs / vss > 0.95 * vc / vcs, "the director's laying worse as she rolls more, the vertical's not");
+        // the vertical's share against two binomial sigmas (some 330 hits: ±5.5% each), the director's under the calm's
+        Assert.True((double)ps / pss < 0.95 * pc / pcs && (double)vs / vss > 0.9 * vc / vcs, "the director's laying worse as she rolls more, the vertical's not");
         Assert.InRange(steadyM, 0.96 * steadyA, 1.04 * steadyA);
         Assert.True(passM > 1.05 * passA, "the Mk 8 follows a fast crossing more closely");
         Assert.True(rf4 > rf3, "the O4's longer base and readings");
@@ -742,7 +743,9 @@ public class GunneryTests(ITestOutputHelper output)
         var settings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,bias=1,dispersion=1") };
         double shifted = FirstFall(settings, true), fresh = FirstFall(settings, false);
         output.WriteLine($"the first salvo's fall off the second target, RMS: {shifted:F0} m after a shift, {fresh:F0} m engaged fresh");
-        Assert.True(shifted < 0.5 * fresh, "the bias's correction carried");
+        // since the bias is its parts (docs/battle/error-sources.md ES3: here the muzzle velocity and the air; the wind its own
+        // rung) the pattern is a larger share of a first fall: 94 against 159 m when built
+        Assert.True(shifted < 0.7 * fresh, "the bias's correction carried");
     }
 
     /// <summary>The RMS over seeds of the first salvo's fall off a second Seydlitz (its ladder's step taken off), Lion
@@ -950,7 +953,8 @@ public class GunneryTests(ITestOutputHelper output)
         var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 8);
         var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 8);
         output.WriteLine($"masking off {off.Hits} hits of {off.Shells}, at size {real.Hits} of {real.Shells}, forty times {strong.Hits} of {strong.Shells}");
-        Assert.Equal(off, real);
-        Assert.True(strong.Shells < off.Shells && strong.Hits < off.Hits, "hidden behind the columns, the layers hold their fire");
+        // at their own size the run follows masking off but for the falls' chaos (a column now and then over her end on)
+        Assert.InRange(real.Shells, 0.97 * off.Shells, 1.03 * off.Shells);
+        Assert.True(strong.Shells < off.Shells && strong.Hits < Math.Min(off.Hits, real.Hits), "hidden behind the columns, the layers hold their fire");
     }
 }

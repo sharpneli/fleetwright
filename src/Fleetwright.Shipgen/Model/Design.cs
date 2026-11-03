@@ -959,8 +959,9 @@ public sealed record OpticsTechInput
 /// true_course, acceleration, turn_rate) and whether own ship's motion is fed to it; latency, s, and the target
 /// acceleration it allows, m²/s³; the clock's limits (m/s, °/s; 0 none); the acceleration filter's memory, s, and size,
 /// m/s²; the turn filter's turn-rate (rad²/s³) and speed (m²/s³) noise; whether it opens up on a manoeuvre; how often a
-/// judgement looks again, s; the eye's first guess it starts from (kn, °, 1 sigma); the residual ballistic bias, % of
-/// range and mil; the extra error while own ship turns, m; the first ladder step, m; the salvo-to-salvo error, % of
+/// judgement looks again, s; the eye's first guess it starts from (kn, °, 1 sigma); the wind it corrects for (none, deck,
+/// ballistic) and its measuring error, kn, and its errors in the air's density and the muzzle velocity, % (1 sigma:
+/// docs/battle/error-sources.md ES3); the extra error while own ship turns, m; the first ladder step, m; the salvo-to-salvo error, % of
 /// range. Then the designer's: its mass, t, crew and power, kW (the transmitting station's, F4).</summary>
 public sealed record ComputerTechInput
 {
@@ -980,8 +981,10 @@ public sealed record ComputerTechInput
     public double? RejudgeS { get; init; }
     public double? PriorKn { get; init; }
     public double? PriorDeg { get; init; }
-    public double? ResidPct { get; init; }
-    public double? DeflBiasMil { get; init; }
+    public string? WindInput { get; init; }
+    public double? WindErrKn { get; init; }
+    public double? DensityErrPct { get; init; }
+    public double? MvErrPct { get; init; }
     public double? OwnCourseLagS { get; init; }
     public double? OwnSpeedLagS { get; init; }
     public double? FirstStepM { get; init; }

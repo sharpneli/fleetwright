@@ -2743,9 +2743,12 @@ public sealed record GunneryErrorScale
     public double Spotting { get; init; } = 1;
     /// <summary>The splash columns hiding her (docs/battle/error-sources.md ES2), a scale on their size: 0 none.</summary>
     public double Masking { get; init; } = 1;
+    /// <summary>The wind the machine doesn't know along the shells' path (ES3): 0 as in a calm, or a machine that knows it
+    /// exactly.</summary>
+    public double Wind { get; init; } = 1;
 
     /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, own,
-    /// dispersion, spotting, masking).</summary>
+    /// dispersion, spotting, masking, wind).</summary>
     public static GunneryErrorScale Parse(string text)
     {
         var e = new GunneryErrorScale();
@@ -2755,7 +2758,7 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
@@ -2764,14 +2767,15 @@ public sealed record GunneryErrorScale
                 "dispersion" => e with { Dispersion = v },
                 "spotting" => e with { Spotting = v },
                 "masking" => e with { Masking = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking)"),
+                "wind" => e with { Wind = v },
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}");
 }
 
 public sealed record FireDiscipline

@@ -262,4 +262,64 @@ public class BallisticsTests(ITestOutputHelper output)
         Assert.True(worstTof < 0.01, $"{worstTof:F3} s");
         Assert.True(worstBack < 0.01, $"{worstBack:F3} m");
     }
+
+    /// <summary>The day's ballistics a machine must correct (docs/battle/error-sources.md ES3), from the flights: the 16"/50 at
+    /// 20 kyd against the research's correction sizes (fire-control-research.md §5.1: a 10 kn range wind about 200 yd, a
+    /// 10 kn cross wind about 126 yd; computing.md: 1% of density about 135 yd at 25 kyd for the lighter 5"/54), the lag
+    /// rule's wind for a wind steady up the path.</summary>
+    [Fact]
+    public void The_days_ballistics_from_the_flights()
+    {
+        var t = Mk7Table.Value;
+        foreach (double kyd in (ReadOnlySpan<double>)[10, 20, 30])
+        {
+            double range = kyd * 914.4, e = t.ElevationFor(range, 25);
+            var f = BallisticResidual.Of(t, e, 25);
+            double tenKnots = 10 * BallisticResidual.Knot * f.AlongS / 0.9144;
+            output.WriteLine($"16\"/50 at {kyd} kyd ({e:0.0}°): lags {f.LagS:0.0} s of {t.Fall(e, 25).Tof:0.0}, the wind up its path {f.WindShare:0.00} of the 10 m wind; " +
+                $"10 kn steady {tenKnots:0} yd, at the sea's profile {tenKnots * f.WindShare:0} yd; 1% muzzle velocity {f.PerMvPct / 0.9144:0} yd, 1% density {f.PerDensityPct / 0.9144:0} yd");
+            Assert.True(f.LagS > 0 && f.WindShare > 1 && f.PerMvPct > 0 && f.PerDensityPct < 0);
+        }
+        var at20 = BallisticResidual.Of(t, t.ElevationFor(20 * 914.4, 25), 25);
+        Assert.InRange(10 * BallisticResidual.Knot * at20.AlongS * at20.WindShare / 0.9144, 30, 250);
+    }
+
+    /// <summary>A flight in a steady wind, integrated directly over a flat sea (the air's drag on the shell's speed through
+    /// it): its fall's range along and its drift across, m, for a wind along (+ from behind) and across.</summary>
+    static (double Range, double Across) InWind(BallisticKey key, double elevationDeg, double alongMs, double acrossMs)
+    {
+        double k = Ballistics.DragK(key), e = double.DegreesToRadians(elevationDeg), dt = 0.005;
+        double x = 0, y = 0, z = 0, vx = key.MuzzleVelocityMs * Math.Cos(e), vy = key.MuzzleVelocityMs * Math.Sin(e), vz = 0;
+        while (true)
+        {
+            var (rho, a) = Ballistics.Air(y);
+            double rx = vx - alongMs, rz = vz - acrossMs, v = Math.Sqrt(rx * rx + vy * vy + rz * rz), d = k * rho * Ballistics.Cd(v / a) * v;
+            double nx = x + vx * dt, ny = y + vy * dt, nz = z + vz * dt;
+            (vx, vy, vz) = (vx - d * rx * dt, vy - (d * vy + Ballistics.G) * dt, vz - d * rz * dt);
+            if (ny < 0)
+            {
+                double u = y / (y - ny);
+                return (x + (nx - x) * u, z + (nz - z) * u);
+            }
+            (x, y, z) = (nx, ny, nz);
+        }
+    }
+
+    /// <summary>The wind's carry (<see cref="BallisticResidual"/>: across by the lag rule, along in the air's frame) against
+    /// a flight integrated through the wind: a 10 kn wind steady up the path, along and across, the 16"/50 at 10-30 kyd and the 12"/45 at 10 kyd.</summary>
+    [Fact]
+    public void The_lag_rule_carries_a_shell_as_the_wind_does()
+    {
+        foreach (var (key, table, kyd) in new[] { (Mk7, Mk7Table.Value, 10.0), (Mk7, Mk7Table.Value, 20.0), (Mk7, Mk7Table.Value, 30.0), (Twelve, TwelveTable.Value, 10.0) })
+        {
+            double e = table.ElevationFor(kyd * 914.4, 0), w = 10 * BallisticResidual.Knot;
+            var f = BallisticResidual.Of(table, e, 0);
+            var still = InWind(key, e, 0, 0);
+            double along = (InWind(key, e, w, 0).Range - InWind(key, e, -w, 0).Range) / 2, across = InWind(key, e, 0, w).Across;
+            output.WriteLine($"{key.CalibreMm:0} mm at {kyd} kyd: a 10 kn wind from behind {along:0.0} m (the air's frame {w * f.AlongS:0.0}, the lag rule {w * f.LagS:0.0}), " +
+                $"across {across:0.0} m (the lag rule {w * f.LagS:0.0}); still air {still.Range:0} m");
+            Assert.InRange(w * f.LagS, 0.95 * across, 1.05 * across);
+            Assert.InRange(w * f.AlongS, 0.92 * along, 1.08 * along);
+        }
+    }
 }

@@ -509,6 +509,16 @@ public readonly record struct OpticsRow(double Magnification, double ReadingsPer
     public bool Reads => Magnification > 0;
 }
 
+/// <summary>The wind a fire-control computer corrects for (docs/battle/error-sources.md ES3): none; the deck's, its
+/// anemometer's set by hand or fed (the wind there, short of the wind aloft); the ballistic wind, the wind along the
+/// shell's path (met messages, later machines).</summary>
+public enum WindInput : byte
+{
+    None,
+    Deck,
+    Ballistic,
+}
+
 /// <summary>How a fire-control computer keeps its target (docs/battle/fire-control.md F2; fire_control_ref.py's trackers):
 /// each fails where its machine failed.</summary>
 public enum TrackerKind : byte
@@ -537,8 +547,8 @@ public enum TrackerKind : byte
 /// acceleration (1 sigma, m/s²); the turn filter's turn-rate noise (rad²/s³) and speed noise (m²/s³: a ship loses way in
 /// a hard turn, a fifth of her speed in a minute); whether it opens up on a manoeuvre (two large
 /// surprises in a row: the Mk 1A's "target just turned"); how often a judgement looks at the target again, s; the eye's
-/// first guess at the target's speed and course it starts from (1 sigma); the residual ballistic bias before spotting, %
-/// of range, and in deflection, mil; for a machine that takes own ship's motion in (helm-free, or in true motion), how
+/// first guess at the target's speed and course it starts from (1 sigma); the wind it corrects for and its errors in the
+/// day's ballistics (ES3); for a machine that takes own ship's motion in (helm-free, or in true motion), how
 /// late her course and her speed reach it, s, each a first-order lag: her course by the gyro's repeat motor, geared, at once,
 /// unless a man follows the gyro's pointer by hand (the Type 92); her speed a Forbes log read and set by hand, a pitometer's
 /// own response (docs/battle/fc-ladder-check.md FL1); the first ladder step, m. No salvo-to-salvo
@@ -566,8 +576,13 @@ public readonly record struct ComputerRow
     public double Q { get; init; }
     public double PriorKn { get; init; }
     public double PriorDeg { get; init; }
-    public double ResidPct { get; init; }
-    public double DeflBiasMil { get; init; }
+    /// <summary>The wind it works from (docs/battle/error-sources.md ES3), its measuring error (kn, 1σ each way), and its
+    /// error in the air's density and the guns' muzzle velocity (%, 1σ), each its own: what's left of the day's ballistics
+    /// once it has corrected what it knows (<c>BallisticResidual</c>).</summary>
+    public WindInput Wind { get; init; }
+    public double WindErrKn { get; init; }
+    public double DensityErrPct { get; init; }
+    public double MvErrPct { get; init; }
     public double OwnCourseLagS { get; init; }
     public double OwnSpeedLagS { get; init; }
     public double FirstStepM { get; init; }

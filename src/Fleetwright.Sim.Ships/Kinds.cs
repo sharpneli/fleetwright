@@ -299,6 +299,14 @@ static class Kinds
         _ => InstrumentSupport.Pole,
     };
 
+    public static WindInput WindOf(string? s) => s switch
+    {
+        null or "none" => WindInput.None,
+        "deck" => WindInput.Deck,
+        "ballistic" => WindInput.Ballistic,
+        _ => throw Unknown("wind_input", s),
+    };
+
     public static TrackerKind TrackerOf(string? s) => s switch
     {
         "judgement" => TrackerKind.Judgement,

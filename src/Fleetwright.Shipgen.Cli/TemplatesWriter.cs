@@ -208,11 +208,11 @@ static class TemplatesWriter
 
             ## Computers
 
-            Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); the residual
-            bias (% of range, mil); own course's and speed's lags s (course 0: geared to the gyro); first ladder step m; and the filters'
+            Tracker, helm-free; latency s; q m²/s³; the clock's limits (m/s, °/s); the eye's first guess (kn, °); its
+            ballistics: the wind it corrects for and its error, kn, its density's and muzzle velocity's errors, % (docs/battle/error-sources.md ES3); own course's and speed's lags s (course 0: geared to the gyro); first ladder step m; and the filters'
             own numbers. Mass t, crew, power kW.
 
-            | Block | Tracker | Latency | q | Limits | Prior | Bias | Own lags | Step | Filter | t, crew, kW |
+            | Block | Tracker | Latency | q | Limits | Prior | Ballistics | Own lags | Step | Filter | t, crew, kW |
             |---|---|---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
@@ -229,7 +229,7 @@ static class TemplatesWriter
             } + (c.Detect == true ? "; detects turns" : "") + (c.CourseRate == false ? "; rates by the plot alone" : "") +
                 (c.RangeClock == false ? "; no clock" : "");
             sb.Append(Inv, $"| {t.Name} | {c.Tracker}{(c.HelmFree == true ? ", helm-free" : "")} | {N(c.LatencyS)} | {N(c.Q)} | {limits} | " +
-                $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {N(c.ResidPct)}, {N(c.DeflBiasMil)} | {N(c.OwnCourseLagS)}, {N(c.OwnSpeedLagS)} | {N(c.FirstStepM)} | " +
+                $"{N(c.PriorKn)}, {N(c.PriorDeg)} | {c.WindInput ?? "none"} {N(c.WindErrKn)} kn, {N(c.DensityErrPct)}%, {N(c.MvErrPct)}% | {N(c.OwnCourseLagS)}, {N(c.OwnSpeedLagS)} | {N(c.FirstStepM)} | " +
                 $"{filter} | {N(c.MassT)}, {N(c.Crew)}, {N(c.PowerKw)} |\n");
         }
         sb.Append("""
