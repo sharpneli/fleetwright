@@ -38,7 +38,8 @@ const int ShownSteps = 96;
 // the highest. The ray is walked down from the tallest column (sea.w) in steps of about stepM (a screen pixel or a
 // height map texel, whichever is larger) across the map, then the edge it meets is narrowed down. Several can solve it
 // where the slope is steep (the deck and the sea beside it, a bridge and the deck under it): taking any but the highest
-// shows the ship twice.
+// shows the ship twice. Only the steps whose point is on the height map are taken (off it, nothing stands, and h 0, the
+// sea, always meets), on the same heights as the whole walk's: a steep hull's walk is mostly off the map.
 vec2 shownAt(sampler2D heightTex, vec4 hmap, vec2 q, vec4 sea, float stepM, out float hit)
 {
     hit = 0.0;
@@ -50,16 +51,32 @@ vec2 shownAt(sampler2D heightTex, vec4 hmap, vec2 q, vec4 sea, float stepM, out 
     }
     vec2 texel = 1.0 / (abs(hmap.xy) * vec2(textureSize(heightTex, 0)));
     int n = clamp(int(ceil(shift / max(stepM, min(texel.x, texel.y)))), 1, ShownSteps);
-    float dh = sea.w / float(n), lo = 0.0, hi = sea.w;   // lo meets the hull or the sea (h 0 always does), hi is clear
-    for (int i = 1; i <= n; i++)
+    float dh = sea.w / float(n);
+    // the heights whose point q - h * slope is on the map (uv = p0 - h * d in [0, 1]), as the walk's steps, one wider
+    vec2 p0 = q * hmap.xy + hmap.zw, d = sea.yz * hmap.xy;
+    float ha = 0.0, hb = sea.w;
+    for (int k = 0; k < 2; k++)
+    {
+        if (abs(d[k]) > 1e-9)
+        {
+            float a = (p0[k] - 1.0) / d[k], b = p0[k] / d[k];
+            ha = max(ha, min(a, b));
+            hb = min(hb, max(a, b));
+        }
+        else if (p0[k] < 0.0 || p0[k] > 1.0)
+            hb = -1.0;
+    }
+    int first = hb < ha ? n : max(1, int(floor((sea.w - hb) / dh))), last = min(n - 1, int(ceil((sea.w - min(ha, sea.w)) / dh)));
+    float lo = 0.0, hi = dh;   // lo meets the hull or the sea (h 0, step n, always does), hi is clear
+    for (int i = first; i <= last; i++)
     {
         float h = sea.w - float(i) * dh;
         if (shadowHeight(heightTex, hmap, q - h * sea.yz, 0.0) >= h)
         {
             lo = h;
+            hi = h + dh;
             break;
         }
-        hi = h;
     }
     for (int i = 0; i < 6; i++)
     {

@@ -206,8 +206,9 @@ public sealed class ShipDrawList
         public ShipClass? Cls;
         public Vector4 Sea;
         public double Fade;
-        /// <summary>How far the sea's plane stands off the waterline anywhere over the ship, at most: the shadows, by the
-        /// heights over it, may reach that much further.</summary>
+        /// <summary>How far the sea's plane stands under the waterline anywhere over the ship, at most (0 when it's over it
+        /// everywhere): the shadows, by the heights over it, may reach that much further. A ship settling or going down
+        /// stands lower over it, so her shadows reach less far, not more.</summary>
         public double SeaSpan;
     }
 
@@ -376,7 +377,7 @@ public sealed class ShipDrawList
                 Shadows = !wakeOnly && sz > 0.05 && lengthPx >= ShadowFromPx && opacity > 0,   // none in time-lapse: they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
                 View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
-                SeaSpan = c != null ? Math.Abs(sea.X) + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2 : 0,
+                SeaSpan = c != null ? Math.Max(0, -sea.X + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2) : 0,
             };
             if (k < drawnAs.Length && !wakeOnly)
                 drawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
