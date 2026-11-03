@@ -432,8 +432,24 @@ chain's own tracking error is already over the LRBP's measured 313 yd, so its ca
 
 **On the way:** `AimsTests`' raider case runs without damage (the escort's fire took every mount of hers at once, the
 light guns too, and she turned away with none: logged in bugs.md); two thresholds widened with their reasons (the
-shift's carried correction 0.75 of a fresh fall, the power drive's 0.95 of the pointer's). Not done: the AI's matchup
-(`Matchup.HitChance`) still reads the fixed-share pattern, not the flight's.
+shift's carried correction 0.75 of a fresh fall, the power drive's 0.95 of the pointer's). The AI's matchup taken up after (below).
+
+**The matchup's judgement** (the user, 2026-11-03: "whip up the matchup judgement now"). `Matchup.HitChance` reads the
+pattern by its flight (`FireControl.Dispersion` with the guns' table: one implementation for the gunnery and the
+matchup, tabulated by range step in `MatchupGun`), and its MPI by level is refit to the chain's own as measured (the AI
+expecting what the physics gives: QE on QE at 16 kyd against a zigzag, the salvos' mean fall after 5 min, 24 duels a
+level: 647, 350, 271, 246, 197, 168, 162, 128, 132 m, so `MatchupMpiPct` [4.4, 2.4, 1.9, 1.7, 1.35, 1.15, 1.1, 0.9, 0.9]
+from the research table's [10.9, 4.9, 3.7, 2.9, 2.3, 2.0, 1.8, 1.3, 0.9]; the salvo's charges are in it, the line's mils
+still §12.2's). Against the duel bench, a dreadnought pair at 6, 10 and 15 km: 22.4 / 7.1 / 2.5% before, 31.2 / 10.9 /
+4.0% now, the duel 46.6 / 15.9 / 5.0% (within 1.5x, from 2x); Iron Duke on a V25 about half the duel's (from a third).
+Doctrine's `RoundFloor` 1.2e-5 → 3e-5, keeping the user's pick (a 6" secondary takes a battle line inside about 8 km:
+3.0e-5 there now). The 8" destroyer (O7c) now stands off out of the dreadnought's reach with her gun rather than sending
+an attacker in; her test asks for either, the matchup's choice. **The panel** (`balance/es7-matchup.json` against es7):
+6 of 14 sides within twice the record again; the record's loser lost more in 26 of 44 seeds (33); the fights end with
+fewer lost (the Jutland 24.0 v 51.0 → 15.2 v 41.5, Heligoland 2.8 v 17.8 → 1.1 v 11.9, the record 1 v 4 there; Tsushima
+5.2 v 3.4 → 4.9 v 5.1, against the record's 7 v 0); fc-history unchanged (its duels have no AI): commanders expecting
+more of their guns from further out judge and break off differently, and the record's loser no longer reliably loses
+more. For the revisit with the gap.
 
 ## Decided (the user, 2026-11-03)
 

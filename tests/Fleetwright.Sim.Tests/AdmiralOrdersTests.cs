@@ -533,10 +533,11 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     [Fact]
     public void A_destroyer_with_an_8_inch_gun_counts_on_her_torpedoes_against_a_battleship_and_her_gun_against_destroyers()
     {
-        // no ship is torpedo craft by her design (O7c): against a dreadnought her torpedoes are her better weapon closed in
-        // (an attacker); against destroyers her 8" is, and her squadron fights them with it, never making an attack. Four of
-        // her against one dev dreadnought outrange her guns (36 kn, the 8" reaching past the 12"), so they fight at range:
-        // the matchup's choice, not a label's
+        // no ship is torpedo craft by her design (O7c): against destroyers her 8" is her better weapon, and her squadron
+        // fights them with it, never making an attack. Four of her against one dev dreadnought outrange her guns (36 kn, the
+        // 8" reaching past the 12"): they fight at range, out of her reach, or send attackers in with torpedoes, the
+        // matchup's choice by what each weapon does, not a label's (one attacker while it expected the research's MPI;
+        // since it expects the gunnery's own, docs/battle/error-sources.md ES7, the 8" standing off is worth more)
         var tables = new Dictionary<BallisticKey, BallisticTable>();
         BallisticTable Table(BallisticKey k) => tables.TryGetValue(k, out var t) ? t : tables[k] = new BallisticTable(k);
         var dd8 = new MatchupProfile(EightInchDestroyer.Value, Table, Settings);
@@ -545,7 +546,11 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
             var them = new MatchupProfile(Fleet.Scenario(battleship ? "dreadnought" : "m_class"), Table, Settings);
             var j = Matchup.Judge([new MatchupEntry(dd8, 4)], [new MatchupEntry(them, battleship ? 1 : 4)], 0.6, 0.6, Settings);
             output.WriteLine($"against {(battleship ? "a dreadnought" : "destroyers")}: confidence {j.Confidence:0.###}, {j.Terms.Style}, attackers {j.Terms.AttackersA}");
-            Assert.Equal(battleship ? 1UL : 0UL, j.Terms.AttackersA);
+            if (battleship)
+                Assert.True(j.Terms.AttackersA > 0 || j.Terms.Style == MatchupStyle.Gunfight && j.Terms.RangeM > them.MainReachM,
+                    "torpedoes closed in, or her 8-inch out of the 12-inch's reach");
+            else
+                Assert.Equal(0UL, j.Terms.AttackersA);
         }
         {
             // in the world: her squadron told to fight four destroyers, doctrine's attack together, never attacks

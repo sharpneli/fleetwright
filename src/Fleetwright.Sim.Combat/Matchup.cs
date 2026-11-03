@@ -276,7 +276,7 @@ public sealed class MatchupGun
                 KindsReachM = Math.Max(KindsReachM, k.ReachM);
         }
     }
-    readonly double[] fall, strike;
+    readonly double[] fall, strike, pattern;
 
     internal MatchupGun(int battery, in BatteryRow row, int guns, double perMin, int rounds, ShellTypeRow shell, BallisticTable t, SimSettings s)
     {
@@ -285,12 +285,15 @@ public sealed class MatchupGun
         double hi = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);
         ReachM = t.Fall(hi, s.MatchupMuzzleM).Range;
         int n = (int)(ReachM / MatchupProfile.RangeStepM) + 1;
-        (fall, strike) = (new double[n], new double[n]);
+        (fall, strike, pattern) = (new double[n], new double[n], new double[n]);
         for (int i = 0; i < n; i++)
         {
-            double e = t.ElevationFor(Math.Max(i, 0.5) * MatchupProfile.RangeStepM, s.MatchupMuzzleM);
+            double r = Math.Max(i, 0.5) * MatchupProfile.RangeStepM, e = t.ElevationFor(r, s.MatchupMuzzleM);
             var f = double.IsNaN(e) ? t.Fall(hi, s.MatchupMuzzleM) : t.Fall(e, s.MatchupMuzzleM);
             (fall[i], strike[i]) = (f.FallDeg, f.StrikeMs);
+            // the salvo's own dispersion in range by its flight, as the gunnery fires it (docs/battle/error-sources.md ES7),
+            // a share of the range at the step
+            pattern[i] = FireControl.Dispersion(t, row.PatternPct, r, guns, double.IsNaN(e) ? hi : e, s.MatchupMuzzleM, s).Range / r;
         }
         Kinds = [this];   // with its reach known
     }
@@ -390,6 +393,17 @@ public sealed class MatchupGun
     }
 
     /// <summary>The fall (degrees under the horizontal) and striking speed at a range within reach.</summary>
+    /// <summary>The salvo's own dispersion in range at a range by its flight (ES7), 1σ, m.</summary>
+    public double PatternM(double rangeM)
+    {
+        double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, pattern.Length - 1);
+        int i = Math.Min((int)u, pattern.Length - 2);
+        if (i < 0)
+            return pattern[0] * rangeM;
+        double w = u - i;
+        return (pattern[i] + w * (pattern[i + 1] - pattern[i])) * rangeM;
+    }
+
     public (double FallDeg, double StrikeMs) At(double rangeM)
     {
         double u = Math.Clamp(rangeM / MatchupProfile.RangeStepM, 0, fall.Length - 1);
@@ -1045,7 +1059,9 @@ public static class Matchup
         var (fall, _) = g.At(rangeM);
         double danger = t.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1)));
         double depth = t.BeamM, width = t.LengthM;
-        var (dr, dd) = FireControl.Dispersion(g.PatternPct, rangeM, g.Guns, s.DispersionDeflectionRatio);
+        // the pattern in range by its flight (ES7: wider close in than the share of the range it's quoted at), across as an
+        // angle; the salvo's charges are in the levels' MPI already (§12.2's, its salvo-to-salvo error)
+        double dd = FireControl.Dispersion(g.PatternPct, rangeM, g.Guns, s.DispersionDeflectionRatio).Across, dr = g.PatternM(rangeM);
         int lvl = Math.Clamp(g.Level, 0, s.MatchupMpiPct.Length - 1);
         double sr = Math.Sqrt(Sq(s.MatchupMpiPct[lvl] / 100 * rangeM) + dr * dr);
         double sd = Math.Sqrt(Sq(s.MatchupDeflectionMil[Math.Min(lvl, s.MatchupDeflectionMil.Length - 1)] * FireControl.Mil * rangeM) + dd * dd);

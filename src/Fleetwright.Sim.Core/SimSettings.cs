@@ -2506,10 +2506,13 @@ public sealed record SimSettings
     // benches (shipgen duel, hits, torpedo), 2026-10-14.
 
     /// <summary>A gun's hit chance (fire-control-research.md §8.3's quick formula): the fire control's error by level
-    /// (0 eyeball .. 8 digital; local control counts as 0), 1 sigma, in range as % of the range and across in mils (§12.2,
-    /// salvos 4-8), with the gun's own dispersion; the target's height over the water for the danger space, as a share of
-    /// its freeboard; the muzzle's height, m. Matches shipgen duel's 15-minute hit rates within about 1.5x.</summary>
-    public double[] MatchupMpiPct { get; init; } = [10.9, 4.9, 3.7, 2.9, 2.3, 2.0, 1.8, 1.3, 0.9];
+    /// (0 eyeball .. 8 digital; local control counts as 0), 1 sigma, in range as % of the range and across in mils, with
+    /// the gun's own dispersion by its flight (docs/battle/error-sources.md ES7); the target's height over the water for
+    /// the danger space, as a share of its freeboard; the muzzle's height, m. The range's error is the chain's own as
+    /// measured (ES7, the AI expecting what the physics gives: QE on QE at 16 kyd against a zigzag, 24 duels each, the
+    /// salvos' mean fall after 5 min: 647, 350, 271, 246, 197, 168, 162, 128 and 132 m); §12.2's research table, which the
+    /// chain now beats by about twice, was [10.9, 4.9, 3.7, 2.9, 2.3, 2.0, 1.8, 1.3, 0.9]. The line's is still §12.2's.</summary>
+    public double[] MatchupMpiPct { get; init; } = [4.4, 2.4, 1.9, 1.7, 1.35, 1.15, 1.1, 0.9, 0.9];
     public double[] MatchupDeflectionMil { get; init; } = [9.8, 5.4, 5.4, 4.9, 3.8, 2.8, 3.1, 3.1, 2.0];
     public double MatchupHeightShare { get; init; } = 1.3;
     public double MatchupMuzzleM { get; init; } = 10;

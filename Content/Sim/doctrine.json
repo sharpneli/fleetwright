@@ -52,9 +52,10 @@
     "Shells": "by target",
     // a battery at will, main or secondary, takes only a ship a round of it puts out of the fight with this chance or more
     // (the matchup's hit chance by its fire control times a hit's chance of putting her out, the ship as made out, at her
-    // range; 0: anything in reach; docs/battle/balance.md BL1r, BL1s): a 6" on a battleship inside about 8 km (1.3e-5
-    // there, the user's pick, 2026-11-01), on cruisers and torpedo craft much further, a 13.5" round at 20 km 2.4e-4 [EST]
-    "RoundFloor": 1.2e-5,
+    // range; 0: anything in reach; docs/battle/balance.md BL1r, BL1s): a 6" on a battleship inside about 8 km (the user's
+    // pick, 2026-11-01: 3e-5 there since the matchup expects what the gunnery hits, docs/battle/error-sources.md ES7; it
+    // was 1.2e-5 against the old expectation), on cruisers and torpedo craft much further [EST]
+    "RoundFloor": 3e-5,
     // and only one it hits with 1% of its shells or more (the matchup's estimate by its fire control): a round that lands
     // seldom isn't worth firing, however much a hit would do (a light cruiser's 6" at a destroyer past about 12 km; a
     // battlecruiser's 13.5" on a battlecruiser hits 1.9% at 20 km, the Dogger Bank's opening kept)
