@@ -637,6 +637,10 @@ live; each is deleted there when shipgen gives the fact):
   - the ramp is 1.93·Δ^0.47 s, Δ the full displacement in tonnes: ~340 s for 60,000 t, ~100 s for 4,400 t, ~20 s for
     a PT boat;
   - the cut is 15 s.
+- **Sheer and flare** (docs/battle/error-sources.md ES4): the deck's rise to the bow and stern, and how the bow flares.
+  The hull has neither (a flat main deck under its raised stretches), so every stem stands as low as the deck amidships
+  and the sea comes aboard more than it would: KGV's "almost no sheer, very wet forward" is every ship's. No
+  placeholder: the drawings take the same hull, and a sheer only the sea saw would be a second one.
 
 **2.3 Ships on the map: one, then two.** The snapshot carries poses and bearings, and the map draws ships at every
 band: markers zoomed out, hulls to scale with a minimum size at the tactical band, sprites at the ship band. This

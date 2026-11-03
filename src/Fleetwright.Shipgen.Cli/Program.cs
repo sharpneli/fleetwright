@@ -347,7 +347,7 @@ public static class Program
                 "contents" => ContentsBench.Run(a.Positional.Count > 0 ? a.Positional : ["m_class"], n => Class(a, n), Settings(a)),
                 "roll" => RollBench.Run(a.Positional.Count > 0 ? a.Positional : ["dreadnought", "destroyer"], n => Class(a, n), Settings(a), a.Int("ss", 0), D(a, "wind", 0),
                     D(a, "wind-from", 0), D(a, "swell", 1), D(a, "swell-s", 12), D(a, "swell-from", double.NaN),
-                    [.. a.Get("speeds", "0,15,25")!.Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture))], a.Has("developed")),
+                    [.. a.Get("speeds", "0,15,25")!.Split(',').Select(x => double.Parse(x, System.Globalization.CultureInfo.InvariantCulture))], a.Has("developed"), a.Has("wet")),
                 "subdivision" => SubdivisionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Has("rooms")),
                 "protection" => ProtectionBench.Run(a.Positional.Count > 0 ? a.Positional : ["destroyer"], n => LoadDesign(Resolve(a, n)), a.Int("shells", 400),
                     a.Int("seed", 1), a.Has("summary")),
@@ -444,7 +444,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

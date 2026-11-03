@@ -53,6 +53,7 @@ public sealed class CombatStore
     byte[]?[] ordered = [];   // by battery, the load ordered: its kind + 1, 0 the magazine order
     LauncherState[]?[] launchers = [];
     ShipCondition?[] conditions = [];
+    SeaMotion?[] seas = [];
     int[]?[] targets = [];
     // by battery, whether its fire control made its target out at its last second (the gunnery's, for the captains:
     // docs/battle/night.md Q4, a searchlight on a target the guns can't see); not world state, the gunnery's own copy is
@@ -89,6 +90,7 @@ public sealed class CombatStore
             Array.Resize(ref ordered, n);
             Array.Resize(ref launchers, n);
             Array.Resize(ref conditions, n);
+            Array.Resize(ref seas, n);
             Array.Resize(ref targets, n);
             Array.Resize(ref sees, n);
             Array.Resize(ref effect, n);
@@ -127,6 +129,7 @@ public sealed class CombatStore
             l[i] = new LauncherState { Loaded = loaded, Spare = row.Torpedoes - loaded, LoadedMs = ms };
         }
         (conditions[slot] ??= new ShipCondition()).Reset(cls);
+        (seas[slot] ??= new SeaMotion()).Reset(cls);
         var t = targets[slot];
         if (t == null || t.Length != cls.Batteries.Length)
             targets[slot] = t = new int[cls.Batteries.Length];
@@ -230,6 +233,10 @@ public sealed class CombatStore
 
     /// <summary>A ship's condition (docs/battle/fighting.md 4.3a): its parts, cells and what it can still do.</summary>
     public ShipCondition Condition(int slot) => conditions[slot]!;
+
+    /// <summary>The sea's motion against a ship's points (docs/battle/error-sources.md ES4), as the gunnery last worked it
+    /// out.</summary>
+    public SeaMotion Sea(int slot) => seas[slot]!;
 
     /// <summary>A ship's mounts (the class's order).</summary>
     public Span<MountState> Mounts(int slot) => mounts[slot];

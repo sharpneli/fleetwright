@@ -713,6 +713,24 @@ public sealed record SimSettings
     public double PitchPeriodK { get; init; } = 2.4;
     public double PitchDamping { get; init; } = 0.3;
 
+    /// <summary>The sea coming aboard (docs/battle/error-sources.md ES4; Sim.Combat's RollSea.Relative), each [EST] at the
+    /// gunner's end (the user, 2026-11-03: mild, in place): her bow wave at the stem as a share of her speed's stagnation
+    /// head, V²/2g (a fine bow's crest stands lower than the head: 0.15, some 1.6 m at 28 kn), falling to none
+    /// <see cref="SprayBowWaveSpan"/> of her length aft; the height her flare meets the sea at, a share of her freeboard at
+    /// the stem; the sheet it throws, rising at a share of her speed (the water her bow parts, turned up her flare) and
+    /// at a gain on the sea's own rate as it rises against her (the jet a flare's impact makes, Wagner's: faster than
+    /// the impact); the seconds a wetted glass takes to clear (wiped), and a gun's crew to take up after the sea's come
+    /// through its ports; and the patch of her a point takes the sea over, a share of her length (her flare's run, a
+    /// gunhouse's front: some 6 m in a destroyer, 11 m in a battleship).</summary>
+    public double SprayBowWave { get; init; } = 0.15;
+    public double SprayBowWaveSpan { get; init; } = 0.15;
+    public double SprayFlareShare { get; init; } = 0.5;
+    public double SpraySpeedShare { get; init; } = 0.5;
+    public double SprayJetGain { get; init; } = 2;
+    public double SprayClearS { get; init; } = 5;
+    public double GreenWaterClearS { get; init; } = 10;
+    public double SprayPatch { get; init; } = 0.05;
+
     /// <summary>Vibration at speed (BL1h; research §1.1): an instrument's and a gun sight's random error grows by
     /// 1 + a (v / v_max)², a by what it stands on (a turret, a deck or a tower 0.3, a tripod, cage or lattice 0.6, a pole
     /// 1.0), rising toward 1 on a light, powerful hull (by her plant's power a tonne, from <see cref="VibrationLightShpT"/>
@@ -2746,9 +2764,12 @@ public sealed record GunneryErrorScale
     /// <summary>The wind the machine doesn't know along the shells' path (ES3): 0 as in a calm, or a machine that knows it
     /// exactly.</summary>
     public double Wind { get; init; } = 1;
+    /// <summary>The sea coming aboard (ES4: green water on her guns, spray and green water on her glass), a scale on how
+    /// often: 0 a dry ship.</summary>
+    public double Spray { get; init; } = 1;
 
     /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, own,
-    /// dispersion, spotting, masking, wind).</summary>
+    /// dispersion, spotting, masking, wind, spray).</summary>
     public static GunneryErrorScale Parse(string text)
     {
         var e = new GunneryErrorScale();
@@ -2758,7 +2779,7 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v, Spray = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
@@ -2768,14 +2789,15 @@ public sealed record GunneryErrorScale
                 "spotting" => e with { Spotting = v },
                 "masking" => e with { Masking = v },
                 "wind" => e with { Wind = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind)"),
+                "spray" => e with { Spray = v },
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind, spray)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}");
 }
 
 public sealed record FireDiscipline

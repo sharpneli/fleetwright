@@ -208,6 +208,8 @@ public sealed class GunnerySystem : IWorldSystem
         /// draw each reading, or a wander, moved the guns with them): the instrument's own bias, its man's misjudgement of
         /// her range and of her bearing, each in sigmas.</summary>
         public double Bias, RangeZ, BearingZ;
+        /// <summary>Its point among its ship's on the sea (<see cref="SeaMotion"/>: a mount's for a layer by eye).</summary>
+        public int SeaPoint;
         /// <summary>Its cuts on the plot so far, how far they lie off the computer's line on average in range (m) and
         /// bearing (deg), and their weights (1/sigma² of its last reading).</summary>
         public int Cuts;
@@ -215,15 +217,96 @@ public sealed class GunnerySystem : IWorldSystem
         public long NextMs;
     }
 
-    /// <summary>Whether a mount's guns are awash in the world's sea (docs/battle/balance.md BL1f, <see cref="RollSea.Awash"/>):
-    /// its axis over the sea as she has settled.</summary>
-    static bool Awash(World world, in ShipState ship, ShipClass cls, ShipCondition cond, int mount)
+    // ------------------------------------------------------------------ the sea over her (ES4)
+
+    // the tick's ships whose sea has moved a step (ES4: docs/battle/error-sources.md), and the tick's stamp
+    int[] seaDue = new int[16];
+    int seaTick;
+
+    readonly struct SeawayJob(GunnerySystem g, World world) : IJob
     {
-        ref readonly var m = ref cls.Mounts[mount];
-        ref readonly var comp = ref cls.Components[m.Component];
-        double axis = comp.Bounds.Base + 0.55 * (comp.Bounds.Top - comp.Bounds.Base) - cls.Vertical.Waterline - cond.Attitude.SinkageM;
-        var mo = cls.Motion;
-        return world.Sea.Awash(axis, m.X / (0.5 * mo.LengthM), m.Y / (0.5 * mo.BeamM), ship.HeadingDeg, ship.Speed / Handling.MsPerKnot);
+        public void Run(int from, int to, int worker)
+        {
+            var store = g.ships.Store;
+            for (int i = from; i < to; i++)
+                SeaAboard.Work(g.settings, world.Sea, store.Combat.Sea(g.seaDue[i]));
+        }
+    }
+
+    /// <summary>The tick's batteries' ships whose sea (<see cref="SeaMotion"/>) has moved a step since it was worked out,
+    /// each once (on the sim thread, in battery order): the sea, her heading (10°), speed (0.5 m/s) or GM (5%); their sea
+    /// then worked out on the workers, from the step's values, so it's the same whenever it's asked (any compression).</summary>
+    void Seaways(World world, int batteries)
+    {
+        var store = ships.Store;
+        seaTick++;
+        int n = 0;
+        for (int i = 0; i < batteries; i++)
+        {
+            int slot = store.SlotOf(fcs[due[i]].Shooter);
+            if (slot < 0)
+                continue;
+            var sm = store.Combat.Sea(slot);
+            if (sm.Stamp == seaTick)
+                continue;
+            sm.Stamp = seaTick;
+            var ship = store[slot];
+            var cls = ship.Handling.Class;
+            var cond = store.Combat.Condition(slot);
+            double gm0 = Math.Max(cls.Hydrostatics.GmT, 1e-6);
+            int h = (int)(Mod(ship.HeadingDeg) / 10) % 36, v = (int)Math.Clamp(ship.Speed / 0.5, 0, 4095), g = (int)Math.Clamp(Math.Round(20 * cond.GmM / gm0), 1, 4095);
+            long key = ((long)world.Sea.Id << 40) | ((long)h << 24) | ((long)v << 12) | (uint)g;
+            if (key == sm.Key)
+                continue;
+            (sm.Key, sm.HeadingDeg, sm.SpeedMs, sm.Gm) = (key, h * 10 + 5, (v + 0.5) * 0.5, g / 20.0);
+            if (n == seaDue.Length)
+                Array.Resize(ref seaDue, 2 * n);
+            seaDue[n++] = slot;
+        }
+        world.Workers.For(new SeawayJob(this, world), n, 1, 4);
+    }
+
+    /// <summary>Whether a wetting at this rate (a second) has one of her points out now (ES4): each clears in its own time,
+    /// so the time it's out is 1 − exp(−rate·clear) (<see cref="SeaAboard.Out"/>), its windows of that length each drawn
+    /// whether a wetting fell in it (the sea's own randomness: which second a wave comes aboard), the same at any
+    /// compression. The ladder's spray rung scales the rate.</summary>
+    bool Wet(int shooter, int code, double rate, double clearS, long now)
+    {
+        double k = settings.GunneryErrors.Spray;
+        if (!(k > 0) || !(rate > 0))
+            return false;
+        double p = SeaAboard.Out(rate * k, clearS);
+        if (p < 1e-9)
+            return false;
+        if (p >= 1)
+            return true;
+        long window = now / Math.Max((long)(clearS * 1000), 1);
+        return stream.Derive(0x5EA5u).Derive((ulong)(uint)shooter).Derive((ulong)code).Derive((ulong)window).NextDouble() < p;
+    }
+
+    /// <summary>Whether a mount's guns are out now for the sea coming through their ports (ES4; docs/battle/balance.md BL1f's
+    /// casemates under the one law): green water reaching their axis, each wetting <see cref="SimSettings.GreenWaterClearS"/>.</summary>
+    bool GunWet(int shooter, int slot, in ShipState ship, ShipClass cls, ShipCondition cond, int mount, long now)
+    {
+        var sw = ships.Store.Combat.Sea(slot);
+        if (sw.Key < 0)
+            return false;
+        int p = SeaAboard.MountPoint(mount);
+        double rate = SeaAboard.Green(settings, cls, cond.Attitude, ship.Speed, sw.X[p], sw.Y[p], sw.M0[p], sw.M2[p], SeaAboard.GunAxis(cls, mount));
+        return Wet(shooter, mount, rate, settings.GreenWaterClearS, now);
+    }
+
+    /// <summary>Whether glass at one of her points (z, the class's heights) is blinded now (ES4): green water or her bow's
+    /// spray reaching it, each wetting <see cref="SimSettings.SprayClearS"/> to clear.</summary>
+    bool GlassWet(World world, int shooter, int slot, in ShipState ship, ShipClass cls, ShipCondition cond, int p, double z, long now)
+    {
+        var sw = ships.Store.Combat.Sea(slot);
+        if (p < 0 || sw.Key < 0)
+            return false;
+        var wx = world.Weather.At(ship.Position, world.Time);
+        double rate = SeaAboard.Green(settings, cls, cond.Attitude, ship.Speed, sw.X[p], sw.Y[p], sw.M0[p], sw.M2[p], z) +
+                      SeaAboard.Spray(settings, cls, cond.Attitude, ship.Speed, ship.HeadingDeg, wx, sw.M0[0], sw.M2[0], sw.X[p], sw.Y[p], z);
+        return Wet(shooter, 0x1000 + p, rate, settings.SprayClearS, now);
     }
 
     /// <summary>A sensor at one of the class's eyes.</summary>
@@ -233,6 +316,7 @@ public sealed class GunnerySystem : IWorldSystem
         return new Sensor
         {
             Eye = eye, Support = e.Support, X = e.X, Y = e.Y, HeightM = e.HeightM, BaseM = e.RangefinderM, BearingMil = SightModel.BearingSigmaRad(e) / FireControl.Mil,
+            SeaPoint = SeaAboard.EyePoint(cls, eye),
         };
     }
 
@@ -385,6 +469,7 @@ public sealed class GunnerySystem : IWorldSystem
         salvos = new Salvo[Math.Max(settings.SalvoCapacity, 16)];
         freeSalvo = new Stack<int>(salvos.Length);   // as big as the pool, so freeing never grows it
         int engagements = Math.Max(16, 2 * settings.ShipCapacity);
+        seaDue = new int[Math.Max(16, settings.ShipCapacity)];
         (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new FcReading[engagements * PendingCap],
             new Stack<int>(engagements));
         Array.Fill(experience, (int)(Core.Experience.Trained * 1000));
@@ -619,14 +704,14 @@ public sealed class GunnerySystem : IWorldSystem
             }
             double best = double.MinValue;
             bool works = false;
-            var s = new Sensor { Eye = -1, BearingMil = settings.EyeBearingMil };
+            var s = new Sensor { Eye = -1, BearingMil = settings.EyeBearingMil, SeaPoint = -1 };
             foreach (int m in cls.Links(row.Mounts))
             {
                 ref readonly var comp = ref cls.Components[cls.Mounts[m].Component];
                 double h = comp.Bounds.Top - cls.Vertical.Waterline;
                 bool w = cond.Lays(m, local: true);   // its layer can't see with its sights gone (E4)
                 if (w && !works || w == works && h > best)
-                    (best, works, s.X, s.Y, s.HeightM) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h);
+                    (best, works, s.X, s.Y, s.HeightM, s.SeaPoint) = (h, w, cls.Mounts[m].X, cls.Mounts[m].Y, h, SeaAboard.MountPoint(m));
             }
             sensors[f * MaxSensors + n++] = s;
             // its guns' own sights (not the eyeball's open sights: a dreadnought's layers had telescopes)
@@ -830,6 +915,7 @@ public sealed class GunnerySystem : IWorldSystem
                     firingOf[w] = new bool[64];
             }
             world.Smoke.PrepareQueries(world.Workers.Participants);
+            Seaways(world, n);
             world.Workers.For(new RunJob(this, world, now), n, RunChunk, RunMinBatteries);
             var store = ships.Store;
             for (int i = 0; i < n; i++)
@@ -938,7 +1024,8 @@ public sealed class GunnerySystem : IWorldSystem
                 (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke, i, worker), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
             double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke, slot, frame) : 0;
-            bool seen = margin >= 1;
+            // her bow's spray or green water on its glass: nothing seen through it till it's cleared (ES4)
+            bool seen = margin >= 1 && !GlassWet(world, fc.Shooter, slot, ship, cls, cond, s.SeaPoint, s.HeightM + cls.Vertical.Waterline, now);
             sees |= seen;
             bestMargin = Math.Max(bestMargin, margin);
             if (!due)
@@ -1039,9 +1126,12 @@ public sealed class GunnerySystem : IWorldSystem
             bool works = cond.MountWorks[mounts[j]] && !store.Combat.Illuminating(slot, mounts[j]);
             bool inTraverse = works && store.Combat.Order(slot, mounts[j], mr, now, bearing, elevation);
             firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
-                        store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg && !Awash(world, ship, cls, cond, mounts[j]);
+                        store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg &&
+                        !GunWet(fc.Shooter, slot, ship, cls, cond, mounts[j], now);
             if (firing[j] && ownSight)
                 firing[j] = LayerSees(cls, mounts[j], optics, ship, target, air, smoke, slot, frame);
+            if (firing[j] && !fc.Fit.Mount.DirectorFiring)   // his sight on the gunhouse's roof blinded by the sea (ES4)
+                firing[j] = !GlassWet(world, fc.Shooter, slot, ship, cls, cond, SeaAboard.MountPoint(mounts[j]), cls.Components[mr.Component].Bounds.Top, now);
             if (firing[j] && ownColumns)
                 firing[j] = !Masked(frame.ToWorld(mr.X, mr.Y, 0), LayerHeightM(cls, mounts[j]), tslot, target, now);
             bears |= firing[j];
@@ -1579,7 +1669,7 @@ public sealed class GunnerySystem : IWorldSystem
             // loaded, with rounds; ordered on the target (not parked at its traverse's end) inside its arcs; and there
             double tol = settings.LayToleranceDeg;
             bool bears = ms.Rounds > 0 && !store.Combat.Illuminating(slot, mounts[j]) && cond.Lays(mounts[j], fc.Local) && fc.OrderElevationDeg <= mr.MaxElevationDeg && CombatStore.InArcs(cls, mr, fc.OrderBearingDeg) &&
-                         !Awash(world, ship, cls, cond, mounts[j]);
+                         !GunWet(fc.Shooter, slot, ship, cls, cond, mounts[j], now);
             (bearingGuns, bearingMounts) = bears ? (bearingGuns + cond.Guns(mounts[j]), bearingMounts + 1) : (bearingGuns, bearingMounts);
             firing[j] = bears && ms.LoadedMs <= now &&
                         Math.Abs(Wrap(ms.TrainTo - fc.OrderBearingDeg)) <= tol &&

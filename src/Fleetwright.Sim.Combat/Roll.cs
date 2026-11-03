@@ -11,6 +11,13 @@ public readonly record struct RollState(double AmplitudeRad, double RateSigmaRad
     public double RateAtLevel(ref RandomStream r) => RateSigmaRadS * Math.Sqrt(-2 * Math.Log(1 - r.NextDouble()));
 }
 
+/// <summary>What the sea's motion against her needs of a hull (docs/battle/error-sources.md ES4): her waterline length
+/// and beam (m), her roll's natural period (s) and damping ratio, the share of the wave slope that heels her, her pitch's
+/// (and her heave's, about the same in a ship) natural period and damping ratio; and the patch of her a point's wetting
+/// takes the sea over, m (her flare, a gunhouse's front: a wave much shorter than it, met at speed, only ripples on it).</summary>
+public readonly record struct Seakeeping(double LengthM, double BeamM, double RollPeriodS, double RollDamping, double Excitation,
+    double PitchPeriodS, double PitchDamping, double PatchM);
+
 /// <summary>The sea a world's ships roll in (docs/battle/balance.md BL1a;
 /// research/simulation/ship-motion/ship-motion-gunnery-research.md §3.2, its own method rather than its table): the
 /// weather's directional spectrum (<see cref="SeaSpectrum"/>, the one the map draws) as wave-slope variance by frequency
@@ -32,6 +39,11 @@ public sealed class RollSea
     /// <summary>Wave-slope variance a cell, (ω²/g)²·S(ω, θ)·dω·dθ, by frequency then direction.</summary>
     readonly double[] slope = new double[Frequencies * Directions];
 
+    /// <summary>The relative motion's grid (<see cref="Relative"/>): the directions three to a cell (15°), the wave
+    /// elevation's variance in each, S(ω, θ)·dω·dθ summed over its three.</summary>
+    public const int WetDirections = Directions / 3;
+    readonly double[] elev = new double[Frequencies * WetDirections], wcos = new double[WetDirections], wsin = new double[WetDirections];
+
     /// <summary>The significant wave height, m (wind sea and swell).</summary>
     public double HsM { get; }
 
@@ -40,15 +52,9 @@ public sealed class RollSea
     public int Id { get; } = Interlocked.Increment(ref built) & 0x7F_FFFF;
     static int built;
 
-    /// <summary>The way the bigger of the wind sea and the swell comes from, degrees true (the seas a ship's casemates take
-    /// on her weather side: <see cref="Awash"/>).</summary>
-    public double FromDeg { get; }
-
     public RollSea(SeaSpectrum spectrum)
     {
         HsM = spectrum.HsTarget;
-        var st = spectrum.State;
-        FromDeg = spectrum.WindSeaM0 >= Math.Pow(Math.Max(st.SwellHsM, 0) / 4, 2) ? st.WindFromDeg : st.SwellFromDeg;
         double dt = 2 * Math.PI / Directions, ratio = Math.Pow(WHigh / WLow, 1.0 / Frequencies);
         for (int j = 0; j < Directions; j++)
             (cos[j], sin[j]) = (Math.Cos(j * dt), Math.Sin(j * dt));
@@ -58,24 +64,100 @@ public sealed class RollSea
             w[i] = wi;
             for (int j = 0; j < Directions; j++)
                 slope[i * Directions + j] = k * k * spectrum.S(wi, j * dt) * (hi - lo) * dt;
+            for (int j = 0; j < WetDirections; j++)
+                elev[i * WetDirections + j] = (slope[i * Directions + 3 * j] + slope[i * Directions + 3 * j + 1] + slope[i * Directions + 3 * j + 2]) / (k * k);
+        }
+        for (int j = 0; j < WetDirections; j++)
+            (wcos[j], wsin[j]) = (cos[3 * j + 1], sin[3 * j + 1]);
+    }
+
+    /// <summary>The sea's motion against points on a ship (docs/battle/error-sources.md ES4; the seakeeping law the
+    /// research cites, Ochi, Nicholson and Price: research/simulation/ship-motion/ship-motion-gunnery-research.md §1.2): at
+    /// each point (x to the bow, y to starboard, m from amidships) the variance of the sea's height against her there, m²,
+    /// and of its rate, m²/s², at a heading (degrees true) and a speed (m/s through the water). Each wave met at its
+    /// encounter frequency, linear: the sea's height at the point less her heave (the wave's mean over her waterplane,
+    /// sin q / q · sin p / p, through her heave resonance), her pitch at x (the best fit of her waterplane to the wave's
+    /// slope along her, as <see cref="Pitch"/>) and her roll at y (as <see cref="At"/>: the share of the slope that heels
+    /// her, through her roll resonance), each with its phase: a long wave lifts her with it, a short one runs up her side.
+    /// On the side a wave meets, what of it she doesn't ride stands against her side (reflected, as off a wall: her beam-on
+    /// share of it), on her lee as much less (sheltered) [EST: the wall's limit, a short wave beam-on doubling, a long one
+    /// passing]. The rate of the sea passing a height z over her point is then Rice's, √(m₂/m₀)/2π · exp(−z²/2m₀), and its
+    /// rate as it passes Rayleigh about √m₂ (<see cref="SeaReach"/>). A few µs a point, no garbage.</summary>
+    public void Relative(double headingDeg, double speedMs, in Seakeeping hull, ReadOnlySpan<double> x, ReadOnlySpan<double> y,
+        Span<double> m0, Span<double> m2)
+    {
+        m0[..x.Length].Clear();
+        m2[..x.Length].Clear();
+        if (HsM <= 0 || !(hull.LengthM > 0))
+            return;
+        double psi = double.DegreesToRadians(90 - headingDeg), cp = Math.Cos(psi), sp = Math.Sin(psi);
+        double half = 0.5 * hull.LengthM, halfBeam = 0.5 * Math.Max(hull.BeamM, 0.1);
+        double wnP = hull.PitchPeriodS > 0 ? 2 * Math.PI / hull.PitchPeriodS : double.PositiveInfinity;
+        double wnR = hull.RollPeriodS > 0 && !double.IsInfinity(hull.RollPeriodS) ? 2 * Math.PI / hull.RollPeriodS : 0;
+        for (int i = 0; i < Frequencies; i++)
+        {
+            double wi = w[i], k = wi * wi / SeaSpectrum.G, doppler = k * speedMs;
+            int row = i * WetDirections;
+            for (int j = 0; j < WetDirections; j++)
+            {
+                double e = elev[row + j];
+                if (e == 0)
+                    continue;
+                // the wave's travel against her heading: cos β along her (1 a following sea), sin β across (> 0 toward port)
+                double cb = wcos[j] * cp + wsin[j] * sp, sb = wsin[j] * cp - wcos[j] * sp;
+                double kx = k * cb, ky = k * sb, q = Math.Abs(kx) * half, pb = Math.Abs(ky) * halfBeam;
+                double sq = q < 1e-3 ? 1 : Math.Sin(q) / q, spb = pb < 1e-3 ? 1 : Math.Sin(pb) / pb;
+                double fit = q < 1e-3 ? 1 : 3 * (Math.Sin(q) - q * Math.Cos(q)) / (q * q * q);
+                double we = wi - doppler * cb;
+                // her responses to the wave's height amidships (1 + 0i): heave (m), pitch (rad, bow up), roll (rad,
+                // starboard down), each through its resonance
+                var (hr, hi) = Resonance(Math.Abs(we) / wnP, hull.PitchDamping, we < 0);
+                double zr = sq * spb * hr, zi = sq * spb * hi;
+                double pa = -kx * fit * spb, pr = -pa * hi, pi = pa * hr;   // the slope along her, −i·kx, fitted
+                double rr = 0, ri = 0;
+                if (wnR > 0)
+                {
+                    var (gr, gi) = Resonance(Math.Abs(we) / wnR, hull.RollDamping, we < 0);
+                    double ra = ky * hull.Excitation * sq * spb;   // the slope across her, i·ky, the share that heels her
+                    (rr, ri) = (-ra * gi, ra * gr);
+                }
+                double stands = Math.Abs(sb) * (1 - sq * spb), we2 = we * we;
+                // the wave's height at a point is its mean over the point's patch of her (a ripple of a wave on her flare
+                // throws nothing up, however fast she meets it)
+                double ax = 0.5 * Math.Abs(kx) * hull.PatchM, ay = 0.5 * Math.Abs(ky) * hull.PatchM;
+                double patch = (ax < 1e-3 ? 1 : Math.Sin(ax) / ax) * (ay < 1e-3 ? 1 : Math.Sin(ay) / ay);
+                for (int n = 0; n < x.Length; n++)
+                {
+                    double px = x[n], py = y[n];
+                    var (s, c) = Math.SinCos(-(kx * px - ky * py));
+                    // starboard is the side a wave meets when it travels toward port (sb > 0)
+                    double side = (1 + stands * Math.Clamp(py / halfBeam, -1, 1) * Math.Sign(sb)) * patch;
+                    double re = c * side - (zr + px * pr + py * rr), im = s * side - (zi + px * pi + py * ri);
+                    double v = e * (re * re + im * im);
+                    m0[n] += v;
+                    m2[n] += v * we2;
+                }
+            }
         }
     }
 
-    /// <summary>Whether a gun at a height over the sea (m, its axis) and a place in its ship (x to the bow and y to starboard,
-    /// as shares of her half length and half beam, -1 to 1) is awash, on a heading (degrees true) at a speed (knots)
-    /// (docs/battle/balance.md BL1f; research/simulation/ship-motion/ship-motion-gunnery-research.md §1.2's casemate rule):
-    /// under H_s x its side (0.6 on the weather side to 0.35 on the lee) x its place (2 at the bow, 1 amidships and aft) x
-    /// (1 + 0.5 (V / 25 kn)² h), h her heading to the sea (1 head on, 0.6 on the bow, 0.2 beam on and abaft). Coronel's
-    /// main-deck casemates (about 3 m) go under on the weather side at about 5 m of sea; a turret's guns never do.</summary>
-    public bool Awash(double heightM, double along, double across, double headingDeg, double kn)
+    /// <summary>How often the sea passes a height over a point (m; at or under the sea: always), a second, from its motion
+    /// against it there (<see cref="Relative"/>'s variances): Rice's rate of up-crossings, √(m₂/m₀)/2π · exp(−z²/2m₀).</summary>
+    public static double SeaReach(double m0, double m2, double z)
     {
-        if (HsM <= 0)
-            return false;
-        double rel = double.DegreesToRadians(FromDeg - headingDeg), c = Math.Cos(rel);
-        double heading = 0.2 + 0.8 * Math.Pow(Math.Max(c, 0), 1.7);
-        double side = 0.475 + 0.125 * Math.Sin(rel) * Math.Clamp(across, -1, 1);
-        double place = 1 + Math.Clamp((along - 0.5) / 0.5, 0, 1);
-        return heightM < HsM * side * place * (1 + 0.5 * Math.Pow(kn / 25, 2) * heading);
+        if (!(m0 > 0))
+            return z <= 0 ? double.PositiveInfinity : 0;
+        return z <= 0 ? double.PositiveInfinity : Math.Sqrt(m2 / m0) / (2 * Math.PI) * Math.Exp(-z * z / (2 * m0));
+    }
+
+    /// <summary>A linear oscillator's response at a frequency ratio and damping ratio, 1/(1 − l² + 2iζl); its conjugate
+    /// for a wave met from behind faster than it runs (the encounter frequency negative).</summary>
+    static (double Re, double Im) Resonance(double l, double damping, bool conj)
+    {
+        if (double.IsNaN(l) || l == 0)
+            return (1, 0);
+        double a = 1 - l * l, b = 2 * damping * l, d = a * a + b * b;
+        return (a / d, conj ? b / d : -b / d);
     }
 
     /// <summary>A ship's pitch at a heading (degrees true) and speed (m/s through the water), with her waterline length,

@@ -30,7 +30,7 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 | Pitch and the helm's yaw on the laying | built (BL1h) | `RollSea.Pitch` |
 | Vibration at speed on sights and rangefinders | built (BL1h), the research's [INFERRED] `1 + a(v/v_max)²` | `GunnerySystem.Vibration` |
 | A rangefinder's error by base, magnification, the support's stiffness, the air's shimmer, haze on the target's contrast | built (F5) | `FireControl.RangefinderUnitM`, `SightModel.RangingFactor` |
-| Casemates awash | built (BL1f), the research's [INFERRED] sill rule | `RollSea.Awash` |
+| Casemates awash | built (BL1f), the research's [INFERRED] sill rule; **ES4**: under the seakeeping law with every gun | `SeaAboard.Green` |
 | Smoke on the lines (funnels with forcing and downwash, guns, fires, screens) | built (smoke.md Z0-T4) | `SmokeSystem` |
 | A layer firing only while he sees her from his sight | built (FL5), costs almost nothing yet | `GunnerySystem.LayerSees` |
 | Whose splash (several ships on one target) | built (BL1c) | `GunnerySystem` spots |
@@ -39,7 +39,7 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 | Wind in the shell's flight | **none**: the tables have density and Coriolis, no wind | `Ballistics.cs` |
 | The weather | wind and visibility in every scenario; **no scenario sets a swell** (all on the default 1 m, 12 s; Coronel's 28 kn gale on it); fc-history's cases have their seas | Content/Scenarios |
 | Splash columns hiding the target | **none** (the column is drawn, H = 180 × calibre, and gone from the sim) | splashes.md |
-| Spray on her own forward instruments and turrets | **none** (BL1f's second half waited for a freeboard factor; `VerticalRow.Freeboard` now exists) | |
+| Spray on her own forward instruments and turrets | **none** (BL1f's second half waited for a freeboard factor; `VerticalRow.Freeboard` now exists); **ES4** built | `SeaAboard.Spray` |
 | An unstabilised rangefinder in a seaway | **none**: the gyro mounting's gain is only its fixed reading rate (FL7, FL11) | `Rate` |
 
 ## The steps (proposed)
@@ -154,6 +154,68 @@ pattern now a larger share; the stable vertical's ratio to two binomial sigmas; 
 3% of masking off); the fall-out smoke test asks that the line's other ship makes none unless she's going home herself
 (the enemy's other guns now hit her). Not built: a hand-set wind left stale through a turn (each machine resolves the
 true wind it measured along the moving line), gusts over the flight.
+
+## ES4 Spray and green water (built 2026-11-03)
+
+**The law** (the research's §1.2: Ochi; Nicholson and Price), in place of its wetness index and BL1f's casemate rule:
+the sea reaches a point on her when her motion against it there passes the point's height over it, at Rice's rate,
+√(m₂/m₀)/2π · exp(−z²/2m₀). `RollSea.Relative` gives m₀ and m₂ at her points from the weather's spectrum (the roll's
+own, its directions three to a cell): each wave met at its encounter frequency, the sea's height at the point less her
+heave (the wave's mean over her waterplane, through a heave resonance at her pitch's period and damping), her pitch at
+x (the waterplane's best fit to the slope, as `Pitch`) and her roll at y (as `At`), each with its phase. A long swell
+lifts her with it; a short sea runs up her. On the side a wave meets, what of it she doesn't ride stands against her
+(a wall's reflection, by her beam-on share), and her lee is as much sheltered [EST: the wall's limit]. A point's sea is
+the mean over a patch of her (`SprayPatch`, 0.05 of her length [EST]: her flare's run, a gunhouse's front). Without it,
+waves a few metres long met at 28 kn ran the destroyer's after control wet, 130 m from the stem. Her bow wave stands
+over the sea at the stem (0.15 of V²/2g [EST], to nothing 0.15 of her length aft).
+
+**What it wets** (`SeaAboard`, Sim.Combat: one implementation for the gunnery and the bench):
+- **Green water on a gun:** the sea at its axis, through its ports, takes the gun out for 10 s [EST]. This is BL1f's
+  casemates under the one law; a turret's guns too, in a heavy enough sea.
+- **Spray or green water on glass:** an instrument (each eye, by its height), or a layer's sight on the gunhouse roof
+  while he lays by it, is blinded for 5 s [EST, wiped] and reads or lays nothing. The sea rising to her flare (half her
+  freeboard at the stem, less her bow wave [EST]) throws a sheet. The sheet rises at half her speed (the water her bow
+  parts, turned up the flare) plus twice the sea's rate as it rises against her (the jet a flare's impact makes is
+  faster than the impact: Wagner) [EST]. The wind over her deck carries it aft; it wets a point it's still as high as
+  when it gets there. The sea's rate at a crossing is Rayleigh about √m₂, so the share that reach is the chance it rose
+  fast enough.
+- **When a point is out:** a wetting clears in its own time, so a point is out 1 − exp(−rate·clear) of the time. Each
+  window of that length is drawn whether a wetting fell in it: the same at any compression.
+- **Caching:** the variances are kept a ship (`SeaMotion`, made as she spawns) and worked out again on the workers when
+  the sea, her heading (10°), speed (0.5 m/s) or GM (5%) moves a step.
+- **The rung:** `--errors spray=K` scales the rates (0 a dry ship). `shipgen roll ... --wet` shows each gun's and
+  glass's share of the time out by heading and speed.
+
+**The sizes, generous to the gunner** (decision 3), against the record (the research's §1.2 and §5):
+
+| Case | The record | Here (share of the time out) |
+|---|---|---|
+| Devonshire in Coronel's sea (5.3 m), 12 kn, the sea 60° on her bow | main-deck casemates "closed or useless" | weather-side casemates 40-50%, lee 0-10%; the old rule had the weather side out entirely |
+| Bismarck as completed, 28 kn into a sea state 5 head sea | Anton's 10.5 m rangefinder removed for "sea water fogging at high speeds" | Anton's glass 3%, 20% at 32 kn; nothing abaft the beam |
+| KGV, 28 kn, sea state 5 | PoW's turret rangefinders drenched (Denmark Strait) | 1%, 8% in sea state 7 |
+| A battlecruiser, 28 kn, sea state 7 fully developed (Hs 7.9 m) | Renown's turrets out at 28 kn, fighting at 20 (Lofoten) | A turret's glass 40% (27% at 20 kn), its guns 2% |
+| A fleet destroyer, 20 kn into sea state 5 | forward mounts "intermittent" (the research's plausible case) | A mount's sight 40%, the director 1-2%; 67% and 3% at 28 kn |
+
+Each case moves the way the record does, the bigger ships much milder than the record: their glass rarely, their guns
+almost never. **The bench** (a destroyer on a destroyer at 4 km, 28 kn into a 30 kn wind and a 3 m swell, 24 duels):
+director-fired she fires 8% fewer shells (4,014 → 3,685) at the same 47-48% of hits, 36% fewer with the rung at 4.
+Laid by eye she fires 40% fewer (2,494 → 1,491) and hits 35 → 33%; at 4, 61 shells. A blinded glass pauses the fire
+more than it spoils the aim.
+
+**The panel** (`balance/es4.json` against es3): fc-history 6 of 23 again (its cases' seas are calm to moderate: Rodney
+51.5 → 52.3%, Tsushima's 12" 18.4 → 18.1%), the orderings 4 of 7. Coronel, the one scenario in a heavy sea, moves most:
+the British weather casemates now fight part of the time where the old rule shut them, their hits 147 → 259 a seed,
+and they lose 2.2 ships against 1.0, the record's 2; the Germans 586 hits at 14.6% (622 at 12.7%). Dover's calm is to
+the shell the same; the rest within their seeds' spread (6 of 14 sides within twice the record, against 7).
+
+**Not built, named:**
+- Sheer and flare from the designer (plan.md, "Needed from the designer"). The hull's deck is flat, so every stem is
+  as low as amidships: the record's wet ships and dry ships (KGV against Iowa) can't differ yet but by freeboard and
+  forecastle.
+- Green water running aft along her deck onto a turret's face (Lofoten's flooding through the ports): only the sea at
+  the guns' own axis counts.
+- Her captain easing speed into a head sea to keep her forward guns, as Renown did at Lofoten: the captain's call
+  (BL5), not built.
 
 ## Decided (the user, 2026-11-03)
 
