@@ -268,7 +268,7 @@ public class ScenarioSetupTests
         Assert.Equal(written.Start + 3_600_000L, s.Until);
         Assert.Contains("\"seed\": \"new\"", setup.ToJson(written));
         Assert.Throws<ScenarioException>(() => new ScenarioSetup().With(new SetEnd(written.Start)).Apply(written));
-        Assert.Equal("Weather: 8 km, wind SSW 12 kn (written: 13 km, wind SW 18 kn)", new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)).Describe(written));
+        Assert.Equal("Weather: 8 km, wind SSW 12 kn, swell WSW 1 m 12 s (written: 13 km, wind SW 18 kn, swell SW 2 m 9 s)", new SetWeather(new WeatherHere(8000, 200, 12 * 0.514444)).Describe(written));
     }
 
     /// <summary>The start by the hour: the written end moves with it, an end of the setup's own stands whatever order

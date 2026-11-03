@@ -786,10 +786,11 @@ public sealed record SetWeather(WeatherHere Weather) : SetupChange
     public override string Describe(Scenario written) =>
         $"Weather: {Words(Weather)} (written: {(written.Weather is { } w ? Words(w) : "the default")})";
 
-    /// <summary>The weather in a few words: "8 km, wind SW 12 kn, cloud 6/10".</summary>
+    /// <summary>The weather in a few words: "8 km, wind SW 12 kn, cloud 6/10, swell W 2 m 9 s".</summary>
     public static string Words(WeatherHere w) =>
         $"{(w.VisibilityM / 1000).ToString("0.#", CultureInfo.InvariantCulture)} km, wind {Compass(w.WindFromDeg)} {(w.WindMs / 0.514444).ToString("0", CultureInfo.InvariantCulture)} kn" +
-        (w.Cloud > 0 ? $", cloud {Math.Round(w.Cloud * 10).ToString("0", CultureInfo.InvariantCulture)}/10" : "");
+        (w.Cloud > 0 ? $", cloud {Math.Round(w.Cloud * 10).ToString("0", CultureInfo.InvariantCulture)}/10" : "") +
+        $", swell {Compass(w.SwellFrom)} {w.SwellHsM.ToString("0.#", CultureInfo.InvariantCulture)} m {w.SwellTpS.ToString("0", CultureInfo.InvariantCulture)} s";
 
     /// <summary>A direction by the sixteen points.</summary>
     public static string Compass(double deg) => Points[(int)Math.Round(((deg % 360) + 360) % 360 / 22.5) % 16];

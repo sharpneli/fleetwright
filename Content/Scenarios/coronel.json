@@ -32,7 +32,8 @@
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // where ships out of the fight go: south toward Canopus and the Falklands, and north to Valparaíso
   "home": { "Britain": [-39.0, -75.0], "Germany": [-33.2, -72.2] },
-  "weather": { "visibility_km": 25, "wind_from": 180, "wind_kn": 28 },
+  // the sea (docs/battle/error-sources.md ES1): a heavy head sea, "seas too rough for boats", Spee "athwart the sea and rolling heavily", the casemates flooding (heavy-weather-cases.md [S]); the Pacific swell under the gale, 4 m at 12 s [EST], some 5 m with the wind's own sea (the research's H_s 5 m for Spee)
+  "weather": { "visibility_km": 25, "wind_from": 180, "wind_kn": 28, "swell_m": 4, "swell_s": 12, "swell_from": 200 },
   "units": [
     { "name": "West Coast Squadron", "admiral": { "name": "R-Adm Cradock", "temper": 0.5, "why": "fought against the odds rather than be called shy" }, "side": 0, "at": [-36.22, -74.02], "course": 165, "kn": 16, "spacing": 900,
       "ships": [ { "design": "devonshire", "names": ["Good Hope", "Monmouth"] }, { "design": "town_birmingham", "names": ["Glasgow"] } ] },

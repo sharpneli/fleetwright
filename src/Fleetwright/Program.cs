@@ -415,6 +415,11 @@ public static unsafe class Program
                 if (arg.StartsWith("-launch="))
                     launchName = arg.Substring("-launch=".Length);
             }
+            else if (arg.StartsWith("-launchtab="))   // the launch screen's tab at start, 1-3 (screenshots)
+            {
+                if (int.TryParse(arg.Substring("-launchtab=".Length), out int t) && t is >= 1 and <= 3)
+                    Map.LaunchScene.StartTab = t;
+            }
             else if (arg.StartsWith("-scenario="))   // the world starts with a scenario: a path, or a shipped one's name (-scenario=jutland)
             {
                 scenarioArg = arg.Substring("-scenario=".Length);

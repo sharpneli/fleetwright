@@ -38,7 +38,8 @@
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // where ships out of the fight go: toward Harwich, and the Jade
   "home": { "Britain": [53.6, 3.0], "Germany": [53.95, 8.05] },
-  "weather": { "visibility_km": 5, "wind_from": 270, "wind_kn": 5 },
+  // the sea (docs/battle/error-sources.md ES1): fog and mist, no sea-state data (heavy-weather-cases.md); a calm summer sea, 0.5 m [EST]
+  "weather": { "visibility_km": 5, "wind_from": 270, "wind_kn": 5, "swell_m": 0.5, "swell_s": 8 },
   "units": [
     // ---------------------------------------------------------------- the Harwich Force (Tyrwhitt) and its support: 45
     { "name": "3rd Flotilla", "admiral": { "name": "Cdre Tyrwhitt (in Arethusa)", "temper": 0.4, "why": "went straight in at whatever he found" }, "side": 0, "at": [54.40, 7.28], "course": 150, "kn": 20, "formation": "abreast", "spacing": 600,

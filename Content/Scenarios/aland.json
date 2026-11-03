@@ -41,7 +41,8 @@
   // where ships out of the fight go: Mariehamn's roads (near: a squadron that breaks off can come back; 50 km off,
   // south of Föglö, Finland scored 0.25 to 0.50 here), and the Stockholm skerries off Sandhamn
   "home": { "Finland": [60.03, 19.90], "Sweden": [59.50, 19.10] },
-  "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 10 },
+  // the sea (docs/battle/error-sources.md ES1): a Baltic summer morning: a short sea, little swell [EST]
+  "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 10, "swell_m": 0.5, "swell_s": 6 },
   "units": [
     // the Finns patrol a line across the Swedes' way, 8 km short of the beach, square to it (out of sight of the land,
     // so no search leg crosses Eckerö); the commander takes them off it once the enemy's met

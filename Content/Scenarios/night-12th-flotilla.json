@@ -26,7 +26,8 @@
   "until": "1916-06-01T03:00",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
-  "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 8 },
+  // the sea (docs/battle/error-sources.md ES1): the Jutland's calm sea (jutland.json) [EST]
+  "weather": { "visibility_km": 6, "wind_from": 225, "wind_kn": 8, "swell_m": 0.5, "swell_s": 10 },
   "units": [
     { "name": "12th Flotilla", "admiral": "Capt Stirling", "side": 0, "at": [56.05, 6.45], "course": 180, "kn": 17, "spacing": 350,
       "ships": [ { "design": "flotilla_leader", "names": ["Faulknor"] },

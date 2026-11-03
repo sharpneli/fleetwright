@@ -33,7 +33,8 @@
   "aims": { "Russia": "destroy everyone", "Ottoman Empire": "destroy everyone" },
   // where ships out of the fight go: off Sevastopol, and the Bosporus
   "home": { "Russia": [44.62, 33.40], "Ottoman Empire": [41.30, 29.10] },
-  "weather": { "visibility_km": 8, "wind_from": 0, "wind_kn": 6 },
+  // the sea (docs/battle/error-sources.md ES1): fog over a calm Black Sea [EST]
+  "weather": { "visibility_km": 8, "wind_from": 0, "wind_kn": 6, "swell_m": 0.3, "swell_s": 7 },
   "units": [
     { "name": "Black Sea Fleet", "admiral": "V-Adm Ebergard", "side": 0, "at": [44.13, 34.10], "course": 312, "kn": 12, "formation": "column", "spacing": 2500,
       "units": [

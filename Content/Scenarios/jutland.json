@@ -40,7 +40,8 @@
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
   // the afternoon of 31 May 1916: good early (the battlecruisers sighted each other at ~14 nm), worse later in
   // the haze and smoke (12-16 km); a light SW wind, force 2-3. One weather for now (docs/battle/plan.md 3.2b)
-  "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8 },
+  // the sea (docs/battle/error-sources.md ES1): a calm sea and haze, no sea state recorded (heavy-weather-cases.md); 0.5 m [EST]
+  "weather": { "visibility_km": 25, "wind_from": 225, "wind_kn": 8, "swell_m": 0.5, "swell_s": 10 },
   // opening tasks (docs/battle/command.md 5.1c): the 5th BS covers Beatty, the flotillas screen their fleets, the cruisers
   // and scouting groups scout ahead of theirs at their historical distances; Beatty's light cruisers steam as placed, so
   // the first contact is history's. The main bodies' plans (5.1d), the commanders' until the enemy is found: Beatty north

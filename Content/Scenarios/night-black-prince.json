@@ -25,7 +25,8 @@
   "until": "1916-06-01T01:22",
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
-  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8 },
+  // the sea (docs/battle/error-sources.md ES1): the Jutland's calm sea (jutland.json) [EST]
+  "weather": { "visibility_km": 8, "wind_from": 225, "wind_kn": 8, "swell_m": 0.5, "swell_s": 10 },
   "units": [
     { "name": "Black Prince", "admiral": "Capt Bonham", "side": 0, "at": [55.9749, 6.2], "course": 180, "kn": 14, "spacing": 500,
       "ships": [ { "design": "duke_of_edinburgh", "names": ["Black Prince"] } ] },

@@ -25,7 +25,8 @@
   "until": "1905-05-27T12:45",
   "aims": { "Russia": "destroy everyone", "Japan": "destroy everyone" },
   "home": { "Russia": [42.6, 132.0], "Japan": [33.0, 129.4] },
-  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
+  // the sea (docs/battle/error-sources.md ES1): the day's high waves (tsushima.json) [EST]
+  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18, "swell_m": 2, "swell_s": 9, "swell_from": 225 },
   "units": [
     { "name": "2nd Armoured Division", "admiral": "Capt Ozerov", "side": 0, "at": [34.6157, 130.4565], "course": 23, "kn": 11, "spacing": 600,
       "ships": [ { "design": "oslyabya", "names": ["Navarin", "Sissoi Veliky", "Admiral Nakhimov"] } ] },

@@ -345,7 +345,10 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
     static float Gap => P(2);
 
     ImDrawListPtr dl;
-    int tab = 1;   // 1 the order of battle, 2 the standing orders, 3 the conditions
+    int tab = StartTab;   // 1 the order of battle, 2 the standing orders, 3 the conditions
+
+    /// <summary>The tab the screen opens on (the -launchtab= flag, for screenshots).</summary>
+    public static int StartTab = 1;
     static readonly string[] TabNames = ["Order of battle", "Standing orders", "Conditions"];
     static readonly string[] Digits = ["1", "2", "3"];
     Vector2 centreAt, centreSize;   // the centre column: the picker opens over it
@@ -787,6 +790,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         var wx = WeatherOf(s);
         c.Add(("VISIBILITY", $"{wx.VisibilityM / 1000:0} km {SightWord(wx.VisibilityM)}"));
         c.Add(("WIND", $"{Compass(wx.WindFromDeg)} {wx.WindMs / 0.514444:0} kn"));
+        c.Add(("SWELL", $"{Compass(wx.SwellFrom)} {wx.SwellHsM:0.#} m"));
         if (SunTurn(s.Start, Earth.Position(lat, lon)) is { } turn)
             c.Add((turn.Word.ToUpperInvariant(), turn.At.ToUtc().AddHours(lon / 15).ToString("HH:mm", CultureInfo.InvariantCulture)));
         c.Add(("ENDS", EndOf(s).ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture)));

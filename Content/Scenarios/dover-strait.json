@@ -35,7 +35,8 @@
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // where ships out of the fight go: off Dover, and off Zeebrugge
   "home": { "Britain": [51.08, 1.40], "Germany": [51.38, 3.10] },
-  "weather": { "visibility_km": 20, "wind_from": 200, "wind_kn": 4, "cloud": 1 },
+  // the sea (docs/battle/error-sources.md ES1): a calm, dark night in the Strait [EST]
+  "weather": { "visibility_km": 20, "wind_from": 200, "wind_kn": 4, "cloud": 1, "swell_m": 0.3, "swell_s": 7 },
   "units": [
     { "name": "Dover Patrol", "admiral": { "name": "Cdr Evans", "temper": 0.5, "why": "\"Broke\" Evans: closed and rammed" }, "side": 0, "at": [51.11, 1.68], "course": 245, "kn": 15, "spacing": 400,
       "ships": [ { "design": "flotilla_leader", "names": ["Broke", "Swift"] } ] },

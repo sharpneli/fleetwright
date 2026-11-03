@@ -34,7 +34,8 @@
   "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
   // where ships out of the fight go: off the Forth, and the Jade
   "home": { "Britain": [56.0, -1.5], "Germany": [54.0, 8.0] },
-  "weather": { "visibility_km": 25, "wind_from": 45, "wind_kn": 8 },
+  // the sea (docs/battle/error-sources.md ES1): a winter North Sea: the sea burst into light craft's gun shields at speed, "one could not keep binoculars dry" (heavy-weather-cases.md [S]); 1 m at 8 s [EST]
+  "weather": { "visibility_km": 25, "wind_from": 45, "wind_kn": 8, "swell_m": 1, "swell_s": 8, "swell_from": 45 },
   "units": [
     // ---------------------------------------------------------------- Beatty: 5 battlecruisers, 4 light cruisers, Tyrwhitt's 3 and 21 destroyers
     { "name": "Battlecruiser Fleet", "admiral": { "name": "V-Adm Beatty (in Lion)", "temper": 0.4, "why": "pressed the chase at full speed" }, "side": 0, "at": [54.98, 3.45], "course": 135, "kn": 26, "spacing": 1500,

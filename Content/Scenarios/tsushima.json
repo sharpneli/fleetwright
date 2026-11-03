@@ -39,7 +39,8 @@
   "home": { "Russia": [42.6, 132.0], "Japan": [33.0, 129.4] },
   "crews": { "Russia": "average" },
   "fire_discipline": { "Russia": "independent", "Japan": "independent" },
-  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18 },
+  // the sea (docs/battle/error-sources.md ES1): a strong west-south-west wind and high waves, the Japanese torpedo boats sent to shelter [S]; the swell 2 m at 9 s [EST], fc-history's Tsushima case
+  "weather": { "visibility_km": 13, "wind_from": 225, "wind_kn": 18, "swell_m": 2, "swell_s": 9, "swell_from": 225 },
   // the admirals' tempers and the captains' (docs/map-ui/launch.md "Tempers"), added to the side's aggression where
   // history suggests one: Enkvist kept clear of the line, Kamimura pressed a damaged enemy, the flotillas pressed home by
   // night; Aleksandr III fought on at the head of the line, Bedovy struck with the admiral aboard

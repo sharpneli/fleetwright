@@ -61,14 +61,11 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 in the troughs; coal ships' rate of fire at full power (stokers from the guns' crews, qualitative). Each one where its
 source or system lands.
 
-## Questions for the user
+## Decided (the user, 2026-11-03)
 
-1. **The order.** Proposed above: the weather first (cheap, and every sea effect needs it), then the columns (likely the
-   biggest for the light forces' melee, where the hits are), the wind (takes the last lump out), spray, the seaway on the
-   instruments, smoke.
-2. **The weather, fixed or drawn.** Each scenario at its record's weather every seed (proposed), or drawn about it per
-   seed (a gentler or harsher day)?
-3. **Thin sources.** Where the mechanism is sourced but a size isn't (how long a wetted glass stays blind; a man's
-   following rate in a rangefinder; a column's standing time), build with a flagged [EST] and the record's cases as the
-   check, or file a research request first and build that step when it's in? Proposed: build with [EST] where a case
-   checks it, and file one request now for the gaps.
+1. **The order** as above.
+2. **The record's weather**, every seed; the launch screen's conditions let the player change it, as they do the
+   visibility, the wind, the cloud and the start (the sea beside the wind: L5's "left for later").
+3. **Estimates where a size isn't sourced, generous to the gunner:** mild effects for now, flagged [EST]; what matters is
+   that each mechanism is in place. Each is checked by turning it up strong for a bench run (it must show on its rung),
+   then set back mild.

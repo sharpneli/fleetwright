@@ -43,9 +43,9 @@ public sealed unsafe partial class LaunchScene
         public readonly string[,] Now = new string[5, 2];
         public readonly bool[,] Changed = new bool[5, 2];
         public WeatherHere Weather, WrittenWeather;
-        public string Vis = "", VisWord = "", WindKn = "", Cloud = "", Starts = "", StartWord = "", Ends = "", SeedNote = "";
+        public string Vis = "", VisWord = "", WindKn = "", Cloud = "", SwellM = "", SwellS = "", Starts = "", StartWord = "", Ends = "", SeedNote = "";
         public bool WeatherChanged, StartChanged, EndChanged, NewSeed;
-        public int WindPoint, Preset = -1;
+        public int WindPoint, SwellPoint, Preset = -1;
         public string[] SeedWords = [];
     }
 
@@ -124,7 +124,8 @@ public sealed unsafe partial class LaunchScene
     {
         var was = WeatherOf(written!);
         bool same = Math.Abs(w.VisibilityM - was.VisibilityM) < 1 && Math.Abs(w.WindFromDeg - was.WindFromDeg) < 0.5 && Math.Abs(w.WindMs - was.WindMs) < 0.01 &&
-                    Math.Abs(w.Cloud - was.Cloud) < 0.01;
+                    Math.Abs(w.Cloud - was.Cloud) < 0.01 && Math.Abs(w.SwellHsM - was.SwellHsM) < 0.01 && Math.Abs(w.SwellTpS - was.SwellTpS) < 0.01 &&
+                    Math.Abs(w.SwellFrom - was.SwellFrom) < 0.5;
         return same ? setup.Without("weather") : setup.With(new SetWeather(w with { AirOverSeaK = was.AirOverSeaK }));
     }
 
@@ -157,6 +158,9 @@ public sealed unsafe partial class LaunchScene
         return el > -0.833 ? "daylight" : el > -12 ? Light.SunElevationDeg(at, t + 600_000L) > el ? "dawn" : "dusk" : "night";
     }
 
+    /// <summary>The swell in words, by its height (the Douglas swell scale's bands).</summary>
+    static string SwellWord(double hsM) => hsM < 0.1 ? "none" : hsM < 2 ? "low" : hsM < 4 ? "moderate" : "heavy";
+
     ConditionsView Conditions(Scenario s)
     {
         if (conditionsView is { } v && ReferenceEquals(v.Of, s))
@@ -188,6 +192,9 @@ public sealed unsafe partial class LaunchScene
         v.WindPoint = (int)Math.Round(((v.Weather.WindFromDeg % 360) + 360) % 360 / 22.5) % 16;
         v.WindKn = $"{v.Weather.WindMs / 0.514444:0} kn";
         v.Cloud = $"{Math.Round(v.Weather.Cloud * 10):0}/10";
+        v.SwellPoint = (int)Math.Round(v.Weather.SwellFrom / 22.5) % 16;
+        v.SwellM = $"{v.Weather.SwellHsM:0.#} m";
+        v.SwellS = $"{v.Weather.SwellTpS:0} s";
         var (lat, lon) = Centre(s);
         v.Starts = s.Start.ToUtc().AddHours(lon / 15).ToString("d MMM HH:mm", CultureInfo.InvariantCulture);
         v.StartWord = LightWord(s.Start, Earth.Position(lat, lon));
@@ -304,6 +311,22 @@ public sealed unsafe partial class LaunchScene
         if (by != 0)
             pendingEdit = Weather(v.Weather with { WindMs = Math.Clamp(kn + 2 * by, 0, 60) * 0.514444 });
         Note(r, c0 + P(62) + sw + P(8), "from, and how hard");
+        // the swell from elsewhere beside the wind's own sea (docs/battle/error-sources.md ES1): from, how high, how long
+        r = Row("Swell");
+        bool swellChanged = v.WeatherChanged && (Math.Abs(v.Weather.SwellHsM - v.WrittenWeather.SwellHsM) > 0.01 ||
+                            Math.Abs(v.Weather.SwellTpS - v.WrittenWeather.SwellTpS) > 0.01 || Math.Abs(v.Weather.SwellFrom - v.WrittenWeather.SwellFrom) > 0.5);
+        point = dl.DropDown("##swellfrom", new Vector2(c0, r.Y + P(2)), P(56), SetWeather.Points[v.SwellPoint], SetWeather.Points, swellChanged);
+        if (point >= 0 && point != v.SwellPoint)
+            pendingEdit = Weather(v.Weather with { SwellFromDeg = point * 22.5 });
+        double hs = Math.Round(v.Weather.SwellHsM * 2) / 2;
+        sw = dl.Stepper("##swellm", new Vector2(c0 + P(62), r.Y + P(2.5f)), v.SwellM, P(46), hs > 0, hs < 8, out by);
+        if (by != 0)
+            pendingEdit = Weather(v.Weather with { SwellHsM = Math.Clamp(hs + 0.5 * by, 0, 8) });
+        double tp = Math.Round(v.Weather.SwellTpS);
+        float sw2 = dl.Stepper("##swells", new Vector2(c0 + P(62) + sw + P(6), r.Y + P(2.5f)), v.SwellS, P(40), tp > 5, tp < 20, out by);
+        if (by != 0)
+            pendingEdit = Weather(v.Weather with { SwellTpS = Math.Clamp(tp + by, 5, 20) });
+        Note(r, c0 + P(62) + sw + P(6) + sw2 + P(8), swellChanged ? "changed" : SwellWord(v.Weather.SwellHsM), swellChanged);
         // the cloud, by the tenth of the sky: an overcast takes the moon and the stars (docs/battle/night.md Q1)
         r = Row("Cloud");
         double tenths = Math.Round(v.Weather.Cloud * 10);
