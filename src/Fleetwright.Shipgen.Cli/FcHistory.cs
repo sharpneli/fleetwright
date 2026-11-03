@@ -50,16 +50,18 @@ static class FcHistory
                     Discipline = "independent", Battery = 1, RangeM = 5_000 * FcBench.Yd, BearingDeg = 80, CourseDeg = 10, OwnKn = 15, TargetKn = 11, VisibilityM = 9_000, Minutes = 30,
                     WindFromDeg = 225, WindKn = 20, SwellM = 2, SwellS = 9, SwellFromDeg = 225,
                 }), "~350 / ~16,900 (~2%, Sims's estimate)", 1, 4, "whose splash among many 6\""),
+            // the 1912 trial's wind isn't in the record: from the disengaged beam, blowing her smoke down the range, the one way
+            // "smoke over the guns" can be (docs/battle/error-sources.md ES7, the user's leave to pick)
             new("1890-1925", C("1912 trial, director (Thunderer)", "orion", "dreadnought", c => c with
                 {
                     Discipline = "rn-1914", Fit = 3, RangeM = 8_200, BearingDeg = 90, CourseDeg = 0, OwnKn = 12, TargetKn = 6, Combat = practice, Minutes = 10,
-                    WindFromDeg = 60, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 60,
+                    WindFromDeg = 270, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 270,
                 }), "heavy sea: 26 / 39 (67%); clear: about even with independent", double.NaN, double.NaN,
                 "the trial's target and procedure (unknown)"),
             new("1890-1925", C("1912 trial, independent (Orion)", "orion", "dreadnought", c => c with
                 {
                     Discipline = "rn-1914", Fit = 2, RangeM = 8_200, BearingDeg = 90, CourseDeg = 0, OwnKn = 12, TargetKn = 6, Combat = practice, Minutes = 10,
-                    WindFromDeg = 60, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 60,
+                    WindFromDeg = 270, WindKn = 26, SwellM = 3, SwellS = 11, SwellFromDeg = 270,
                 }), "heavy sea: 4 / 27 (15%); clear: about even with director", double.NaN, double.NaN,
                 "smoke over the guns (independent aim's collapse in the trial)"),
             new("1890-1925", C("Dogger Bank 1915, British BCs", "lion", "seydlitz", c => c with

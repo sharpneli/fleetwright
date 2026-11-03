@@ -791,6 +791,22 @@ public sealed class GunnerySystem : IWorldSystem
         return settings.GunneryErrors.Smoke * SmokeModel.Flicker(z, settings.SmokeFlickerLn);
     }
 
+    /// <summary>A salvo's own dispersion at its flight (ES7, <see cref="FireControl.Dispersion(double, double, int, double, double, double, double, double, double, double)"/>):
+    /// the design's pattern at the reference elevation's flight, taken apart there into its jump and its velocity; the
+    /// fixed share of the range where the guns can't reach the reference.</summary>
+    (double Range, double Across) Spread(BallisticTable table, in BatteryRow row, double rangeM, int guns, double e, double h0, double perMvPct, double perRad)
+    {
+        double eRef = Math.Min(settings.DispersionReferenceDeg, table.MaxElevationDeg - 1);
+        var fall = table.Fall(eRef, h0);
+        if (double.IsNaN(fall.Range) || double.IsNaN(e))
+            return FireControl.Dispersion(row.PatternPct, rangeM, guns, settings.DispersionDeflectionRatio);
+        return FireControl.Dispersion(row.PatternPct, rangeM, guns, settings.DispersionDeflectionRatio, perMvPct, perRad, fall.Range, PerMvPct(table, eRef, h0),
+            table.RangePerDeg(eRef, h0) * 180 / Math.PI, settings.DispersionJumpMil);
+    }
+
+    /// <summary>The range a 1% faster shell adds at an elevation, m.</summary>
+    static double PerMvPct(BallisticTable table, double e, double h0) => (table.Fall(e, h0, 1.01).Range - table.Fall(e, h0, 0.99).Range) / 2;
+
     /// <summary>The battery's machine's doubt of its ballistics (ES3) at a range, from its first mount's muzzle; kept as it
     /// was where the range is out of the guns' reach.</summary>
     void BallisticDoubt(World world, ref Fc fc, ShipClass cls, int slot, double rangeM)
@@ -1819,6 +1835,8 @@ public sealed class GunnerySystem : IWorldSystem
         var wx = world.Weather.At(ship.Position, world.Time);
         var wind10 = Earth.Forward(p, wx.WindFromDeg + 180) * wx.WindMs;
         var (br, bl) = BallisticResidual.Fall(computer, flight, wind10, fc.WindZ, fc.DensityZ, fc.MvZ, u, w, errs.Wind, errs.Bias);
+        // and this salvo's charges' own departure, common to its guns (ES7): the floor no spot takes out
+        br += errs.Charges * settings.SalvoMvPct * flight.PerMvPct * r.NextGaussian();
         (fc.BallR, fc.BallD) = BallisticResidual.Doubt(computer, flight, wx.WindMs, range);
         double dr = (pointBlank ? 0 : fc.CorrR + ladder) + eEl + br;
         double dl = fc.CorrD * range + eTr + bl;
@@ -1830,7 +1848,7 @@ public sealed class GunnerySystem : IWorldSystem
             dr += errs.Own * Vec3d.Dot(tilt, u) * perRad;
             dl += errs.Own * Vec3d.Dot(tilt, w) * Math.Tan(double.DegreesToRadians(e0)) * range;
         }
-        var (sr, sd) = FireControl.Dispersion(row.PatternPct, range + dr, n, settings.DispersionDeflectionRatio);
+        var (sr, sd) = Spread(table, row, range + dr, n, e0, h0, flight.PerMvPct, perRad);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
         if (fc.Roll.AmplitudeRad > 0 || fc.Pitch.AmplitudeRad > 0 || cond.Attitude.HeelDeg != 0 || ship.YawRate != 0)
@@ -2319,7 +2337,9 @@ public sealed class GunnerySystem : IWorldSystem
         if (double.IsNaN(e))
             return (0, 0, 0);
         double fall = table.Fall(e, h0).FallDeg, perRad = table.RangePerDeg(e, h0) * 180 / Math.PI;
-        var (sr, sd) = FireControl.Dispersion(row.PatternPct, range, guns, settings.DispersionDeflectionRatio);
+        double perMv = PerMvPct(table, e, h0);
+        var (sr, sd) = Spread(table, row, range, guns, e, h0, perMv, perRad);
+        sr = Math.Sqrt(sr * sr + Sq(settings.SalvoMvPct * perMv));   // the salvo's charges (ES7) as he knows them
         var computer = fc.Fit.Computer;
         var mount = fc.Fit.Mount;
         // his aim's doubt along the line of fire

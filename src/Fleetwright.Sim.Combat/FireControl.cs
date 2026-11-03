@@ -96,6 +96,25 @@ public static class FireControl
         return (sr, deflectionRatio * sr);
     }
 
+    /// <summary>A salvo's own dispersion by its flight (docs/battle/error-sources.md ES7), 1σ in range and across, m: each
+    /// shell's scatter is its muzzle velocity's and its jump's (the angle it leaves at off the gun's laid elevation), each
+    /// through the flight it's fired on: the range a 1% faster shell adds (<paramref name="perMvPct"/>, m) and a radian
+    /// higher (<paramref name="perRad"/>, m). A flat trajectory turns a milliradian into far more range than a steep one
+    /// (in vacuum the range per radian over the range is 2 cot 2θ: some 1.6% a mil at 3.5°, 0.3% at 15°), so close in the
+    /// pattern is a larger share of the range than at the battle ranges it's quoted at. The design's pattern
+    /// (<see cref="Dispersion"/>) holds at a reference flight (<paramref name="refRangeM"/>, its sensitivities), its share there
+    /// not the jump's (<paramref name="jumpMil"/>, 1σ) the velocity's; across the line, as before (an angle, the trainer's).</summary>
+    public static (double Range, double Across) Dispersion(double patternPct, double rangeM, int guns, double deflectionRatio,
+        double perMvPct, double perRad, double refRangeM, double refPerMvPct, double refPerRad, double jumpMil)
+    {
+        var (sr, sd) = Dispersion(patternPct, rangeM, guns, deflectionRatio);
+        if (!(refRangeM > 0) || !(refPerMvPct > 0) || !(refPerRad > 0) || !(perRad > 0))
+            return (sr, sd);
+        double reference = Dispersion(patternPct, refRangeM, guns, deflectionRatio).Range, jumpRad = jumpMil * Mil;
+        double mv = Math.Sqrt(Math.Max(reference * reference - Math.Pow(jumpRad * refPerRad, 2), 0)) / refPerMvPct;
+        return (Math.Sqrt(Math.Pow(mv * perMvPct, 2) + Math.Pow(jumpRad * perRad, 2)), sd);
+    }
+
     static readonly double[] PatternGuns = [1, 2, 3, 4, 6, 8, 9, 10, 12], PatternRatio = [1.6, 1.9, 2.43, 2.74, 3.47, 3.85, 4.0, 4.13, 4.34];
 
     static double Interp(double x, double[] xs, double[] ys)

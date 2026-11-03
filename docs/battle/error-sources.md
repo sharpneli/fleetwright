@@ -358,6 +358,83 @@ round in heavy weather, for ES7.
   shimmer over a top behind a funnel (Lion's "completely unworkable"): neither has a source for its size.
 - The flicker's spread falling as a plume ages and mixes: one spread for all smoke.
 
+## ES7 Fit and check (built 2026-11-03; the gap accepted for now)
+
+The user: "get these into the bands, but do prefer upper parts of the bands"; then, on the diagnosis below, option 2:
+"we'll accept the gap for now. We'll revisit and think about it later... crew fatigue and just general stress of
+combat will lower it a bit, but that comes later."
+
+**Isolated first** (the ladder on the Jutland BCs' case, Lion on Derfflinger at 15 km, both zigzagging, 16 km
+visibility): with every error off, 19% (the zigzag alone, whole salvos hitting or missing); the pattern alone 11%; every
+error on 8.9%. The chain's errors cost little beyond the pattern, and its MPI error (352 m, 2.5% of the range) is
+the research's own Dreyer-level reference (3%), whose hit rate (6.6%) is itself some five times the record. That
+reference came within twice the record only through a lumped `combat = 1.5` on its errors and a lumped salvo-to-salvo
+error, both gone here (BL1ac, `GunneryCombat` 1). The crews hardly move it (9.1% trained, 7.3% green).
+
+**Built, two physical parts:**
+- **Dispersion by the flight** (`FireControl.Dispersion` with the flight's sensitivities, `GunnerySystem.Spread`): each
+  shell's scatter is its muzzle velocity's and its jump's (`DispersionJumpMil` 0.5 [EST]), each through the flight
+  it's fired on. A flat trajectory turns a milliradian into far more range (in vacuum 2 cot 2θ a radian: 1.6% of the
+  range a mil at 3.5°, 0.3% at 15°), so close in the pattern is a larger share of the range than the battle ranges it's
+  quoted at; the design's `pattern_pct` holds at `DispersionReferenceDeg` (10° [EST]), taken apart there. Across the
+  line as before. The officer's worth of a salvo reads the same spread.
+- **Each salvo's charges** (`SalvoMvPct` 0.4%, `--errors charges=K`): one salvo's charges share their lot, their warmth
+  and the guns' heat, so its mean velocity moves salvo to salvo beyond the round-to-round spread over √n, and no spot
+  takes it out: the research's "floor" (fire-control-research.md §0 item 4; the USN measured MPI error, about 1% of
+  the range a salvo for WWII optical practice, and between 1920 and 1945 dispersion fell 66% where MPI error fell only
+  23%). Sized to that measurement, not to a hit rate: the 1944 study's MPI error 0.57 → 0.89% of the range at 10 kyd,
+  0.73 → 0.92% at 20, 1.44 → 1.48% at 30.
+
+**The 1912 trial's wind** moved to the disengaged beam (from 270, the target to the east), blowing her smoke down the
+range: the record doesn't give it, and that's the one way "smoke over the guns" can be (the user's leave to pick).
+Director 29.3%, independent 34.7% (the record 67 and 15): the smoke now reaches Orion's layers, but independent fire
+still leads (see ES6: in a 3 m sea the director does worse even without smoke).
+
+**Where it stands** (`balance/es7.json`; the record taken as each band's geometric middle):
+
+| Case | Model | Record | × |
+|---|---|---|---|
+| Santiago 1898, US 12" | 42.8% | 3.5% | 12.1 |
+| Yellow Sea 1904, Japanese 12" | 34.7% | 4.7% | 7.3 |
+| Jutland, British 1st/2nd BCS | 10.2% | 1.4% | 7.3 |
+| Dogger Bank, British BCs | 8.8% | 1.4% | 6.3 |
+| Jutland, British 3rd BCS | 27.2% | 4.3% | 6.3 |
+| Jutland, Grand Fleet BS | 17.5% | 3.6% | 4.9 |
+| Bismarck's end, Rodney | 45.8% | 11% | 4.2 |
+| Light guns at a fast boat | 3.8% | 1.0% | 3.8 |
+| Jutland, German battleships | 10.6% | 3.0% | 3.5 |
+| Denmark Strait, Bismarck | 15.8% | 5.4% | 2.9 |
+| Jutland, British 5th BS | 7.1% | 2.6% | 2.7 |
+| USN practice, 6 kyd | 65.7% | 26% | 2.6 |
+| Jutland, German 1st SG | 9.2% | 4.0% | 2.3 |
+| USN practice, 10 kyd | 30.0% | 15% | 2.0 |
+| USN 1944 study, 10 kyd | 54.8% | 33% | 1.7 |
+| Tsushima, Japanese 12" | 13.3% | 8.7% | 1.5 (in) |
+| Dogger Bank, German BCs | 3.2% | 2.5% | 1.3 (in) |
+| USN 1944 study, 20 kyd | 14.0% | 11% | 1.3 (in) |
+| USN 1944 study, 30 kyd | 3.0% | 2.7% | 1.1 (in) |
+| Falklands, Invincible | 7.4% | 7.0% | 1.1 (in) |
+| Tsushima, Japanese 6" | 1.4% | 2.0% | 0.7 (in) |
+| Komandorski, salvo chaser | 0.3% | 0.5% | 0.6 (in) |
+| LRBP 1932-33, 30 kyd | 2.6% | 4.4% | 0.6 (LOW) |
+
+Over the cases, the median is 3.7 times the record and the geometric mean 3.5; 7 of 23 in their bands. Practice runs
+about twice the record, combat three to seven times, the period's earliest close fights the most. The scenarios: 6 of
+14 sides within twice the record's losses, the record's loser losing more in 33 of 44 seeds; their sides hit 9-16% of
+their heavy and medium shells (Heligoland's British 32%, Dover's destroyers 46-56% at point blank).
+
+**Why the rest isn't here** (for the revisit): not the chain, which sits at the research's reference; but how the
+record's fire was made, which a steady 20-minute duel against stand-in ships lacks. Targets seen through mist in short
+windows, each window opening with ranging; the period's ships and powder (Santiago's brown powder smoke, the stand-in a
+1906 design); the practice screens the practice records were fired at (the cases fire at a dreadnought); and, the
+user's word, crew fatigue and the stress of combat as their own systems. One fault seen on the way: at 30 kyd the
+chain's own tracking error is already over the LRBP's measured 313 yd, so its case runs low.
+
+**On the way:** `AimsTests`' raider case runs without damage (the escort's fire took every mount of hers at once, the
+light guns too, and she turned away with none: logged in bugs.md); two thresholds widened with their reasons (the
+shift's carried correction 0.75 of a fresh fall, the power drive's 0.95 of the pointer's). Not done: the AI's matchup
+(`Matchup.HitChance`) still reads the fixed-share pattern, not the flight's.
+
 ## Decided (the user, 2026-11-03)
 
 1. **The order** as above.

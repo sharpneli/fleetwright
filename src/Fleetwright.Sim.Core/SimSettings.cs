@@ -745,6 +745,20 @@ public sealed record SimSettings
     public double SmokeFlickerLn { get; init; } = 0.8;
     public double SmokeFlickerS { get; init; } = 4;
 
+    /// <summary>A salvo's dispersion by its flight (docs/battle/error-sources.md ES7, FireControl.Dispersion): each gun's
+    /// jump, the angle its shell leaves at off its laid elevation, 1σ, mil [EST], and the elevation its design's pattern
+    /// holds at, degrees (the battle ranges the quoted patterns are of [EST]).</summary>
+    public double DispersionJumpMil { get; init; } = 0.5;
+    public double DispersionReferenceDeg { get; init; } = 10;
+
+    /// <summary>A salvo's charges' common departure from the muzzle velocity its machine has, 1σ, % (docs/battle/
+    /// error-sources.md ES7): one salvo's charges share their lot, their magazine's and hoist's warmth and the guns' heat
+    /// as they fire, so their mean moves salvo to salvo by more than the round-to-round spread over √n, and no spot
+    /// takes it out (fire-control-research.md §0 item 4: "salvo-to-salvo error is the floor, and spotting cannot remove
+    /// it"). Each salvo's draw, through its own flight [EST: sized to the USN's measured MPI error in practice, about 1%
+    /// of the range a salvo for WWII optical fire, against what the rest of the chain makes at 10 and 20 kyd].</summary>
+    public double SalvoMvPct { get; init; } = 0.4;
+
     /// <summary>Vibration at speed (BL1h; research §1.1): an instrument's and a gun sight's random error grows by
     /// 1 + a (v / v_max)², a by what it stands on (a turret, a deck or a tower 0.3, a tripod, cage or lattice 0.6, a pole
     /// 1.0), rising toward 1 on a light, powerful hull (by her plant's power a tonne, from <see cref="VibrationLightShpT"/>
@@ -2786,9 +2800,12 @@ public sealed record GunneryErrorScale
     /// <summary>The smoke on the guns' lines (ES6: the field's depth as fire control's instruments and layers meet it, its
     /// flicker with it), a scale on its depth: 0 the guns see as if there were none.</summary>
     public double Smoke { get; init; } = 1;
+    /// <summary>Each salvo's charges' common departure in muzzle velocity (ES7, <see cref="SimSettings.SalvoMvPct"/>), a
+    /// scale on it.</summary>
+    public double Charges { get; init; } = 1;
 
     /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, own,
-    /// dispersion, spotting, masking, wind, spray, seaway, smoke).</summary>
+    /// dispersion, spotting, masking, wind, spray, seaway, smoke, charges).</summary>
     public static GunneryErrorScale Parse(string text)
     {
         var e = new GunneryErrorScale();
@@ -2798,7 +2815,7 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v, Spray = v, Seaway = v, Smoke = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v, Spray = v, Seaway = v, Smoke = v, Charges = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
@@ -2811,14 +2828,15 @@ public sealed record GunneryErrorScale
                 "spray" => e with { Spray = v },
                 "seaway" => e with { Seaway = v },
                 "smoke" => e with { Smoke = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind, spray, seaway, smoke)"),
+                "charges" => e with { Charges = v },
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind, spray, seaway, smoke, charges)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}, seaway {Seaway:G}, smoke {Smoke:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}, seaway {Seaway:G}, smoke {Smoke:G}, charges {Charges:G}");
 }
 
 public sealed record FireDiscipline

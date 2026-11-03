@@ -435,6 +435,12 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   day's AI fixes): every run alone, and in one full suite of two. It passed with the suite before, so it's likely a path
   first reached in the measured ten minutes (a first hit's damage, a striking check) rather than per salvo. Next: an
   allocation trace of the test (`tools/alloctop`, docs/profiling.md), then the bisect if it isn't plain.
+- [ ] **Every mount of a ship out at once from one hit** (found 2026-11-03, error-sources.md ES7, `AimsTests`' raider with
+  a dreadnought escort): between minutes 3 and 4 the raider's 20 mounts, her light quick-firers too, all stopped working
+  after 11 hits, their crews and supply whole and her guns there: the mount function's value (its machinery's
+  dependencies) went to 0 for all of them together. Hand-worked guns depending on the ship's power, or one shared
+  dependency for every mount, would do it. Next: the mounts' function chains for that class (`shipgen` function list),
+  and which part the hit took.
 
 ## The app
 

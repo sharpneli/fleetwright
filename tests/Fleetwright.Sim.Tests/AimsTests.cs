@@ -32,10 +32,10 @@ public class AimsTests(ITestOutputHelper output)
     static string West(double westKm, double km) => $$"""{ "at": [56.5, {{4.0 - westKm / KmPerLonDeg:R}}], "km": {{km:R}} }""";
 
     static (World W, ScenarioEnd End, ScenarioStart Start, AiSystem Ai) Play(string json, Action<World, ScenarioStart>? first = null, double hours = 4,
-        Action<World, ScenarioStart, AiSystem>? minute = null)
+        Action<World, ScenarioStart, AiSystem>? minute = null, SimSettings? settings = null)
     {
         var s = Scenario.Parse(json);
-        var w = new World(s.Start, s.Seed, Settings);
+        var w = new World(s.Start, s.Seed, settings ?? Settings);
         var ai = new AiSystem(w);
         string[] designs = [Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs"), .. Designs];
         var start = ScenarioLoader.Apply(s, w, ai, ScenarioLoader.RequestClasses(s, w.Ships.Registry, designs));
@@ -340,7 +340,9 @@ public class AimsTests(ITestOutputHelper output)
         {
             var json = Convoy(escort, $"[{56.3 + 8 / 111.2:R}, {4.0 - 12 / KmPerLonDeg:R}]", raider: $"[56.3, {4.0 - 12 / KmPerLonDeg:R}]");
             var by = new List<(int, double, double)>();
-            Play(json, hours: 0.1, minute: (w, start, ai) =>
+            // the hits do nothing (the captain's choice is the question, not who survives: docs/battle/error-sources.md ES7,
+            // where the escort's fire took every mount of the hunter's at once and she turned away with no guns)
+            Play(json, hours: 0.1, settings: Settings with { HitsDoDamage = false }, minute: (w, start, ai) =>
             {
                 var store = w.Ships.Store;
                 var h = store[store.SlotOf(Named(start, "Hunter"))];

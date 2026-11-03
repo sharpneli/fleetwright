@@ -355,7 +355,9 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(passA > 1.1 * passL, "the tracker's own part of it");
         Assert.True(zigA > zigD, "the shorter latency re-learns her turns sooner");
         Assert.InRange(steadyL, 0.96 * steadyA, 1.04 * steadyA);
-        Assert.True(stereo > 0.98 * rf && lw > 0.98 * lp, "the longer base and the power drive no worse");
+        // no worse within the runs' spread: at 16 kyd the pattern by the flight (ES7) and the salvo's charges are most of the
+        // laying rung's fall, the drive's 0.1 mil a little of it (20.4 against 20.9% when ES7 came in)
+        Assert.True(stereo > 0.98 * rf && lw > 0.95 * lp, "the longer base and the power drive no worse");
     }
 
     /// <summary>Level 4 to 5 where they must differ (fc-ladder-check.md FL7), QE refitted. The mount, behind the long-base
@@ -744,8 +746,9 @@ public class GunneryTests(ITestOutputHelper output)
         double shifted = FirstFall(settings, true), fresh = FirstFall(settings, false);
         output.WriteLine($"the first salvo's fall off the second target, RMS: {shifted:F0} m after a shift, {fresh:F0} m engaged fresh");
         // since the bias is its parts (docs/battle/error-sources.md ES3: here the muzzle velocity and the air; the wind its own
-        // rung) the pattern is a larger share of a first fall: 94 against 159 m when built
-        Assert.True(shifted < 0.7 * fresh, "the bias's correction carried");
+        // rung) the pattern is a larger share of a first fall: 94 against 159 m when built; and with the dispersion by the
+        // flight (ES7) larger still, 117 against 165
+        Assert.True(shifted < 0.75 * fresh, "the bias's correction carried");
     }
 
     /// <summary>The RMS over seeds of the first salvo's fall off a second Seydlitz (its ladder's step taken off), Lion
