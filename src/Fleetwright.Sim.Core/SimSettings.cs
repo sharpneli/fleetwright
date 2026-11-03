@@ -738,6 +738,13 @@ public sealed record SimSettings
     public double InstrumentFollowS { get; init; } = 0.5;
     public double InstrumentFieldDeg { get; init; } = 60;
 
+    /// <summary>The smoke's flicker on a gun's or an instrument's line (docs/battle/error-sources.md ES6,
+    /// SmokeModel.Flicker): the spread of the logarithm of its depth about the field's mean, and the seconds one state of
+    /// it lasts (a plume's eddies passing the line) [EST: a path-integrated concentration's fluctuation of order its mean
+    /// near the source, its eddies some tens of metres in a wind of a few metres a second].</summary>
+    public double SmokeFlickerLn { get; init; } = 0.8;
+    public double SmokeFlickerS { get; init; } = 4;
+
     /// <summary>Vibration at speed (BL1h; research §1.1): an instrument's and a gun sight's random error grows by
     /// 1 + a (v / v_max)², a by what it stands on (a turret, a deck or a tower 0.3, a tripod, cage or lattice 0.6, a pole
     /// 1.0), rising toward 1 on a light, powerful hull (by her plant's power a tonne, from <see cref="VibrationLightShpT"/>
@@ -2776,9 +2783,12 @@ public sealed record GunneryErrorScale
     public double Spray { get; init; } = 1;
     /// <summary>Her roll and pitch carrying an unstabilised instrument off her (ES5), a scale on how far: 0 a still ship.</summary>
     public double Seaway { get; init; } = 1;
+    /// <summary>The smoke on the guns' lines (ES6: the field's depth as fire control's instruments and layers meet it, its
+    /// flicker with it), a scale on its depth: 0 the guns see as if there were none.</summary>
+    public double Smoke { get; init; } = 1;
 
     /// <summary>"all=0,bias=1": each named source set, in order (all, readings, prior, bias, laying, own,
-    /// dispersion, spotting, masking, wind, spray, seaway).</summary>
+    /// dispersion, spotting, masking, wind, spray, seaway, smoke).</summary>
     public static GunneryErrorScale Parse(string text)
     {
         var e = new GunneryErrorScale();
@@ -2788,7 +2798,7 @@ public sealed record GunneryErrorScale
             double v = kv.Length > 1 ? double.Parse(kv[1], System.Globalization.CultureInfo.InvariantCulture) : 1;
             e = kv[0].ToLowerInvariant() switch
             {
-                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v, Spray = v, Seaway = v },
+                "all" => new GunneryErrorScale { Readings = v, Prior = v, Bias = v, Laying = v, Own = v, Dispersion = v, Spotting = v, Masking = v, Wind = v, Spray = v, Seaway = v, Smoke = v },
                 "readings" => e with { Readings = v },
                 "prior" => e with { Prior = v },
                 "bias" => e with { Bias = v },
@@ -2800,14 +2810,15 @@ public sealed record GunneryErrorScale
                 "wind" => e with { Wind = v },
                 "spray" => e with { Spray = v },
                 "seaway" => e with { Seaway = v },
-                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind, spray, seaway)"),
+                "smoke" => e with { Smoke = v },
+                _ => throw new ArgumentException($"--errors: no source '{kv[0]}' (all, readings, prior, bias, laying, own, dispersion, spotting, masking, wind, spray, seaway, smoke)"),
             };
         }
         return e;
     }
 
     public override string ToString() => FormattableString.Invariant(
-        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}, seaway {Seaway:G}");
+        $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}, seaway {Seaway:G}, smoke {Smoke:G}");
 }
 
 public sealed record FireDiscipline

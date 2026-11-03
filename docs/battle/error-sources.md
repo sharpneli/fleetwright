@@ -32,7 +32,7 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 | A rangefinder's error by base, magnification, the support's stiffness, the air's shimmer, haze on the target's contrast | built (F5) | `FireControl.RangefinderUnitM`, `SightModel.RangingFactor` |
 | Casemates awash | built (BL1f), the research's [INFERRED] sill rule; **ES4**: under the seakeeping law with every gun | `SeaAboard.Green` |
 | Smoke on the lines (funnels with forcing and downwash, guns, fires, screens) | built (smoke.md Z0-T4) | `SmokeSystem` |
-| A layer firing only while he sees her from his sight | built (FL5), costs almost nothing yet | `GunnerySystem.LayerSees` |
+| A layer firing only while he sees her from his sight | built (FL5), costs almost nothing yet; **ES6**: he lays by his own margin, the smoke flickers | `GunnerySystem.LayerMargin` |
 | Whose splash (several ships on one target) | built (BL1c) | `GunnerySystem` spots |
 | Stress on the layers and rangetakers | built (BL1d) | `Steadiness.Stress` |
 | The residual ballistic bias: wind, density, powder temperature, wear, drift | **one lump**, `resid_pct` and `defl_bias_mil` a machine (2.5% the eye to 0.3% digital), one draw a battery | `Fc.BiasR/BiasD`, fire-control.json |
@@ -100,7 +100,9 @@ rangefinder's cut (a hidden one takes none; the computer runs on) and each gun l
 **Found:** at their own size the columns hide nothing anyone fires by. A 4" short at 4 km falls at 2-3° and stands about
 10 m against a destroyer's 31 m mast, and a boat's shorts scatter 10-70 m across the line; heavy shorts on a stern chase
 at 14-22 km hide her now and then from a director's rangefinder, a cut lost that the clock covers (4.8% hits either way).
-Forty times the size, the layers lose her 4% of the time (b97 on v25 at 4 km: 32.5 → 30.0%, rate 5.83 → 5.80). The
+(*Corrected in ES6:* the masking's rung was 0 in play, the
+settings file not naming it; the bench figures here parse `--errors` and had it.) Forty times the size, the layers lose
+her 4% of the time (b97 on v25 at 4 km: 32.5 → 30.0%, rate 5.83 → 5.80). The
 mechanism stands, mild, as asked; what would make it bite is a rule the record would have to give: that the hull, not the
 masthead, is what a layer must see (the target's hull lost behind shorts is what the accounts describe).
 `SplashColumnTests` (the geometry: side by side end on, never broadside, overs, rising, thinned, a gap, off),
@@ -147,6 +149,9 @@ salvo 3 → 5 (the spots walk a steady error out; four times the wind costs no m
 (bias=0 against 1) 14.7 → 13.6%. The panel (`balance/es3.json` against es1): fc-history 6 of 23 again, its long range
 cases a little lower (Falklands 8.1 → 5.9%, the Dogger Bank's Germans 3.2 → 2.2%, the LRBP 3.8 → 3.4%), close in as
 before; the orderings 3 → 4 of 7. The scenarios within their seeds' spread (7 of 14 sides within twice the record).
+*Corrected in ES6:* the shipped settings' `GunneryErrors` didn't name the wind's rung, so in play (the panel, the
+scenarios, the game) it was 0: this panel moved by the density and the velocity alone; the benches above parse
+`--errors` over every rung at 1 and had it.
 
 **On the way:** the Dreyer-like refit test takes the AFCT's sizes in place of its residual; three tests' thresholds that
 sat inside their own noise widened with their reasons (the shift's carried correction 0.5 → 0.7 of a fresh fall, the
@@ -207,6 +212,9 @@ more than it spoils the aim.
 the British weather casemates now fight part of the time where the old rule shut them, their hits 147 → 259 a seed,
 and they lose 2.2 ships against 1.0, the record's 2; the Germans 586 hits at 14.6% (622 at 12.7%). Dover's calm is to
 the shell the same; the rest within their seeds' spread (6 of 14 sides within twice the record, against 7).
+*Corrected in ES6:* the spray's rung was 0 in play (the settings file didn't name it), so this panel had no sea aboard
+at all: the old casemate rule gone and nothing in its place. Coronel's British casemates fought all through, which is
+the move above, not the law. ES6's panel is the first with ES4 in play.
 
 **Not built, named:**
 - Sheer and flare from the designer (plan.md, "Needed from the designer"). The hull's deck is flat, so every stem is
@@ -250,7 +258,9 @@ track's settling, but each man's error is drawn once a target (FL), so the readi
 calm 11.9 against 12.9). At the mild size her 9 ft instruments hold her 98% of the time, so the gyro has nothing to
 take out.
 
-**The panel** (`balance/es5.json` against es4): the same to the shell in every scenario and fc-history (6 of 23, orderings 4 of 7). At this size a hold over about 97% never moves a reading by a whole second of the fire-control grid, and the scenarios' ships seldom roll hard with their target abeam: Coronel with the rung at 0 and at 1 is the same, at 20 it moves (Monmouth 107 hits against the Germans' run of it, Glasgow afire at 4.6°). The mechanism is in place and mild, as decided; it bites in a heavy beam sea or on a small ship.
+**The panel** (`balance/es5.json` against es4): the same to the shell in every scenario and fc-history (6 of 23, orderings 4 of 7). At this size a hold over about 97% never moves a reading by a whole second of the fire-control grid, and the scenarios' ships seldom roll hard with their target abeam: Coronel with the rung at 0 and at 1 is the same, at 20 it moves (Monmouth 107 hits against the Germans' run of it, Glasgow afire at 4.6°). The mechanism is in place and mild, as decided; it bites in a heavy beam sea or on a small ship. *Corrected in ES6:*
+the seaway's rung was 0 in play (the settings file didn't name it); the 0-against-1 Coronel above compared two zeros.
+ES6's panel is the first with it in play.
 
 **Open, for the user:** the catalogue's rates still carry Pollen's "about fivefold" as a calm number: the unstabilised
 FQ/FT reads 2 a minute and the same glass on the Argo mounting 8, in a calm as in a gale. Under this law the seaway
@@ -263,6 +273,90 @@ gunner's loss.
 **Not built, named:** the layers' own telescopes holding her (their laying already fires on the roll or follows it:
 BL1b); the readings' error widening with the image's motion (only the rate is lost); the cross-level's rotation of the
 image (a coincidence instrument cuts through it at a low line of sight).
+
+## ES6 Smoke over the guns (built 2026-11-03)
+
+**The diagnosis first, as planned.** The user's word from play: "the smoke is kinda dense, so one either shoots with
+clarity or doesn't shoot at all." Every fire-control margin through smoke, counted over a 3 h Jutland and Coronel
+(temporary instrumentation), against the same line without it:
+
+| Jutland, of lines clear without smoke (margin ≥ 4) | lost (< 1) | the cost band (1-4) | no cost (≥ 4) |
+|---|---|---|---|
+| Instruments (rangefinders, directors) | 63% | 21% | 16% |
+| Layers' own sights | 8% | 45% | 47% |
+
+So the field itself isn't binary in contrast. The response is.
+- **The mean only:** the field's puffs are the plume's ensemble mean, so a line is steadily open, steadily thinned or
+  steadily shut. The drawing's grain (Z5d) breaks it up; the sim had no gaps.
+- **Lost readings rarely cost the aim:** a battery fires while any one sensor sees her, and each man's error is drawn
+  once a target. Smoke turned into fewer shells, not worse ones.
+- **The local layer laid by the director's view:** a gun laid by its own layer took his error from the battery's best
+  margin, often a foretop above the smoke, not from his own sight through it. The 1912 trial is exactly that difference:
+  Orion's layers in the smoke, Thunderer's director above it.
+
+**Built:**
+- **The flicker** (`SmokeModel.Flicker`): a turbulent plume's depth along a line wanders about its mean as its eddies
+  pass. The guns' lines take the field's depth times a lognormal draw about 1 (the mean holds), spread
+  `SmokeFlickerLn` 0.8. One state lasts `SmokeFlickerS` 4 s [EST both: a path-integrated concentration's fluctuation
+  of order its mean near the source, eddies of tens of metres in a few m/s of wind]. It's drawn per eye (or layer's
+  sight), pair and window from the world's stream, the same at any compression. Through smoke that shuts her on the
+  mean she's glimpsed (τ 1.5 times the shutting depth: some 30% of the windows), and thin smoke loses her at times.
+  Firing and readings happen in the glimpses, at the glimpse's contrast.
+- **Each local layer lays by his own margin:** a battery laid gun by gun takes the RMS of its firing layers' haze factors
+  (their own sights through the smoke, FL5's check now kept as a margin), the battery's best margin where the smoke
+  wasn't asked. A director's layer lays by the director's, as before.
+- **The rung:** `--errors smoke=K` scales the depth the guns see (0: they see as if there were none; the looks and the
+  drawing keep the field).
+
+**Found on the way, a bug in play since ES2:** the settings file merges over the defaults only at the top level, and the
+generated reader sets a key a nested object leaves out to zero. The shipped `GunneryErrors` named the seven old rungs,
+so masking (ES2), wind (ES3), spray (ES4) and seaway (ES5) were 0 in every panel, scenario and game; the benches parse
+`--errors` over all rungs at 1, which is why they showed each effect. Fixed in the file, and
+`Settings_file_names_every_key_and_is_strict` now checks every key inside each record-valued setting (a dictionary's
+entries stay the file's). ES2-ES5's panel notes above are corrected; this panel is the first with them all in play.
+
+**The check** (fc-history, 24 runs a case, the guns' smoke at 0, 1 and 3):
+
+| Case (the record) | 0 | 1 | 3 |
+|---|---|---|---|
+| Dogger Bank, British BCs (1.4%) | 10.9% | 10.8% | 9.2% |
+| Dogger Bank, German BCs (~2.5%, firing astern into their own smoke) | 3.7% | 2.6% | 3.0%, first hit 472 s |
+| Jutland, 5th BS (2.6%) | 6.5% | 6.1% | 4.5% |
+| Jutland, German 1st SG (4.0%) | 8.9% | 7.7% | 7.3% |
+| Falklands, Invincible (~7%) | 8.2% | 7.4% | 6.8% |
+| Cases in their bands | 6 of 23 | 8 of 23 | 9 of 23 |
+
+Graded now, shell by shell, where it was on or off. The flicker's own share (0 against 0.8 at smoke 1) is mixed
+within the noise, with one clear sign: the German BCs firing astern get their first hit at 330 s, not 460 s, firing in
+glimpses where the mean shut her. **The duels** (a dreadnought pair with her own smoke blown toward the target, Orion
+at the 1912 trial's 12 kn, a Lion at 27 kn) meet no smoke on their lines at all. She outruns her funnel smoke, it
+rises (Lion's 6 m in the 20 m to her foretop at 28 kn, the field's T1 test's τ 0.4-0.5 aft of the funnels), and a
+smokeless salvo's cloud drifts off the line as she steams on. Physical: a single ship's own smoke over her guns wants a
+slow ship and a wind across her, and fleets' smoke is the field's main case.
+
+**The panel** (`balance/es6.json` against es5), the first with masking, wind, spray, seaway and smoke all in play:
+fc-history 7 of 23 (6), the orderings 4 of 7; the scenarios 6 of 14 sides within twice the record. Moved most:
+- **Coronel:** the Germans 586 → 403 hits, 14.6 → 9.9% (the sea aboard their casemates and glass, now in play); they
+  lose 1.1 ships to the British 1.4 (the record 0 and 2).
+- **Jutland:** the Germans 2,826 → 1,909 hits, 10.4 → 6.7% (firing through the British smoke cloud to leeward), the
+  British 3,920 → 4,919.
+- **Heligoland:** the British 1,253 → 905 hits.
+- **Dogger Bank:** both sides more hits (800 → 1,204, 676 → 875), firing in glimpses where the mean shut her.
+- **Tsushima's Japanese 6"** into its band (4.6 → 2.2%); Dover's few hits within their noise.
+
+**The 1912 trial against the record** (fc-history's own pair; record: director 67%, independent 15%): 39.9% against
+45.0%, the wrong way. The case's wind (from 060, the target to the east) blows her smoke away from the target, so
+nothing reaches Orion's layers. With it from the other beam (bench, 16 duels), her independent fire loses 18-27% of
+its shells and some accuracy (43.0 → 37.8-41.9%), the director a little, but never the record's collapse. The wind of
+13 November 1912 isn't in the record; the case's geometry is the user's call. In the case's 3 m sea the director does
+worse than independent fire without any smoke (35.7 against 43.0%): the seaway's balance between them is wrong way
+round in heavy weather, for ES7.
+
+**Not built, named:**
+- The looks (contacts) keep the mean; only the guns flicker. A contact is held through glimpses already.
+- Her funnel gas drawn down over her decks in a strong wind across (the field's downwash is 2.5-5 m), and the hot gas's
+  shimmer over a top behind a funnel (Lion's "completely unworkable"): neither has a source for its size.
+- The flicker's spread falling as a plume ages and mixes: one spread for all smoke.
 
 ## Decided (the user, 2026-11-03)
 

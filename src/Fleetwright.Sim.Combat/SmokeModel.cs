@@ -312,6 +312,15 @@ public static class SmokeModel
     /// <summary>A puff further off a line than this many σ adds nothing worth the work (e^(−6.1)).</summary>
     public const double CullSigma = 3.5;
 
+    // ------------------------------------------------------------------ the flicker
+
+    /// <summary>The smoke's depth along a line at a moment over its mean (docs/battle/error-sources.md ES6): the field's puffs
+    /// are the plume's ensemble mean, and a real plume is turbulent, its depth along a line wandering about that mean as its
+    /// eddies pass, so an observer sees through it in glimpses where the mean shuts it, and loses her for a moment where the
+    /// mean is thin. Lognormal about 1 (the mean holds) at a spread of its logarithm, from a standard normal draw z: the
+    /// path-integrated concentration's own spread, its eddies' time the caller's window.</summary>
+    public static double Flicker(double z, double sigmaLn) => sigmaLn > 0 ? Math.Exp(sigmaLn * z - 0.5 * sigmaLn * sigmaLn) : 1;
+
     // ------------------------------------------------------------------ erf
 
     /// <summary>The error function, our own (.NET has none): Abramowitz and Stegun 7.1.26, within 1.5e-7; its series near

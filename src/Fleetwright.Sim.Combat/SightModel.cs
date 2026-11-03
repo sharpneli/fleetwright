@@ -45,6 +45,10 @@ public readonly record struct SmokeTau(double F0, double F1, double F2, double M
     /// <summary>Nine depths, point-major (fore, middle, aft; each low to high).</summary>
     public static SmokeTau Of(ReadOnlySpan<double> t) => new(t[0], t[1], t[2], t[3], t[4], t[5], t[6], t[7], t[8]);
 
+    /// <summary>Every depth times k (docs/battle/error-sources.md ES6: the moment's flicker about the mean, the ladder's
+    /// rung).</summary>
+    public SmokeTau Scaled(double k) => new(F0 * k, F1 * k, F2 * k, M0 * k, M1 * k, M2 * k, A0 * k, A1 * k, A2 * k);
+
     /// <summary>No smoke on the lines.</summary>
     public bool Clear => F0 == 0 && F1 == 0 && F2 == 0 && M0 == 0 && M1 == 0 && M2 == 0 && A0 == 0 && A1 == 0 && A2 == 0;
 

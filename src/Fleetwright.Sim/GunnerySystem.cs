@@ -414,6 +414,11 @@ public sealed class GunnerySystem : IWorldSystem
     // fight's new peak doesn't grow it within a step
     Fc[] fcs;
     Sensor[] sensors;
+    // each battery's guns' own layers' margins on its target at its last second (ES6: a local layer lays by his own view
+    // through the smoke, not the director's), NaN where the smoke wasn't asked, by the battery's mount order: its first
+    // MaxLayers mounts' (a battery of more lays the rest by the battery's margin), grown with the engagements' pool
+    const int MaxLayers = 32;
+    float[] layerMargin;
     FcReading[] pending;
     readonly Stack<int> freeFc;
     int highFc;
@@ -472,6 +477,7 @@ public sealed class GunnerySystem : IWorldSystem
         seaDue = new int[Math.Max(16, settings.ShipCapacity)];
         (fcs, sensors, pending, freeFc) = (new Fc[engagements], new Sensor[engagements * MaxSensors], new FcReading[engagements * PendingCap],
             new Stack<int>(engagements));
+        layerMargin = new float[engagements * MaxLayers];
         Array.Fill(experience, (int)(Core.Experience.Trained * 1000));
     }
 
@@ -761,14 +767,28 @@ public sealed class GunnerySystem : IWorldSystem
     /// eyeball's can't: a director's rangefinder under it ranges by eye).</summary>
     static bool Ranges(in OpticsRow o, in Sensor s) => s.BaseM > 0 && o.Reads;
 
-    /// <summary>Whether a mount's own layer makes the target out from his sight, on its gunhouse's roof (as local control
-    /// takes him: fire-control.md F4b), by eye through his telescope (FL5).</summary>
-    bool LayerSees(ShipClass cls, int mount, in OpticsRow optics, in ShipState ship, in ShipState target, in Air air, ReadOnlySpan<double> smoke, int slot,
-        in ShipFrame frame)
+    /// <summary>A mount's own layer's margin on the target from his sight, on its gunhouse's roof (as local control takes
+    /// him: fire-control.md F4b), by eye through his telescope (FL5): he fires while it's 1 or more, and lays by it (ES6).</summary>
+    double LayerMargin(ShipClass cls, int mount, in OpticsRow optics, in ShipState ship, in ShipState target, in Air air, ReadOnlySpan<double> smoke,
+        int slot, in ShipFrame frame, long now)
     {
         ref readonly var m = ref cls.Mounts[mount];
-        var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = LayerHeightM(cls, mount), BearingMil = settings.EyeBearingMil };
-        return MarginOf(cls, s, optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
+        var s = new Sensor { Eye = -1, X = m.X, Y = m.Y, HeightM = LayerHeightM(cls, mount), BearingMil = settings.EyeBearingMil, SeaPoint = SeaAboard.MountPoint(mount) };
+        return MarginOf(cls, s, optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame, now);
+    }
+
+    /// <summary>The smoke on one of a ship's lines to a target now over the field's mean (docs/battle/error-sources.md ES6):
+    /// its flicker (<see cref="SmokeModel.Flicker"/>), one state a window of <see cref="SimSettings.SmokeFlickerS"/> for
+    /// each eye (or a layer's sight, by his mount's point), drawn from the world's stream by the pair, the eye and the
+    /// window, so it's the same at any compression; times the ladder's smoke rung.</summary>
+    double SmokeNow(int slot, int targetSlot, int eye, int seaPoint, long now)
+    {
+        var store = ships.Store;
+        long window = now / Math.Max((long)(settings.SmokeFlickerS * 1000), 1);
+        int code = eye >= 0 ? eye : 0x1000 + seaPoint;
+        double z = stream.Derive(0x5307u).Derive((ulong)(uint)store[slot].Entity).Derive((ulong)(uint)store[targetSlot].Entity).Derive((ulong)code)
+            .Derive((ulong)window).NextGaussian();
+        return settings.GunneryErrors.Smoke * SmokeModel.Flicker(z, settings.SmokeFlickerLn);
     }
 
     /// <summary>The battery's machine's doubt of its ballistics (ES3) at a range, from its first mount's muzzle; kept as it
@@ -838,6 +858,7 @@ public sealed class GunnerySystem : IWorldSystem
         if (highFc == fcs.Length)
         {
             Array.Resize(ref fcs, fcs.Length * 2);
+            Array.Resize(ref layerMargin, fcs.Length * MaxLayers);
             Array.Resize(ref sensors, fcs.Length * MaxSensors);
             Array.Resize(ref pending, fcs.Length * PendingCap);
         }
@@ -1028,7 +1049,7 @@ public sealed class GunnerySystem : IWorldSystem
             if (!aired)
                 (air, aired) = (AirAt(world, ship.Position, slot, inSight ? tslot : -1, smoke, i, worker), true);
             var at = frame.ToWorld(s.X, s.Y, 0);
-            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke, slot, frame) : 0;
+            double margin = inSight ? MarginOf(cls, s, optics, at, ship.HeadingDeg, target, air, smoke, slot, frame, now) : 0;
             // her bow's spray or green water on its glass: nothing seen through it till it's cleared (ES4)
             bool seen = margin >= 1 && !GlassWet(world, fc.Shooter, slot, ship, cls, cond, s.SeaPoint, s.HeightM + cls.Vertical.Waterline, now);
             sees |= seen;
@@ -1121,6 +1142,7 @@ public sealed class GunnerySystem : IWorldSystem
             firingOf[worker] = new bool[Math.Max(mounts.Length, firingOf[worker].Length * 2)];
         var firing = firingOf[worker];
         bool bears = false;
+        var lm = layerMargin.AsSpan(f * MaxLayers, MaxLayers);
         // a gun laid by its own layer fires only while he sees her from his sight (docs/battle/fc-ladder-check.md FL5): on
         // the gunhouse's roof, through the smoke there, her own funnels' over her guns as much as the enemy's (the 1912
         // trial: Orion's layers lost her in it where Thunderer's director aloft didn't); a director's guns follow its
@@ -1139,8 +1161,11 @@ public sealed class GunnerySystem : IWorldSystem
             firing[j] = inTraverse && cond.Lays(mounts[j], fc.Local) && CombatStore.InArcs(cls, mr, bearing) &&
                         store.Combat.Mount(slot, mounts[j]).Rounds > 0 && elevation <= mr.MaxElevationDeg &&
                         !GunWet(fc.Shooter, slot, ship, cls, cond, mounts[j], now);
+            double layer = double.NaN;
             if (firing[j] && ownSight)
-                firing[j] = LayerSees(cls, mounts[j], optics, ship, target, air, smoke, slot, frame);
+                firing[j] = (layer = LayerMargin(cls, mounts[j], optics, ship, target, air, smoke, slot, frame, now)) >= 1;
+            if (j < MaxLayers)
+                lm[j] = (float)layer;
             if (firing[j] && !fc.Fit.Mount.DirectorFiring)   // his sight on the gunhouse's roof blinded by the sea (ES4)
                 firing[j] = !GlassWet(world, fc.Shooter, slot, ship, cls, cond, SeaAboard.MountPoint(mounts[j]), cls.Components[mr.Component].Bounds.Top, now);
             if (firing[j] && ownColumns)
@@ -1342,7 +1367,7 @@ public sealed class GunnerySystem : IWorldSystem
     /// beam on her lights her, her own ship's beams veil the sensor's view down them, others' glare in it, and her own
     /// lamp in its view is a point to aim at (docs/battle/night.md Q4).</summary>
     double MarginOf(ShipClass cls, in Sensor s, in OpticsRow optics, Vec3d at, double headingDeg, in ShipState target, in Air air,
-        ReadOnlySpan<double> smoke, int slot, in ShipFrame frame)
+        ReadOnlySpan<double> smoke, int slot, in ShipFrame frame, long now)
     {
         var tc = target.Handling.Class;
         var tp = target.Position;
@@ -1357,7 +1382,8 @@ public sealed class GunnerySystem : IWorldSystem
         double pupil = SightModel.PupilMm(air.Sky.SkyCdM2), back = Earth.Bearing(tp, at);
         var (lux, from) = air.Lights.On(target.Slot, tp, air.VisibilityM);
         var line = new SightLine(d, back - target.HeadingDeg, air.VisibilityM, air.Sky.Toward(brg), sil,
-            air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.X, s.Y, s.HeightM) : default, Math.Abs(target.Speed),
+            air.Smoked ? SmokeModel.EyeTau(smoke, cls.Eyes, s.X, s.Y, s.HeightM).Scaled(SmokeNow(slot, target.Slot, s.Eye, s.SeaPoint, now)) : default,
+            Math.Abs(target.Speed),
             ranges ? SightModel.TelescopeGlass(optics, pupil) : SightModel.LookoutGlass(pupil, settings),
             lux > 0 ? lux * Lights.Facing(from, back) : 0, air.DazzleCdM2);
         double lamp = 0, lampM = 0;
@@ -1765,7 +1791,21 @@ public sealed class GunnerySystem : IWorldSystem
             : Vibration(cls, ship, InstrumentSupport.Turret, cls.Mounts[mounts[0]].X);
         // and the air on his sight (BL1i): a grey shape at the edge of what he can make out
         var errs = settings.GunneryErrors;
-        double layRad = errs.Laying * mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
+        // a director's layer by what the director sees; each gun's own layer by what he sees from his sight (ES6: the 1912
+        // trial's turret layers in Orion's smoke, where Thunderer's director aloft saw her), the salvo's guns' as one spread
+        double haze = SightModel.HazeFactor(fc.Margin, settings.AimHazePower, settings);
+        if (!mount.DirectorFiring)
+        {
+            var lms = layerMargin.AsSpan(f * MaxLayers, MaxLayers);
+            double sum = 0;
+            int laid = 0;
+            for (int j = 0; j < mounts.Length && j < MaxLayers; j++)
+                if (firing[j] && !double.IsNaN(lms[j]))
+                    (sum, laid) = (sum + Math.Pow(SightModel.HazeFactor(lms[j], settings.AimHazePower, settings), 2), laid + 1);
+            if (laid > 0)
+                haze = Math.Sqrt(sum / laid);
+        }
+        double layRad = errs.Laying * mount.LayMil * FireControl.Mil * crew.Lay * combat * stress * shake * haze;
         double eEl = mount.DirectorFiring ? r.NextGaussian() * layRad * perRad : 0, eTr = mount.DirectorFiring ? r.NextGaussian() * layRad * range : 0;
         // own ship's turns cost a machine fed her motion what its own course and speed inputs lag (the computer's own ship,
         // Reckon: docs/battle/fc-ladder-check.md FL1), no draw here
@@ -2053,7 +2093,7 @@ public sealed class GunnerySystem : IWorldSystem
                 for (int k = 0; k < fc.SensorCount && !sees; k++)
                 {
                     ref readonly var s = ref sensors[sv.Fc * MaxSensors + k];
-                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame) >= 1;
+                    sees = MarginOf(ship.Handling.Class, s, fc.Fit.Optics, frame.ToWorld(s.X, s.Y, 0), ship.HeadingDeg, target, air, smoke, slot, frame, world.Time.Ms) >= 1;
                 }
             }
             var sign = sv.Hits > 0 || sv.Over > 0 && sv.Short > 0 ? FireControl.Sign.Straddle : sv.Over > 0 ? FireControl.Sign.Over :

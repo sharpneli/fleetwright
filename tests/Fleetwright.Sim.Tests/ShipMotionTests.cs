@@ -37,6 +37,21 @@ public class ShipMotionTests(ITestOutputHelper output)
         foreach (var p in typeof(SimSettings).GetProperties(BindingFlags.Public | BindingFlags.Instance))
             if (p.SetMethod != null)
                 Assert.True(json.Contains($"\"{p.Name}\":", StringComparison.Ordinal), $"settings.json has no {p.Name}");
+        // and inside each record-valued key, every one of its keys: the file's object replaces the defaults' whole, and the
+        // generated reader sets a key it leaves out to zero (docs/battle/error-sources.md ES6: GunneryErrors' later rungs,
+        // masking to smoke, were 0 in play from ES2 to ES5). A dictionary's entries are the file's to choose
+        var given = System.Text.Json.Nodes.JsonNode.Parse(json, documentOptions: new System.Text.Json.JsonDocumentOptions
+            { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
+        var defaults = System.Text.Json.Nodes.JsonNode.Parse(SimSettings.Default.ToJson())!.AsObject();
+        foreach (var (key, value) in defaults)
+        {
+            var type = typeof(SimSettings).GetProperty(key)?.PropertyType;
+            if (value is not System.Text.Json.Nodes.JsonObject inner || type == null || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+                continue;
+            var file = given[key] as System.Text.Json.Nodes.JsonObject;
+            foreach (var (k, _) in inner)
+                Assert.True(file?.ContainsKey(k) == true, $"settings.json's {key} has no {k}");
+        }
         Assert.ThrowsAny<System.Text.Json.JsonException>(() => SimSettings.Parse("{ \"ShipTickMS\": 50 }"));
         Assert.Equal(40, SimSettings.Parse("{ \"ShipTickMs\": 40 }").ShipTickMs);
         Assert.Equal(SimSettings.Default.MaxSpeed, SimSettings.Parse("{ \"ShipTickMs\": 40 }").MaxSpeed);
