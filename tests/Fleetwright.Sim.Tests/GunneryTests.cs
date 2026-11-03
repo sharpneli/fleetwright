@@ -441,6 +441,93 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(drift.Fall < 1.2 * exact.Fall + 5, "the spots walk the vertical's drift out as it grows");
     }
 
+    /// <summary>Her salvos after a time: hits per shell (%) and the falls' mean over or short of her, rms (m), over n duels,
+    /// the shooter steaming north at 18 kn and the target abeam of her at a range, steaming north at 18 kn; from circleS on
+    /// the target circles with her helm held at rudderDeg if asked, or zigzags zig° either side every 75 s from the start;
+    /// the salvos counted from countS.</summary>
+    static (double HitPct, double AlongM) Falls(ShipClass shooter, ShipClass target, double rangeM, SimSettings s, int n, double rudderDeg = 0,
+        double circleS = 240, double zig = 0, double countS = 300, double minutes = 10)
+    {
+        var hits = new int[n];
+        var shells = new int[n];
+        var along = new List<double>[n];
+        Parallel.For(0, n, k =>
+        {
+            var w = new World(Start, (ulong)(1 + k), s);
+            int a = w.Ships.AddClass(shooter), b = w.Ships.AddClass(target);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, 90);
+            Earth.Advance(ref p, ref f, rangeM);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 18, side: 0));
+            w.Apply(ShipSystem.Spawn(b, tl, to, 0, 18, side: 1));
+            w.AdvanceTo(Start + 1);
+            w.Apply(GunnerySystem.Engage(1, 0, 2));
+            var l = along[k] = [];
+            long from = Start.Ms + (long)(countS * 1000);
+            w.Gunnery.Reported = r =>
+            {
+                if (r.Shooter == 1 && r.Battery == 0 && r.FiredMs > from)
+                {
+                    (hits[k], shells[k]) = (hits[k] + r.Hits, shells[k] + r.Shells);
+                    l.Add(r.MeanX);
+                }
+            };
+            for (int leg = 1; zig > 0 && leg * 75 < minutes * 60; leg++)
+            {
+                w.AdvanceTo(Start + leg * 75_000L);
+                w.Apply(ShipSystem.Course(2, leg % 2 == 1 ? zig : 360 - zig));
+            }
+            if (rudderDeg != 0)
+            {
+                w.AdvanceTo(Start + (long)(circleS * 1000));
+                w.Apply(ShipSystem.Rudder(2, rudderDeg));
+            }
+            w.AdvanceTo(Start + (long)(minutes * 60_000));
+        });
+        var all = along.SelectMany(l => l).ToArray();
+        return (100.0 * hits.Sum() / Math.Max(shells.Sum(), 1), Math.Sqrt(all.Average(x => x * x)));
+    }
+
+    /// <summary>Level 6 to 7's computer where they must differ (fc-ladder-check.md FL9), QE refitted behind the same O4 and
+    /// stable vertical: the Mk 8 takes her on a straight line, so on a steady circle it chases a velocity that keeps turning
+    /// and never converges ("straight-line machines never converge on a circle", fire-control-research.md §5.6), where the
+    /// 1950s curved-course analog carries a decaying acceleration and projects along her curve. Her circle at 16 km, 18 kn
+    /// and 15° of helm (some 0.96°/s, her speed falling to 15 kn), the salvos from a minute after the helm went over; the
+    /// readings' rung (24 duels, measured): the falls 312 m rms over or short of her against 129; every error on, hits 1.6
+    /// against 6.0% (steady 16.9 and 18.3). Steady alike, on the readings' rung 98.5 and 98.9% (the research: a little worse
+    /// for the extra states, not seen here); her zigzag (20° either side every 75 s at 14 km) 25.7 against 32.9. The digital
+    /// turn filter (FL10's) and both behind the auto-track stand-in, printed.</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_7_follows_her_circle()
+    {
+        var qe = Class("super_dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var all = Settings with { Smoke = false };
+        const string o4 = "Coated, stabilised (O4)", track = "Auto-track ranging (radar stand-in)", mk8 = "Ford Mk 8 rangekeeper",
+            curved = "Curved-course analog computer (1950s)", digital = "Digital turn filter (Mk 86, WM-25)", vertical = "Stable vertical, remote power control";
+        var byMk8 = Refit("super_dreadnought", o4, mk8, vertical);
+        var byCurved = Refit("super_dreadnought", o4, curved, vertical);
+        var (_, circleM) = Falls(byMk8, qe, 16_000, readings, 24, rudderDeg: 15);
+        var (_, circleC) = Falls(byCurved, qe, 16_000, readings, 24, rudderDeg: 15);
+        var (hitM, _) = Falls(byMk8, qe, 16_000, all, 24, rudderDeg: 15);
+        var (hitC, _) = Falls(byCurved, qe, 16_000, all, 24, rudderDeg: 15);
+        var (steadyM, _) = Falls(byMk8, qe, 16_000, readings, 24);
+        var (steadyC, _) = Falls(byCurved, qe, 16_000, readings, 24);
+        var (zigM, _) = Falls(byMk8, qe, 14_000, readings, 24, zig: 20, countS: 0);
+        var (zigC, _) = Falls(byCurved, qe, 14_000, readings, 24, zig: 20, countS: 0);
+        output.WriteLine($"her circle at 16 km, readings: the falls {circleM:F0} m rms (the Mk 8), {circleC:F0} (the curved-course analog); every error on, " +
+                         $"hits {hitM:F1}%, {hitC:F1}; steady, readings {steadyM:F1}, {steadyC:F1}; her zigzag {zigM:F1}, {zigC:F1}");
+        var (hitD, _) = Falls(Refit("super_dreadnought", o4, digital, vertical), qe, 16_000, all, 24, rudderDeg: 15);
+        var (hitTM, _) = Falls(Refit("super_dreadnought", track, mk8, vertical), qe, 16_000, all, 24, rudderDeg: 15);
+        var (hitTC, _) = Falls(Refit("super_dreadnought", track, curved, vertical), qe, 16_000, all, 24, rudderDeg: 15);
+        output.WriteLine($"her circle, every error on: the digital turn filter {hitD:F1}%; behind the auto-track stand-in the Mk 8 {hitTM:F1}, the curved-course analog {hitTC:F1}");
+        Assert.True(circleC < 0.6 * circleM, "the curved-course analog projects along her curve");
+        Assert.True(hitC > 2 * hitM, "and hits her as she circles");
+        Assert.InRange(steadyC, 0.96 * steadyM, 1.04 * steadyM);
+        Assert.True(zigC > zigM, "her zigzag's turns followed sooner");
+    }
+
     [Fact]
     public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {

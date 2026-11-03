@@ -663,9 +663,9 @@
    }
   },
   {
-   "name": "Mk 1A computer",
+   "name": "Curved-course analog computer (1950s)",
    "group": "computer",
-   "note": "The 1950s analog with a curved-course (acceleration) predictor and the \"target just turned\" button (level 7, designer C5).",
+   "note": "The 1950s analog with a curved-course (acceleration) predictor, the Mk 56/68 systems' (level 7, designer C5; fire_control_ref.py level 7; Sperry's target course predictor, filed 1954: fire-control-research.md §5.6). Not the Ford Mk 1A, the WWII Mk 37's computer, which took a straight-line target and had the \"target just turned\" button (NavPers Ch. 19-F; docs/battle/fc-ladder-check.md FL9). The acceleration it allows, 0.25 m/s² 1σ, is a capital ship's in a hard turn, her speed times her rate of turn (25 kn at 1°/s about 0.22, the reference's own figure; QE at 18 kn with 15° of helm 0.14).",
    "value": {
     "computer": {
      "tracker": "acceleration",
@@ -675,7 +675,7 @@
      "max_range_rate_ms": 0,
      "max_bearing_rate_deg_s": 0,
      "accel_tau_s": 20,
-     "accel_sigma_ms2": 0.1,
+     "accel_sigma_ms2": 0.25,
      "turn_q": 0,
      "speed_q": 0,
      "detect": true,
@@ -912,7 +912,7 @@
    "note": "Level 7, 1955: auto-tracking radar.",
    "fit": [
     "Auto-track ranging (radar stand-in)",
-    "Mk 1A computer",
+    "Curved-course analog computer (1950s)",
     "Stable vertical, power servo"
    ]
   },

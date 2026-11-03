@@ -37,7 +37,7 @@ the steps that read it (F5: the sensors proper; ship motion; power with the powe
 | table | Stereo, long base (O3) | Admiralty Fire Control Table | Director, power drive | Level 4, the 1930s: the interwar central table. |
 | rangekeeper | Coated, stabilised (O4) | Ford Mk 8 rangekeeper | Stable vertical, remote power control | Level 5, 1941-42: rangekeeper and stable vertical. |
 | radar-spotting | Coated, stabilised (O4) | Ford Mk 8 rangekeeper, radar ranging (stand-in) | Stable vertical, remote power control | Level 6, 1945: radar spotting (its radar a stand-in until the radar pass). |
-| auto-track | Auto-track ranging (radar stand-in) | Mk 1A computer | Stable vertical, power servo | Level 7, 1955: auto-tracking radar. |
+| auto-track | Auto-track ranging (radar stand-in) | Curved-course analog computer (1950s) | Stable vertical, power servo | Level 7, 1955: auto-tracking radar. |
 | digital | Digital ranging (radar and laser stand-in) | Digital turn filter (Mk 86, WM-25) | Digital servo | Level 8, 1975: digital. |
 | judgement | By eye | Judgement | Open sights | A sailor's judgement: the worst computer, for comparison (F2). |
 | argo | Barr & Stroud FQ/FT on the Argo mounting | Argo clock Mk IV | Director, follow the pointer | Pollen's Argo clock (level 3b). |
@@ -86,7 +86,7 @@ own numbers. Mass t, crew, power kW.
 | Type 92 Shagekiban | rate_clock, helm-free | 15 | 0.03 | - | 2, 12 | 0.6, 1.5 | 0.5, 20 | 366 | - | 4, 15, 2 |
 | Ford Mk 8 rangekeeper | true_course, helm-free | 3 | 0.05 | - | 3, 20 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
 | Ford Mk 8 rangekeeper, radar ranging (stand-in) | true_course, helm-free | 2 | 0.05 | - | 2, 12 | 0.4, 1 | -, 3 | 366 | - | 3, 4, 10 |
-| Mk 1A computer | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | -, 2 | 366 | τ 20 s, σ 0.1 m/s²; detects turns | 2.5, 3, 10 |
+| Curved-course analog computer (1950s) | acceleration, helm-free | 1 | 0.02 | - | 2, 12 | 0.4, 0.8 | -, 2 | 366 | τ 20 s, σ 0.25 m/s²; detects turns | 2.5, 3, 10 |
 | Digital turn filter (Mk 86, WM-25) | turn_rate, helm-free | 0.5 | 0.01 | - | 2, 12 | 0.3, 0.5 | -, 1 | 366 | turn 0, speed 0.1; detects turns | 0.8, 2, 8 |
 
 ## Mounts
@@ -130,7 +130,7 @@ own numbers. Mass t, crew, power kW.
 - **Type 92 Shagekiban:** The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer ("Follow up compass course as received from the gyrocompass": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man following a pointer, the user]; own speed set by crank, 20 s [EST].
 - **Ford Mk 8 rangekeeper:** The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md §3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL7).
 - **Ford Mk 8 rangekeeper, radar ranging (stand-in):** The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass.
-- **Mk 1A computer:** The 1950s analog with a curved-course (acceleration) predictor and the "target just turned" button (level 7, designer C5).
+- **Curved-course analog computer (1950s):** The 1950s analog with a curved-course (acceleration) predictor, the Mk 56/68 systems' (level 7, designer C5; fire_control_ref.py level 7; Sperry's target course predictor, filed 1954: fire-control-research.md §5.6). Not the Ford Mk 1A, the WWII Mk 37's computer, which took a straight-line target and had the "target just turned" button (NavPers Ch. 19-F; docs/battle/fc-ladder-check.md FL9). The acceleration it allows, 0.25 m/s² 1σ, is a capital ship's in a hard turn, her speed times her rate of turn (25 kn at 1°/s about 0.22, the reference's own figure; QE at 18 kn with 15° of helm 0.14).
 - **Digital turn filter (Mk 86, WM-25):** The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's 0.1, not the reference's 0.05² (F2: ships lose way in a turn).
 - **Open sights:** Each gun laid by its layer over open sights, fired on the roll (the open sight's 4′ on a steady platform: 1.15 mil; the roll his timing's): before continuous aim, to the late 1890s (level 0).
 - **Telescopic sights, fired on the roll:** Each gun by its own telescope, fired as the roll brings the sight on (the telescope's 1.2′: 0.35 mil; the roll his timing's): heavy guns until power laying, continuous aim working only to about 9.2″ (fire-control-research.md §6).

@@ -129,7 +129,7 @@ runs 5-7, after its fix, and the Debug run had none.
 ## Balance and calibration
 
 - [ ] The post-war designs with the radar stand-in range by eye (found 2026-11-01, balance.md BL1u's sweep): `tiger`,
-  `daring`, `colbert`, `hamburg`, `akizuki_1960`, `impetuoso` fit "Auto-track ranging (radar stand-in)" with the Mk 1A,
+  `daring`, `colbert`, `hamburg`, `akizuki_1960`, `impetuoso` fit "Auto-track ranging (radar stand-in)" with the curved-course analog,
   but their `rangefinder_m` is 0 (their radar is `radar_t`), so the sensor's base is 0, `Ranges` is false, and every
   reading is the eye's (12.5% of the range): a steady target at 12 km is held 1.3 km off by `tiger`, 3 km by `daring`,
   the spots carrying corrections of 1.8 km; `tiger` hits about 3% at 12 km where a Ford Mk 8 `battleship` hits 19% at

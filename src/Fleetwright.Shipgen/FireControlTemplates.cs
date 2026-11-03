@@ -163,11 +163,15 @@ public static class FireControlTemplates
             "fc-ladder-check.md FL7)."),
         C("Ford Mk 8 rangekeeper, radar ranging (stand-in)", K("true_course", true, 2, 0.05, 2, 12, 0.4, 1, 3, 366, 3, 4, 10),
             "The Mk 8 fed by radar spotting (level 6): its shorter latency is the radar's, standing in until the radar pass."),
-        C("Mk 1A computer", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 2, 366, 2.5, 3, 10) with
+        C("Curved-course analog computer (1950s)", K("acceleration", true, 1, 0.02, 2, 12, 0.4, 0.8, 2, 366, 2.5, 3, 10) with
             {
-                AccelTauS = 20, AccelSigmaMs2 = 0.1, Detect = true,
+                AccelTauS = 20, AccelSigmaMs2 = 0.25, Detect = true,
             },
-            "The 1950s analog with a curved-course (acceleration) predictor and the \"target just turned\" button (level 7, designer C5)."),
+            "The 1950s analog with a curved-course (acceleration) predictor, the Mk 56/68 systems' (level 7, designer C5; fire_control_ref.py " +
+            "level 7; Sperry's target course predictor, filed 1954: fire-control-research.md §5.6). Not the Ford Mk 1A, the WWII Mk 37's " +
+            "computer, which took a straight-line target and had the \"target just turned\" button (NavPers Ch. 19-F; docs/battle/" +
+            "fc-ladder-check.md FL9). The acceleration it allows, 0.25 m/s² 1σ, is a capital ship's in a hard turn, her speed times her " +
+            "rate of turn (25 kn at 1°/s about 0.22, the reference's own figure; QE at 18 kn with 15° of helm 0.14)."),
         C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, 0.3, 0.5, 1, 366, 0.8, 2, 8) with
             {
                 TurnQ = 5e-7, SpeedQ = 0.1, Detect = true,
@@ -221,7 +225,7 @@ public static class FireControlTemplates
             "Level 5, 1941-42: rangekeeper and stable vertical."),
         new("radar-spotting", "Coated, stabilised (O4)", "Ford Mk 8 rangekeeper, radar ranging (stand-in)", "Stable vertical, remote power control",
             "Level 6, 1945: radar spotting (its radar a stand-in until the radar pass)."),
-        new("auto-track", "Auto-track ranging (radar stand-in)", "Mk 1A computer", "Stable vertical, power servo", "Level 7, 1955: auto-tracking radar."),
+        new("auto-track", "Auto-track ranging (radar stand-in)", "Curved-course analog computer (1950s)", "Stable vertical, power servo", "Level 7, 1955: auto-tracking radar."),
         new("digital", "Digital ranging (radar and laser stand-in)", "Digital turn filter (Mk 86, WM-25)", "Digital servo", "Level 8, 1975: digital."),
         new("judgement", "By eye", "Judgement", "Open sights", "A sailor's judgement: the worst computer, for comparison (F2)."),
         new("argo", "Barr & Stroud FQ/FT on the Argo mounting", "Argo clock Mk IV", "Director, follow the pointer", "Pollen's Argo clock (level 3b)."),

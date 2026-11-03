@@ -38,7 +38,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL6 | 3 → 4 | Dreyer (rate clock, latency 15 s, bias 1.2%) → AFCT (true course, 8 s, 0.6%); FQ/FT → stereo 5 m; director power drive 0.4 mil | a target's turns re-learned sooner; the bearing rate past the Dreyer's 0.25°/s; less bias to range out | the target's zigzag; a fast crossing near | done 2026-11-02 |
 | FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | done 2026-11-02 (the rangefinder in a seaway to the error sources' session) |
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
-| FL9 | 6 → 7 | Mk 8 → Mk 1A (acceleration, turn detection) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | |
+| FL9 | 6 → 7 | Mk 8 → the curved-course analog (acceleration, turn detection; the catalogue's "Mk 1A computer" till FL9) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | done 2026-11-03 (the walk on a circle to the salvo chasing) |
 | FL10 | 7 → 8 | Mk 1A → digital turn filter | the same, quicker; a zigzag | a target circling and zigzagging | |
 | FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | |
 
@@ -78,7 +78,9 @@ lumped stand-in for something the chain now models?
   guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye. Done to the AFCT:
   the Dumaresq's 3 kn and 20° for every machine from it through the AFCT family (FL5, FL6), the same eye behind ×28;
   the Argo (FL11), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
-  stand-in row keeps 2 and 12 till FL8.
+  stand-in row keeps 2 and 12 till FL8. FL9: the curved-course analog's 2 and 12 stay with the radar stand-in it's fitted
+  behind (FL8).
+- `accel_sigma_ms2`: the curved-course analog's allowed acceleration; FL9 (0.1 → 0.25, a capital ship's in a hard turn).
 - `latency_s`: the Dreyer's 15 s and the Mk 8's 2-3 s are the research's (evasion-research.md, "about 15 s for a Dreyer table, 2-3 s for a Mk 8"), the AFCT's 8 s
   between them; on a steady target it's what's left between the Dreyer and the AFCT besides the residual (FL6).
 - The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
@@ -320,3 +322,50 @@ maneuver freely"). Kept a battery's, not its ship's: a shift of target starts it
 **On the way:** the Mk 8's first guess (2 kn and 12°) the Dumaresq's 3 and 20, the same eye (the catalogue and 11
 designs' own blocks); its radar stand-in row keeps its own till FL8. An unstabilised rangefinder in a seaway isn't in the
 chain (audit list). `GunneryTests.Where_the_levels_differ_level_5_fires_anywhere_in_the_roll`.
+
+## FL9: the Mk 8 to the curved-course analog (done 2026-11-03)
+
+**Should give:** the Mk 8 takes her on a straight line (NavPers Ch. 19-F: "a target changing course or speed gives
+inaccurate gun orders until rate control catches up"), so on a steady circle it chases a velocity that keeps turning and
+never converges; the curved-course predictor carries her acceleration and projects along her curve (Sperry's target course
+predictor, filed 1954: "from a straight line to a parabola, using smoothed measured acceleration"). The research's model
+(§5.6, table 12): the Mk 8 with radar 230-300 yd off over a 25 s flight at 1°/s, level 7 about 100. On a straight target
+a little worse for the extra states (level 7 settles at 1.7 kn against 1.0); on a zigzag, between.
+
+**Found** (QE refitted behind the same O4 and stable vertical, QE abeam at 16 km circling at 18 kn with 15° of helm,
+some 0.96°/s, her speed falling to 15 kn; the salvos from a minute after the helm went over; 24 duels):
+
+| | the Mk 8 | the curved-course analog | the digital turn filter (FL10) |
+|---|---|---|---|
+| exact readings: the falls' error along the line, rms | 304 m | 172 m (σa 0.1); 129 (0.25) | 65 m |
+| every error on: hits while she circles | 1.6% | 4.5% (σa 0.1); 6.0% (0.25) | 9.5% |
+| every error on, behind the auto-track stand-in | 3.4% | 8.3% | |
+| steady, readings' rung | 98.5% | 98.9% | |
+| her zigzag (20° every 75 s at 14 km), readings' rung | 25.7% | 32.9% | |
+
+The step shows on its rung and with every error on; behind the radar stand-in both, the research's levels 6 and 7 (3.5
+and 7.9% at 1°/s) within the duels' noise. The steady cost the research found doesn't show at these readings.
+
+**On the way:**
+- The catalogue's "Mk 1A computer" was the 1950s machine: the reference's level 7 is "Auto-track radar, analog (Mk 56/68,
+  1955)", and the research has the Ford Mk 1A, the WWII Mk 37's computer, as a straight-line machine with the "target just
+  turned" button (§5.6). Renamed "Curved-course analog computer (1950s)" (the catalogue, the 8 post-war designs' own
+  blocks, 36 goldens); a design saved with the old name keeps its own block. The Mk 1A itself, a true-course machine for
+  the WWII dual-purpose batteries, isn't in the catalogue.
+- Its allowed acceleration (`accel_sigma_ms2`) was 0.1 m/s² 1σ, unsourced; a circling QE pulls 0.14, so she sat at 1.4σ
+  and the filter was slow to believe her. Now a capital ship's in a hard turn, her speed times her rate of turn: 0.25, the
+  reference's own default ("a 25 kn ship turning 1°/s ~ 0.22"). The memory (`accel_tau_s`, 20 s) is the reference's and
+  stays: 40 s followed the circle a little closer, but nothing sources it.
+- **"Target just turned" never fires** at a surface target here (with and without it alike, on the circle and on 40°
+  zigzag legs): two 99.9% surprises in a row need an innovation her turn never makes between readings this noisy. The
+  real button was a man's: the director's crew saw her turn (her inclination, her heel, her wake), as the eye guesses her
+  course to its prior (12-20°). A turn seen by eye at its inclination error is a candidate for the button's model; not
+  built.
+- **The walk on a circle** (for the salvo chasing): a straight-line machine's falls swing as she circles (the Mk 8's from
+  160 m short to 450 m over and back, every 6 minutes at 1°/s) and the walk can't follow. Its step is the opening
+  bracket's half-width over its count, floored at 46 m, and grows back to that half-width at most, so fire for effect
+  moves the aim 46 m a spot at most, about 100-140 m a minute, where the Mk 8's error grows about 120 m a salvo; and the
+  falls off her line as she turns end-on go doubtful (no range spot), which breaks the three calls alike its growth and
+  the range-lost rule wait for. The deflection is walked on doubtful calls too, at half the error a salvo, and lags its
+  turning error by some 80-160 m. Spotting can't remove a standing error (research §5.6 summary 4), but a swinging one it
+  could partly follow: the salvo chasing's work, where evasion lives.
