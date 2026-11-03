@@ -613,6 +613,39 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.InRange(ownA, 0.95 * ownD, 1.05 * ownD);
     }
 
+    /// <summary>The AFCT's turn setting beside the plain table (fc-ladder-check.md FL11; [UNCERTAIN] in the record, "the
+    /// only big-gun computer that could handle a target in a constant turn", a forum report citing Friedman: an option
+    /// anyone may fit), QE refitted behind the O3 and the power drive at 16 km. Her rate of turn set by hand, slowly (a turn
+    /// filter whose rate adapts at 1e-7 rad²/s³), so on her circle it turns a standing error into a transient where the
+    /// plain table chases her (the research's model: 4.0 → 7.1% at 0.5°/s, 2.9 → 7.4 at 1°/s). Measured, 24 duels: her
+    /// circle at 15° of helm, the readings' rung, the falls 397 against 151 m; every error on 2.4 against 8.4%. Steady, alike
+    /// once settled (from 420 s, 48 duels: 97.7 and 97.7%); it settles more slowly ("the AFCT turn setting settles more
+    /// slowly than the plain AFCT", research §5.4: over 180-420 s 82.6 against 56.4), its slow rate holding its opening doubt
+    /// of a turn for minutes.</summary>
+    [Fact]
+    public void The_turn_setting_follows_her_circle_the_plain_table_doesnt()
+    {
+        var qe = Class("super_dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var all = Settings with { Smoke = false };
+        const string o3 = "Stereo, long base (O3)", afct = "Admiralty Fire Control Table", turn = "Admiralty Fire Control Table, turn setting", power = "Director, power drive";
+        var byTable = Refit("super_dreadnought", o3, afct, power);
+        var byTurn = Refit("super_dreadnought", o3, turn, power);
+        var (_, circleA) = Falls(byTable, qe, 16_000, readings, 24, rudderDeg: 15, minutes: 12);
+        var (_, circleT) = Falls(byTurn, qe, 16_000, readings, 24, rudderDeg: 15, minutes: 12);
+        var (hitA, _) = Falls(byTable, qe, 16_000, all, 24, rudderDeg: 15, minutes: 12);
+        var (hitT, _) = Falls(byTurn, qe, 16_000, all, 24, rudderDeg: 15, minutes: 12);
+        var (earlyA, _) = Falls(byTable, qe, 16_000, readings, 48, countS: 180, minutes: 7);
+        var (earlyT, _) = Falls(byTurn, qe, 16_000, readings, 48, countS: 180, minutes: 7);
+        var (lateA, _) = Falls(byTable, qe, 16_000, readings, 48, countS: 420, minutes: 15);
+        var (lateT, _) = Falls(byTurn, qe, 16_000, readings, 48, countS: 420, minutes: 15);
+        output.WriteLine($"her circle: readings, the falls {circleA:F0} m rms (the table), {circleT:F0} (the turn setting); every error on {hitA:F1}%, {hitT:F1}. " +
+                         $"Steady, readings: 180-420 s {earlyA:F1}, {earlyT:F1}; from 420 s {lateA:F1}, {lateT:F1}");
+        Assert.True(circleT < 0.5 * circleA, "the turn setting follows her circle");
+        Assert.True(hitT > 2 * hitA, "and hits her on it");
+        Assert.InRange(lateT, 0.97 * lateA, 1.03 * lateA);
+    }
+
     [Fact]
     public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {

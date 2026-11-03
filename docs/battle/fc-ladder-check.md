@@ -40,7 +40,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
 | FL9 | 6 → 7 | Mk 8 → the curved-course analog (acceleration, turn detection; the catalogue's "Mk 1A computer" till FL9) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | done 2026-11-03 (the walk on a circle to the salvo chasing) |
 | FL10 | 7 → 8 | the curved-course analog → digital turn filter | the same, quicker; a zigzag; fooled by a weave (evasion-research.md P4) | a target circling, zigzagging and weaving | done 2026-11-03 |
-| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | the Argo done 2026-11-03 |
+| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | the Argo, the turn setting done 2026-11-03 |
 
 ## Numbers to audit on the way
 
@@ -441,3 +441,27 @@ as she rolls (audit list), so in a seaway the Argo leads by no more than in a ca
 **On the way:** its first guess (2.5 kn and 15°) was tighter than the Dumaresq's with the same eye behind the same ×28:
 the Dumaresq's 3 and 20 now (no design fits it; steady 69.3 → 71.3, within the noise).
 `GunneryTests.The_Argo_follows_a_changing_range_rate_the_Dreyer_doesnt`.
+
+### The AFCT's turn setting beside the plain table (done 2026-11-03)
+
+**Should give:** a hand-set enemy rate of turn ([UNCERTAIN] in the record: a forum report citing Friedman, "the only
+big-gun computer that could handle a target in a constant turn"; an option anyone may fit, decision 5), so on a steady
+circle a standing error becomes a transient, the rate set as the plot shows her curve (research §5.6: 4.0 → 7.1% at
+0.5°/s, 2.9 → 7.4 at 1°/s; its error 520 yd a minute into the circle, 120 after four); alike steady and zigzagging, but
+settling more slowly than the plain table ("the price of handling the circle", §5.4).
+
+**Found** (QE refitted behind the O3 and the power drive at 16 km, 24 duels):
+
+| | the AFCT | the turn setting |
+|---|---|---|
+| her circle (15° of helm), the readings' rung: the falls rms | 397 m | 151 m |
+| her circle, every error on: hits; at 7° of helm (~0.5°/s) | 2.4%; 2.9% | 8.4%; 8.6% |
+| steady, the readings' rung (48 duels): 180-420 s; from 420 s | 82.6%; 97.7% | 56.4%; 97.7% |
+| her zigzag (±30°/120 s), every error on | 6.1% | 4.8% |
+
+As the research has it, the circle and the slower settling both. Its rate adapts at 1e-7 rad²/s³, a man's hand: at the
+digital filter's 2e-5 it's a digital filter at the AFCT's latency (the circle 12.3%, a weave 12.5 against 15.2), not a
+setting, so it stays. **On the way:** the opening's cost is partly the turn filter's first doubt of her rate of turn,
+1°/s 1σ for every turn filter (`FcTracker.Start`, the reference's): a hand-set rate starting at 0.1°/s (as if set at
+nought till he sees her turn) opens 65.1% instead of 56.4, the rest the extra states. Not changed: no source for a man's
+first judgement of her rate of turn. `GunneryTests.The_turn_setting_follows_her_circle_the_plain_table_doesnt`.
