@@ -443,10 +443,11 @@ public class GunneryTests(ITestOutputHelper output)
 
     /// <summary>Her salvos after a time: hits per shell (%) and the falls' mean over or short of her, rms (m), over n duels,
     /// the shooter steaming north at 18 kn and the target abeam of her at a range, steaming north at 18 kn; from circleS on
-    /// the target circles with her helm held at rudderDeg if asked, or zigzags zig° either side every 75 s from the start;
-    /// the salvos counted from countS.</summary>
+    /// the target circles with her helm held at rudderDeg if asked, or zigzags zig° either side every legS from the start,
+    /// or weaves from a minute in, her course ordered weave° times the sine of her time over weaveS every 3 s; the salvos
+    /// counted from countS.</summary>
     static (double HitPct, double AlongM) Falls(ShipClass shooter, ShipClass target, double rangeM, SimSettings s, int n, double rudderDeg = 0,
-        double circleS = 240, double zig = 0, double countS = 300, double minutes = 10)
+        double circleS = 240, double zig = 0, double countS = 300, double minutes = 10, double legS = 75, double weave = 0, double weaveS = 90)
     {
         var hits = new int[n];
         var shells = new int[n];
@@ -473,10 +474,15 @@ public class GunneryTests(ITestOutputHelper output)
                     l.Add(r.MeanX);
                 }
             };
-            for (int leg = 1; zig > 0 && leg * 75 < minutes * 60; leg++)
+            for (int leg = 1; zig > 0 && leg * legS < minutes * 60; leg++)
             {
-                w.AdvanceTo(Start + leg * 75_000L);
+                w.AdvanceTo(Start + (long)(leg * legS * 1000));
                 w.Apply(ShipSystem.Course(2, leg % 2 == 1 ? zig : 360 - zig));
+            }
+            for (double t = 60; weave > 0 && t < minutes * 60; t += 3)
+            {
+                w.AdvanceTo(Start + (long)(t * 1000));
+                w.Apply(ShipSystem.Course(2, (weave * Math.Sin(2 * Math.PI * (t - 60) / weaveS) + 360) % 360));
             }
             if (rudderDeg != 0)
             {
@@ -526,6 +532,48 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(hitC > 2 * hitM, "and hits her as she circles");
         Assert.InRange(steadyC, 0.96 * steadyM, 1.04 * steadyM);
         Assert.True(zigC > zigM, "her zigzag's turns followed sooner");
+    }
+
+    /// <summary>Level 7 to 8's computer where they must differ (fc-ladder-check.md FL10), QE refitted behind the same O4 and
+    /// stable vertical at 16 km, both her at 18 kn: the digital filter carries her rate of turn, so on a steady circle it
+    /// follows where the curved-course analog's decaying acceleration lags (her circle at 15° of helm, ~0.96°/s, the
+    /// readings' rung, 24 duels, measured: the falls 45 against 129 m rms; every error on, hits 10.7 against 6.0%); her
+    /// zigzag (30° either side every 2 min) it follows sooner too, a turn learnt and shed, since its turn-rate noise is a
+    /// capital ship's helm (19.2 against 14.2%; at the reference's 5e-7 it shed a turn so slowly it fell behind the Mk 8,
+    /// 7.3%). A weave fools it ("devastating against a turn-following digital filter", evasion-research.md: it over-
+    /// extrapolates every swing; a straight-line machine averages it out): ±30° on a 90 s sine, 17.3 against 30.0%. Steady,
+    /// alike (94.0 v 95.8). The Mk 8 on the weave, and both behind the level's digital ranging stand-in, printed.</summary>
+    [Fact]
+    public void Where_the_levels_differ_level_8_follows_her_turns()
+    {
+        var qe = Class("super_dreadnought");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var all = Settings with { Smoke = false };
+        const string o4 = "Coated, stabilised (O4)", ranging = "Digital ranging (radar and laser stand-in)", mk8 = "Ford Mk 8 rangekeeper",
+            curved = "Curved-course analog computer (1950s)", digital = "Digital turn filter (Mk 86, WM-25)", vertical = "Stable vertical, remote power control";
+        var byCurved = Refit("super_dreadnought", o4, curved, vertical);
+        var byDigital = Refit("super_dreadnought", o4, digital, vertical);
+        var (_, circleC) = Falls(byCurved, qe, 16_000, readings, 24, rudderDeg: 15);
+        var (_, circleD) = Falls(byDigital, qe, 16_000, readings, 24, rudderDeg: 15);
+        var (hitC, _) = Falls(byCurved, qe, 16_000, all, 24, rudderDeg: 15);
+        var (hitD, _) = Falls(byDigital, qe, 16_000, all, 24, rudderDeg: 15);
+        var (zigC, _) = Falls(byCurved, qe, 16_000, readings, 24, zig: 30, legS: 120, countS: 180, minutes: 12);
+        var (zigD, _) = Falls(byDigital, qe, 16_000, readings, 24, zig: 30, legS: 120, countS: 180, minutes: 12);
+        var (weaveC, _) = Falls(byCurved, qe, 16_000, readings, 24, weave: 30, countS: 180, minutes: 12);
+        var (weaveD, _) = Falls(byDigital, qe, 16_000, readings, 24, weave: 30, countS: 180, minutes: 12);
+        var (steadyC, _) = Falls(byCurved, qe, 16_000, readings, 24, countS: 180, minutes: 12);
+        var (steadyD, _) = Falls(byDigital, qe, 16_000, readings, 24, countS: 180, minutes: 12);
+        output.WriteLine($"readings: her circle, the falls {circleC:F0} m rms (the curved-course analog), {circleD:F0} (the digital filter); her zigzag " +
+                         $"{zigC:F1}%, {zigD:F1}; her weave {weaveC:F1}, {weaveD:F1}; steady {steadyC:F1}, {steadyD:F1}. Every error on, her circle {hitC:F1}, {hitD:F1}");
+        var (weaveM, _) = Falls(Refit("super_dreadnought", o4, mk8, vertical), qe, 16_000, readings, 24, weave: 30, countS: 180, minutes: 12);
+        var (hitRC, _) = Falls(Refit("super_dreadnought", ranging, curved, vertical), qe, 16_000, all, 24, rudderDeg: 15);
+        var (hitRD, _) = Falls(Refit("super_dreadnought", ranging, digital, vertical), qe, 16_000, all, 24, rudderDeg: 15);
+        output.WriteLine($"her weave, readings: the Mk 8 {weaveM:F1}%; her circle every error on, behind the digital ranging stand-in: {hitRC:F1}, {hitRD:F1}");
+        Assert.True(circleD < 0.6 * circleC, "the turn filter follows her circle");
+        Assert.True(hitD > 1.4 * hitC, "and hits her on it");
+        Assert.True(zigD > zigC, "her zigzag's turns learnt and shed sooner");
+        Assert.True(weaveD < 0.8 * weaveC, "a weave fools the turn filter");
+        Assert.InRange(steadyD, 0.95 * steadyC, 1.04 * steadyC);
     }
 
     [Fact]

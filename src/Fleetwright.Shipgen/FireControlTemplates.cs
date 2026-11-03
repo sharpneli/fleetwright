@@ -174,10 +174,13 @@ public static class FireControlTemplates
             "rate of turn (25 kn at 1°/s about 0.22, the reference's own figure; QE at 18 kn with 15° of helm 0.14)."),
         C("Digital turn filter (Mk 86, WM-25)", K("turn_rate", true, 0.5, 0.01, 2, 12, 0.3, 0.5, 1, 366, 0.8, 2, 8) with
             {
-                TurnQ = 5e-7, SpeedQ = 0.1, Detect = true,
+                TurnQ = 2e-5, SpeedQ = 0.1, Detect = true,
             },
-            "The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). Its speed noise is the sim's " +
-            "0.1, not the reference's 0.05² (F2: ships lose way in a turn)."),
+            "The 1970s digital systems with a turn-following filter (level 8, designer C6; the filter [INFERRED]). How fast it lets her rate of " +
+            "turn change, 2e-5 rad²/s³, is a capital ship's helm: the rate hard over makes, squared, over the time her yaw takes to answer " +
+            "(QE at 18 kn: 1.3°/s over Nomoto's 28 s, 1.9e-5; the reference's 5e-7 learnt a turn and shed it so slowly it fell behind the " +
+            "Mk 8 on a zigzag: docs/battle/fc-ladder-check.md FL10). Its speed noise the same way, the way she loses in a hard turn: a " +
+            "quarter of her speed in a minute, 0.1 (F2; the reference's 0.05²)."),
 
         // ---- mounts. lay_mil is the layer's elevation error a shot on a steady platform, 1 sigma, in mil, for a trained layer
         // (the crews' Lay multiplies it); the sea's share is the roll's and the pitch's (docs/battle/balance.md BL1b: his timing

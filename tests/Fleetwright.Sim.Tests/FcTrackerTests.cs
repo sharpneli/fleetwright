@@ -100,7 +100,10 @@ public class FcTrackerTests(ITestOutputHelper output)
         var (_, line, _) = Circle(Computer(4), 1.0);
         var (_, turn, _) = Circle(Computer(8), 1.0);
         Assert.True(line > 100, $"the true course lags a circle by {line:0} m");
-        Assert.True(turn < 0.3 * line, $"the turn filter follows it to {turn:0} m");
+        // the turn filter's rate of turn as free as a capital ship's helm makes it (fc-ladder-check.md FL10: 2e-5 rad²/s³ for the
+        // reference's 5e-7): on these clean readings it follows the circle to 47 m where it did to 20, its price for learning
+        // and shedding a turn sooner, and keeps a third of the straight-line machine's error
+        Assert.True(turn < 0.4 * line, $"the turn filter follows it to {turn:0} m");
     }
 
     [Fact]

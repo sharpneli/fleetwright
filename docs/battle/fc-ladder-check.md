@@ -39,7 +39,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL7 | 4 → 5 | AFCT → Ford Mk 8 (3 s, 0.4%); stable vertical, RPC; coated, stabilised O4 | fire at any point of the roll, not on it; the rangefinder in a seaway; and the stable vertical's own error in a turn, the record's "several hundred yards" (North Carolina 1945): its mercury erection cut out while the turn's acceleration lasts, the gyro drifting free some 2-3′ a minute, ~200 yd through a 450° turn at 20-25 kyd, re-erecting after (own-motion-inputs.md §4, recommendation 6) | a seaway, rate of fire in it; long own turns | done 2026-11-02 (the rangefinder in a seaway to the error sources' session) |
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
 | FL9 | 6 → 7 | Mk 8 → the curved-course analog (acceleration, turn detection; the catalogue's "Mk 1A computer" till FL9) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | done 2026-11-03 (the walk on a circle to the salvo chasing) |
-| FL10 | 7 → 8 | Mk 1A → digital turn filter | the same, quicker; a zigzag | a target circling and zigzagging | |
+| FL10 | 7 → 8 | the curved-course analog → digital turn filter | the same, quicker; a zigzag; fooled by a weave (evasion-research.md P4) | a target circling, zigzagging and weaving | done 2026-11-03 |
 | FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | |
 
 ## Numbers to audit on the way
@@ -81,6 +81,8 @@ lumped stand-in for something the chain now models?
   stand-in row keeps 2 and 12 till FL8. FL9: the curved-course analog's 2 and 12 stay with the radar stand-in it's fitted
   behind (FL8).
 - `accel_sigma_ms2`: the curved-course analog's allowed acceleration; FL9 (0.1 → 0.25, a capital ship's in a hard turn).
+- `turn_q`, `speed_q`: the digital filter's; FL10 (`turn_q` 5e-7 → 2e-5, a capital ship's helm; `speed_q` 0.1 checks). The AFCT
+  turn setting's 1e-7 (a hand-set rate) is FL11's.
 - `latency_s`: the Dreyer's 15 s and the Mk 8's 2-3 s are the research's (evasion-research.md, "about 15 s for a Dreyer table, 2-3 s for a Mk 8"), the AFCT's 8 s
   between them; on a steady target it's what's left between the Dreyer and the AFCT besides the residual (FL6).
 - The captain's ranging record (`RangingRecord`, BL1ae): its cycles count the turrets' first swing from rest as ranging;
@@ -338,7 +340,7 @@ some 0.96°/s, her speed falling to 15 kn; the salvos from a minute after the he
 | | the Mk 8 | the curved-course analog | the digital turn filter (FL10) |
 |---|---|---|---|
 | exact readings: the falls' error along the line, rms | 304 m | 172 m (σa 0.1); 129 (0.25) | 65 m |
-| every error on: hits while she circles | 1.6% | 4.5% (σa 0.1); 6.0% (0.25) | 9.5% |
+| every error on: hits while she circles | 1.6% | 4.5% (σa 0.1); 6.0% (0.25) | 9.5% (10.7 since FL10) |
 | every error on, behind the auto-track stand-in | 3.4% | 8.3% | |
 | steady, readings' rung | 98.5% | 98.9% | |
 | her zigzag (20° every 75 s at 14 km), readings' rung | 25.7% | 32.9% | |
@@ -369,3 +371,47 @@ and 7.9% at 1°/s) within the duels' noise. The steady cost the research found d
   the range-lost rule wait for. The deflection is walked on doubtful calls too, at half the error a salvo, and lags its
   turning error by some 80-160 m. Spotting can't remove a standing error (research §5.6 summary 4), but a swinging one it
   could partly follow: the salvo chasing's work, where evasion lives.
+
+## FL10: the curved-course analog to the digital turn filter (done 2026-11-03)
+
+**Should give:** the digital filter carries her rate of turn (a coordinated turn: speed, heading and rate), so it follows
+a steady circle where the analog's decaying acceleration lags: the research's model 18-30 yd on a 1°/s circle against
+about 100, hits on the circle near steady (§5.6 table 11: 21.5-24.4 against 24.2%). A zigzag's turns learnt and shed
+sooner (a ±30°/120 s zigzag costs it a third at 20 kyd, the Mk 8 half: evasion-research.md table 4). And its own weakness:
+a weave fools it, "it over-extrapolates every turn" (P4; table 4: 15.1 → 6.9% at 20 kyd), where a straight-line machine
+averages a weave out (7.1 → 6.7). Steady, a little worse for the extra states.
+
+**Found** at the reference's turn-rate noise (`turn_q` 5e-7 rad²/s³ [INFERRED]): the circle as it should, the rest not
+(QE refitted behind the same O4 and stable vertical, QE abeam at 16 km at 18 kn, 24 duels, the readings' rung):
+
+| | the curved-course analog | digital, `turn_q` 5e-7 | digital, 2e-5 |
+|---|---|---|---|
+| steady | 95.8% | 91.0% | 94.0% |
+| her circle (15° of helm, ~0.96°/s): the falls rms; hits | 150 m; 0.0% | 68 m; 38.0% | 48 m; 56.8% |
+| her zigzag, ±30° every 2 min | 14.2% | 7.3% | 19.2% |
+| her weave, ±30° on a 90 s sine | 30.0% | 41.4% | 17.3% |
+| every error on: steady; circle; zigzag; weave | 16.8; 6.8; 13.0; 13.9% | 14.5; 11.4; 7.7; 14.4% | 16.6; 12.2; 13.0; 12.9% |
+
+The Mk 8 on the weave 58.0% (the readings' rung): a straight-line machine averages it out, as the research has it. At
+5e-7 the filter learnt a turn and shed it so slowly that it fell behind the Mk 8 on the zigzag (7.3 against 9.8%), kept
+turning her in its prediction after she steadied, and wasn't fooled by the weave because it never followed one.
+
+**Built:** `turn_q` from what it stands for, how fast a ship's rate of turn can change: the rate hard over makes, squared,
+over the time her yaw takes to answer it. QE at 18 kn settles near 1.3°/s (0.023 rad/s) over Nomoto's T = T′L/U = 1.375 ×
+189 / 9.26 = 28 s: 0.023² / 28 = 1.9e-5, so 2e-5, a capital ship's (as FL9's σa). `speed_q` the same way checks: she loses
+a quarter of her speed (2.4 m/s at 18 kn) in a minute's hard turn, 2.4² / 60 ≈ 0.1, the row's. With it the profile is the
+research's: the circle followed, the zigzag ahead of the analog, the weave its weakness, steady alike. No shipped design
+fits the digital filter. `GunneryTests.Where_the_levels_differ_level_8_follows_her_turns` (behind the level's digital
+ranging stand-in too, printed: the circle every error on 7.4 against 11.3%).
+
+**On the way:**
+- Its price: noise when she does nothing new. On the trackers' own bench (`FcTrackerTests`: clean readings every 2 s, 10 m,
+  a 25 kn target circling at 1°/s from a step) it holds a straight course to 73 m where it did to 32, and the circle to
+  47 where it did to 20, still a third of the true-course machine's 150. In the duels the noise sits under the spotting
+  and the pattern: steady, the two alike from 420 s on (98.2 against 97.9%), the old one behind only in the opening
+  (77.7 against 87.2% over 180-420 s), where a filter that slow keeps its first error for minutes.
+- A destroyer's helm makes 3°/s over some 7 s (3.7e-4): one number a machine is tuned for a capital ship's turns, so it
+  learns a destroyer's late. A filter per target class, or adaptive (the 1980s IMM), is the next machine's.
+- "Target just turned" never fires here either (FL9), so the filter opens up on nothing but its own noise.
+- The weave fools it less with every error on (12.9 against steady 16.6%, the research's 15.1 → 6.9 at 20 kyd): QE at
+  18 kn turns about 1.3°/s hard over and a ±30° sine on 90 s asks 2.1°/s, so she weaves less than asked.
