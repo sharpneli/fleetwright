@@ -40,7 +40,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
 | FL9 | 6 → 7 | Mk 8 → the curved-course analog (acceleration, turn detection; the catalogue's "Mk 1A computer" till FL9) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | done 2026-11-03 (the walk on a circle to the salvo chasing) |
 | FL10 | 7 → 8 | the curved-course analog → digital turn filter | the same, quicker; a zigzag; fooled by a weave (evasion-research.md P4) | a target circling, zigzagging and weaving | done 2026-11-03 |
-| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | |
+| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | the Argo done 2026-11-03 |
 
 ## Numbers to audit on the way
 
@@ -77,7 +77,7 @@ lumped stand-in for something the chain now models?
   every later machine (4/25 the hand plot, 2.5/15 the Dreyer, 2/12 the AFCT). Physical if the instruments that make the
   guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye. Done to the AFCT:
   the Dumaresq's 3 kn and 20° for every machine from it through the AFCT family (FL5, FL6), the same eye behind ×28;
-  the Argo (FL11), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
+  the Argo (FL11: the Dumaresq's now), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
   stand-in row keeps 2 and 12 till FL8. FL9: the curved-course analog's 2 and 12 stay with the radar stand-in it's fitted
   behind (FL8).
 - `accel_sigma_ms2`: the curved-course analog's allowed acceleration; FL9 (0.1 → 0.25, a capital ship's in a hard turn).
@@ -415,3 +415,29 @@ ranging stand-in too, printed: the circle every error on 7.4 against 11.3%).
 - "Target just turned" never fires here either (FL9), so the filter opens up on nothing but its own noise.
 - The weave fools it less with every error on (12.9 against steady 16.6%, the research's 15.1 → 6.9 at 20 kyd): QE at
   18 kn turns about 1.3°/s hard over and a ±30° sine on 90 s asks 2.1°/s, so she weaves less than asked.
+
+## FL11: the side steps
+
+### The Argo beside the Dreyer (done 2026-11-03)
+
+**Should give:** Pollen's Argo clock is a true-course plotter with a variable-speed clock, "better on rapidly changing
+range rate than the Vickers clock" (computing.md §3), so on a fast crossing it follows where the Dreyer's constant-rate
+clock drifts (FL6's mechanism, a decade earlier); its gyro mounting reads four times as often (8 a minute against 2,
+research §3.5), a tighter hold everywhere; through her own turns alike, both helm-free (FL1); and in a seaway the
+mounting's real gain, a rangefinder that holds her in the roll.
+
+**Found** (QE refitted behind the same director, the readings' rung, 24 duels):
+
+| | the Dreyer | the Argo | the Argo clock, plain FQ/FT | the Dreyer on the Argo mounting |
+|---|---|---|---|---|
+| a destroyer passing at 4 km at 30 kn | 38.9% | 83.2% | 67.3% | 54.5% |
+| steady at 14 km | 61.8% | 71.3% | 67.1% | 69.6% |
+| her own zigzag (10°/90 s at 16 kyd) | 78.2% | 78.3% | 79.6% | 77.1% |
+
+Every error on, the destroyer passing 32.9 against 53.6%. Both parts as they should, each on its own. **Missing:** the
+seaway. The mounting's gain is only its reading rate: nothing makes an unstabilised instrument's readings slower or worse
+as she rolls (audit list), so in a seaway the Argo leads by no more than in a calm. The error sources' session's.
+
+**On the way:** its first guess (2.5 kn and 15°) was tighter than the Dumaresq's with the same eye behind the same ×28:
+the Dumaresq's 3 and 20 now (no design fits it; steady 69.3 → 71.3, within the noise).
+`GunneryTests.The_Argo_follows_a_changing_range_rate_the_Dreyer_doesnt`.

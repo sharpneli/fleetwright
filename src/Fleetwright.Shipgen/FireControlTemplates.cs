@@ -134,9 +134,10 @@ public static class FireControlTemplates
             },
             "The German WWI range-rate clock and plot (computing.md §3). No specifications found; taken as the Dreyer Mk III's, helm-free by " +
             "the gyro [EST], the two navies' 1916 machines doing the same job."),
-        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 2.5, 15, 1.2, 2, 30, 366, 2, 4, 1),
+        C("Argo clock Mk IV", K("true_course", true, 8, 0.03, 3, 20, 1.2, 2, 30, 366, 2, 4, 1),
             "Pollen's true-course plotter and variable-speed clock (1912-13): follows a changing range rate, gyro-corrected; about six in RN " +
-            "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]."),
+            "service at Jutland (computing.md §3; fire_control_ref.py level 3b). Mass and crew [EST]. Its first guess at her course and " +
+            "speed the Dumaresq's, from the same eye behind the same ×28 (docs/battle/fc-ladder-check.md FL11)."),
         C("Admiralty Fire Control Table", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
             "The AFCT Mk I-X (1927-45): clock and MPI plot, helm-free, a straight-course target (computing.md §3; level 4, designer C3). " +
             "Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/fc-ladder-check.md FL6)."),

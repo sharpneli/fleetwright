@@ -576,6 +576,43 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.InRange(steadyD, 0.95 * steadyC, 1.04 * steadyC);
     }
 
+    /// <summary>The Argo beside the Dreyer (fc-ladder-check.md FL11), QE refitted behind the same director: Pollen's
+    /// true-course plotter follows a changing range rate where the Dreyer's constant-rate clock drifts ("better on rapidly
+    /// changing range rate than the Vickers clock", computing.md §3), and his gyro mounting reads four times as often (8 a
+    /// minute against 2: research §3.5). The readings' rung, 24 duels, measured: a destroyer passing at 4 km at 30 kn, the
+    /// Dreyer 38.9%, the Argo 83.2 (its clock alone behind the plain FQ/FT 67.3, the mounting alone under the Dreyer 54.5);
+    /// steady at 14 km 61.8 against 71.3 (the mounting's readings: the Dreyer on it 69.6); her own zigzag alike, both
+    /// helm-free (78.2, 78.3). Every error on, the destroyer passing 32.9 against 53.6. In a seaway the mounting's gain is its
+    /// reading rate alone: an unstabilised instrument's readings aren't worse as she rolls yet (the error sources' session).</summary>
+    [Fact]
+    public void The_Argo_follows_a_changing_range_rate_the_Dreyer_doesnt()
+    {
+        var qe = Class("super_dreadnought");
+        var dd = Class("destroyer");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        const string fq = "Barr & Stroud FQ/FT (O2)", mounting = "Barr & Stroud FQ/FT on the Argo mounting", dreyer = "Dreyer table Mk III-V", argo = "Argo clock Mk IV",
+            pointer = "Director, follow the pointer";
+        var byDreyer = Refit("super_dreadnought", fq, dreyer, pointer);
+        var byArgo = Refit("super_dreadnought", mounting, argo, pointer);
+        var clockAlone = Refit("super_dreadnought", fq, argo, pointer);
+        var mountAlone = Refit("super_dreadnought", mounting, dreyer, pointer);
+        double passD = Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, readings, 24), passA = Engaged(byArgo, dd, 30, 8_000, 180, 30, 6, readings, 24),
+            passClock = Engaged(clockAlone, dd, 30, 8_000, 180, 30, 6, readings, 24);
+        double steadyD = Engaged(byDreyer, qe, 90, 14_000, 0, 18, 10, readings, 24), steadyA = Engaged(byArgo, qe, 90, 14_000, 0, 18, 10, readings, 24),
+            steadyMount = Engaged(mountAlone, qe, 90, 14_000, 0, 18, 10, readings, 24);
+        var (hd, sd, _, _) = Duels(byDreyer, qe, 16 * Kyd, 90, -1, 24, zigDeg: 10, with: readings);
+        var (ha, sa, _, _) = Duels(byArgo, qe, 16 * Kyd, 90, -1, 24, zigDeg: 10, with: readings);
+        double ownD = 100.0 * hd / sd, ownA = 100.0 * ha / sa;
+        output.WriteLine($"the readings: a destroyer passing at 4 km, the Dreyer {passD:F1}%, the Argo {passA:F1} (its clock alone {passClock:F1}); steady at 14 km " +
+                         $"{steadyD:F1}, {steadyA:F1} (the Dreyer on the mounting {steadyMount:F1}); her own zigzag {ownD:F1}, {ownA:F1}");
+        var all = Settings with { Smoke = false };
+        output.WriteLine($"every error on, the destroyer passing: {Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, all, 24):F1}, {Engaged(byArgo, dd, 30, 8_000, 180, 30, 6, all, 24):F1}%");
+        Assert.True(passA > 1.5 * passD, "the true-course plot follows a fast crossing");
+        Assert.True(passClock > 1.4 * passD, "its clock's own part of it");
+        Assert.True(steadyMount > 1.05 * steadyD, "the gyro mounting's readings");
+        Assert.InRange(ownA, 0.95 * ownD, 1.05 * ownD);
+    }
+
     [Fact]
     public void The_levels_keep_their_order_and_level_3_lands_near_the_reference()
     {
