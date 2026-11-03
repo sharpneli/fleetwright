@@ -108,7 +108,7 @@ public class GunneryTests(ITestOutputHelper output)
     /// levels' zigzag (QE on QE at 16 kyd, 10° either side every 90 s, at most 0.47°/s) half a second is a quarter of a
     /// degree, 60 m along a target 190 m long, and costs nothing; twice the lag costs (readings' rung, her own inputs on, 16
     /// duels: 81.8% with them exact, 82.1 at 0.5 s, 68.8 at 1 s; fc-ladder-check.md FL2 put the own rung back in, "all=0"
-    /// had taken it out).</summary>
+    /// had taken it out; with FL11's first guess, the Dumaresq's: 81.2, 81.2, 73.3).</summary>
     [Fact]
     public void The_Type_92_follows_her_course_by_hand_half_a_second_behind()
     {
@@ -644,6 +644,35 @@ public class GunneryTests(ITestOutputHelper output)
         Assert.True(circleT < 0.5 * circleA, "the turn setting follows her circle");
         Assert.True(hitT > 2 * hitA, "and hits her on it");
         Assert.InRange(lateT, 0.97 * lateA, 1.03 * lateA);
+    }
+
+    /// <summary>The Japanese plot beside the AFCT (fc-ladder-check.md FL11), QE refitted behind the same O3 (×25) and power
+    /// drive, so only the computer differs: the Type 92's rates are a range-rate plot's and its deflection set by hand from
+    /// her speed (computing.md §3), a constant-rate clock, so on a fast crossing it drifts where the AFCT's true course
+    /// follows; elsewhere near the table (the research's model: 8.4 against 9.4% on a zigzagging target at 16 kyd, 3.2 and
+    /// 3.2 steady at 25 kyd). Measured, 24 duels, the readings' rung: steady at 14 km, the AFCT 75.1%, the Type 92 72.8; her own zigzag 79.4, 78.7;
+    /// every error on, a destroyer passing at 4 km at 30 kn 58.9 against 47.1. Her zigzag (20°/75 s at 14 km) alike (48 duels:
+    /// 18.6, 19.6), the 15 s latency against 8 moving it under three points either way.</summary>
+    [Fact]
+    public void The_Japanese_plot_hits_near_the_table_and_drifts_on_a_fast_crossing()
+    {
+        var qe = Class("super_dreadnought");
+        var dd = Class("destroyer");
+        var readings = Settings with { Smoke = false, GunneryErrors = GunneryErrorScale.Parse("all=0,readings=1,own=1,prior=1") };
+        var all = Settings with { Smoke = false };
+        const string o3 = "Stereo, long base (O3, ×25)", afct = "Admiralty Fire Control Table", t92 = "Type 92 Shagekiban", power = "Director, power drive";
+        var byTable = Refit("super_dreadnought", o3, afct, power);
+        var byPlot = Refit("super_dreadnought", o3, t92, power);
+        double steadyA = Engaged(byTable, qe, 90, 14_000, 0, 18, 10, readings, 24), steadyJ = Engaged(byPlot, qe, 90, 14_000, 0, 18, 10, readings, 24);
+        double passA = Engaged(byTable, dd, 30, 8_000, 180, 30, 6, all, 24), passJ = Engaged(byPlot, dd, 30, 8_000, 180, 30, 6, all, 24);
+        var (ha, sa, _, _) = Duels(byTable, qe, 16 * Kyd, 90, -1, 24, zigDeg: 10, with: readings);
+        var (hj, sj, _, _) = Duels(byPlot, qe, 16 * Kyd, 90, -1, 24, zigDeg: 10, with: readings);
+        double ownA = 100.0 * ha / sa, ownJ = 100.0 * hj / sj;
+        output.WriteLine($"the readings: steady at 14 km, the AFCT {steadyA:F1}%, the Type 92 {steadyJ:F1}; her own zigzag {ownA:F1}, {ownJ:F1}. Every error on, " +
+                         $"a destroyer passing at 4 km {passA:F1}, {passJ:F1}");
+        Assert.InRange(steadyJ, 0.95 * steadyA, 1.03 * steadyA);
+        Assert.InRange(ownJ, 0.95 * ownA, 1.05 * ownA);
+        Assert.True(passJ < 0.9 * passA, "the constant-rate clock drifts on a fast crossing");
     }
 
     [Fact]

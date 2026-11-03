@@ -40,7 +40,7 @@ haze. QE on QE at 16 kyd unless the step's period fought nearer (the 1905 levels
 | FL8 | 5 → 6 | radar ranging (stand-in) | ranges through haze and at night | haze, night: radar is out of the first game, so checked last | skipped for now (the user, 2026-11-02: no radar yet) |
 | FL9 | 6 → 7 | Mk 8 → the curved-course analog (acceleration, turn detection; the catalogue's "Mk 1A computer" till FL9) | follows a target in a steady turn ("a steady turn cuts hits 2-4x for every straight-line machine", research §5.6) | a target circling | done 2026-11-03 (the walk on a circle to the salvo chasing) |
 | FL10 | 7 → 8 | the curved-course analog → digital turn filter | the same, quicker; a zigzag; fooled by a weave (evasion-research.md P4) | a target circling, zigzagging and weaving | done 2026-11-03 |
-| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | the Argo, the turn setting done 2026-11-03 |
+| FL11 | side steps | Argo (true course 1912, gyro-mounted rangefinder 8 a minute) v Dreyer; AFCT turn setting v AFCT; Type 92 v AFCT | the Argo through her own turns and in a seaway; the turn setting on a circling target; the Japanese plot per its record | as each says | done 2026-11-03 (the Argo's seaway to the error sources' session) |
 
 ## Numbers to audit on the way
 
@@ -77,7 +77,7 @@ lumped stand-in for something the chain now models?
   every later machine (4/25 the hand plot, 2.5/15 the Dreyer, 2/12 the AFCT). Physical if the instruments that make the
   guess improve (the rangefinder's ×28 on her inclination); check in FL4-FL6 where it's the same eye. Done to the AFCT:
   the Dumaresq's 3 kn and 20° for every machine from it through the AFCT family (FL5, FL6), the same eye behind ×28;
-  the Argo (FL11: the Dumaresq's now), the Type 92 (FL11), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
+  the Argo and the Type 92 (FL11: the Dumaresq's now), the Mk 8 on (FL7, FL9, FL10) still their own. FL7: the Mk 8 too; its radar
   stand-in row keeps 2 and 12 till FL8. FL9: the curved-course analog's 2 and 12 stay with the radar stand-in it's fitted
   behind (FL8).
 - `accel_sigma_ms2`: the curved-course analog's allowed acceleration; FL9 (0.1 → 0.25, a capital ship's in a hard turn).
@@ -465,3 +465,35 @@ setting, so it stays. **On the way:** the opening's cost is partly the turn filt
 1°/s 1σ for every turn filter (`FcTracker.Start`, the reference's): a hand-set rate starting at 0.1°/s (as if set at
 nought till he sees her turn) opens 65.1% instead of 56.4, the rest the extra states. Not changed: no source for a man's
 first judgement of her rate of turn. `GunneryTests.The_turn_setting_follows_her_circle_the_plain_table_doesnt`.
+
+### The Japanese plot beside the AFCT (done 2026-11-03)
+
+**Should give:** the Type 92 Shagekiban takes its range rate from a range-rate plot and its deflection set by hand from
+her speed (the Sokutekiban's), "target speed the only target-motion input" (computing.md §3): a constant-rate clock,
+helm-free by a man following the gyro's pointer (FL1). So on a fast crossing it drifts where the AFCT's true course
+follows (FL6's mechanism); elsewhere near the table. Its record is thin ("no specifications found", "poor [UNCERTAIN]:
+plot-based rates must be rebuilt after manoeuvres", settling 2-3 minutes against 1-2); the research's model has it near
+the AFCT and a little below (8.4 against 9.4% on a zigzagging target at 16 kyd, 3.2 and 3.2 steady at 25 kyd).
+
+**Found** (QE refitted behind the same O3 ×25 and power drive, so only the computer differs; 24 duels):
+
+| | the AFCT | the Type 92 |
+|---|---|---|
+| steady at 14 km, the readings' rung | 75.1% | 72.8% |
+| a destroyer passing at 4 km at 30 kn, every error on | 58.9% | 47.1% |
+| her zigzag (20°/75 s at 14 km), the readings' rung (48 duels) | 18.6% | 19.6% |
+| her own zigzag (10°/90 s at 16 kyd), the readings' rung | 79.4% | 78.7% |
+| her circle (15° of helm at 16 km), every error on | 2.5% | 1.8% |
+
+Its record as the research has it. Behind its preset's own director (no RPC, 0.5 mil) a little lower again. Its 15 s
+latency against the AFCT's 8 moves her zigzag under three points either way (each at the other's: 18.6 → 18.6, 19.6 →
+21.4): the plot's rates rebuilt after her turns as quickly as the table's. A 24-duel run had it 21.6 against 17.7 there,
+the noise.
+
+**On the way:** its first guess (2 kn and 12°) was tighter than the Dumaresq's with the same eye: the Dumaresq's 3 and 20
+now (the catalogue, `nagato` and `yamato`'s own blocks, their goldens; FL1's Type 92 check 81.2, 81.2, 73.3 with it).
+`GunneryTests.The_Japanese_plot_hits_near_the_table_and_drifts_on_a_fast_crossing`.
+
+The ladder's checked through. What it left for others: the walk on a circling target (FL9, the salvo chasing); the seaway's
+toll on an unstabilised rangefinder (FL7, FL11, the error sources' session); "target just turned" by eye (FL9, FL10);
+every turn filter's first doubt of her rate of turn (FL11); the radar step (FL8) with the radar.

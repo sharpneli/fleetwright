@@ -153,11 +153,12 @@ public static class FireControlTemplates
         C("German Rechenstelle (1930s)", K("true_course", true, 8, 0.03, 3, 20, 0.6, 1.5, 3, 366, 5, 8, 5),
             "The German computing rooms of the 1930s, fore and aft under armour (computing.md §3): no specifications found; the research's " +
             "table puts them with the AFCT, whose numbers they take [EST]."),
-        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 2, 12, 0.6, 1.5, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },
+        C("Type 92 Shagekiban", K("rate_clock", true, 15, 0.03, 3, 20, 0.6, 1.5, 20, 366, 4, 15, 2) with { OwnCourseLagS = 0.5 },
             "The Japanese Type 92 (1932) with its Sokutekiban: rates from a range-rate plot, deflection by hand, no gyro horizon; rates rebuilt " +
             "after a manoeuvre (computing.md §3; level 4j). Crew 7 + 8; mass [EST]. Own course followed by hand from the gyro's pointer " +
             "(\"Follow up compass course as received from the gyrocompass\": ship-motion/own-motion-inputs.md §2), 0.5 s behind [EST: a man " +
-            "following a pointer, the user]; own speed set by crank, 20 s [EST]."),
+            "following a pointer, the user]; own speed set by crank, 20 s [EST]. Its first guess at her course and speed the Dumaresq's, " +
+            "from the same eye (docs/battle/fc-ladder-check.md FL11)."),
         C("Ford Mk 8 rangekeeper", K("true_course", true, 3, 0.05, 3, 20, 0.4, 1, 3, 366, 3, 4, 10),
             "The Ford Mk 8 with the stable vertical (1941-42): continuous, helm-free, tilt, wind and drift corrected; one operator (computing.md " +
             "§3; level 5, designer C4). Its first guess at her course and speed the Dumaresq's, from the same eye (docs/battle/" +
