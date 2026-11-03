@@ -40,7 +40,7 @@ down. Salvo chasing for evasion comes after (balance.md, after BL1q).
 | The weather | wind and visibility in every scenario; **no scenario sets a swell** (all on the default 1 m, 12 s; Coronel's 28 kn gale on it); fc-history's cases have their seas | Content/Scenarios |
 | Splash columns hiding the target | **none** (the column is drawn, H = 180 × calibre, and gone from the sim) | splashes.md |
 | Spray on her own forward instruments and turrets | **none** (BL1f's second half waited for a freeboard factor; `VerticalRow.Freeboard` now exists); **ES4** built | `SeaAboard.Spray` |
-| An unstabilised rangefinder in a seaway | **none**: the gyro mounting's gain is only its fixed reading rate (FL7, FL11) | `Rate` |
+| An unstabilised rangefinder in a seaway | **none**: the gyro mounting's gain is only its fixed reading rate (FL7, FL11); **ES5** built | `FireControl.Held` |
 
 ## The steps (proposed)
 
@@ -216,6 +216,53 @@ the shell the same; the rest within their seeds' spread (6 of 14 sides within tw
   the guns' own axis counts.
 - Her captain easing speed into a head sea to keep her forward guns, as Renown did at Lofoten: the captain's call
   (BL5), not built.
+
+## ES5 Instruments in a seaway (built 2026-11-03)
+
+**The law** (`FireControl.Held`, Sim.Combat). An unstabilised instrument's line of sight moves with her in elevation by
+her roll's share across it and her pitch's along it: level = roll·sin β + pitch·cos β, β the target's bearing off her
+bow. Her yaw is the trainer's, as in a director. The man follows by hand a lag behind (`InstrumentFollowS`, 0.5 s
+[EST: a fast hand, the gunner's end]), so the line wanders off her by about that lag times the motion's rate: a
+first-order follower's residual, 1σ, from the roll's and pitch's own rate spreads (BL1a, BL1h). He holds her while
+she's within half the field. The field is an apparent 60° over the magnification (`InstrumentFieldDeg`: the Bismarck
+trials' 1.5° at ×40 [SRC], stabilisation-tech.md Q4). A gyro-stabilised mounting (the Argo, a stabilised sight) takes
+the motion out; an eye has no field to lose her from.
+
+**What it does:** a rangefinder reads at its catalogue rate times the share of the time it holds her, at least 5% (a
+reading every few minutes at worst). The roll and pitch are worked out before the readings now, from the same cache.
+`--errors seaway=K` scales the motion (0 a still ship); `shipgen roll ... --held` shows each make's hold on a target
+abeam by heading and speed.
+
+**The sizes, generous to the gunner:**
+
+| Case | Held (a target abeam) |
+|---|---|
+| A dreadnought in our sea state 5, any heading | 100% |
+| Devonshire and Scharnhorst in Coronel's sea, beam on | 83-97% |
+| A dreadnought beam on to a developed sea state 7 (Hs 7.9 m) | 74-83% |
+| A V-class destroyer in the same sea, beam on | 46-59% |
+| The Bismarck trials' ±1° oscillation at ×40 (`InstrumentHoldTests`) | 71%: "could lose the target" |
+
+**The bench** (a dreadnought pair at 11 km, a 4 m swell and 30 kn wind on her beam, 24 duels): hits 11.6 → 11.4%;
+at four times the motion 11.0%, the first hit at salvo 3 (120 s) instead of salvo 2 (84 s). A reading lost slows the
+track's settling, but each man's error is drawn once a target (FL), so the readings he still makes are as good.
+**FL11's missing half:** the Argo against the Dreyer table in the same sea doesn't separate (11.5 against 12.0%,
+calm 11.9 against 12.9). At the mild size her 9 ft instruments hold her 98% of the time, so the gyro has nothing to
+take out.
+
+**The panel** (`balance/es5.json` against es4): the same to the shell in every scenario and fc-history (6 of 23, orderings 4 of 7). At this size a hold over about 97% never moves a reading by a whole second of the fire-control grid, and the scenarios' ships seldom roll hard with their target abeam: Coronel with the rung at 0 and at 1 is the same, at 20 it moves (Monmouth 107 hits against the Germans' run of it, Glasgow afire at 4.6°). The mechanism is in place and mild, as decided; it bites in a heavy beam sea or on a small ship.
+
+**Open, for the user:** the catalogue's rates still carry Pollen's "about fivefold" as a calm number: the unstabilised
+FQ/FT reads 2 a minute and the same glass on the Argo mounting 8, in a calm as in a gale. Under this law the seaway
+does that work, and the rate in a calm would be the man's cut rate, the same on either mounting, with the fivefold an
+outcome to check in Pollen's trial seas. Taking it apart raises every unstabilised instrument's calm rate (2 → about
+8 for the WWI coincidence makes, the stereo's 4 and the O4's 6 to look at beside them) without a source for the
+calm rate itself, so it's left as it was. The seaway's cost comes on top of the calm lump, a double count toward the
+gunner's loss.
+
+**Not built, named:** the layers' own telescopes holding her (their laying already fires on the roll or follows it:
+BL1b); the readings' error widening with the image's motion (only the rate is lost); the cross-level's rotation of the
+image (a coincidence instrument cuts through it at a low line of sight).
 
 ## Decided (the user, 2026-11-03)
 

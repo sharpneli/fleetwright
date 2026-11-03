@@ -42,6 +42,30 @@ public static class FireControl
         return o.MaxMagnification > 0 && m > o.MaxMagnification ? me * Math.Sqrt(o.MaxMagnification / m) : me;
     }
 
+    /// <summary>The share of the time an instrument's man holds her in its field as his ship rolls and pitches
+    /// (docs/battle/error-sources.md ES5): the line of sight moves with the ship in elevation by her roll's share across it
+    /// and her pitch's along it (level: roll·sin β + pitch·cos β, β her bearing off the bow; her yaw is the trainer's, as
+    /// a director's), and he follows it by hand a lag behind (<paramref name="followS"/>), so it wanders off her by about
+    /// that lag times the motion's rate (a first-order follower's residual where the motion is slow against it, 1σ, the
+    /// roll's and pitch's rates 1σ, rad/s); he holds her while it's within half the field, an apparent field over the
+    /// magnification (<paramref name="apparentFieldDeg"/>: the Bismarck trials' 1.5° at ×40, where a ±1° oscillation
+    /// could lose her: stabilisation-tech.md Q4). A gyro-stabilised mounting takes the motion out (Pollen's Argo, a
+    /// stabilised sight); an instrument without magnification (an eye) has no field to lose her from. Scaled by the
+    /// ladder's rung (0 a still ship).</summary>
+    public static double Held(in OpticsRow o, double rollRateRadS, double pitchRateRadS, double relativeDeg, double followS,
+        double apparentFieldDeg, double scale)
+    {
+        if (o.Gyro || !(o.Magnification > 0) || !(scale > 0))
+            return 1;
+        var (sb, cb) = Math.SinCos(double.DegreesToRadians(relativeDeg));
+        double rate = Math.Sqrt(Math.Pow(rollRateRadS * sb, 2) + Math.Pow(pitchRateRadS * cb, 2));
+        double sr = scale * followS * rate;
+        if (!(sr > 0))
+            return 1;
+        double half = 0.5 * double.DegreesToRadians(apparentFieldDeg) / o.Magnification;
+        return SmokeModel.Erf(half / (sr * Math.Sqrt(2)));
+    }
+
     /// <summary>The magnification past which the clear air's shimmer costs (designer §3.1, M_ATM_CLEAR [INFERRED]).</summary>
     const double AirMagnification = 60;
 

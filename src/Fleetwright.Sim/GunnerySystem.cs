@@ -751,6 +751,10 @@ public sealed class GunnerySystem : IWorldSystem
 
     /// <summary>A sensor's readings a minute: an eye one, a rangefinder its optics', fewer past ×30 where the narrow field
     /// is slower to pick the target up (designer §3.1: ×√(30/M) [INFERRED]).</summary>
+    /// <summary>The least share of the time an instrument holds her that it's read at (ES5): a reading every few minutes
+    /// at worst, so one rolling hard is looked at again soon after she steadies.</summary>
+    const double MinHeld = 0.05;
+
     static double Rate(in OpticsRow o, in Sensor s) => Ranges(o, s) ? o.ReadingsPerMin * Math.Sqrt(Math.Min(1, 30 / o.Magnification)) : 1;
 
     /// <summary>Whether a sensor takes ranges with its rangefinder: it has one, and the fit's optics can read it (the
@@ -995,6 +999,7 @@ public sealed class GunnerySystem : IWorldSystem
         var ownV = ship.Forward * ship.Speed;
         Reckon(ref fc, ship, now);
         Vertical(ref fc, f, ship, now);
+        RollOf(world, ref fc, ship, cls, cond);   // her roll and pitch now: her instruments' holding (ES5) and her layers
         bool inputs = computer.HelmFree;   // a machine that takes her motion in reads and orders from its own ship (FL1)
 
         // measure: each sensor that's due and makes the target out through its optics
@@ -1031,7 +1036,13 @@ public sealed class GunnerySystem : IWorldSystem
             if (!due)
                 continue;
             var r = stream.Derive((ulong)f).Derive((ulong)fc.Generation).Derive((ulong)now).Derive((ulong)k);
-            s.NextMs = now + (long)(60_000 / (Rate(optics, s) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)) * r.NextDouble(0.7, 1.3));   // short-handed, slower (crew.md N2)
+            // short-handed, slower (crew.md N2); an unstabilised instrument only while its man holds her in its field as
+            // she rolls and pitches (ES5)
+            double held = Ranges(optics, s)
+                ? FireControl.Held(optics, fc.Roll.RateSigmaRadS, fc.Pitch.RateSigmaRadS, Earth.Bearing(at, tpos) - ship.HeadingDeg,
+                    settings.InstrumentFollowS, settings.InstrumentFieldDeg, settings.GunneryErrors.Seaway)
+                : 1;
+            s.NextMs = now + (long)(60_000 / (Rate(optics, s) * Math.Max(held, MinHeld) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)) * r.NextDouble(0.7, 1.3));
             if (!seen || columns && Masked(at, s.HeightM, tslot, target, now))
                 continue;   // nothing to read; or she stands behind the shorts' columns, no cut till they fall (ES2)
             double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
@@ -1164,7 +1175,6 @@ public sealed class GunnerySystem : IWorldSystem
         // the sea under her (BL1b): her layers follow the roll with their gear when it lays faster than she rolls (continuous
         // aim), or a stable vertical gives them the level; else they fire as the roll brings the sight on (a director's
         // layer always, at the key)
-        RollOf(world, ref fc, ship, cls, cond);
         double peakRoll = 2 * double.RadiansToDegrees(fc.Roll.RateSigmaRadS);
         fc.OnRoll = !fc.Fit.Mount.StableVertical && fc.Roll.AmplitudeRad > 0 &&
                     (fc.Fit.Mount.DirectorFiring || cls.Mounts[mounts[0]].ElevateDegS < settings.ContinuousAimMargin * peakRoll);

@@ -70,7 +70,8 @@ lumped stand-in for something the chain now models?
 - An unstabilised rangefinder in a seaway: the gyro mounting's gain is a fixed reading rate (fire-control-research.md
   §3.5: Pollen's mounting "raised range-taking about fivefold"; 2 against 8 a minute, 4 against 6), the same in a calm as
   in a gale, and nothing slows an unstabilised instrument's readings or widens them as she rolls. Its law wants a source:
-  the error sources' session (FL7).
+  the error sources' session (FL7). **Done in error-sources.md ES5** (the readings' rate by the share of the time he holds
+  her in the field; the calm rates' lump left, offered to the user there).
 - `latency_s`, `q`, the priors: the machine's own assumptions; fine as such, each checked by its step.
 - `GunneryOpenS`, `OpenDoubtSteps`: FL2, neither held the opening on the bench (the track settles on its first reading at
   16 kyd for both levels; the turrets' swing held it). Their own check wants a case the swing doesn't cover: a shift.

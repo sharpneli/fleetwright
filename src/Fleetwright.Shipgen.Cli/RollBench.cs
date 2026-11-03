@@ -23,7 +23,7 @@ static class RollBench
     static readonly double[] SeaStateHs = [0.9, 1.9, 3.25, 5, 7.5];
 
     public static int Run(IReadOnlyList<string> names, Func<string, ShipClass> cls, SimSettings settings, int seaState, double windKn, double windFrom,
-        double swellM, double swellS, double swellFrom, double[] speedsKn, bool developed = false, bool wet = false)
+        double swellM, double swellS, double swellFrom, double[] speedsKn, bool developed = false, bool wet = false, bool held = false)
     {
         WeatherHere w;
         if (seaState >= 3)
@@ -70,12 +70,35 @@ static class RollBench
                 Console.WriteLine("    pitch " + string.Concat(pitch.Select(x => $"{x,18}")));
                 if (wet)
                     Wet(c, settings, sea, w, waveFrom, kn, rel);
+                if (held)
+                    Held(c, settings, sea, waveFrom, kn, rel);
             }
         }
         Console.WriteLine();
         Console.WriteLine("each cell: the significant roll (single amplitude), the peak roll rate (2 sigma), the mean period; the pitch the same below" +
                           (wet ? "; wet: the share of the time out, a gun's to green water, a glass's to green water or spray" : ""));
         return 0;
+    }
+
+    /// <summary>Her rangefinders' hold on a target abeam at a speed, by heading (docs/battle/error-sources.md ES5,
+    /// <see cref="FireControl.Held"/>): the share of the time each make on her (its battery's fit, a turret's own) keeps her
+    /// in its field as she rolls and pitches.</summary>
+    static void Held(ShipClass c, SimSettings settings, RollSea sea, double waveFrom, double kn, int[] rel)
+    {
+        var m = c.Motion;
+        var states = rel.Select(h =>
+        {
+            double hdg = (waveFrom + h) % 360;
+            return (Roll: sea.At(hdg, kn * 0.514444, m.LengthM, m.BeamM, m.RollPeriodS, m.RollDamping, settings.RollExcitation),
+                Pitch: sea.Pitch(hdg, kn * 0.514444, m.LengthM, m.BeamM, settings.PitchPeriodK * Math.Sqrt(Math.Max(m.DraughtM, 0.5)), settings.PitchDamping));
+        }).ToArray();
+        var makes = c.Batteries.ToArray().SelectMany(b => new[] { b.Fit.Optics, b.TurretOptics }).Where(o => o.Reads).Distinct();
+        foreach (var o in makes)
+        {
+            var cells = states.Select(st => string.Format(Inv, "{0,5:0}%", 100 * Sim.Combat.FireControl.Held(o, st.Roll.RateSigmaRadS, st.Pitch.RateSigmaRadS, 90,
+                settings.InstrumentFollowS, settings.InstrumentFieldDeg, 1)));
+            Console.WriteLine(string.Format(Inv, "    held, x{0:0}{1,-27}", o.Magnification, o.Gyro ? " gyro" : "") + string.Concat(cells.Select(x => $"{x,18}")));
+        }
     }
 
     /// <summary>Her points out to the sea at a speed, by heading (<see cref="SeaAboard"/>): each gun's share of the time out

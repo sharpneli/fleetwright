@@ -239,6 +239,8 @@
   "SprayClearS": 5,
   "GreenWaterClearS": 10,
   "SprayPatch": 0.05,
+  "InstrumentFollowS": 0.5,
+  "InstrumentFieldDeg": 60,
   "VibrationLightShpT": 3,
   "VibrationLightSpanShpT": 12,
   "VibrationAft": 1.3,
