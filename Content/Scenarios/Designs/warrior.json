@@ -1,5 +1,5 @@
 {
- "version": 18,
+ "version": 19,
  "id": "warrior",
  "name": "Warrior-like (1907)",
  "type": "CA",
@@ -447,7 +447,8 @@
  "fittings": {
   "shock_grade": "G0",
   "turret_drive": "steam_hydraulic",
-  "auxiliaries": "steam"
+  "auxiliaries": "steam",
+  "diesel_share": 0.2
  },
  "fire_control_tech": {
   "Barr & Stroud FQ/FT (O2)": {

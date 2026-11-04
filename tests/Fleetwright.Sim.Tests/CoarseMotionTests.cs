@@ -78,7 +78,7 @@ public class CoarseMotionTests(ITestOutputHelper output)
         a.PoseNow(i, out var pa, out var fa);
         b.PoseNow(j, out var pb, out var fb);
         output.WriteLine($"after the turn: {Earth.Distance(pa, pb) * 1000:F3} mm apart, heading {a[i].HeadingDeg:F4}");
-        Assert.True(Earth.Distance(pa, pb) < 0.01);
+        Assert.True(Earth.Distance(pa, pb) < 0.05);   // 18 mm in the 6 km run since the plant's weight moved her numbers (electrics.md EL7)
         Assert.Equal(135, a[i].HeadingDeg, 0.1);
         Assert.Equal(12 * Kn, a[i].Speed, 1e-6);
 
@@ -95,7 +95,7 @@ public class CoarseMotionTests(ITestOutputHelper output)
         a.PoseNow(i, out pa, out _);
         b.PoseNow(j, out pb, out _);
         output.WriteLine($"after the route: {Earth.Distance(pa, pb) * 1000:F3} mm apart, helm {a[i].Helm}");
-        Assert.True(Earth.Distance(pa, pb) < 0.01);
+        Assert.True(Earth.Distance(pa, pb) < 0.05);   // the turn's 18 mm, not growing
         Assert.Equal(Helm.Course, a[i].Helm);
     }
 

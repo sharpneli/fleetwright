@@ -79,7 +79,7 @@ public class ElectricsTests(ITestOutputHelper output)
     }
 
     /// <summary>EL2 with the drives: her steam gone, a steam-hydraulic turret falls to hand as an electric one does; her engine
-    /// rooms gone with steam up, the dynamos stop and the steam-hydraulic turret trains on.</summary>
+    /// rooms gone with steam up, her steam sets stop with them and the steam-hydraulic turret trains on.</summary>
     [Fact]
     public void A_steam_hydraulic_turret_cares_about_steam_not_dynamos()
     {
@@ -91,7 +91,7 @@ public class ElectricsTests(ITestOutputHelper output)
             if (c.Rooms[r].Kind == RoomKind.EngineRoom)
                 engines.State[c.RoomNode(r)] = PartState.Disabled;
         Functions.Evaluate(engines, Settings, now, now);
-        Assert.True(engines.PlantOut);
+        Assert.True(engines.SupplyKw < c.PlantKw);
         Assert.False(engines.ByHand(main, now));
         var boilers = Fresh(c);
         for (int r = 0; r < c.Rooms.Length; r++)
@@ -171,7 +171,7 @@ public class ElectricsTests(ITestOutputHelper output)
                     k.State[c.RoomNode(r)] = PartState.Disabled;
             return Functions.Evaluate(k, Settings, now, now);
         }
-        Assert.False(Steers("kgv", RoomKind.EngineRoom));        // electric, the dynamos gone
+        Assert.True(Steers("kgv", RoomKind.EngineRoom));         // electric, her diesels still making power
         Assert.True(Steers("tiger_1914", RoomKind.EngineRoom));  // steam, up
         Assert.False(Steers("tiger_1914", RoomKind.BoilerRoom)); // steam, gone
     }
@@ -183,6 +183,85 @@ public class ElectricsTests(ITestOutputHelper output)
         var c = Fleet.Get("seydlitz").Class!;
         int m = c.Links(c.Batteries[0].Mounts)[0];
         Assert.Equal(NonPen.HandShare(c, c.Mounts[m], Settings) / 2, NonPen.HandShare(c, c.Mounts[m], Settings, 8), 9);
+    }
+
+    static ShipClass Refit(string design, double? kw, double? diesel)
+    {
+        var d = Fleet.Get(design).Ship!.Design;
+        return ShipClassCompiler.Compile(ShipDesign.Build(d with { Fittings = d.Fittings! with { GeneratorKw = kw, DieselShare = diesel } }));
+    }
+
+    /// <summary>EL7: a plant from her drives, in the research's W/t, set by set; electrifying costs tonnes.</summary>
+    [Fact]
+    public void Her_plant_goes_by_her_drives_and_weighs_something()
+    {
+        foreach (var (design, wPerT) in new[] { ("tiger_1914", 30.0), ("seydlitz", 65.0), ("kgv", 70.0), ("bismarck", 200.0) })
+        {
+            var c = Fleet.Get(design).Class!;
+            output.WriteLine($"{design}: plant {c.PlantKw:0} kW, {c.Electric.Sets.Length} sets, {c.Electric.Sets.Count(s => s.Diesel)} diesel; battle {c.Electric.BattleDayKw:0}");
+            Assert.Equal(wPerT, 1000 * c.PlantKw / c.Hydrostatics.DisplacementT, 0);
+            Assert.InRange(c.Electric.Sets.Sum(s => s.Kw), 0.999 * c.PlantKw, 1.001 * c.PlantKw);
+            Assert.DoesNotContain(c.Electric.Sets, s => s.Cell < 0);
+        }
+        var d = Fleet.Get("tiger_1914").Ship!;
+        var big = ShipDesign.Build(d.Design with { Fittings = d.Design.Fittings! with { GeneratorKw = 5000 } });
+        output.WriteLine($"Tiger {d.Report.Weights.First(w => w.Name == "Generators").T:0} t of generators, {big.Report.Weights.First(w => w.Name == "Generators").T:0} t on 5,000 kW");
+        Assert.True(big.Report.Weights.First(w => w.Name == "Generators").T > 3 * d.Report.Weights.First(w => w.Name == "Generators").T);
+    }
+
+    /// <summary>EL7: Lion's switchboard compartment and Seydlitz's forward generators: a set's space flooded takes the set. Szent István: her
+    /// boiler rooms gone, a ship with diesels keeps the lights where one without has nothing.</summary>
+    [Fact]
+    public void A_plant_is_lost_a_set_at_a_time_and_diesels_outlast_the_steam()
+    {
+        long now = 600_000;
+        var c = Refit("seydlitz", null, 1.0 / 3);
+        var k = Fresh(c);
+        Functions.Evaluate(k, Settings, now, now);
+        Assert.Equal(c.PlantKw, k.SupplyKw, 3);
+        var set = c.Electric.Sets[0];
+        k.WaterM3[set.Cell] = c.Cells[set.Cell].VolumeM3;
+        Functions.Evaluate(k, Settings, now, now);
+        Assert.Equal(c.PlantKw - c.Electric.Sets.Where(g => g.Cell == set.Cell).Sum(g => g.Kw), k.SupplyKw, 3);   // all the sets there
+        Assert.True(k.SupplyKw > 0);
+        foreach (var (diesel, dark) in new[] { (1.0 / 3, false), (0.0, true) })
+        {
+            var ship = Refit("seydlitz", null, diesel);
+            var b = Fresh(ship);
+            for (int r = 0; r < ship.Rooms.Length; r++)
+                if (ship.Rooms[r].Kind == RoomKind.BoilerRoom)
+                    b.State[ship.RoomNode(r)] = PartState.Disabled;
+            Functions.Evaluate(b, Settings, now, now);
+            output.WriteLine($"diesel {diesel:0.00}: supply {b.SupplyKw:0}, shed {b.Shed}, plant out {b.PlantOut}");
+            Assert.True(b.NoSteam);
+            Assert.Equal(dark, b.PlantOut);
+            Assert.Equal(dark, b.NoPower(now));
+        }
+    }
+
+    /// <summary>EL7: short of her load she sheds in order (Szent István kept lights over pumps): searchlights, pumps, then the guns' power;
+    /// vital things go last, with the plant.</summary>
+    [Fact]
+    public void Short_of_power_she_sheds_in_order()
+    {
+        var c = Fleet.Get("bismarck").Class!;
+        var e = c.Electric;
+        double vital = e.Consumers.Where(u => u.Shed == Shedding.None).Sum(u => u.BattleKw), guns = e.Consumers.Where(u => u.Shed == Shedding.Guns).Sum(u => u.BattleKw);
+        double pumps = e.Consumers.Where(u => u.Shed == Shedding.Pumps).Sum(u => u.BattleKw);
+        Assert.Equal(Shedding.None, e.ShedAt(e.BattleNightKw + 1));
+        Assert.Equal(Shedding.Searchlights, e.ShedAt(e.BattleDayKw));
+        Assert.Equal(Shedding.Pumps, e.ShedAt(vital + guns + pumps / 2));
+        Assert.Equal(Shedding.Guns, e.ShedAt(vital / 2));
+        long now = 600_000;
+        var short0 = Refit("bismarck", vital + guns / 2, 0);
+        var k = Fresh(short0);
+        Functions.Evaluate(k, Settings, now, now);
+        int main = short0.Links(short0.Batteries[0].Mounts)[0];
+        Assert.Equal(Shedding.Guns, k.Shed);
+        Assert.True(k.ByHand(main, now));
+        Assert.False(k.PlantOut);
+        Assert.DoesNotContain(true, k.SearchlightWorks);
+        Assert.Equal(0, k.PumpShare);
     }
 
     /// <summary>EL6: a torpedo trips a ship's power through the world's damage system, most of the time at least a section's, about a

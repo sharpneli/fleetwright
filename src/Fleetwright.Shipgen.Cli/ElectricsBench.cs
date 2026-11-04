@@ -31,9 +31,10 @@ static class ElectricsBench
             var lights = e.Consumers.Where(u => u.Name == "searchlight").ToArray();
             if (lights.Length > 0)
                 sb.AppendLine($"  {"searchlights (night only)",-34} {lights.Length,3} {lights.Average(u => u.Kw),8:0.0} {lights.Sum(u => u.ConnectedKw),10:0} {lights.Sum(u => u.BattleKw),7:0}");
-            sb.Append($"  connected {e.ConnectedKw:0} kW, battle {e.BattleDayKw:0} by day, {e.BattleNightKw:0} at night; {1000 * e.BattleDayKw / c.Hydrostatics.DisplacementT:0} W/t");
+            sb.AppendLine($"  connected {e.ConnectedKw:0} kW, battle {e.BattleDayKw:0} by day, {e.BattleNightKw:0} at night; {1000 * e.BattleDayKw / c.Hydrostatics.DisplacementT:0} W/t");
+            sb.Append($"  plant {c.PlantKw:0} kW ({1000 * c.PlantKw / c.Hydrostatics.DisplacementT:0} W/t), {e.Sets.Count(g => !g.Diesel)} steam and {e.Sets.Count(g => g.Diesel)} diesel sets, battle/plant {e.BattleDayKw / Math.Max(c.PlantKw, 1):0.00}");
             if (Recorded.TryGetValue(id, out double plant))
-                sb.Append($"; her namesake's plant {plant:0} kW, battle/plant {e.BattleDayKw / plant:0.00}");
+                sb.Append($"; her namesake's plant {plant:0} kW");
             sb.AppendLine();
             sb.AppendLine();
         }

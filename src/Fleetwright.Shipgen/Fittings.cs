@@ -40,6 +40,49 @@ public static partial class Fittings
     public static AuxiliaryDrive AuxiliariesOf(Design design) =>
         SnakeEnum<AuxiliaryDrive>.TryParse(design.Fittings?.Auxiliaries, out var d) ? d : AuxiliaryDrive.Steam;
 
+    /// <summary>Her plant, kW (docs/battle/electrics.md EL7): the design's, else what her drives carried a tonne (research/simulation/
+    /// electric-plant.md §1's groups: steam turrets and auxiliaries 17-40 W/t; electric turrets 45-90; steam turrets and
+    /// electric auxiliaries, KGV and Yamato, about 70; both electric 190-260). A plant is the price of what stands on it.</summary>
+    public static double PlantKw(Design design, double displacementT) => design.Fittings?.GeneratorKw ?? displacementT / 1000 *
+        (TurretDriveOf(design), AuxiliariesOf(design)) switch
+        {
+            (TurretDrive.ElectroHydraulic or TurretDrive.Electric, AuxiliaryDrive.Electric) => 200,
+            (TurretDrive.ElectroHydraulic or TurretDrive.Electric, _) => 65,
+            (TurretDrive.SteamHydraulic, AuxiliaryDrive.Electric) => 70,
+            (TurretDrive.SteamHydraulic, _) => 30,
+            (_, AuxiliaryDrive.Electric) => 30,
+            _ => 10,
+        };
+
+    public static double DieselShareOf(Design design) => Math.Clamp(design.Fittings?.DieselShare ?? 0, 0, 1);
+
+    /// <summary>Her plant's weight, t [EST: no source gave a set's weight; diesels the heavier (Laudahn), boards and cable with them].</summary>
+    public static double PlantT(Design design, double displacementT)
+    {
+        double diesel = DieselShareOf(design);
+        return PlantKw(design, displacementT) * (diesel * DieselKgPerKw + (1 - diesel) * SteamSetKgPerKw) / 1000;
+    }
+
+    const double SteamSetKgPerKw = 70, DieselKgPerKw = 100;
+
+    /// <summary>What share of a navy's plant in a year was diesel (electric-plant.md §1), read once by the format step, as
+    /// <see cref="TurretDriveBy"/> [EST]: German capital ships a third from the Kaiser class (their plant labels read 1910), the RN's
+    /// a fifth from Dreadnought, Yamato's half, Richelieu's a third; the USN's emergency sets 5% from 1941, on any ship; the rest none.</summary>
+    public static double DieselShareBy(string? navy, int year, string? type, bool merchant)
+    {
+        bool capital = type is "BB" or "BC" or "CA";
+        return (navy ?? "generic") switch
+        {
+            _ when merchant => 0,
+            "brooklyn" or "generic" => year >= 1941 ? 0.05 : 0,
+            "kiel" when capital => year >= 1910 ? 1.0 / 3 : 0,
+            "portsmouth" when capital => year >= 1905 ? 0.2 : 0,
+            "kure" when capital => year >= 1935 ? 0.5 : 0,
+            "toulon" when capital => year >= 1935 ? 1.0 / 3 : 0,
+            _ => 0,
+        };
+    }
+
     /// <summary>A grade by its name, "G0" to "G3" exactly.</summary>
     public static bool TryParse(string? s, out ShockGrade g)
     {
@@ -58,9 +101,13 @@ public static partial class Fittings
         var errs = new List<string>();
         if (design.Fittings is { } f)
         {
-            errs.AddRange(f.Extra.KeysOrEmpty().Select(k => $"fittings.{k}: not a fittings setting (shock_grade, turret_drive, auxiliaries)"));
+            errs.AddRange(f.Extra.KeysOrEmpty().Select(k => $"fittings.{k}: not a fittings setting (shock_grade, turret_drive, auxiliaries, generator_kw, diesel_share)"));
             if (f.TurretDrive is { } td && !SnakeEnum<TurretDrive>.TryParse(td, out _))
                 errs.Add($"fittings.turret_drive: \"{td}\" isn't a drive (hand, steam_hydraulic, electro_hydraulic, electric)");
+            if (f.GeneratorKw is < 0)
+                errs.Add($"fittings.generator_kw: {f.GeneratorKw} is under nothing");
+            if (f.DieselShare is < 0 or > 1)
+                errs.Add($"fittings.diesel_share: {f.DieselShare} isn't a share (0-1)");
             if (f.Auxiliaries is { } ax && !SnakeEnum<AuxiliaryDrive>.TryParse(ax, out _))
                 errs.Add($"fittings.auxiliaries: \"{ax}\" isn't a drive (steam, electric)");
             if (f.ShockGrade is { } g && !TryParse(g, out _))

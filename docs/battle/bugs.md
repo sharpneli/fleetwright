@@ -446,6 +446,10 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   plant stands (docs/battle/shells-armour-damage.md E7): 2 such cases, near-miss blackouts 21 to 0. And a gunhouse with
   its power off is worked by hand, slowly, not silent (the user, the same day). Left: G0's rates are 1939-42's; the user:
   from how electrified a ship is, what she gains by it, no era multiplier (docs/battle/electrics.md).
+- [ ] **A battlecruiser holds 20 km off a lone light cruiser while the convoy gets away** (found 2026-11-04, `AimsTests`' convoy across 12 seeds): in 9 she
+  closes to 5-8 km, sinks the escort and stops the convoy; in seeds 1, 3 and 11 she stays at about 20 km for 40-60 minutes, and in seed 3 she takes an hour to
+  her first hit on the escort and the convoy reaches its zone. Not chased: for the stock-take of how ships are lost (docs/battle/electrics.md, the user's next).
+  Next: why she doesn't close in those seeds (captain's stand-off, the admiral's range).
 - [ ] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan): a 102 mm HE burst
   inside S15 (1,556 t) opened 18.6 m², a 152 mm 17.8 m² in V189, with nobody hurt. `Blast.Cascade`: a thin outside face
   whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side

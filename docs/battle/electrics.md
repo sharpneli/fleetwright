@@ -5,7 +5,7 @@ the open item in `shells-armour-damage.md` E7 (the G0 grade gives 1916 ships 193
 `research/simulation/electric-plant.md` (2026-11-04) and its appendices; `damage/17_service_network_faults.md` is the older
 note on trips and cables, never built.
 
-**Status:** EL0-EL6 done 2026-11-04. EL7 next.
+**Status:** EL0-EL7 done 2026-11-04: the plan's built. Next (the user): how the heavy losses happen.
 
 ## The rules (the user)
 
@@ -101,9 +101,7 @@ restated (under 5 min about 90% of the time, none over 45; it asked under 10). T
 `ShipCondition.PlantOut`, worked out in `Functions.Evaluate`: no steam from any boiler room (`NoSteam`), or no engine room
 working (the dynamos are driven by that steam and stand there; Ark Royal, Elbing). What stands on the plant by hand,
 directors and searchlights out, for as long as it lasts; it ends when damage control or an outage's end brings a room back.
-Rough stand-in until EL7 places generators: no partial loss (a ship with one engine room left has her full supply), no
-diesels (so Szent István, her boiler rooms flooded and her lights on, comes out wrong; Bayern's all-diesel plant too), no
-switchboard of its own (Lion's). Pumps and the dark already read `PowerCap`, the propulsion's share (EL5 separates them).
+(EL7 replaced the rule by supply against load.) Pumps and the dark already read `PowerCap`, the propulsion's share (EL5 separates them).
 
 **The balance panel**, EL1-EL2 against the commit before (`balance --seeds 8 --fc-runs 0`, the Jutland 4 seeds; EL1's tail then
 to 20 min): 6 → 5 of 14 sides within twice the record, the record's loser losing more in 25 of 44 seeds both ways. EL2 reaches
@@ -261,19 +259,26 @@ gap `error-sources.md` already accepted, gunnery about 3.5× the record. That's 
 **Not built:** a "darken ship" order before action (Princess Royal), which would take lighting load and short-circuit fires off her: wants
 readiness doctrine, with the UI pass.
 
-### EL7 The plant itself
+### EL7 The plant itself. Done 2026-11-04.
 
-Generators as design facts: how many, kW, prime mover (reciprocating, turbo, diesel), which space; recorded mixes in the research's
-§1, EL7. Capacity about 1.0-1.5× the battle load (0.5× connected in the USN), and its weight in the design, **the price of
-electrifying** (goldens change on purpose; displacements shift, reported as `weights-follow-physics` says; no per-kW weights were
-found, diesels heavier than turbo sets). Then `PlantOut` becomes supply against load:
+**The price.** `fittings.generator_kw` and `fittings.diesel_share`; absent kW goes by her drives (`Fittings.PlantKw`, the research's groups): steam turrets and
+auxiliaries 30 W/t, electric turrets 65, steam turrets with electric auxiliaries 70, both electric 200. A "Generators" line in the weights at 70 kg/kW a steam set and
+100 a diesel [EST: no source gave a set's weight], boards and cable with them. Displacement moves by what she's built on: tiger_1914 42,166 → 42,356 t (+0.5%), seydlitz 38,399 → 38,760
+(+0.9%), bismarck 43,189 → 44,337 (+2.7%), destroyer 2,648 → 2,725 (+2.9%): the all-electric ship pays most, as she should. **It may double count a little:** the sizer's "Equipment, outfit, crew & stores" share presumably covers some dynamos; it can't be separated. Goldens changed for it (`ShipDesign.Version` 55,
+format 19; the diesels' share set once by navy, plant year and type, `Fittings.DieselShareBy`).
 
-- a flooded dynamo or switchboard space blacks her out (Lion, check 11); a diesel set keeps the lights with the boiler rooms gone
-  (Szent István, Lützow);
-- a partial loss sheds load, in order: searchlights by day, pumps not fighting damage, hoists, last steering, fire control and lights
-  [EST]; Seydlitz ran on two thirds;
-- an emergency diesel, 4-5% of the plant (USN WWII), feeds steering first;
-- generator steam is a boiler load (12.5 kg/kWh, 1906). A UI row with the UI pass.
+**The sets.** `ElectricLoad.Sets`: about 250 kW each, 2-10; steam sets a room each in turn along her engine rooms, diesels in turn aft and forward of the machinery, low on the
+centreline in stores or quarters. Placed by this rule until the designer places them: there's no dynamo room in the layout. `Functions.Supply`: a set stands while its space
+isn't over 30% flooded [EST] or burning and its room works, and a steam set while she has steam.
+
+**Supply against load.** `PlantOut` is supply at nothing, replacing EL2's rooms rule: Elbing's both engine rooms take her power only if she has no diesels, and Szent István
+keeps her lights with her boiler rooms gone. Short of it she sheds (`Shedding`, the research's order [EST]): searchlights, then electric pumps, then what works the guns
+(gunhouses by hand); steering, fire control and lights go only with the whole plant, so an emergency diesel keeps those with no special rule. Seydlitz, a third gone, carries on
+without shedding.
+
+**Rough, and known:** boards and mains aren't their own, so Lion's flooded switchboard stands as a set's space flooded and Inflexible's severed ring main as `TorpedoBlackout`'s
+trip; a shell bursting by a set does nothing to it unless it floods or fires the space; `generator_kw` isn't sized to her load, so a plant has margin a design may not need; the
+plants read high beside the record for ships our sizer builds heavy (Tiger 1,265 kW at 42,166 t against 750). No designer row yet (the UI pass).
 
 ## Not in this plan
 

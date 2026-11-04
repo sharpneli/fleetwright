@@ -1,5 +1,5 @@
 {
- "version": 18,
+ "version": 19,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -486,7 +486,8 @@
  "fittings": {
   "shock_grade": "G0",
   "turret_drive": "electro_hydraulic",
-  "auxiliaries": "steam"
+  "auxiliaries": "steam",
+  "diesel_share": 0.333
  },
  "fire_control_tech": {
   "Zeiss stereo (WWI)": {

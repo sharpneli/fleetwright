@@ -147,6 +147,10 @@ public sealed record FittingsInput
     /// (AuxiliaryDrive; steam when absent): docs/battle/electrics.md EL4.</summary>
     public string? TurretDrive { get; init; }
     public string? Auxiliaries { get; init; }
+    /// <summary>Her generating plant, kW (by her drives' W/t of her displacement when absent), and the share of it on diesels,
+    /// which want no steam (0 when absent): docs/battle/electrics.md EL7.</summary>
+    public double? GeneratorKw { get; init; }
+    public double? DieselShare { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

@@ -267,7 +267,8 @@ The design gives no size. The designer works out the hull from what it carries (
   (E0 of `docs/battle/shells-armour-damage.md`): riveted boundaries hold a blast ×0.85, a welded skin seeps ×0.6 behind
   a struck belt, a welded seam leaks ×0.4. The hull templates set both. `report.json`'s `hull` gives them.
 
-`fittings` is how the ship's gear is mounted (`Fittings.cs`). Its one number is `shock_grade`, `G0` unsecured, `G1`
+`fittings` is how the ship's gear is mounted and driven (`Fittings.cs`). `turret_drive`, `auxiliaries`, `generator_kw` and `diesel_share` say what stands on her
+electric plant and what it weighs (`docs/battle/electrics.md`). `shock_grade` is `G0` unsecured, `G1`
 secured, `G2` shock-tested or `G3` post-war grade A (`docs/battle/damage/17_service_network_faults.md` §2.2): how hard a
 shock trips breakers, lamps and generators. G0 when absent; `fittings-templates.md` says who fitted to each. It weighs
 nothing yet (G2's +1-2% of electrical weight is flagged, not built). Read by a hit's armour shock, near misses and later

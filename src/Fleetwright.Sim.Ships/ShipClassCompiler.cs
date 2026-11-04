@@ -56,6 +56,8 @@ public static class ShipClassCompiler
                 ShockGrade = r.Fittings.ShockGrade,
                 TurretDrive = Fittings.TurretDriveOf(ship.Design),
                 Auxiliaries = Fittings.AuxiliariesOf(ship.Design),
+                PlantKw = Fittings.PlantKw(ship.Design, hb.Hydrostatics.DisplacementT),
+                DieselShare = Fittings.DieselShareOf(ship.Design),
                 Drainage = DrainageOf(DrainageTemplates.Of(ship.Design), hb.Hydrostatics.DisplacementT),
                 Boilers = Contents.BoilersOf(r.Plant.Boilers),
                 Engines = Contents.EnginesOf(r.Plant.Engines),

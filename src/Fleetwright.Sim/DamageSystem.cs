@@ -1202,7 +1202,7 @@ public sealed class DamageSystem : IWorldSystem
             Lose(world, slot, k, how);
             return -1;
         }
-        if (fl.RoomsFlooded || fs.Changed || repaired == RepairChange.Parts)
+        if (fl.RoomsFlooded || fs.Changed || repaired == RepairChange.Parts || Functions.Supply(cls, k, settings) != k.SupplyKw)
             Recompute(world, slot, k, ref rng);
         else if (repaired == RepairChange.Steering)
             Hold(world, slot, k, force: true);

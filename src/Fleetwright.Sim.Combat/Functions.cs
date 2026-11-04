@@ -35,6 +35,23 @@ public static class Functions
         return v;
     }
 
+    /// <summary>The kW her generating sets can make now (docs/battle/electrics.md EL7): a set stands while its space isn't flooded
+    /// (Lion's switchboard compartment, Seydlitz's forward generators) or burning (her dynamo room driven out by heat) and its room
+    /// works, a steam set while she has steam. Boards and mains aren't their own yet: a set's space stands for them.</summary>
+    public static double Supply(ShipClass c, ShipCondition k, SimSettings s)
+    {
+        double kw = 0;
+        foreach (ref readonly var set in c.Electric.Sets.AsSpan())
+        {
+            if (!set.Diesel && k.NoSteam || set.RoomNode >= 0 && k.Health(set.RoomNode) <= 0)
+                continue;
+            if (set.Cell >= 0 && (k.CellFire[set.Cell] || k.WaterM3[set.Cell] > s.GeneratorFloodShare * c.Cells[set.Cell].VolumeM3))
+                continue;
+            kw += set.Kw;
+        }
+        return kw;
+    }
+
     /// <summary>Where she's conned from (docs/battle/crew.md N2): forward while a bridge or the conning tower stands with
     /// her command party there; when that goes, aft control if it's manned, once the control has shifted there
     /// (<see cref="SimSettings.ConnShiftS"/>; not conned meanwhile); else nowhere.</summary>
@@ -66,7 +83,7 @@ public static class Functions
         var c = k.Class;
         Steadiness.Update(k, s, now);   // who stays at the stations (docs/battle/crew.md N3b), before what they can do
         double draughtFloor = s.DraughtFloor;
-        double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0, engines = 0;
+        double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0;
         int boilers = 0, lines = 0, rudders = 0;
         bool steer = false, command = true;
         foreach (ref readonly var f in c.Functions)
@@ -94,7 +111,6 @@ public static class Functions
                 case FunctionKind.ShaftLine:
                     shafts += v;
                     shaftsBy += Value(c, k, f, floor, lastingMs);
-                    engines += c.ShaftLines[f.Index].EngineRoom >= 0 ? k.Health(c.RoomNode(c.ShaftLines[f.Index].EngineRoom)) : 1;
                     lines++;
                     break;
                 case FunctionKind.Boilers:
@@ -133,21 +149,23 @@ public static class Functions
         k.PowerCap = Math.Min(boilers > 0 ? steam / boilers : 1, lines > 0 ? shafts / lines : 1);
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
-        // the dynamos stand on that steam, in those engine rooms: all of either gone, no power anywhere (electrics.md EL2)
-        bool had = k.PlantOut;
+        // her plant against her load (electrics.md EL7): none left, no power anywhere; short of it, she sheds in order
+        bool had = k.PlantOut, gunsHad = had || k.Shed == Shedding.Guns;
         k.NoSteam = boilers > 0 && steam <= 0;
-        k.PlantOut = k.NoSteam || lines > 0 && engines <= 0;
-        if (k.PlantOut && !had)
+        k.SupplyKw = Supply(c, k, s);
+        k.PlantOut = k.SupplyKw <= 0;
+        k.Shed = k.PlantOut ? Shedding.Guns : c.Electric.ShedAt(k.SupplyKw);
+        if (k.Shed == Shedding.Guns && !gunsHad)
             for (int m = 0; m < c.Mounts.Length; m++)
                 if (c.OnElectric(m))
                     k.Engage(m, now, s);
         if (had && !k.PlantOut)
             k.SettleGyro(now + (long)(s.GyroSettleMin * 60_000));
-        if (k.PlantOut)
+        if (k.Shed != Shedding.None)
             Array.Fill(k.SearchlightWorks, false);
         // what each runs on (EL5): pumps and the helm stop with their own supply, lights with the plant
         bool electric = c.Auxiliaries == AuxiliaryDrive.Electric;
-        k.PumpShare = (boilers > 0 ? steam / boilers : 1) * (electric && k.NoPower(now) ? 0 : 1);
+        k.PumpShare = (boilers > 0 ? steam / boilers : 1) * (electric && (k.NoPower(now) || k.Shed >= Shedding.Pumps) ? 0 : 1);
         k.Dark = k.NoPower(now);
         bool helm = rudders == 0 || steer && !(electric ? k.PlantOut : k.NoSteam);
         Conn(k, command, now, s);

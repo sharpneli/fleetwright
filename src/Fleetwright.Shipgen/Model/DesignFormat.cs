@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 18;
+    public const int Current = 19;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -35,6 +35,7 @@ public static class DesignFormat
         (d, _) => SearchlightsToRecord(d), // 15 → 16: the searchlight templates to the research (docs/battle/night.md Q3b)
         (d, _) => StarShellToRecord(d), // 16 → 17: star shell to the research (docs/battle/night.md Q5b)
         Drives,                        // 17 → 18: what drives the gunhouses and auxiliaries (docs/battle/electrics.md EL4)
+        (d, _) => Diesels(d),          // 18 → 19: the plant's diesels (docs/battle/electrics.md EL7)
     ];
 
     // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
@@ -394,6 +395,25 @@ public static class DesignFormat
             d["fittings"] = fittings = [];
         fittings["turret_drive"] ??= SnakeEnum<TurretDrive>.Name(Fittings.TurretDriveBy(navy, year, merchant));
         fittings["auxiliaries"] ??= SnakeEnum<AuxiliaryDrive>.Name(Fittings.AuxiliariesBy(navy, year, merchant));
+    }
+
+    /// <summary>18 → 19: the share of her plant on diesels (docs/battle/electrics.md EL7), by her navy, her plant's year and
+    /// her type. Unsaid: none. Her plant's size goes by her drives while the design names none.</summary>
+    static void Diesels(JsonObject d)
+    {
+        string? tech = d["machinery"]?["tech"]?["name"] is JsonValue t && t.TryGetValue(out string? ts) ? ts : null;
+        bool merchant = d["style"] is JsonValue st && st.TryGetValue(out string? style) && style == "merchant";
+        string? navy = d["look"]?["navy"] is JsonValue nv && nv.TryGetValue(out string? ns) ? ns : null;
+        string? type = d["type"] is JsonValue ty && ty.TryGetValue(out string? tys) ? tys : null;
+        if (Fittings.YearOf(tech) is not int year)
+            return;
+        double share = Fittings.DieselShareBy(navy, year, type, merchant);
+        if (share <= 0)
+            return;
+        var fittings = d["fittings"] as JsonObject;
+        if (fittings is null)
+            d["fittings"] = fittings = [];
+        fittings["diesel_share"] ??= Math.Round(share, 3);
     }
 
     /// <summary>2 → 3: an ammunition block named the sim's outcome-table row (`outcomes`, S0's transitional field); its

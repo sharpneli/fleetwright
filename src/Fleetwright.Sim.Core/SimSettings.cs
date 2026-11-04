@@ -1730,6 +1730,8 @@ public sealed record SimSettings
     /// reads slower by this (the Dreyer's "7 (+1 if motor breaks)": [EST]); gyros take this long to settle once the power's back,
     /// min (electric-plant.md: 5-20 after a short outage [EST]).</summary>
     public double TableHandLatency { get; init; } = 1.5;
+    /// <summary>A generating set's space this full of water and the set's out (docs/battle/electrics.md EL7) [EST].</summary>
+    public double GeneratorFloodShare { get; init; } = 0.3;
     public double GyroSettleMin { get; init; } = 10;
     public double RollerFriction { get; init; } = 0.007;
     public double HandReload { get; init; } = 3;

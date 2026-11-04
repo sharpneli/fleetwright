@@ -445,10 +445,12 @@ public sealed class ShipCondition
     public double WaterT, GmM;
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
     public double PowerCap = 1;
-    /// <summary>Her generating plant gone, worked out with the functions (docs/battle/electrics.md EL2): no steam from any
-    /// boiler room or no engine room working. No power anywhere for as long as that lasts. NoSteam: the first of those, which
-    /// is what stops her steam-hydraulic turrets.</summary>
+    /// <summary>Worked out with the functions (docs/battle/electrics.md EL7): the kW her sets can make; none is her plant gone, no
+    /// power anywhere for as long as that lasts; what she sheds short of that. NoSteam: no steam from any boiler room, which stops
+    /// her steam sets and her steam-hydraulic turrets.</summary>
+    public double SupplyKw = double.NaN;
     public bool PlantOut, NoSteam;
+    public Shedding Shed;
     /// <summary>Worked out with the functions (electrics.md EL5): the share of her drainage and fire pumps working (those on
     /// steam by her steam, those on the plant none when it's off), and whether she's dark, her repairs slowed.</summary>
     public double PumpShare = 1;
@@ -637,6 +639,7 @@ public sealed class ShipCondition
         Array.Fill(EyeCrew, 1.0);
         Array.Fill(MountLasts, true);
         (PowerCapLasts, LastingMs, PlantOut, NoSteam, PumpShare, Dark, BlackoutUntil, GyroUntil) = (1, 0, false, false, 1, false, 0, 0);
+        (SupplyKw, Shed) = (double.NaN, Shedding.None);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
@@ -884,7 +887,7 @@ public sealed class ShipCondition
     {
         TurretDrive.SteamHydraulic => NoSteam,
         TurretDrive.Hand => false,
-        _ => PlantOut || Mount[mount].PowerUntil > now,
+        _ => Shed == Shedding.Guns || PlantOut || Mount[mount].PowerUntil > now,
     };
 
     /// <summary>The guns a mount still fires of its barrels (E4: its guns out don't).</summary>

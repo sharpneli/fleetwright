@@ -136,6 +136,7 @@ public static class Navarch
             items.Add(new Weight("Hull structure", "hull", hull.T, -0.01 * L, ZRel.Frac(zFrac)));
             shp = PowerRequired(disp, V, L, B, cb, tun);
             items.Add(new Weight("Machinery", "machinery", Powerplant.Rated(plant, shp).WeightT, geo.MachineryMid(L), ZRel.Frac(0.32)));
+            items.Add(new Weight("Generators", "machinery", Fittings.PlantT(design, disp), geo.MachineryMid(L), ZRel.Frac(0.3)));
             if (placed is null)
             {
                 items.AddRange(RoughPayload(design, D));

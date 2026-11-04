@@ -112,6 +112,9 @@ public sealed class ShipClass
     /// <summary>What works her gunhouses, and her steering and pumps (docs/battle/electrics.md EL4).</summary>
     public TurretDrive TurretDrive { get; internal init; }
     public AuxiliaryDrive Auxiliaries { get; internal init; }
+    /// <summary>Her generating plant, kW, and its share on diesels (docs/battle/electrics.md EL7).</summary>
+    public double PlantKw { get; internal init; }
+    public double DieselShare { get; internal init; }
     /// <summary>What's built in against water (DC4): pumps, portable pumps, counterflooding, tightness.</summary>
     public DrainageRow Drainage { get; internal init; }
     /// <summary>The shipgen it was built by (<see cref="ShipDesign.Version"/>).</summary>

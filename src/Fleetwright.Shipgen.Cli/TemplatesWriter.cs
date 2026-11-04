@@ -262,7 +262,8 @@ static class TemplatesWriter
 
             A design's `fittings` block says how its gear is mounted and driven. `turret_drive` (hand, steam_hydraulic,
             electro_hydraulic, electric) and `auxiliaries` (steam, electric) say what stands on the electric plant
-            (docs/battle/electrics.md EL4). `shock_grade` is G0 to G3
+            (docs/battle/electrics.md EL4); `generator_kw` and `diesel_share` are her plant, its weight in the design (EL7).
+            `shock_grade` is G0 to G3
             (`docs/battle/damage/17_service_network_faults.md` §2.2; decision 10 of docs/battle/shells-armour-damage.md):
             how hard a shock trips its breakers, lamps and generators, from the hull's shock factor at the device. The
             armour shock of a hit that didn't get through (E4), the near misses (E7) and later the service networks read it.

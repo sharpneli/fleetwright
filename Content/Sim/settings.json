@@ -594,6 +594,7 @@
   "HandChangeoverS": 180,
   "HydraulicListDeg": 10,
   "TableHandLatency": 1.5,
+  "GeneratorFloodShare": 0.3,
   "GyroSettleMin": 10,
   "RollerFriction": 0.007,
   "HandReload": 3,
