@@ -329,7 +329,7 @@ public static class Program
                 "balance" => BalancePanel.Run(Settings(a), Root(a), n => Class(a, n), new BalancePanel.Options(a.Int("seeds", 8), a.Get("only")?.Split(','),
                     a.Int("fc-runs", 12), a.Int("threads", 0), a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("out"))),
                 "losses" => LossBench.Run(Settings(a), Root(a), a.Positional.Count > 0 ? a.Positional : ["dogger-bank"], new LossBench.Options(a.Int("seeds", 4), a.Int("threads", 0),
-                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("out"), a.Get("spare"), a.Get("follow"), a.Get("dc"))),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("out"), a.Get("spare"), a.Get("follow"))),
                 "fc-converge" => FcLevels.Converge(Settings(a), a.Int("runs", 30), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-sensors" => FcSensors.Run(Settings(a), a.Int("runs", 12), Root(a), n => Class(a, n)),

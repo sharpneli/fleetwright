@@ -1308,21 +1308,31 @@ public sealed partial class CaptainLayer
 
     /// <summary>Out of the fight, each second: away from the nearest enemy his navy holds in sight within
     /// <see cref="SimSettings.FightCompareM"/>, else for her home (great circle; <see cref="Homes"/>: her side's, or an
-    /// aim's zone), at all she can make; stopped within <see cref="SimSettings.HomeRadiusM"/> of it (a zone's own). With no home and nobody near he keeps his course.</summary>
+    /// aim's zone), at all she can make; stopped within <see cref="SimSettings.HomeRadiusM"/> of it (a zone's own). With no home and nobody near he keeps his course.
+    /// His judgement of her speed (docs/battle/loss-stock-take.md): with an enemy near she runs, whatever damage control asks;
+    /// with nobody near he keeps to what it asks and eases her for her water (<see cref="ShipCondition.EaseKn"/>).</summary>
     void HomeThink(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var s = ctx.Settings;
         double flank = own.Handling.Class.Motion.MaxSpeedKn;
         if (Nearest(ctx, own, s.FightCompareM, out var t) != 0)
         {
+            HoldSpeed(ctx, ref cap, own.Entity, true);
             var (course, kn) = (Escape(ctx, own, t), Behaviours.Run(own, t).SpeedKn);
             Give(ctx, own, Evade(ctx, own, slot, course, attackRun: false), kn);
             CoverRetreat(ctx, ref cap, own, slot, near: true);
             return;
         }
         CoverRetreat(ctx, ref cap, own, slot, near: false);   // out of touch: no more smoke
+        HoldSpeed(ctx, ref cap, own.Entity, false);
+        var k = ctx.Ships.Combat.Condition(slot);
+        flank = Math.Min(flank, Math.Min(k.EaseKn, k.SafeSpeedKn));
         if (homes.Of(own.Side, own.Entity, s.HomeRadiusM) is not var (home, there))
+        {
+            if (own.SpeedOrderKn > flank)
+                ctx.Helm.Speed(own.Entity, flank);   // her course as it is: he only eases her
             return;
+        }
         if (Earth.Distance(own.Position, home) <= there)
         {
             if (own.SpeedOrderKn != 0)
@@ -1331,6 +1341,15 @@ public sealed partial class CaptainLayer
             return;
         }
         Give(ctx, own, Earth.Bearing(own.Position, home), flank);
+    }
+
+    /// <summary>His order to hold her speed whatever damage control asks, given or taken back once.</summary>
+    void HoldSpeed(in AiContext ctx, ref Captain cap, int entity, bool on)
+    {
+        if (cap.SpeedHeld == on)
+            return;
+        cap.SpeedHeld = on;
+        ctx.Issue(DamageSystem.HoldSpeed(entity, on));
     }
 
     /// <summary>A cripple's way out (docs/battle/balance.md BL5: "a bit more sneaky"): away from every enemy her navy holds

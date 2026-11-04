@@ -254,8 +254,7 @@ public static class Repairs
         for (int p = 0; p < k.PartyCount; p++)
             if (k.Parties[p].Job == RepairJob.Mat)
                 safe = Math.Min(safe, s.MatKn);
-        if (s.SafeOutOfActionKn > 0 && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
-            safe = Math.Min(safe, OutOfAction(c, f, k, s));
+        k.EaseKn = k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000 ? Math.Max(Ease(c, f, k, s), s.SafeMinKn) : double.PositiveInfinity;
         if (double.IsFinite(safe))
             safe = Math.Max(safe, s.SafeMinKn);
         bool asks = safe < Math.Abs(speedMs) / Kn - 0.5;
@@ -271,10 +270,10 @@ public static class Repairs
 
     const double Kn = 0.514444;
 
-    /// <summary>The speed she'd keep with nobody shooting at her: no faster than <see cref="SimSettings.SafeOutOfActionKn"/>
+    /// <summary>The speed she'd keep with nobody shooting at her: no faster than <see cref="SimSettings.EaseDownKn"/>
     /// with a hole under the sea, and forward no faster than keeps the ram head under a hole clear of it (17 §5; Seydlitz,
     /// Lützow slowed for their bows); infinite with no hole that speed makes worse.</summary>
-    static double OutOfAction(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
+    static double Ease(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
     {
         double safe = double.PositiveInfinity;
         var water = HitQuery.WaterOf(c, k.Attitude);
@@ -290,7 +289,7 @@ public static class Repairs
                     continue;
                 double clear = k.HoleZ[h] - Math.Sqrt(a / Math.PI) - sea;
                 if (clear <= 0)
-                    safe = Math.Min(safe, s.SafeOutOfActionKn);
+                    safe = Math.Min(safe, s.EaseDownKn);
                 else if (ram > 0)
                     safe = Math.Min(safe, Math.Sqrt(clear / ram) / Kn);
             }
@@ -676,7 +675,10 @@ public static class Repairs
                 return;   // every party at work: no need to look over the jobs
             var best = Best(c, f, k, s);
             if (best.Score <= 0)
+            {
+                Join(c, f, k, now, s);
                 return;
+            }
             int near = -1;
             for (int p = 0; p < k.PartyCount; p++)
             {
@@ -687,22 +689,59 @@ public static class Repairs
             }
             if (near < 0)
                 return;
-            ref var party = ref k.Parties[near];
-            // sent the first time, its men leave their stations: those still there of its share; its men lent to the guns
-            // come back to it (docs/battle/crew.md decision 12)
-            if (!party.Mustered)
-                party.Men = Take(c, k, BattleStation.Repair, party.Men, out _);
-            Reliefs.Recall(c, k, near);
-            // on the way it's where it was: its last place, else where it mustered
-            if (party.Place >= 0 && now >= party.ArriveMs)
-                party.Home = party.Place;
-            party.Place = PlaceAt(c, f, k, best.Job, best.At, party.Home);
-            party.ArriveMs = now + (long)(1000 * (Math.Abs(party.Section - best.Section) * s.FireTravelS + (party.Mustered ? 0 : doc.MusterS)));
-            (party.Section, party.Mustered, party.Done) = (best.Section, true, 0);
-            if (best.Job == RepairJob.None)
-                party.Target = best.At;
-            else
-                (party.Job, party.JobAt) = (best.Job, best.At);
+            Send(c, f, k, near, best, now, s);
+        }
+    }
+
+    /// <summary>A party sent to a job or a fire.</summary>
+    static void Send(ShipClass c, FloodModel f, ShipCondition k, int p, in Candidate job, long now, SimSettings s)
+    {
+        ref var party = ref k.Parties[p];
+        // sent the first time, its men leave their stations: those still there of its share; its men lent to the guns
+        // come back to it (docs/battle/crew.md decision 12)
+        if (!party.Mustered)
+            party.Men = Take(c, k, BattleStation.Repair, party.Men, out _);
+        Reliefs.Recall(c, k, p);
+        // on the way it's where it was: its last place, else where it mustered
+        if (party.Place >= 0 && now >= party.ArriveMs)
+            party.Home = party.Place;
+        party.Place = PlaceAt(c, f, k, job.Job, job.At, party.Home);
+        party.ArriveMs = now + (long)(1000 * (Math.Abs(party.Section - job.Section) * s.FireTravelS + (party.Mustered ? 0 : k.DamageControl.MusterS)));
+        (party.Section, party.Mustered, party.Done) = (job.Section, true, 0);
+        if (job.Job == RepairJob.None)
+            party.Target = job.At;
+        else
+            (party.Job, party.JobAt) = (job.Job, job.At);
+    }
+
+    /// <summary>With no job left to take, the free parties join those at work where the job's crew has room: each the one with
+    /// the most man-minutes left a man (a mat's, mostly: a job's men are at most its crew).</summary>
+    static void Join(ShipClass c, FloodModel f, ShipCondition k, long now, SimSettings s)
+    {
+        for (int p = 0; p < k.PartyCount; p++)
+        {
+            if (k.Parties[p].Target >= 0 || k.Parties[p].Job != RepairJob.None || k.Parties[p].Men < 2)
+                continue;
+            int lead = -1;
+            double most = 0;
+            for (int q = 0; q < k.PartyCount; q++)
+            {
+                ref readonly var at = ref k.Parties[q];
+                if (at.Job == RepairJob.None)
+                    continue;
+                double men = 0, done = 0;
+                for (int o = 0; o < k.PartyCount; o++)
+                    if (k.Parties[o].Job == at.Job && k.Parties[o].JobAt == at.JobAt)
+                        (men, done) = (men + k.Parties[o].Men, done + k.Parties[o].Done);
+                if (men >= Crew(c, at.Job, s))
+                    continue;
+                double left = (ManMin(k, at.Job, at.JobAt, s) - done) / Math.Max(men, 1);
+                if (left > most)
+                    (most, lead) = (left, q);
+            }
+            if (lead < 0)
+                return;
+            Send(c, f, k, p, new Candidate(k.Parties[lead].Job, k.Parties[lead].JobAt, k.Parties[lead].Section, 0), now, s);
         }
     }
 
@@ -804,7 +843,7 @@ public static class Repairs
         {
             int hm = i * ShipCondition.HoleClasses + (int)HoleClass.Mat;
             double matM2 = Workable(k, hm, s);
-            if (matM2 <= 0 || Taken(k, RepairJob.Mat, i) || !MatReach(c, k, i, k.HoleZ[hm], s))
+            if (k.HoldsSpeed || matM2 <= 0 || Taken(k, RepairJob.Mat, i) || !MatReach(c, k, i, k.HoleZ[hm], s))
                 continue;
             double flowH = k.CellInflow[i] * 3600 * matM2 / Math.Max(k.BreachM2[i], 1e-9);
             // a mat means stopping the ship: only for holes whose water the pumps can't keep up with
@@ -954,7 +993,7 @@ public static class Repairs
             case RepairJob.Mat:
             {
                 int h = at * ShipCondition.HoleClasses + (int)HoleClass.Mat;
-                return Workable(k, h, s) > 0 && MatReach(c, k, at, k.HoleZ[h], s);
+                return !k.HoldsSpeed && Workable(k, h, s) > 0 && MatReach(c, k, at, k.HoleZ[h], s);
             }
             case RepairJob.Steering:
             {
@@ -1003,14 +1042,24 @@ public static class Repairs
     /// <summary>A job's size, man-minutes (09 §4's times × its crew; the holes' by their count).</summary>
     static double ManMin(ShipCondition k, RepairJob job, int at, SimSettings s)
     {
-        double each = s.RepairJobManMin[(int)job];
+        double each = s.RepairJobManMin[(int)job] * (job == RepairJob.Mat ? MatScale(k.Class, s) : 1);
         if (job is RepairJob.Repair or RepairJob.Restore)
             return k.FixManMin[at];
         return job is RepairJob.Plug or RepairJob.Patch or RepairJob.Mat ? each * Math.Max(k.HoleOpenN[at * ShipCondition.HoleClasses + (int)Class(job)], 1) : each;
     }
 
-    /// <summary>The parties at their water jobs: their men (at most twice the job's crew) at the doctrine's skill, slower in
-    /// the dark and on a list; a job done is applied and the party freed (its next job at the next plan).</summary>
+    /// <summary>A collision mat on her, against the catalogue's: its lines go round her hull, so its men and man-minutes go
+    /// with her girth (beam + 2 × draught) and the time doesn't.</summary>
+    public static double MatScale(ShipClass c, SimSettings s) =>
+        (c.Beam + 2 * (c.Vertical.Waterline - c.Vertical.Keel)) / s.MatGirthM;
+
+    /// <summary>The most men a job takes: twice its crew.</summary>
+    static double Crew(ShipClass c, RepairJob job, SimSettings s) =>
+        s.RepairJobMen[(int)job] * s.RepairCrewsAJob * (job == RepairJob.Mat ? MatScale(c, s) : 1);
+
+    /// <summary>The parties at their water jobs: their men (at most twice the job's crew, however many parties are on it) at
+    /// the doctrine's skill, slower in the dark and on a list; a job done is applied and its parties freed (their next job at
+    /// the next plan).</summary>
     static RepairChange Work(ShipClass c, FloodModel f, ShipCondition k, double dt, long now, double speedMs, SimSettings s)
     {
         var change = RepairChange.None;
@@ -1028,14 +1077,30 @@ public static class Repairs
             }
             if (party.Job == RepairJob.Mat && !slow)
                 continue;   // a mat goes over only with the way off her
-            double men = Math.Min(party.Men, s.RepairJobMen[(int)party.Job] * s.RepairCrewsAJob);
-            party.Done += men * party.Skill * env * dt / 60;
-            if (party.Done < ManMin(k, party.Job, party.JobAt, s))
+            double room = Crew(c, party.Job, s), total = 0;
+            for (int q = 0; q < k.PartyCount; q++)
+            {
+                ref readonly var o = ref k.Parties[q];
+                if (o.Job != party.Job || o.JobAt != party.JobAt)
+                    continue;
+                if (q < p && now >= o.ArriveMs && now >= o.StopMs && o.Men >= 2)
+                    room -= o.Men;
+                if (q != p)
+                    total += o.Done;
+            }
+            double men = Math.Min(party.Men, room);
+            if (men <= 0)
                 continue;
-            var done = Apply(c, f, k, party.Job, party.JobAt, s);
+            party.Done += men * party.Skill * env * dt / 60;
+            if (total + party.Done < ManMin(k, party.Job, party.JobAt, s))
+                continue;
+            var (job, at) = (party.Job, party.JobAt);
+            var done = Apply(c, f, k, job, at, s);
             if (done > change)
                 change = done;
-            (party.Job, party.JobAt, party.Done) = (RepairJob.None, -1, 0);
+            for (int q = 0; q < k.PartyCount; q++)
+                if (k.Parties[q].Job == job && k.Parties[q].JobAt == at)
+                    (k.Parties[q].Job, k.Parties[q].JobAt, k.Parties[q].Done) = (RepairJob.None, -1, 0);
         }
         return change;
     }

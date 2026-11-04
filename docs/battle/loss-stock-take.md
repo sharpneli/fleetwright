@@ -54,12 +54,12 @@ spreads 66-79 lost and the Dogger Bank's 13-29, so read direction and big steps 
 ## The slow deaths: why doesn't her crew stop the leak? (2026-11-04)
 
 The user: a ship with her crew, not under fire and not otherwise disabled, should stop leaks slow enough to take six hours to sink her. `losses` now splits the sea coming in by what could stop it, each minute (printed for the slow deaths, no hit in 40 min or more), and
-`--follow SEED:NAME,...` traces a ship cell by cell every 10 min, her parties too, into DIR/trace.txt. `--dc redo,slow` turns on two rungs (settings `RepairRedoLeft` and `SafeOutOfActionKn`, **off by default: Dogger Bank losses identical seed for seed with them off**).
+`--follow SEED:NAME,...` traces a ship cell by cell every 10 min, her parties too, into DIR/trace.txt.
 
 **What the traces show.** Indomitable, Dogger Bank seed 1915: 14 heavy hits, the last at +48 min; then home at 23 kn for 4.7 hours, no enemy within 30 km, water about 700 -> 8,300 t through 2.4 m2 of holes. At +260 min one of her biggest leaks is 40 t/min through a hole 2.3 m *above* the waterline: the bow's ram lifts the sea over it, and slowing would stop it. A patch there has crept to `left 0.96` (above 15 kn, 15% back toward open every 10 min), and:
 
 1. **Work that creeps loose is never redone.** `Best` only looks at `HoleOpenM2`, which the job empties for good. A code gap. `RepairRedoLeft` 0.5 redoes it.
-2. **Nothing slows a ship for flooding unless a boundary is at risk.** `Safe` reads bulkhead loads only, and a Home captain rings what she can make with nobody near. `SafeOutOfActionKn` 12 asks for that once `FireTurnToS` has passed since her last hit, less if the ram would still reach a hole clear of the sea.
+2. **Nothing slows a ship for flooding unless a boundary is at risk.** `Safe` reads bulkhead loads only, and a Home captain rings what she can make with nobody near. The first test (`slow` below) asked for 12 kn once `FireTurnToS` had passed since her last hit, less if the ram would still reach a hole clear of the sea.
 3. **Parties stand idle.** Free 36-41% of the time before giving up, in the three traced, with the water rising. A job takes one party (`Taken`), whatever its size.
 
 **The rungs, lost a seed (4 seeds; Jutland's baseline spreads 66-79):**
@@ -78,12 +78,26 @@ The user: a ship with her crew, not under fire and not otherwise disabled, shoul
 - **Most of the water isn't small leaks.** In the slow deaths, the sea through holes a party could reach and hasn't worked on is 0-2% for destroyers and 2-26% for cruisers; 13-40% for capital ships (the median ship's far less: a few big flows). Destroyers' is **mat-sized and beyond, about 95%** (holes of 0.3 m2 and up; 8-12 t/min). So the user's rule meets the mat.
 - **The mat is the choke.** 1,800 man-minutes (`RepairJobManMin`: 09 §4's 90 min x 20 men, a big ship's) times the holes, by one party of at most 16 men, at skill 0.85, /1.6 in the dark, /(1 + list/10): **a little over 2 hours at best, about 7 at 10 degrees of list in the dark, for each hole.** A destroyer doesn't have 20 men to spare, and a mat for her side is not a battleship's. She also needs to be at 5 kn with the hole within 2 m of the waterline. Nothing but a mat touches a hole over 0.3 m2.
 
-**Next, none of it built (the user's call):**
+**Built and on (the user, 2026-11-04: "without them damage control feel silly, even if they are not the major cause for the extra losses"):**
 
-1. **Idle parties join a job** already taken, up to its crew x `RepairCrewsAJob`: no new number, and the mat gets its 20 men on a big ship.
-2. **A mat by the ship's size,** so a destroyer's takes less than a battleship's: the research's 90 min x 20 men is a large ship's. Worth a research request, with what crews did about a hole of 1-5 m2 (shoring from inside, stuffing, abandoning the space and shoring its boundary).
-3. **Slow by the captain's judgement:** a Home captain with no enemy near keeps to what damage control asks, and runs when one's about. That's `slow` with the right test.
-4. Then the ladder again, alone and together. Giving up is a question too: Goshawk went from fighting her water to abandoned when her plant went out.
+1. **Work crept loose is redone** (`RepairRedoLeft` 0.5 [EST]).
+2. **Free parties join a job** with no job left to take, the one with the most man-minutes left a man, up to its crew x `RepairCrewsAJob`. No new number. A mat on a dreadnought: 166 -> 68 min.
+3. **A mat by her girth** (beam + 2 x draught over `MatGirthM` 46 m [EST]): its men and man-minutes scale, its time doesn't, since the lines go round her hull. A destroyer about 0.43: 218 -> 97 min for one hole.
+4. **Her captain's judgement of her speed** (`CaptainLayer.HomeThink`): going home with an enemy within `FightCompareM`, she holds her speed whatever damage control asks (the existing `HoldSpeed`; no mat either). With nobody near, she rings the least of her flank, what damage control asks, and `ShipCondition.EaseKn`: `EaseDownKn` 12 kn [EST] with a hole under the sea, less forward if the ram would reach a hole clear of it, once `FireTurnToS` has passed since her last hit. **Ships still in their lines don't ease**: the fleet's speed is the fleet's.
+
+**The ladder, lost a seed, the same 4 seeds:**
+
+| Rung | Jutland, Britain / Germany | capital / cruiser / destroyer | kt | Dogger Bank, Britain / Germany | capital / cruiser / destroyer | kt |
+|---|---|---|---:|---|---|---:|
+| None | 24.8 / 47.5 | 14.0 / 17.2 / 41.0 | 585 | 10.0 / 10.0 | 4.0 / 3.5 / 12.5 | 164 |
+| Joining | 25.8 / 50.5 | 13.0 / 20.0 / 43.2 | 596 | 10.5 / 10.0 | 2.8 / 3.2 / 14.5 | 127 |
+| Mat by girth | 26.0 / 45.8 | 15.2 / 17.5 / 39.0 | 625 | 10.0 / 10.0 | 4.0 / 3.5 / 12.5 | 164 |
+| Captain's judgement | 26.2 / 39.5 | 14.0 / 19.2 / 32.5 | 552 | 6.5 / 11.2 | 2.8 / 4.2 / 10.8 | 133 |
+| **All four (the code now)** | 24.2 / 47.8 | 14.0 / 19.0 / 39.0 | 575 | 7.0 / 8.0 | 2.2 / 3.2 / 9.5 | 100 |
+
+Jutland's within the noise: as expected, these aren't the main cause there. The Dogger Bank, where nobody chases a cripple for long, falls from 20 to 15 lost and 164 to 100 kt. The captain's judgement cured what plain slowing did at Jutland (83 lost). `dc-history` hardly moves (Seydlitz at 8 h 7,510 -> 7,100 t, holding 24 kn 8,350 -> 7,370 t; most cases identical).
+
+**What's still left of the slow deaths:** mat-sized and larger holes keep most of the sea coming in on destroyers and cruisers (63% of the destroyers' at Jutland comes through holes over 5 m2, which nothing touches at sea). What crews did about those is research's; the request is in `research/REQUESTS.md`. Giving up is a question too: Goshawk went from fighting her water to abandoned when her plant went out. Lutzow in `dc-history` now reaches about 13,500 t at 8 h, against the record's 8,351 t and DC9's 2,570 t: something since DC9 moved that case, not this work (13,700 t before it).
 
 ## The question
 

@@ -12,6 +12,11 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-04 - What crews did about holes too big to plug, 1890-1925 first
+- Question: (1) Collision mats by ship size: men, time and how far they reduced the leak, on destroyers and cruisers as well as capital ships; were they carried and used on destroyers at all? (2) What a crew did about a hole of 1-5 m2 and over, out of reach of a plug or patch: shoring and stuffing from inside, giving up the compartment and holding its boundary, hours afterwards with no enemy near. (3) How long damaged destroyers and cruisers stayed afloat and whether they got home, and how often a consort towed one or took off her crew (Jutland's Onslow, Acasta, Broke, Warrior, Sparrowhawk). (4) Lost and survived, the speeds they crept home at.
+- Context / relevant files: `docs/battle/loss-stock-take.md` "The slow deaths" (`MatGirthM` 46 m and `EaseDownKn` 12 kn are [EST]), `docs/battle/09_damage_control.md` line 129, `src/Fleetwright.Sim.Combat/Repairs.cs`. Not blocking.
+- Wanted output: ranges by ship size and period, the cases with hours and water where known.
+
 ### 2026-11-01 - Fire distribution and cripples, 1890-1925 first
 - Question: what the fleets' doctrine said about whom the guns fire on, and what they did. (1) Fire distribution: the
   rules each navy gave its lines (the Grand Fleet Battle Orders' ship for ship from the van or the rear, concentrating,

@@ -216,7 +216,7 @@ four classes:
 |---|---|---|---|---|
 | plug | ≤ 0.015 m² (≈ 15 cm) | plug and wedge, 3 min a hole, 2 men | 10% | the hole reachable: the cell's water below it, or under ~1 m deep |
 | patch | ≤ 0.3 m² | soft or box patch, 20 min, 4 men | 8% with no flow, 30% against flow | the same; poor against active flow (NRL) |
-| mat | ≤ 5 m², its top within ~2 m of the waterline | collision mat from outside, 90 min, 20 men on deck | 30% | speed ≤ 5 kn; the deck there not wrecked |
+| mat | ≤ 5 m², its top within ~2 m of the waterline | collision mat from outside, 90 min, 20 men on deck on a big ship, her men and man-minutes by her girth (2026-11-04, `loss-stock-take.md`) | 30% | speed ≤ 5 kn; the deck there not wrecked; her captain not running from an enemy |
 | beyond | anything bigger: torpedo holes, long tears | — | 100% | the dockyard |
 
 The sea's inflow reads the effective area (each class × what it leaves). A hole above the outside waterline needs

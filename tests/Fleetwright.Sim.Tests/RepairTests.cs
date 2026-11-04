@@ -157,6 +157,66 @@ public class RepairTests(ITestOutputHelper output)
         Assert.True(late > 20, "the 1890 doctrine holds its speed for an hour first");
     }
 
+    /// <summary>A stopped ship with a hole at a share of her length from the bow, half a metre under the waterline, her
+    /// flooding and repairs stepped until the class's work on it is done (or the time's out): the seconds it took.</summary>
+    static double UntilWorked(ShipClass c, SimSettings s, double area, double limitS, Action<ShipCondition, int, int>? before = null)
+    {
+        var f = new FloodModel(c);
+        var k = Fresh(c, "1916");
+        double x = c.Hull.X1 - 0.4 * c.Length, z = c.Vertical.Waterline - 0.5;
+        var (cell, y) = FloodModel.SideCell(c, x, z, true);
+        Assert.True(cell >= 0);
+        k.Hole(cell, area, new P3(x, y, z));
+        int h = cell * ShipCondition.HoleClasses + (int)ShipCondition.Classify(area);
+        before?.Invoke(k, cell, h);
+        var r = RandomStream.FromSeed(5);
+        double left = k.HoleOpenM2[h] > 0 ? 1 : k.HoleLeft[h];
+        for (int t = 0; t < limitS; t++)
+        {
+            Repairs.Step(c, f, k, 1, t * 1000L, s);
+            Flooding.Step(c, f, k, 1, k.PowerCap, 0, s, ref r);
+            Flooding.Settle(c, f, k, s, 1);
+            if (k.HoleOpenM2[h] <= 0 && k.HoleLeft[h] < left)
+                return t;
+        }
+        return double.PositiveInfinity;
+    }
+
+    [Fact]
+    public void Work_crept_loose_is_done_again()
+    {
+        // docs/battle/loss-stock-take.md: a patch worked loose at speed (HullWorkLoosen) went back on no job list
+        var c = Class("dreadnought");
+        void Loose(ShipCondition k, int cell, int h)
+        {
+            k.Worked(cell, h, 0.9);
+        }
+        double redone = UntilWorked(c, Settings, 0.1, 3600, Loose);
+        output.WriteLine($"a patch 90% loose: done again at {redone:0} s");
+        Assert.True(redone < 3600);
+    }
+
+    [Fact]
+    public void Free_parties_join_a_collision_mat_up_to_its_crew()
+    {
+        var c = Class("dreadnought");
+        double joined = UntilWorked(c, Settings, 1.5, 6 * 3600), oneParty = 60 * Settings.RepairJobManMin[(int)RepairJob.Mat] * Repairs.MatScale(c, Settings) / (16 * 0.85);
+        output.WriteLine($"a mat on a dreadnought: free parties joining {joined / 60:0} min, one party of 16 could at best {oneParty / 60:0} min");
+        Assert.True(joined < 0.75 * oneParty, "more men on it");
+    }
+
+    [Fact]
+    public void A_mats_men_and_man_minutes_go_with_her_girth()
+    {
+        var c = Class("destroyer");
+        double small = Repairs.MatScale(c, Settings), big = Repairs.MatScale(Class("dreadnought"), Settings);
+        double scaled = UntilWorked(c, Settings, 1.5, 12 * 3600), flat = UntilWorked(c, Settings with { MatGirthM = c.Beam + 2 * (c.Vertical.Waterline - c.Vertical.Keel) }, 1.5, 12 * 3600);
+        output.WriteLine($"girth against the catalogue's: destroyer {small:0.00}, dreadnought {big:0.00}; a mat on a destroyer: {scaled / 60:0} min, as a big ship's {flat / 60:0} min");
+        Assert.InRange(small, 0.2, 0.6);
+        Assert.InRange(big, 0.8, 1.3);
+        Assert.True(scaled < flat, "a smaller hull, a smaller job");
+    }
+
     /// <summary>A dreadnought at 15 kn with parts wrecked (nodes), stepped for a while; her steering then.</summary>
     static Steering SteeringAfter(ShipClass c, int[] nodes, double minutes)
     {

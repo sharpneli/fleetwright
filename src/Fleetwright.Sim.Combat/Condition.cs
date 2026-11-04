@@ -292,6 +292,9 @@ public sealed class ShipCondition
     public double[] FixManMin = [];
     public bool[] Drowned = [];
     public double SafeSpeedKn = double.PositiveInfinity;
+    /// <summary>The speed damage control would have her ease to, out of the action (infinite: none): her captain's to take
+    /// (<see cref="SimSettings.EaseDownKn"/>).</summary>
+    public double EaseKn = double.PositiveInfinity;
     public long SafeSinceMs;
     public bool HoldsSpeed;
     public bool[] Counterflooded = [];
@@ -660,6 +663,7 @@ public sealed class ShipCondition
         (NextClearMs, ClearAtMs, Leaks, DoorsDrawn, PumpsRigged) = (-1, -1, 0, false, 0);
         (CounterTank, CounterfloodT, CounterHandMs) = (-1, 0, 0);
         (SafeSpeedKn, SafeSinceMs, HoldsSpeed, SteerCause, SteerSinceMs) = (double.PositiveInfinity, 0, false, SteerCause.None, 0);
+        EaseKn = double.PositiveInfinity;
         (NoteCount, CounterOut) = (0, 0);
         (PartyCount, PartiesMade, TurnedTo, LastHitMs, NextPlanMs, FireShowMW) = (0, false, false, 0, 0, 0);
         ClearGen++;
@@ -1194,6 +1198,8 @@ public sealed class ShipCondition
             h.Add(SafeSpeedKn);
             h.Add(SafeSinceMs);
         }
+        if (double.IsFinite(EaseKn))
+            h.Add(EaseKn);
         if (CounterfloodT > 0)
         {
             h.Add(CounterfloodT);

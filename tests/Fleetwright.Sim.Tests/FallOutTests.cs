@@ -180,6 +180,40 @@ public class FallOutTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Going_home_with_nobody_near_she_eases_for_her_water_and_with_an_enemy_near_she_runs()
+    {
+        // docs/battle/loss-stock-take.md: the captain's judgement, not damage control's alone
+        double Kn(bool enemyNear)
+        {
+            var w = new World(Start, 7, Settings);
+            var ai = new AiSystem(w);
+            w.Apply(Command.SetWeather(25_000));
+            int c = w.Ships.AddClass(Fleet.Get("light_cruiser").Class!);
+            w.Apply(ShipSystem.Spawn(c, 56.0, 4.0, 180, 25, 0));
+            w.Apply(ShipSystem.Spawn(c, 56.0, 4.2, 180, 25, 1));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 1.01));
+            w.Apply(ai.Orders.Home(0, 50.0, 4.0));
+            w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
+            w.Apply(ai.Orders.Course(Unit.Ship(1), 180));
+            w.AdvanceTo(w.Time + 30_000);
+            w.Apply(DamageSystem.SideHole(1, HoleAt.Mid, 0, -0.5, 0.02));
+            w.AdvanceTo(w.Time + 5_000);
+            Assert.Equal(CaptainOrder.Home, ai.Captains.Of(1).Order);
+            var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
+            k.LastHitMs = w.Time.Ms;   // the hole counted as a hit: out of the action a while from now
+            if (!enemyNear)
+                w.Apply(DamageSystem.Sink(2, LossKind.Foundered));   // her enemy gone: nobody near
+            w.AdvanceTo(w.Time + 30 * 60_000);
+            double kn = Ship(w, 1).Speed / Handling.MsPerKnot;
+            output.WriteLine($"{(enemyNear ? "an enemy near" : "nobody near")}: {kn:0.0} kn, damage control would ease her to {k.EaseKn:0.0} kn, holding speed {k.HoldsSpeed}");
+            return kn;
+        }
+        double alone = Kn(false), chased = Kn(true);
+        Assert.InRange(alone, 0, 13);
+        Assert.True(chased > 20, $"{chased:0.0} kn with an enemy near");
+    }
+
+    [Fact]
     public void A_cripple_runs_from_all_the_enemy_about_her_not_at_the_next_one()
     {
         // docs/battle/balance.md BL5 ("a bit more sneaky"): an enemy 6 km east and another 9 km to the west-south-west, where

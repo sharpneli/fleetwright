@@ -463,7 +463,8 @@ public class AimsTests(ITestOutputHelper output)
         foreach (var n in free)
         {
             var x = store[store.SlotOf(Named(start, n))];
-            Assert.Equal(Helm.Route, x.Helm);   // back on her way
+            if (ai.Captains.Of(x.Entity).Order != Fleetwright.Sim.Ai.Captains.CaptainOrder.Home)   // hurt and going home isn't back on her way
+                Assert.Equal(Helm.Route, x.Helm);   // back on her way
             Assert.False(ai.Captains.Fleeing(x.Entity));
         }
     }

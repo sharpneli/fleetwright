@@ -2075,14 +2075,18 @@ public sealed record SimSettings
     public double SafeMinKn { get; init; } = 3;
     public double HullWorkKn { get; init; } = 15;
 
-    /// <summary>A worked hole that has crept back past this share of open is worked again (docs/battle/loss-stock-take.md);
-    /// over 1: never. A rung under test.</summary>
-    public double RepairRedoLeft { get; init; } = 2;
+    /// <summary>A worked hole that has crept back past this share of open is worked again (docs/battle/loss-stock-take.md)
+    /// [EST].</summary>
+    public double RepairRedoLeft { get; init; } = 0.5;
 
-    /// <summary>Out of the action (<see cref="FireTurnToS"/> since her last hit) with holes under the sea, damage control
-    /// asks for no more than this, and forward no more than keeps the bow's ram under a hole clear of the sea
-    /// (docs/battle/loss-stock-take.md); 0: not asked. A rung under test.</summary>
-    public double SafeOutOfActionKn { get; init; }
+    /// <summary>Out of the action (<see cref="FireTurnToS"/> since her last hit) with holes under the sea, the speed damage
+    /// control would have her ease to, and forward no more than keeps the bow's ram under a hole clear of the sea
+    /// (docs/battle/loss-stock-take.md): her captain's to take, going home with no enemy near [EST].</summary>
+    public double EaseDownKn { get; init; } = 12;
+
+    /// <summary>The girth (beam + 2 × draught, m) a collision mat's men and man-minutes are the catalogue's for: the lines go
+    /// round her hull, and 09 §4's 20-40 men are a big ship's (docs/battle/loss-stock-take.md) [EST].</summary>
+    public double MatGirthM { get; init; } = 46;
     public double HullWorkLoosen { get; init; } = 0.15;
     public double MatKn { get; init; } = 5;
     public double MatReachM { get; init; } = 2;

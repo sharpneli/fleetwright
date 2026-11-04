@@ -153,6 +153,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public double WaterRate, HeelRate, WaterTrend, HeelTrend;   // their rise over the last window, and the lesser of the last two (t/s, °/s from upright)
         public long HopelessMs, CallMs; // since when she's been hopeless and cornered (0: she isn't), and when his call falls due
         public bool FightsOn;           // his call made: she fights on (abandoned still once she won't float)
+        public bool SpeedHeld;          // going home with an enemy near: she runs, whatever damage control asks (docs/battle/loss-stock-take.md)
         public long FleeMs;             // fleeing an enemy warship (docs/battle/aims.md A4): when one was last near (0: not fleeing)
         public double FleeBackDeg, FleeBackKn;   // and the course and speed she had before, for after
     }
@@ -399,6 +400,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             or CaptainReason.OutWater or CaptainReason.OutSteering)
             cap.Overruled = true;
         cap.Reason = CaptainReason.None;   // ordered: doing what he's told
+        HoldSpeed(ctx, ref cap, e, false);
         cap.FleeMs = 0;                    // and not fleeing (he's told again, if it's still for him to judge)
         switch (code)
         {

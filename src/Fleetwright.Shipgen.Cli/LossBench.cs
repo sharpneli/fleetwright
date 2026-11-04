@@ -28,7 +28,7 @@ static class LossBench
 
     /// <param name="Spare">A counterfactual: hits that do nothing (<see cref="Sparing"/>).</param>
     /// <param name="Trace">Ships to follow cell by cell after their first hit (<c>seed:name</c>, comma separated), into DIR/trace.txt.</param>
-    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null, string? Trace = null, string? Dc = null);
+    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null, string? Trace = null);
 
     /// <summary>The counterfactuals: <c>home</c> shells on a ship going home; <c>boat-guns</c> a destroyer's or smaller craft's
     /// shells on anything larger; <c>screen</c> shells on a torpedo craft while her unit screens; <c>gap:X</c> all but one
@@ -116,14 +116,6 @@ static class LossBench
 
     public static int Run(SimSettings settings, string root, IReadOnlyList<string> names, Options o)
     {
-        // damage control's rungs under test: work that crept loose done again, slowing once out of the action
-        foreach (var rung in (o.Dc ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
-            settings = rung switch
-            {
-                "redo" => settings with { RepairRedoLeft = 0.5 },
-                "slow" => settings with { SafeOutOfActionKn = 12 },
-                _ => throw new ArgumentException($"no damage-control rung '{rung}' (redo, slow)"),
-            };
         string dir = Path.Combine(root, "..", "Content", "Scenarios");
         var scenarios = names.ToDictionary(n => n, n => Scenario.Load(Path.Combine(dir, n + ".json"), [dir]));
         var shoreTask = Task.Run(() => Shore.Build(Land.Load(o.LandPath)));
@@ -133,7 +125,7 @@ static class LossBench
         var shore = shoreTask.Result;
         var jobs = (from n in names from i in Enumerable.Range(0, o.Seeds) select (Name: n, Seed: scenarios[n].Seed + (ulong)i)).ToList();
         int threads = o.Threads > 0 ? o.Threads : Environment.ProcessorCount;
-        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Spare != null ? $"; spared: {o.Spare}" : "") + (o.Dc != null ? $"; damage control: {o.Dc}" : ""));
+        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Spare != null ? $"; spared: {o.Spare}" : ""));
         var trace = o.Trace?.Split(',').Select(x => x.Split(':', 2)).Select(x => (ulong.Parse(x[0], Inv), x[1])).ToList();
         var runs = new Played[jobs.Count];
         Parallel.ForEach(Enumerable.Range(0, jobs.Count), new ParallelOptions { MaxDegreeOfParallelism = threads }, i =>
