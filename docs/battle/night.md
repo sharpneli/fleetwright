@@ -961,7 +961,8 @@ the close-in look; (4) as mocked: Dark lets her shoot back once fired upon, it a
 - **The map** (table only, faded out over the world view's boundary; the world view keeps Q4/Q5's placeholders until
   Q10): a beam as a widening wedge fading to its reach, a dashed lit ring about a ship the player's beams hold; a flare
   as a four-pointed star over the sea it lights to 1 lux [EST] (`FlareLitLux`), lit rings on every ship under it; a light
-  seen as a spark (the disc went); an unknown as APP-6's quatrefoil (`SymbolShape.Quatrefoil`, the symbol shader's shape 5).
+  seen as a spark (the disc went); an unknown as APP-6's quatrefoil (`SymbolShape.Quatrefoil`, the symbol shader's shape 5;
+  on the map since 2026-11-04 her icon or ellipse in the unknown's cream, `docs/map-ui/fire-marks.md` "Contacts").
 - **The snapshot** (`ShipsView.BeamOn`, `StarOn`, `Night` as `NightFlags`), filled by the searchlight and star shell
   systems and the captains.
 - **Tests:** `NightControlTests` (darkened: no fire, lights or challenge in 90 s, fires back once fired upon, lights still

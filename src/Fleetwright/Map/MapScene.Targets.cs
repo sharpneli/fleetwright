@@ -154,7 +154,7 @@ public sealed partial class MapScene
             return;
         double r = shipIndex.TryGetValue(target, out int k) ? IconLengthAt(view, s.Ships.Class[k], at) / 2 + 5 * Rp
             : s.Sighted.IndexOf(target) is int j and >= 0 ? IconLengthAt(view, s.Sighted.Class[j], at) / 2 + 5 * Rp
-            : (ContactMarkerPx + 5) * Rp;
+            : (ContactSpotPx + 5) * Rp;
         int n = Math.Min(on.FriendFiring + on.HostileFiring, MaxPips);
         double step = 4.2 * Rp / r, a0 = -Math.PI / 2 - step * (n - 1) / 2;
         for (int p = 0; p < n; p++)

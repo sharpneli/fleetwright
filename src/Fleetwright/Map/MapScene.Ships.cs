@@ -74,6 +74,9 @@ public sealed unsafe partial class MapScene
         overlay.WidthScale = overlay.ChordScale = Rp;
         symbols.Begin(width, height, Rp);
         frame++;
+        sightedIndex.Clear();
+        for (int j = 0; j < s.Sighted.Count; j++)
+            sightedIndex[s.Sighted.Entity[j]] = j;
         DrawEncounters(view, s);
         DrawContacts(view, s);
         DrawNightTicks(view, s);

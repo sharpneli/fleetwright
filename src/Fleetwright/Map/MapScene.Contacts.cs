@@ -8,22 +8,25 @@ using ImGuiNET;
 namespace Fleetwright.Map;
 
 /// <summary>The player's picture on the map (docs/battle/plan.md step 3.2e; docs/map-ui/README.md "Uncertainty on the
-/// map", docs/map-ui/fire-marks.md "Contacts"): a ship in sight is her own icon and an arrowhead off her bow; lost, a hollow
-/// diamond where her navy reckons her with a short course tick, inside its growing error ellipse (2 sigma), fading with
-/// age. The five-minute course line only on intent (selected, hovered, Tab held). Its label says what it's taken for: a
-/// ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon (docs/battle/smoke.md Z6) is
-/// the smoke itself, drawn by the field: a label while it's in sight, its bearing on intent, no ship's marker or course
-/// until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
+/// map", docs/map-ui/fire-marks.md "Contacts"): a ship in sight is her own icon and an arrowhead off her bow, and every mark
+/// on her goes where she's drawn (<see cref="ContactAt"/>); lost, the error ellipse (2 sigma) about where her navy reckons
+/// her, growing, fading with age. The five-minute course line only on intent (selected, hovered, Tab held). Its label says
+/// what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon
+/// (docs/battle/smoke.md Z6) is the smoke itself, drawn by the field: a label while it's in sight, its bearing on intent,
+/// no course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
 /// it's reckoned, with its bearing while it's in sight (placeholder marks until the night's UI, Q9).</summary>
 public sealed partial class MapScene
 {
     const double ContactFadeMs = 30 * 60_000;   // out of sight, it fades to its faintest over this
     const double ContactCourseS = 300;          // the course line: five minutes' steaming
-    const float ContactMarkerPx = 5;
-    const double ContactTickPx = 8;             // the course's tick past the marker
+    const float ContactSpotPx = 5;              // a contact's size on screen, with no ship to measure a ring or a pick by
     const double BowArrowPx = 3;                // the arrowhead off a sighted ship's bow
-    const double ContactRingFromPx = 10;        // the ellipse's major semi-axis on screen: in from this to twice it,
-    const double ContactRingFullPx = 80, ContactRingGonePx = 300;    // out over these (reference px)
+    const double ContactRingFullPx = 80, ContactRingGonePx = 300;    // the ellipse's major semi-axis on screen: out over these (reference px)
+
+    /// <summary>Where the map shows a contact: a ship in sight where she's drawn, else where her navy reckons her.</summary>
+    Vec3d ContactAt(Snapshot s, ContactsView c, int i) =>
+        c.InSight[i] && sightedIndex.TryGetValue(c.Entity[i], out int j) && s.Sighted.Entity[j] == c.Entity[i]   // (the UI's snapshot may be the next)
+            ? s.Sighted.PoseAt(j, world.DrawMs).Position : c.Position[i];
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
@@ -43,14 +46,14 @@ public sealed partial class MapScene
             var col = ContactColour(c, i, now);
             bool picked = c.Entity[i] == selected || c.Entity[i] == hovered;
             // the ellipse, 2 sigma, only while it's all there is to go by: a ship in sight is drawn as she is, smoke in the
-            // field. It comes in as she's lost and goes as it grows past locating her; the picked keeps hers, a few pixels at least
-            if (!c.InSight[i] && !c.SmokeInSight[i] && c.Level[i] != ContactLevel.Smoke)
+            // field (hers shown only on intent). It's there as she's lost and goes as it grows past locating her; the picked keeps hers
+            if (!c.InSight[i] && c.Level[i] != ContactLevel.Smoke && (picked || !c.SmokeInSight[i]))
             {
                 double px = 2 * c.MajorM[i] / view.MetresPerPixel / Rp;
-                float shown = picked ? 1 : (float)(SmoothStep(ContactRingFromPx, 2 * ContactRingFromPx, px) * (1 - SmoothStep(ContactRingFullPx, ContactRingGonePx, px)));
+                float shown = picked ? 1 : (float)(1 - SmoothStep(ContactRingFullPx, ContactRingGonePx, px));
                 if (shown > 0.01f)
                 {
-                    double min = 6 * view.MetresPerPixel;
+                    double min = ContactSpotPx * Rp * view.MetresPerPixel;
                     double major = Math.Max(2 * c.MajorM[i], min), minor = Math.Max(2 * c.MinorM[i], min);
                     var ax = Earth.Forward(p, c.AxisDeg[i]);
                     var up = p.Normalized();
@@ -77,39 +80,19 @@ public sealed partial class MapScene
                     overlay.End();
                 }
             }
-            if (!view.Project(p, out double x, out double y))
+            var at = ContactAt(s, c, i);
+            if (!view.Project(at, out double x, out double y))
                 continue;
             if (c.LightInSight[i] || c.Level[i] == ContactLevel.Light)
                 Spark(x, y, MapPalette.Light with { W = MapPalette.Light.W * col.W });
-            if (c.Level[i] <= ContactLevel.Smoke)
-                continue;   // smoke or a light alone: no ship's marker, no course
-            // the marker: a ship in sight has none, she's drawn whole (her arrowhead below); a hollow diamond once dead reckoned;
-            // an unknown (made out, not known for friend or foe: docs/battle/night.md Q6, Q9) APP-6's quatrefoil
-            bool iconOnly = c.InSight[i] && c.Side[i] != 255;
-            if (!iconOnly)
-                symbols.Add(c.Side[i] == 255 ? SymbolShape.Quatrefoil : SymbolShape.Diamond, x, y, ContactMarkerPx * Rp,
-                    c.InSight[i] ? col with { W = col.W * 0.85f } : default, col, 1.5f);
-            var ahead = (p + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
-            if (!view.Project(ahead, out double ax2, out double ay2))
-                continue;
-            double dx = ax2 - x, dy = ay2 - y, len = Math.Sqrt(dx * dx + dy * dy);
-            if (picked || reveal)
+            if (c.Level[i] <= ContactLevel.Smoke || !picked && !reveal)
+                continue;   // smoke or a light alone: no course
+            var ahead = (at + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
+            if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {
-                if (len > 2)
-                {
-                    overlay.BeginStrip(col with { W = col.W * 0.7f }, 1f);
-                    overlay.Point(x, y);
-                    overlay.Point(ax2, ay2);
-                    overlay.End();
-                }
-            }
-            else if (!iconOnly && len > 1e-6 && c.Velocity[i].Length > 0.5)
-            {
-                // the course as a tick of a few pixels: a line five minutes long swings with every look at her, this barely moves
-                double r0 = ContactMarkerPx * Rp, r1 = r0 + ContactTickPx * Rp;
-                overlay.BeginStrip(col, 1.2f);
-                overlay.Point(x + dx / len * r0, y + dy / len * r0);
-                overlay.Point(x + dx / len * r1, y + dy / len * r1);
+                overlay.BeginStrip(col with { W = col.W * 0.7f }, 1f);
+                overlay.Point(x, y);
+                overlay.Point(ax2, ay2);
                 overlay.End();
             }
         }
@@ -137,7 +120,7 @@ public sealed partial class MapScene
     }
 
     /// <summary>The night ticks (docs/visuals/night-lights.md decision 1): in the world view at night, four corner ticks
-    /// about each ship the player knows of, his own and the contacts in sight (at the contact's place, never the truth),
+    /// about each ship the player knows of, his own and the contacts in sight (where she's drawn, <see cref="ContactAt"/>),
     /// a few pixels whatever the zoom, so a near-black night still shows where the ships are. They fade in with the dark
     /// (the night eye's light, over the rods' range: none by day, full on a moonless night) and with the world's share;
     /// table marks: they light nothing and the haze doesn't take them.</summary>
@@ -163,7 +146,7 @@ public sealed partial class MapScene
         }
         var c = s.Contacts;
         for (int i = 0; i < c.Count; i++)
-            if (c.InSight[i] && c.Level[i] > ContactLevel.Smoke && view.Project(c.Position[i], out double x, out double y))
+            if (c.InSight[i] && c.Level[i] > ContactLevel.Smoke && view.Project(ContactAt(s, c, i), out double x, out double y))
                 Ticks(x, y, 1, 0, NightTickContactPx * Rp, NightTickContactPx * Rp, ContactColour(c, i, world.DrawMs) with { W = 0.8f * dark });
     }
 
@@ -256,7 +239,7 @@ public sealed partial class MapScene
     {
         if (s.Ships.IndexOf(entity) is int k and >= 0)
             return s.Ships.PoseAt(k, world.DrawMs).Position;
-        return ContactIndex(s.Contacts, entity) is int i and >= 0 ? s.Contacts.Position[i] : null;
+        return ContactIndex(s.Contacts, entity) is int i and >= 0 ? ContactAt(s, s.Contacts, i) : null;
     }
 
     /// <summary>The star shells' flares burning (docs/battle/night.md Q5, Q9). On the table, a mark: a four-pointed star
@@ -287,7 +270,7 @@ public sealed partial class MapScene
                     overlay.Circle(sx, sy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
             var c = s.Contacts;
             for (int j = 0; j < c.Count; j++)
-                if (c.Level[j] > ContactLevel.Smoke && Earth.Distance(c.Position[j], under) <= litM && view.Project(c.Position[j], out double cx, out double cy))
+                if (c.Level[j] > ContactLevel.Smoke && ContactAt(s, c, j) is var at && Earth.Distance(at, under) <= litM && view.Project(at, out double cx, out double cy))
                     overlay.Circle(cx, cy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
         }
     }
@@ -397,7 +380,7 @@ public sealed partial class MapScene
         long now = world.DrawMs;
         for (int i = 0; i < c.Count; i++)
         {
-            if (IsOldSmoke(c, i) || !view.Project(c.Position[i], out double x, out double y))
+            if (IsOldSmoke(c, i) || !view.Project(ContactAt(s, c, i), out double x, out double y))
                 continue;
             var size = ImGui.CalcTextSize(ContactLabel(c, i, now));
             mapLabels.Add(LabelKind.Contact, c.Entity[i], i, c.InSight[i] || c.SmokeInSight[i] ? 2 : 4, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy),

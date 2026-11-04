@@ -42,15 +42,24 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
 
 - **A ship in sight**: her icon and a 3 px arrowhead off her bow, from her own heading, so it can't twitch; no marker, no
   ellipse. Faded out over the world's boundary, where the sprite shows her bow. The card keeps the estimate (`~072°`), so
-  in a turn it may differ from the arrowhead.
-- **A ship lost**: a hollow diamond, an 8 px course tick, and the 2σ ellipse. It's the one place the ellipse says something:
-  it comes in as it grows past 10-20 px and goes between 80 and 300 px (major semi-axis on screen, reference px), where it
-  no longer locates her; hovered or selected it's shown whatever its size.
+  in a turn it may differ from the arrowhead. **Every mark on her goes where she's drawn** (`ContactAt`, user: the player
+  needn't see the spotting error): the fire pips, label, course line, night ticks, lit rings. The sim still aims by the
+  estimate, and the rail's and card's figures are still the navy's.
+- **A ship lost**: the 2σ ellipse alone, the diamond and course tick gone (user: no separate icons): a ring of at least 5 px
+  from the moment she's lost, growing, gone between 80 and 300 px (major semi-axis on screen, reference px), where it no
+  longer locates her; hovered or selected it's shown whatever its size. Only a ship out of sight can be picked by her
+  reckoned place; one in sight is picked by her ship.
 - **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its label while it's in sight;
-  its bearing only on intent. A held ship seen only by her smoke keeps her diamond and tick, no ellipse. Smoke alone no
+  its bearing only on intent. A held ship seen only by her smoke has her label, her ellipse only on intent. Smoke alone no
   longer in sight has nothing on the map, no label and no pick; the rail still lists it.
-- **Unknowns** (friend or foe not made out) keep the quatrefoil and tick; **lights** their spark and bearing.
+- **Unknowns** (friend or foe not made out) the same, in the unknown's cream: her icon in sight, the ellipse once lost; the
+  quatrefoil stays in the rail. **Lights** their spark and bearing.
 - **The course line only on intent**: selected, hovered, Tab held.
+
+The diamonds weren't doubles of the ships beside them. At the Jutland (16:10-16:15, side 0) no ship had both: about 26
+contacts were in sight and 14 out, 5 of those by their smoke. But a lost ship's mark fell 200-400 m from ships still in the
+line, so it read as a copy; the pips did float, on the estimate, 1.6 km off at the median among the ships lost and visibly
+off the ships in sight. Side by side at 16:15, 6 m/px: `png/contacts-lost.png` (before, after).
 
 ## Open
 

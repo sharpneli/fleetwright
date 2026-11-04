@@ -51,6 +51,7 @@ public sealed partial class MapScene
     ShellKind? fireKind;   // and which kind (null: the magazine order)
     static readonly ShellKind[] KindsInOrder = [ShellKind.Ap, ShellKind.Common, ShellKind.He];
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
+    readonly Dictionary<int, int> sightedIndex = [];   // a frame's enemies in sight by entity, for the marks on them
     readonly Dictionary<int, byte> sideOf = [];     // a frame's known shooters' sides, by entity
 
     /// <summary>A pop's life in world seconds: its own, or the real-time floor at the clock's rate.</summary>
@@ -333,7 +334,7 @@ public sealed partial class MapScene
         for (int i = 0; i < c.Count; i++)
             if (c.Entity[i] == entity)
             {
-                at = c.Position[i];
+                at = ContactAt(s, c, i);
                 return true;
             }
         at = default;
@@ -486,14 +487,15 @@ public sealed partial class MapScene
         return true;
     }
 
-    /// <summary>The contact whose marker is under the cursor (within a few pixels), or -1.</summary>
+    /// <summary>The contact out of sight reckoned under the cursor (within a few pixels), or -1: one in sight is picked by
+    /// her ship.</summary>
     static int PickContact(in MapView view, Snapshot s, double x, double y)
     {
         var c = s.Contacts;
         int best = -1;
-        double bestD = ContactMarkerPx * 3;
+        double bestD = ContactSpotPx * 3;
         for (int i = 0; i < c.Count; i++)
-            if (!IsOldSmoke(c, i) && view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
+            if (!c.InSight[i] && !IsOldSmoke(c, i) && view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
                 (best, bestD) = (c.Entity[i], Math.Abs(cx - x) + Math.Abs(cy - y));
         return best;
     }
