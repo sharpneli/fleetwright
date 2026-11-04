@@ -90,6 +90,14 @@ out, for as long as it lasts; it ends when damage control or an outage's end bri
 EL7 places generators: no partial loss (a ship with one engine room left has her full supply), no diesels, no switchboard
 of its own. Pumps and the dark already read `PowerCap`, the propulsion's share (EL5 separates them).
 
+**The balance panel**, EL1-EL2 against the commit before (`balance --seeds 8 --fc-runs 0`, the Jutland 4 seeds): 6 → 5 of 14
+sides within twice the record, the record's loser losing more in 25 of 44 seeds both ways. EL2 reaches every ship, so
+the scenarios without director fire move now too, by a little: Coronel Britain 1.0 → 0.8 of 3 (record 2, now LOW), Germany
+1.4 → 1.0 of 5 (record 0, now in); Tsushima Russia 4.9 → 4.6, Japan 5.1 → 4.4 of 14. The Dogger Bank Britain 7.9 → 7.4,
+Germany 8.9 → 9.9; Cape Sarych Russia 4.6 → 3.9. Jutland Britain 23.5 → 30.3 of 151 (record 14, now HIGH), Germany 38.5 of 99
+both, British torpedo hits 14 → 24 and shell hits 2,986 → 4,065, German shell hits 2,945 → 2,435: four seeds, and Britain's
+range was already 13-40, so not read as an effect of this step or tuned on.
+
 ### EL3 What a ship's plant feeds: the consumer table
 
 From the research (`REQUESTS.md`, 2026-11-04): each consumer's battle load in kW and what it fails to. In code, a
