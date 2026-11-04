@@ -7,14 +7,11 @@ namespace Fleetwright.Map;
 public enum SymbolShape : byte
 {
     Circle,
-    Diamond,
     Square,
     /// <summary>An arrowhead, its tip toward the angle given.</summary>
     Arrow,
     /// <summary>A ring and a cross: what's lost (no fill).</summary>
     Wreck,
-    /// <summary>Four lobes, APP-6's unknown: a ship made out, not known for friend or foe (docs/battle/night.md Q9).</summary>
-    Quatrefoil,
 }
 
 /// <summary>One corner of a map symbol's quad: NDC position, its point in the symbol's own frame (px), the shape and
@@ -32,7 +29,7 @@ public struct SymbolVertex
     public const uint SizeInBytes = 80;
 }
 
-/// <summary>The map's symbols (docs/map-ui/symbols.md Y3): rings, dots, diamonds, arrowheads and wrecks, each one quad
+/// <summary>The map's symbols (docs/map-ui/symbols.md Y3): rings, dots, arrowheads and wrecks, each one quad
 /// whose shape the fragment shader draws as a signed distance, so it is exact and anti-aliased at any size, filled,
 /// stroked and cased (<see cref="SymbolLook.Casing"/>) in one draw after the overlay's lines. Positions and radii are
 /// target pixels (radii from fixed sizes times <see cref="SymbolLook.Px"/>, as the caller has them); stroke widths are

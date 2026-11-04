@@ -51,7 +51,7 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
   is: a deliberate cheat (user, 2026-11-04: it tells the player a little more than the navy holds, for tactics only, and a
   human cares that a ship is there, not exactly where). Only the map reads `Fading`; fire control and the AI stay on the
   estimate. While she shows, she keeps her pips and can be hovered and picked. After that, nothing on the map, no mark,
-  label, pips or pick (user: with ships going in and out of view, the ellipses looked like the enemy formation blowing
+  pips or pick (user: with ships going in and out of view, the ellipses looked like the enemy formation blowing
   bubbles; the diamond and course tick went first). The rail still lists her; selected there, her 2σ ellipse (5 px at
   least) and course line show where she's reckoned. Fire lines to her stay on intent and each shooter keeps its bearing tick.
 - **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its bearing only on intent. A ship
@@ -61,6 +61,8 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
 - **Unknowns** (friend or foe not made out) the same, in the unknown's cream: her icon while in sight; the quatrefoil stays
   in the rail. **Lights** their spark and bearing.
 - **The course line only on intent**: selected or hovered; with Tab held, every ship in sight.
+- **No contact labels**: the hover names a ship; a label on every enemy would be clutter again. The code never drew any, and
+  was taken out (`docs/battle/bugs.md`).
 
 The diamonds weren't doubles of the ships beside them (the marks of 2026-11-04's second pass, before the ellipses went). At the Jutland (16:10-16:15, side 0) no ship had both: about 26
 contacts were in sight and 14 out, 5 of those by their smoke. But a lost ship's mark can fall right by ships still in the
@@ -72,6 +74,5 @@ off the ships they marked. Side by side at 16:15, 6 m/px: `png/contacts-lost.png
 - Pips crowd where targets lie close together (the German line at 16:15); a count beside one pip past three, if
   playtesting says so.
 - Arrowheads stack in a tight column; 2 px if it bothers in play.
-- Contact labels never show (`docs/battle/bugs.md`); the hover names a ship.
 - A ship coming into sight still pops in, and a fading one snaps back to full colour; a short ease if it bothers in play.
 - The fade's gray on sprites (close zoom) hasn't been judged by eye: a ghost wasn't on screen in a capture with the art in.

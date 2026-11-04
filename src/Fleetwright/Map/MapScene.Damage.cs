@@ -305,31 +305,4 @@ public sealed partial class MapScene
         CaptainReason.LostTouch => "lost touch with the next ahead",
         _ => "",
     };
-
-    /// <summary>What a contact's observers make out of its state, as its label adds it.</summary>
-    static string SeenText(SeenFlags f)
-    {
-        if (f == SeenFlags.None)
-            return "";
-        if ((f & SeenFlags.Gone) != 0)
-            return " · seen to go down";
-        if ((f & SeenFlags.GoingDown) != 0)
-            return " · going down";
-        string t = "";
-        if ((f & SeenFlags.Burning) != 0)
-            t += " · burning";
-        if ((f & SeenFlags.Low) != 0)
-            t += " · low in the water";
-        if ((f & SeenFlags.Listing) != 0)
-            t += " · listing";
-        if ((f & SeenFlags.ByBow) != 0)
-            t += " · down by the bow";
-        if ((f & SeenFlags.ByStern) != 0)
-            t += " · down by the stern";
-        if ((f & SeenFlags.Stopped) != 0)
-            t += " · stopped";
-        if ((f & SeenFlags.Silent) != 0)
-            t += " · guns silent";
-        return t;
-    }
 }

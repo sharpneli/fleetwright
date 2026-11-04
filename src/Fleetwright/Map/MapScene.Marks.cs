@@ -175,7 +175,6 @@ public sealed partial class MapScene
             {
                 case LabelKind.Ship: DrawShipLabel(s, r, at, place, alpha); break;
                 case LabelKind.Group: DrawGroupLabel(s, r, at, alpha); break;
-                case LabelKind.Contact: DrawContactLabel(s, r, at, alpha); break;
                 case LabelKind.Encounter: DrawEncounterLabel(s, r, at, alpha); break;
                 case LabelKind.Wreck: DrawWreckLabel(r, at, alpha); break;
                 case LabelKind.Range: DrawRangeLabel(s, r, at, alpha); break;

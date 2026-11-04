@@ -1,9 +1,8 @@
 #version 450
 // Map symbols (docs/map-ui/symbols.md Y3): the shape as a signed distance in pixels, so every edge and corner is
 // anti-aliased over a pixel at any size. Drawn back to front: the casing (the ground's dark, either side of the
-// outline), the fill inside, the stroke on the outline. Shapes: 0 circle, 1 diamond, 2 square, 3 arrowhead (its tip
-// at +y), 4 wreck (a ring and a cross: lines only, no fill), 5 quatrefoil (four lobes: APP-6's unknown, docs/battle/
-// night.md Q9).
+// outline), the fill inside, the stroke on the outline. Shapes: 0 circle, 1 square, 2 arrowhead (its tip at +y), 3 wreck
+// (a ring and a cross: lines only, no fill).
 layout(location = 0) in vec2 fragLocal;
 layout(location = 1) flat in vec4 fragShape;
 layout(location = 2) flat in vec4 fragFill;
@@ -40,24 +39,17 @@ void main()
     vec2 p = fragLocal;
     float d, line;   // d: signed distance to the outline (inside negative); line: distance to the stroke's centre
     if (shape == 1)
-        d = (abs(p.x) + abs(p.y) - r) * 0.70710678;
-    else if (shape == 2)
     {
         vec2 q = abs(p) - vec2(r * 0.85);
         d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
     }
-    else if (shape == 3)
+    else if (shape == 2)
         d = triangle(vec2(p.x, r - p.y), vec2(0.62 * r, 1.7 * r));
-    else if (shape == 5)
-    {
-        vec2 q = abs(p);
-        d = min(length(q - vec2(0.48 * r, 0.0)), length(q - vec2(0.0, 0.48 * r))) - 0.52 * r;
-    }
     else
         d = length(p) - r;
     line = abs(d);
     bool filled = true;
-    if (shape == 4)
+    if (shape == 3)
     {
         float k = r * 0.62;
         line = min(line, min(segment(p, vec2(-k, -k), vec2(k, k)), segment(p, vec2(-k, k), vec2(k, -k))));

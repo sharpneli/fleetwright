@@ -213,7 +213,6 @@ public sealed unsafe partial class MapScene : IScene
         GroupLabels(s);
         TaskMarkLabels(s);
         ZoneLabels();
-        ContactLabels(s);
         EncounterLabels(s);
         WreckLabels();
         mapLabels.Place(ImGui.GetIO().DeltaTime);

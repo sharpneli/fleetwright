@@ -444,12 +444,9 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
 
 ## Map
 
-- [ ] **Contact labels never show.** No capture has one, day or night, though `ContactLabels` asks for them every frame. By
-  reading (not yet proven with a run): the placer's own reserve blocks them. `ContactLabels` reserves 6 UI px round the anchor
-  with a 9 px gap, and a new label is tried grown by the dead band (`LabelHold` 1.5 x the 6 px cell / 2 = 4.5 px), so its box
-  starts 4.5 px from the anchor, inside the reserve, in all four places. Found 2026-11-04. Not fixed on the spot: it would put
-  a label on every enemy in sight, which the clutter passes (`docs/map-ui/fire-marks.md`) don't ask for; the hover names a
-  ship. Decide: fix them, or take the code out.
+- [x] **Contact labels never showed**: by reading, the placer's own reserve blocked every place they could go. Taken out
+  2026-11-04 rather than fixed (user): the hover names a ship, and a label on every enemy in sight is the clutter
+  `docs/map-ui/fire-marks.md` clears.
 
 ## The app
 

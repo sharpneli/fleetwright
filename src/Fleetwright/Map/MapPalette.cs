@@ -41,8 +41,7 @@ public static class MapPalette
     /// <summary>Encounters: the player's own in amber, others' in grey.</summary>
     public static readonly Vector4 OwnEncounter = Amber with { W = 0.8f }, OthersEncounter = new(0.7f, 0.76f, 0.85f, 0.5f);
 
-    /// <summary>Contacts of no known side (the enemy's take <see cref="ShipDrawList.EnemyTint"/>), and smoke on the
-    /// horizon.</summary>
+    /// <summary>Contacts of no known side (the enemy's take <see cref="ShipDrawList.EnemyTint"/>).</summary>
     public static readonly Vector4 Unknown = new(0.95f, 0.9f, 0.7f, 1f);
 
     /// <summary>A light seen in the dark (docs/battle/night.md Q2): a placeholder warm spark until the night's marks (Q9).</summary>

@@ -11,9 +11,8 @@ namespace Fleetwright.Map;
 /// map", docs/map-ui/fire-marks.md "Contacts"): a ship in sight is her own icon and an arrowhead off her bow, and every mark
 /// on her goes where she's drawn (<see cref="ContactAt"/>); lost, she goes gray and fades (<see cref="Snapshot.Fading"/>), then
 /// nothing on the map, the rail holds her, and selected there the error ellipse (2 sigma) about where her navy reckons her. The five-minute course line only on intent (selected,
-/// hovered, Tab held). Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon
-/// (docs/battle/smoke.md Z6) is the smoke itself, drawn by the field: a label while it's in sight, its bearing on intent,
-/// no course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
+/// hovered, Tab held). The hover names what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the
+/// horizon (docs/battle/smoke.md Z6) is the smoke itself, drawn by the field: its bearing on intent, no course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
 /// it's reckoned, with its bearing while it's in sight (placeholder marks until the night's UI, Q9).</summary>
 public sealed partial class MapScene
 {
@@ -314,7 +313,6 @@ public sealed partial class MapScene
         overlay.Disc(x, y, 6 * Rp, col with { W = col.W * 0.6f }, 0.5f);
     }
 
-    /// <summary>What a contact is taken for, as its label says it.</summary>
     // the contacts' identities as the player holds them, made when one changes
     readonly Dictionary<(int, ContactLevel, int, ShipType), string> identities = [];
 
@@ -357,64 +355,10 @@ public sealed partial class MapScene
         return -1;
     }
 
-    string ContactText(ContactsView c, int i, long now)
-    {
-        string what = Identity(c, i);
-        what += SeenText(c.Seen[i]);
-        if (c.SmokeInSight[i] && c.Level[i] > ContactLevel.Smoke)
-            what += " · her smoke";
-        if (c.LightInSight[i] && c.Level[i] > ContactLevel.Light)
-            what += " · her lights";
-        return c.InSight[i] || c.SmokeInSight[i] || c.LightInSight[i] ? what : $"{what} · last seen {new WorldTime(c.SeenMs[i]).ToUtc():HH:mm}";
-    }
-
     string ClassName(int id) => id >= 0 && world.Classes.TryGet(id) is { } cls ? cls.Name : "?";
 
-    // the contacts' labels, made when what they say changes
-    readonly Dictionary<int, ((int, ContactLevel, int, ShipType, SeenFlags, bool, bool, long) Key, string Text)> contactTexts = [];
-
-    /// <summary>A contact with no ship, smoke or light of hers on the map: nothing there says it, so nothing to label or
-    /// pick (the rail still lists it).</summary>
+    /// <summary>A contact with no ship, smoke or light of hers on the map: nothing there says it, so nothing to pick (the
+    /// rail still lists it).</summary>
     static bool NothingDrawn(ContactsView c, int i) =>
         !c.InSight[i] && !c.SmokeInSight[i] && !c.LightInSight[i] && c.Level[i] != ContactLevel.Light;
-
-    void ContactLabels(Snapshot s)
-    {
-        var c = s.Contacts;
-        var view = View;
-        var vp = ImGui.GetMainViewport();
-        float sc = UiFonts.Scale, sx = vp.Size.X / (float)Math.Max(width, 1), sy = vp.Size.Y / (float)Math.Max(height, 1);
-        long now = world.DrawMs;
-        for (int i = 0; i < c.Count; i++)
-        {
-            if (NothingDrawn(c, i) || !view.Project(ContactAt(s, c, i), out double x, out double y))
-                continue;
-            var size = ImGui.CalcTextSize(ContactLabel(c, i, now));
-            mapLabels.Add(LabelKind.Contact, c.Entity[i], i, c.InSight[i] || c.SmokeInSight[i] ? 2 : 4, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy),
-                size.X, size.Y, 9 * sc, 6 * sc, LabelPlace.Right, LabelPlace.Left, LabelPlace.Below, LabelPlace.Above);
-        }
-    }
-
-    /// <summary>A contact's label, made when what it says changes.</summary>
-    string ContactLabel(ContactsView c, int i, long now)
-    {
-        var key = (c.Entity[i], c.Level[i], c.TakenFor[i], c.Type[i], c.Seen[i], c.SmokeInSight[i], c.InSight[i], c.InSight[i] ? 0 : c.SeenMs[i] / 60_000);
-        if (!contactTexts.TryGetValue(c.Entity[i], out var cached) || cached.Key != key)
-        {
-            if (contactTexts.Count > 2048)
-                contactTexts.Clear();
-            contactTexts[c.Entity[i]] = cached = (key, ContactText(c, i, now));
-        }
-        return cached.Text;
-    }
-
-    void DrawContactLabel(Snapshot s, in MapLabels.Request r, Vector2 at, float alpha)
-    {
-        var c = s.Contacts;
-        int i = r.Index;
-        if (i >= c.Count || c.Entity[i] != (int)(r.Key & 0xFFFFFFFF))
-            return;
-        long now = world.DrawMs;
-        MapLabels.Text(ImGui.GetBackgroundDrawList(), at, ContactColour(c, i, now), ContactLabel(c, i, now), alpha);
-    }
 }

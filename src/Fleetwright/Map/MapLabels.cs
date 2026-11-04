@@ -19,7 +19,6 @@ public enum LabelKind : byte
 {
     Ship,
     Group,
-    Contact,
     Encounter,
     Wreck,
     Range,

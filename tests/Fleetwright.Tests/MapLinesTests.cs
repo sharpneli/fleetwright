@@ -96,7 +96,7 @@ public class MapSymbolsTests
         var s = new MapSymbols();
         s.Begin(1920, 1080, 1);
         var c = new Vector4(1, 1, 1, 1);
-        s.Add(SymbolShape.Diamond, 100, 100, 5, default, c, 1.5f);
+        s.Add(SymbolShape.Square, 100, 100, 5, default, c, 1.5f);
         s.Add(SymbolShape.Arrow, 200, 100, 6, c, c, 1, Math.PI / 3);
         Assert.Equal(12, s.Vertices.Length);
         s.Add(SymbolShape.Circle, -50, 100, 5, c, c, 1);       // off the screen

@@ -177,7 +177,7 @@ edge keeps its dashes where they were as it pans. The line buffers grew with the
 The torpedo reach went dotted and dashed (Y4 sets them), the encounter ring cased.
 
 **Y3** (2026-10-23): `MapSymbols` (`mapsymbol.vert/frag`): one quad a symbol, its shape a signed distance in px
-(circle, diamond, square, arrowhead, wreck: a ring and a cross), filled, stroked and cased, drawn after the overlay's
+(circle, square, arrowhead, wreck: a ring and a cross; the diamond and quatrefoil went with the contacts' markers, 2026-11-04), filled, stroked and cased, drawn after the overlay's
 lines in the same pass (a pipeline and a 2 MB buffer, no new pass or target). The contacts' and groups' diamonds,
 the selection, held and picked rings, the waypoints and the wreck moved onto it; the battle marks' rings stay soft
 strokes. The icons (`shipmap.frag`, mode 2): the quad padded by the casing and the selected's glow, the hull's
