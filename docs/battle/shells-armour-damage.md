@@ -1776,6 +1776,13 @@ squadrons, and changes `Matchup.cs` with it.
       (both on Swedish coast defence ships at Åland); blackouts from near misses 21 → 0, from hits 16 → 9; mount-minutes
       lost to power, guns under 200 mm 7,216 → 45, heavy guns 947 → 773 (about 1.0% → 0.8% of their time). What's left is
       nearly all a hit's shock on armour, at G0's rates (E7's open item above).
+    - **The balance panel**, both fixes against `c16f4081` (`balance --seeds 8 --fc-runs 0`, the Jutland 4 seeds; losses,
+      so noisy): 6 of 14 sides within twice the record both ways, the record's loser losing more in 26 → 25 of 44 seeds.
+      Dover Strait, Coronel, the prizes' war and Tsushima identical (nothing there trips: no director fire, `NonPen.Electrics`).
+      The ships with directors moved: Jutland Britain 15.3 → 23.5 of 151 (record 14), Germany 41.5 → 38.5 of 99 (record 11),
+      Germany's shell hits 2,152 → 2,945 with her casemates firing on, Britain's 3,516 → 2,986; the Dogger Bank Britain
+      6.6 → 7.9, Germany 9.9 → 8.9; Cape Sarych Russia 3.5 → 4.6 of 7, the Ottomans 0.8 → 0.6 of 2 (record 0 and 0);
+      Åland Sweden 3.6 → 5.1 of 11, Finland 5.6 → 5.5 of 10; Heligoland Germany 11.9 → 12.4 of 24.
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
