@@ -1151,6 +1151,15 @@ public unsafe class Sdl3GpuEngine : IDisposable
         SDL_Event evt;
         while (SDL_PollEvent(&evt))
         {
+            // Ctrl+Enter is the window's: no scene or ImGui sees it, where Enter alone means something
+            if ((SDL_EventType)evt.type == SDL_EventType.SDL_EVENT_KEY_DOWN && (evt.key.mod & SDL_Keymod.SDL_KMOD_CTRL) != 0
+                && ((uint)evt.key.key == SDLK_RETURN || (uint)evt.key.key == SDLK_KP_ENTER))
+            {
+                if (!evt.key.repeat)
+                    ToggleFullscreen();
+                continue;
+            }
+
             // Forward to ImGui
             _imguiRenderer?.ProcessEvent(&evt);
 
@@ -1199,6 +1208,15 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     _mainCamera.ProcessSdlEvent(&evt);
             }
         }
+    }
+
+    /// <summary>Borderless fullscreen on the window's display (no video mode change), or back to the window as it was.
+    /// The resize event that follows resizes the targets.</summary>
+    void ToggleFullscreen()
+    {
+        bool full = (SDL_GetWindowFlags(_window) & SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
+        if (!SDL_SetWindowFullscreen(_window, !full))
+            Console.Error.WriteLine($"Failed to toggle fullscreen: {SDL_GetError()}");
     }
 
     /// <summary>Mouse buttons whose press went to the scene: their release goes there too, wherever it lands.</summary>

@@ -82,6 +82,11 @@ picks a unit in one click.
 
 6–0 are free.
 
+## The window
+
+**Ctrl+Enter** toggles borderless fullscreen, in every view (the engine takes it before ImGui or a scene, so Enter's own
+meanings, the course and Begin, don't fire).
+
 ## Steps
 
 | Step | What | State |
