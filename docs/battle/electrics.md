@@ -5,7 +5,7 @@ the open item in `shells-armour-damage.md` E7 (the G0 grade gives 1916 ships 193
 `research/simulation/electric-plant.md` (2026-11-04) and its appendices; `damage/17_service_network_faults.md` is the older
 note on trips and cables, never built.
 
-**Status:** EL0-EL5 done 2026-11-04. EL6 and EL7 next.
+**Status:** EL0-EL6 done 2026-11-04. EL7 next.
 
 ## The rules (the user)
 
@@ -208,12 +208,13 @@ From the research's §5, kept rough.
 **Not built:** fans (engine rooms heating, a dynamo room driven out: no gameplay yet), forced draught, wireless (no signals model),
 secondary lighting's share.
 
-### EL6 The trip rate from the load
+### EL6 The trip rate from the load. Done 2026-11-04.
 
-`ShockCascade`, `ShockSectionPower`, `ShockLocalTrip` and `OwnGunBreaker` by a curve on the log of the battle load in kW,
-interpolated and clamped; the shock grade stays its own axis, how well the gear is secured. `NonPen.Electrics` (yes or no on
-director firing) goes: no hard switch. **Corrected by the research:** the plan had WWI's rates at about 300 kW, which is a
-pre-dreadnought's battle load. The ships behind them had 750-2,040 kW plants and 300-1,000 kW of load:
+`ShockCascade`, `ShockSectionPower` and `ShockLocalTrip` go by a curve on the log of her battle load in kW (`NonPen.ByLoad`), interpolated
+and clamped; `OwnGunBreaker` by the same share of its top. **`NonPen.Electrics` (yes or no on director firing) is gone from the power:** a
+ship with little on her plant has little to trip and little to lose by it. (`DirectorFire` stays for what only such a ship carries, a director's
+gyro.) `ShockPowerGradeK` keeps the shock grade its own axis: how well the gear is secured. The plan first had WWI's rates at about 300 kW; that
+is a pre-dreadnought's battle load, and the ships behind them had 750-2,040 kW plants and 300-1,000 kW of load, so the research's anchors:
 
 | Battle load | Ship-wide | Section | Local |
 |---:|---:|---:|---:|
@@ -222,21 +223,21 @@ pre-dreadnought's battle load. The ships behind them had 750-2,040 kW plants and
 | 1,000 kW | 0.005 | 0.06 | 0.40 |
 | 5,000 kW | 0.02 | 0.15 | 0.50 |
 
-A Borodino lands near the WWI rates, which her turrets' electrical faults at Tsushima bear out. The top anchor is untested and
-the 1940s ships read low (EL3); the first cut doesn't reach it.
+A Borodino lands near the WWI rates, which her turrets' electrical faults at Tsushima bear out. The top anchor is untested, and the 1940s ships
+read low (EL3), so they don't reach it; `NonPenTests`' 13 §5.3 test 6 now holds it there by moving the curve's loads under the ship.
 
-**Also from the research:**
+Also from the research:
 
-- **Underwater hits trip power, and today they don't at all:** `Underwater` never calls `PowerOut`, though Inflexible, Marlborough,
-  Seydlitz and Szent István are 4 of 4 with a section or ship-wide effect. A cascade on torpedo and mine shock at a far higher
-  rate than shells [EST]; the shell roll stays low.
-- **A local loss is usually a cut lead, not a trip** (Warspite, Princess Royal): half "tripped", minutes; half "cut", until a
-  party mends it [EST].
-- A "darken ship" order before action (Princess Royal): less lighting load, less fire from short circuits.
+- **Underwater hits trip power** (`Underwater`, which never had): `TorpedoBlackout` 0.3 and `TorpedoSectionPower` 0.75 a hit at G0 [EST: Inflexible,
+  Marlborough, Seydlitz and Szent István are 4 of 4 with a section or ship-wide effect], by `ShockPowerGradeK` so secured gear far less
+  (North Carolina's none, O'Brien's one breaker). Not by load: it's the blast, and she still has what's on her plant to lose.
+- **A local loss is half a cut lead** (`LocalTripMin`): 20-60 min [EST], where the rest is the concussion's minutes (Warspite and Princess Royal's
+  severed leads against Seydlitz's re-switching). A long outage, not a part a party mends: rough on purpose.
+- **Near misses** keep their shock bands (fitted to what tripped, 15 and 17), now with no gate: what's lost is what's on the plant, and for a
+  ship with little that's little.
 
-Checks: a 1916 hull given a table and electric drives trips at about the 1939 rate; a 1944 hull stripped to hand gear about at
-WWI's. `damage-history` on the Jutland and Dogger Bank cases: at most 2 ship-wide losses from above-water shellfire in about 100
-hits, 1-10 section losses, most outages under 5 min.
+**Not built:** a "darken ship" order before action (Princess Royal), which would take lighting load and short-circuit fires off her: wants
+readiness doctrine, with the UI pass.
 
 ### EL7 The plant itself
 

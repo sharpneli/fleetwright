@@ -120,6 +120,17 @@ public static class Underwater
             Effects.Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
         }
 
+        // the power (docs/battle/electrics.md EL6): an underwater blast, not a shell, is what cut a ship's power on the
+        // record (Inflexible's ring main, Marlborough's switches, Seydlitz's generators, Szent István's pumps)
+        double trip = s.ShockPowerGradeK[(int)c.ShockGrade], u0 = r.NextDouble();
+        if (u0 < s.TorpedoBlackout * trip)
+        {
+            res.Shock |= Effects.Blackout(c, k, p, NonPen.Minutes(s.CascadeMin, ref r), hit.Ms, s);
+            res.Blackout = true;
+        }
+        else if (u0 < s.TorpedoSectionPower * trip)
+            res.Shock |= Effects.PowerOut(c, k, p, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), hit.Ms, s);
+
         // the hull girder: cut through when the explosion is high beside the hull's depth, amidships
         if (!held)
         {

@@ -272,37 +272,35 @@ public static class Effects
     }
 
     /// <summary>The shock of a heavy hit that held, through the structure (E4; damage/13 §3.4): by the ship's shock grade
-    /// and the impulse, each row a draw, its outage one length for all it reaches. Power (with director fire control
-    /// only): tripped in zone A (the struck part, and what's within <see cref="SimSettings.ShockZoneAM"/> of the hit), a
+    /// and the impulse, each row a draw, its outage one length for all it reaches. Power, by how much she has on it
+    /// (<see cref="NonPen.ByLoad"/>, docs/battle/electrics.md EL6): tripped in zone A (the struck part, and what's within <see cref="SimSettings.ShockZoneAM"/> of the hit), a
     /// section's in B (within <see cref="SimSettings.ShockZoneBM"/>), the whole ship's cascading out; mounts are worked by
     /// hand and directors out while it's off. A director's gyro in A or B; a rangefinder in A out of adjustment. Gear the sim doesn't
     /// carry yet (the gyrocompass, radar, phones, cast iron) can't fail.</summary>
     static void Shock(ShipClass c, ShipCondition k, P3 at, int struck, double impulse, long now, SimSettings s, ref EffectsResult res,
         ref RandomStream r)
     {
-        double g = NonPen.ShockK(impulse, s) * s.ShockGradeK[(int)c.ShockGrade];
+        double size = NonPen.ShockK(impulse, s), g = size * s.ShockGradeK[(int)c.ShockGrade];
+        double power = size * s.ShockPowerGradeK[(int)c.ShockGrade], kw = c.Electric.BattleDayKw;
         int col = c.ShockGrade == ShockGrade.G0 ? 0 : 1;
-        if (NonPen.Electrics(c))
+        if (r.NextDouble() < NonPen.ByLoad(s.ShockLocalTrip, kw, s) * power)
+            res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now, s);
+        if (r.NextDouble() < NonPen.ByLoad(s.ShockSectionPower, kw, s) * power)
+            res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now, s);
+        if (r.NextDouble() < NonPen.ByLoad(s.ShockCascade, kw, s) * power)
         {
-            if (r.NextDouble() < s.ShockLocalTrip[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now, s);
-            if (r.NextDouble() < s.ShockSectionPower[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now, s);
-            if (r.NextDouble() < s.ShockCascade[col] * g)
-            {
-                res.Shock |= Blackout(c, k, at, NonPen.Minutes(s.CascadeMin, ref r), now, s);
-                res.Blackout = true;
-            }
-            if (r.NextDouble() < s.ShockDirectorGyro[col] * g)
-            {
-                long ms = NonPen.Minutes(s.DirectorGyroMin, ref r);
-                for (int d = 0; d < c.Directors.Length; d++)
-                    if (c.Directors[d].Component == struck || Distance(c, c.Directors[d].Component, at) <= s.ShockZoneBM)
-                    {
-                        k.Out(k.DirectorDown, d, now, ms);
-                        res.Shock = true;
-                    }
-            }
+            res.Shock |= Blackout(c, k, at, NonPen.Minutes(s.CascadeMin, ref r), now, s);
+            res.Blackout = true;
+        }
+        if (NonPen.DirectorFire(c) && r.NextDouble() < s.ShockDirectorGyro[col] * g)
+        {
+            long ms = NonPen.Minutes(s.DirectorGyroMin, ref r);
+            for (int d = 0; d < c.Directors.Length; d++)
+                if (c.Directors[d].Component == struck || Distance(c, c.Directors[d].Component, at) <= s.ShockZoneBM)
+                {
+                    k.Out(k.DirectorDown, d, now, ms);
+                    res.Shock = true;
+                }
         }
         if (r.NextDouble() < s.ShockRangefinder[col] * g)
         {

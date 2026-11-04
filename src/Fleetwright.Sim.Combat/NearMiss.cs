@@ -464,57 +464,54 @@ public static class NearMiss
         }
 
         // the gear: breakers (the mounts', directors' and searchlights') and the directors' gyros (with something to trip)
-        if (NonPen.Electrics(c))
+        // the breakers by each mount's and director's own shock, one draw for them all: the nearer trip first
+        if (Ramp(gear, b[0], b[1]) > 0)
         {
-            // the breakers by each mount's and director's own shock, one draw for them all: the nearer trip first
-            if (Ramp(gear, b[0], b[1]) > 0)
+            double u = r.NextDouble();
+            long ms = -1;
+            for (int m = 0; m < c.Mounts.Length; m++)
             {
-                double u = r.NextDouble();
-                long ms = -1;
-                for (int m = 0; m < c.Mounts.Length; m++)
+                if (!c.OnElectric(m))
+                    continue;   // off the plant: no breaker to trip (Effects.PowerOut)
+                ref readonly var mr = ref c.Mounts[m];
+                double n = Nsf(w, p, surface, Nearest(comps[mr.Component].Bounds, p));
+                if (mr.Barbette >= 0)
+                    n = Math.Max(n, Nsf(w, p, surface, Nearest(comps[mr.Barbette].Bounds, p)));
+                if (u < Ramp(n / grade, b[0], b[1]))
                 {
-                    if (!c.OnElectric(m))
-                        continue;   // off the plant: no breaker to trip (Effects.PowerOut)
-                    ref readonly var mr = ref c.Mounts[m];
-                    double n = Nsf(w, p, surface, Nearest(comps[mr.Component].Bounds, p));
-                    if (mr.Barbette >= 0)
-                        n = Math.Max(n, Nsf(w, p, surface, Nearest(comps[mr.Barbette].Bounds, p)));
-                    if (u < Ramp(n / grade, b[0], b[1]))
-                    {
-                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
-                        k.PowerOff(m, now, ms, s);
-                        res.Shock = true;
-                    }
+                    ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                    k.PowerOff(m, now, ms, s);
+                    res.Shock = true;
                 }
-                for (int d = 0; d < c.Directors.Length; d++)
-                    if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Directors[d].Component].Bounds, p)) / grade, b[0], b[1]))
-                    {
-                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
-                        k.Out(k.DirectorPower, d, now, ms);
-                        res.Shock = true;
-                    }
-                for (int l = 0; l < c.Searchlights.Length; l++)
-                    if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Searchlights[l].Component].Bounds, p)) / grade, b[0], b[1]))
-                    {
-                        ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
-                        k.Out(k.SearchlightDown, l, now, ms);
-                        res.Shock = true;
-                    }
             }
-            // the whole ship's by her machinery spaces' (15 §3.3: White Plains' "most of the circuit breakers" at 0.3-0.6)
-            if (Chance(plant >= 0 ? Ramp(plant / grade, s.NearPlantTrip[0], s.NearPlantTrip[1]) : Ramp(nsf / grade, b[2], b[3]), ref r))
-            {
-                res.Shock |= Effects.Blackout(c, k, nearAt, NonPen.Minutes(s.NearTripMin, ref r), now, s);
-                res.Blackout = true;
-            }
-            // the gyros roll a failure (15 §6.4) at E4's chance for a heavy shock, the grade already in the edges
-            if (c.Directors.Length > 0 && Chance(Ramp(gear, b[0], b[1]) * s.ShockDirectorGyro[0], ref r))
-            {
-                long ms = NonPen.Minutes(s.DirectorGyroMin, ref r);
-                for (int d = 0; d < c.Directors.Length; d++)
-                    k.Out(k.DirectorDown, d, now, ms);
-                res.Shock = true;
-            }
+            for (int d = 0; d < c.Directors.Length; d++)
+                if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Directors[d].Component].Bounds, p)) / grade, b[0], b[1]))
+                {
+                    ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                    k.Out(k.DirectorPower, d, now, ms);
+                    res.Shock = true;
+                }
+            for (int l = 0; l < c.Searchlights.Length; l++)
+                if (u < Ramp(Nsf(w, p, surface, Nearest(comps[c.Searchlights[l].Component].Bounds, p)) / grade, b[0], b[1]))
+                {
+                    ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
+                    k.Out(k.SearchlightDown, l, now, ms);
+                    res.Shock = true;
+                }
+        }
+        // the whole ship's by her machinery spaces' (15 §3.3: White Plains' "most of the circuit breakers" at 0.3-0.6)
+        if (Chance(plant >= 0 ? Ramp(plant / grade, s.NearPlantTrip[0], s.NearPlantTrip[1]) : Ramp(nsf / grade, b[2], b[3]), ref r))
+        {
+            res.Shock |= Effects.Blackout(c, k, nearAt, NonPen.Minutes(s.NearTripMin, ref r), now, s);
+            res.Blackout = true;
+        }
+        // the gyros roll a failure (15 §6.4) at E4's chance for a heavy shock, the grade already in the edges
+        if (NonPen.DirectorFire(c) && Chance(Ramp(gear, b[0], b[1]) * s.ShockDirectorGyro[0], ref r))
+        {
+            long ms = NonPen.Minutes(s.DirectorGyroMin, ref r);
+            for (int d = 0; d < c.Directors.Length; d++)
+                k.Out(k.DirectorDown, d, now, ms);
+            res.Shock = true;
         }
 
         // the stern: rudders, shafts and propellers near a burst there

@@ -379,6 +379,7 @@ public static class GivenHits
                 rep.Outcomes[(int)w.Damage.LastTerminal.Outcome]++;
                 rep.Magazines += fx.Magazine ? 1 : 0;
                 rep.Spalls += fx.Spall ? 1 : 0;
+                (rep.Shocks, rep.Blackouts) = (rep.Shocks + (fx.Shock ? 1 : 0), rep.Blackouts + (fx.Blackout ? 1 : 0));
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
                 hitMagazine |= fx.Magazine;
                 rep.CrewLost += fx.CrewLost;

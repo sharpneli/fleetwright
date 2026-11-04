@@ -830,9 +830,11 @@ public sealed class DamageSystem : IWorldSystem
     {
         var k = ships.Store.Combat.Condition(slot);
         var c = k.Class;
-        if (k.Status != ShipStatus.Afloat || !NonPen.Electrics(c))
+        if (k.Status != ShipStatus.Afloat)
             return;
-        double p = settings.OwnGunBreaker[c.ShockGrade == ShockGrade.G0 ? 0 : 1] * settings.ShockGradeK[(int)c.ShockGrade] *
+        // by how much she has on it, as a hit's (docs/battle/electrics.md EL6): the column is the top of the load's range
+        double load = NonPen.ByLoad(settings.ShockSectionPower, c.Electric.BattleDayKw, settings) / settings.ShockSectionPower[^1];
+        double p = load * settings.OwnGunBreaker[c.ShockGrade == ShockGrade.G0 ? 0 : 1] * settings.ShockGradeK[(int)c.ShockGrade] *
                    c.Mounts[mount].ReloadS / 1200;
         if (r.NextDouble() >= p)
             return;

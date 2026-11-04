@@ -1591,19 +1591,27 @@ public sealed record SimSettings
     /// second (its 1943- column, after the securing alterations), G2 and G3 the second times <see cref="ShockGradeK"/>'s.
     /// Zone A the struck structure and what's within <see cref="ShockZoneAM"/> of the hit, B within
     /// <see cref="ShockZoneBM"/>, C the ship. Rows: local power tripped (A), a section's power (B), the ship's power
-    /// cascading out (C), a director's gyro (A and B), a rangefinder knocked out of adjustment (A). Power reaches only a
-    /// ship with director fire control (its breakers, FC circuits and gyros; before it, fuses and knife switches): its
-    /// mounts and directors are silent while it's off. How long each lasts: (share, low, high minutes) triples,
-    /// log-uniform, a high of 0 for the rest of the battle.</summary>
-    public double[] ShockLocalTrip { get; init; } = [0.50, 0.25];
-    public double[] ShockSectionPower { get; init; } = [0.15, 0.06];
-    public double[] ShockCascade { get; init; } = [0.02, 0.008];
+    /// cascading out (C), a director's gyro (A and B), a rangefinder knocked out of adjustment (A). The power rows go by her
+    /// battle load, a rate at each of <see cref="ShockLoadKw"/> (docs/battle/electrics.md EL6: electric-plant.md's anchors [EST],
+    /// 13's columns moved to the loads of the ships behind them), times <see cref="ShockPowerGradeK"/> for how well her gear is
+    /// secured (G1 about 13's 1943 column over its 1939-42 one, G2 and G3 half and a quarter of that). What's on the plant is
+    /// worked by hand while it's off. How long each lasts: (share, low, high minutes) triples, log-uniform, a high of 0 for the
+    /// rest of the battle; half of a local loss is a severed lead, mended in 20-60 min [EST], not a trip (electric-plant.md §7).</summary>
+    public double[] ShockLoadKw { get; init; } = [100, 300, 1000, 5000];
+    public double[] ShockLocalTrip { get; init; } = [0.25, 0.30, 0.40, 0.50];
+    public double[] ShockSectionPower { get; init; } = [0.02, 0.04, 0.06, 0.15];
+    public double[] ShockCascade { get; init; } = [0, 0.002, 0.005, 0.02];
+    public double[] ShockPowerGradeK { get; init; } = [1, 0.45, 0.22, 0.11];
+    /// <summary>A torpedo or mine's explosion on the power, a draw a hit at G0 [EST: Inflexible, Marlborough, Seydlitz and Szent István
+    /// are 4 of 4 with a section or ship-wide effect, North Carolina's secured gear none]: the whole ship's, else a section's round it.</summary>
+    public double TorpedoBlackout { get; init; } = 0.3;
+    public double TorpedoSectionPower { get; init; } = 0.75;
     public double[] ShockDirectorGyro { get; init; } = [0.12, 0.06];
     public double[] ShockRangefinder { get; init; } = [0.20, 0.12];
     public double[] ShockGradeK { get; init; } = [1, 1, 0.5, 0.25];
     public double ShockZoneAM { get; init; } = 12;
     public double ShockZoneBM { get; init; } = 40;
-    public double[] LocalTripMin { get; init; } = [0.9, 0.17, 3, 0.1, 3, 15];
+    public double[] LocalTripMin { get; init; } = [0.45, 0.17, 3, 0.05, 3, 15, 0.5, 20, 60];
     public double[] SectionPowerMin { get; init; } = [0.8, 1, 5, 0.2, 5, 20];
     public double[] CascadeMin { get; init; } = [0.9, 1, 5, 0.1, 5, 45];
     public double[] DirectorGyroMin { get; init; } = [0.7, 5, 30, 0.3, 30, 60];

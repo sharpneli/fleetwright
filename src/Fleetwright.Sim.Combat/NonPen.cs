@@ -173,10 +173,22 @@ public static class NonPen
         return ((LeakRegime)(regime + 1), Math.Exp(Math.Log(lo) + (Math.Log(hi) - Math.Log(lo)) * rng.NextDouble()));
     }
 
-    /// <summary>Whether a ship carries breakers for a shock to trip (E4; the user's choice, 2026-10-17): director fire
-    /// control on any battery (its FC circuits, gyros and the power to them). Before it, fuses, knife switches and
-    /// dynamos on their own governors: little to trip.</summary>
-    public static bool Electrics(ShipClass c)
+    /// <summary>A power rate by a ship's battle load (docs/battle/electrics.md EL6): the rate at each of
+    /// <see cref="SimSettings.ShockLoadKw"/>, straight between them on the log of the load, held past the ends. What she carries
+    /// sets it, never her year; total kW is a stand-in for how much she has to trip (electrics.md "kW is an approximation").</summary>
+    public static double ByLoad(double[] rates, double kw, SimSettings s)
+    {
+        var at = s.ShockLoadKw;
+        if (kw <= at[0])
+            return rates[0];
+        for (int i = 1; i < at.Length; i++)
+            if (kw <= at[i])
+                return rates[i - 1] + (rates[i] - rates[i - 1]) * Math.Log(kw / at[i - 1]) / Math.Log(at[i] / at[i - 1]);
+        return rates[^1];
+    }
+
+    /// <summary>Whether a ship carries a director's gyro for a shock to upset: director fire control on any battery.</summary>
+    public static bool DirectorFire(ShipClass c)
     {
         foreach (ref readonly var b in c.Batteries)
             if (!b.Local && b.Fit.Mount.DirectorFiring)

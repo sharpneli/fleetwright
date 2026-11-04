@@ -185,6 +185,20 @@ public class ElectricsTests(ITestOutputHelper output)
         Assert.Equal(NonPen.HandShare(c, c.Mounts[m], Settings) / 2, NonPen.HandShare(c, c.Mounts[m], Settings, 8), 9);
     }
 
+    /// <summary>EL6: a torpedo trips a ship's power through the world's damage system, most of the time at least a section's, about a
+    /// third of the time all of it (Inflexible, Marlborough, Seydlitz, Szent István); well-secured gear far less (North Carolina).</summary>
+    [Fact]
+    public void A_torpedo_trips_her_power()
+    {
+        var torpedo = Fleet.Get("destroyer").Class!.Torpedoes[0];
+        var (g0, g2) = (GivenHits.Torpedoes(Fleet.Get("seydlitz").Class!, torpedo, 4.5, double.NaN, 300, 1, 1, Settings),
+            GivenHits.Torpedoes(Fleet.Get("battleship").Class!, torpedo, 4.5, double.NaN, 300, 1, 1, Settings));
+        output.WriteLine($"G0 Seydlitz: {g0.Blackouts} blackouts, {g0.Shocks} shocks of {g0.Hits}; G2 battleship: {g2.Blackouts}, {g2.Shocks} of {g2.Hits}");
+        Assert.InRange((double)g0.Blackouts / g0.Hits, 0.2, 0.4);
+        Assert.InRange((double)g0.Shocks / g0.Hits, 0.6, 0.9);
+        Assert.True(g2.Blackouts < 0.3 * g0.Blackouts, $"{g2.Blackouts} against {g0.Blackouts}");
+    }
+
     /// <summary>EL4b: a gunhouse trains and elevates by its drive, near the research's §4 for the turrets it names.</summary>
     [Theory]
     [InlineData("tiger_1914", 1.9, 2.8, 5, 7.5)]        // hydraulic, the 15" Mk I 2 and 5
