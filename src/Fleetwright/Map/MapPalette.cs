@@ -43,7 +43,7 @@ public static class MapPalette
 
     /// <summary>Contacts of no known side (the enemy's take <see cref="ShipDrawList.EnemyTint"/>), and smoke on the
     /// horizon.</summary>
-    public static readonly Vector4 Unknown = new(0.95f, 0.9f, 0.7f, 1f), Smoke = new(0.62f, 0.58f, 0.52f, 0.85f);
+    public static readonly Vector4 Unknown = new(0.95f, 0.9f, 0.7f, 1f);
 
     /// <summary>A light seen in the dark (docs/battle/night.md Q2): a placeholder warm spark until the night's marks (Q9).</summary>
     public static readonly Vector4 Light = new(1f, 0.82f, 0.45f, 0.95f);

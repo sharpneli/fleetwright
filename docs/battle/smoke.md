@@ -966,9 +966,9 @@ a bearing and a smudge, not a ship; the cost of the larger encounter range on th
   classes counts where it's over the tallest silhouette: each funnel's plume at full power in still air (the wind over
   her decks her own speed), a minute past its rise, its centre and two σ. Jutland's classes: 205 m, the reach 78.8 km
   (from ~55 km). A slower ship in a following wind can rise higher; the reach counts the usual case.
-- **The map** (`MapScene.Contacts`): a smoke contact is a smudge where it's reckoned, its range's ellipse long along the
-  bearing, and while it's in sight the bearing line from the observer through it; labelled "smoke". A held ship followed
-  by her smoke keeps her marker, "· her smoke". No course line until she's seen.
+- **The map** (`MapScene.Contacts`): as built, a smudge and an ellipse; since 2026-11-04 (`docs/map-ui/fire-marks.md`
+  "Contacts") the smoke itself is the mark, labelled "smoke" while it's in sight, the bearing line from the observer
+  through it on intent. A held ship followed by her smoke keeps her marker, "· her smoke". No course line until she's seen.
 - **The AI** reads a smoke contact as any contact out of sight of unknown type: the matchups take it for any of the
   enemy's ships at sea, the held groups hold it while it's fresh, an intercept can steer for it. Nothing in it changed;
   Jutland's three hours with the AI on every side ran through (`smoke contacts`).

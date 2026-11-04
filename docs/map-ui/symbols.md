@@ -134,9 +134,9 @@ symbol for an area or a reach is a thin line; direction is an arrowhead, not a l
 | Symbol | Today | Verdict |
 |---|---|---|
 | Own squadron or force (collapsed) | diamond, 9 / 13 px, cream | **circle**: the diamond is the enemy contact's shape, and the rail already marks our ships with circles and the enemy with diamonds; a force a double circle |
-| Enemy contact | diamond, 5 px, enemy red | **keep the diamond**, filled while in sight, hollow once dead reckoned (sure or reckoned at a glance, where today only the alpha changes); unknown side keeps its own colour |
-| Contact's 2σ ellipse | thin line | keep: an area, so a thin line |
-| Smoke on the horizon | soft smudge | keep: smoke has no outline |
+| Enemy contact | diamond, 5 px, enemy red | hollow diamond once dead reckoned; in sight her icon and bow arrowhead instead (2026-11-04, `fire-marks.md` "Contacts"); unknown side keeps its own colour |
+| Contact's 2σ ellipse | thin line | an area, so a thin line; only for a ship lost, fading out when too big to locate her (2026-11-04) |
+| Smoke on the horizon | soft smudge | gone: the smoke itself is drawn (2026-11-04) |
 | Encounter | solid ring | keep the solid ring (an action's bound matters more than a reach), thinner, with casing |
 | Torpedo reach | solid rings | **dotted**: a reach, not a thing; dots keep it apart from the encounter's and the selection's solid rings |
 | Selection | solid brass ring | keep, with casing and Y7's ease |

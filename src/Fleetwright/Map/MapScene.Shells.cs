@@ -493,7 +493,7 @@ public sealed partial class MapScene
         int best = -1;
         double bestD = ContactMarkerPx * 3;
         for (int i = 0; i < c.Count; i++)
-            if (view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
+            if (!IsOldSmoke(c, i) && view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
                 (best, bestD) = (c.Entity[i], Math.Abs(cx - x) + Math.Abs(cy - y));
         return best;
     }

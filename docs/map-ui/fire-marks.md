@@ -31,9 +31,29 @@ held), the fight enlarged in `png/fire-marks-zoom.png` (before, after, Tab); the
 2. **Unengaged enemies marked, subtly.**
 3. **Side by side in the game**, not a mockup: it's not a new UI style.
 
+## Contacts (2026-11-04)
+
+The same complaint from the enemy's side: a line of ships read as "a pile of straws with a seizure". A ship in sight is
+already drawn whole, as she is (`Snapshot.Sighted`); the diamond, ellipse and five-minute course line sat on top as a
+noisier copy. The line magnified the track's noise: over five minutes of the Jutland (16:10-16:15, 33 contacts) a
+course swung ~7° within a minute and the line's tip ~33 m a look. It was often wrong too, the constant-velocity track
+lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°) on one that had turned in the last minute,
+~90% of the readings. Side by side at 16:15, 20 m/px: `png/contacts-zoom.png` (before, after).
+
+- **A ship in sight**: her icon and a 3 px arrowhead off her bow, from her own heading, so it can't twitch; no marker, no
+  ellipse. Faded out over the world's boundary, where the sprite shows her bow. The card keeps the estimate (`~072°`), so
+  in a turn it may differ from the arrowhead.
+- **A ship lost**: a hollow diamond, an 8 px course tick, and the 2σ ellipse. It's the one place the ellipse says something:
+  it comes in as it grows past 10-20 px and goes between 80 and 300 px (major semi-axis on screen, reference px), where it
+  no longer locates her; hovered or selected it's shown whatever its size.
+- **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its label while it's in sight;
+  its bearing only on intent. A held ship seen only by her smoke keeps her diamond and tick, no ellipse. Smoke alone no
+  longer in sight has nothing on the map, no label and no pick; the rail still lists it.
+- **Unknowns** (friend or foe not made out) keep the quatrefoil and tick; **lights** their spark and bearing.
+- **The course line only on intent**: selected, hovered, Tab held.
+
 ## Open
 
-- The contacts' course lines (five minutes' steaming, in full red, `MapScene.Contacts.cs`) are now the loudest lines in
-  a fight: shorter, fainter, or only near the cursor?
 - Pips crowd where targets lie close together (the German line at 16:15); a count beside one pip past three, if
   playtesting says so.
+- Arrowheads stack in a tight column; 2 px if it bothers in play.
