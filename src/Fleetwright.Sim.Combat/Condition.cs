@@ -437,6 +437,9 @@ public sealed class ShipCondition
     public double WaterT, GmM;
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
     public double PowerCap = 1;
+    /// <summary>Her generating plant gone, worked out with the functions (docs/battle/electrics.md EL2): no steam from any
+    /// boiler room or no engine room working. No power anywhere for as long as that lasts.</summary>
+    public bool PlantOut;
     public Steering Steering;
     /// <summary>The rudder's angle when it jammed, radians.</summary>
     public double JamRudderRad;
@@ -618,7 +621,7 @@ public sealed class ShipCondition
         Array.Fill(MountSupply, 1.0);
         Array.Fill(EyeCrew, 1.0);
         Array.Fill(MountLasts, true);
-        (PowerCapLasts, LastingMs) = (1, 0);
+        (PowerCapLasts, LastingMs, PlantOut) = (1, 0, false);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
@@ -821,8 +824,9 @@ public sealed class ShipCondition
     /// <summary>Whether a mount trains stiffly now (E4).</summary>
     public bool Stiff(int mount, long now) => Mount[mount].StiffUntil > now;
 
-    /// <summary>Whether a mount is worked by hand now, its power off (E4).</summary>
-    public bool ByHand(int mount, long now) => Mount[mount].PowerUntil > now;
+    /// <summary>Whether a gunhouse is worked by hand now: its power tripped (E4), or her plant gone (docs/battle/electrics.md
+    /// EL2). The others are worked by hand always, and aren't counted.</summary>
+    public bool ByHand(int mount, long now) => Class.Enclosed(mount) && (PlantOut || Mount[mount].PowerUntil > now);
 
     /// <summary>The guns a mount still fires of its barrels (E4: its guns out don't).</summary>
     public int Guns(int mount) => Math.Max(Class.TurretTypes[Class.Mounts[mount].Type].Barrels - Mount[mount].GunsOut, 0);

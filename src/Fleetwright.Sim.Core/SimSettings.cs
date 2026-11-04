@@ -1605,7 +1605,7 @@ public sealed record SimSettings
     public double ShockZoneBM { get; init; } = 40;
     public double[] LocalTripMin { get; init; } = [0.9, 0.17, 3, 0.1, 3, 15];
     public double[] SectionPowerMin { get; init; } = [0.8, 1, 5, 0.2, 5, 20];
-    public double[] CascadeMin { get; init; } = [0.9, 1, 10, 0.1, 30, 90];
+    public double[] CascadeMin { get; init; } = [0.9, 1, 5, 0.1, 5, 20];
     public double[] DirectorGyroMin { get; init; } = [0.7, 5, 30, 0.3, 30, 60];
     public double[] RangefinderMin { get; init; } = [0.5, 5, 20, 0.3, 120, 240, 0.2, 0, 0];
 

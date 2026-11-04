@@ -1746,7 +1746,7 @@ squadrons, and changes `Matchup.cs` with it.
         WWI 0.08). A 1916 ship takes 1939-42's breakers and ABTs; 13 §3.3 has WWI's switchboards failing "mostly through
         flooding and splinters". Squadrons still blacks out a third of its ships once. The fix would be a grade under
         G0 for the fused, dynamo-on-its-own-governor plants (a design block, set by the format upgrade by year), and it's
-        a design change, not a band.
+        a design change, not a band. **Taken up 2026-11-04 in `electrics.md`, not as a grade (the user: no era multiplier).**
   - **Fix (found and done 2026-11-04):** power outages silenced guns that have no power to lose (bugs.md).
     - **Found** by a scan of 44 games (11 scenarios from Tsushima to Åland, 4 seeds, every ship every 5 s). 49 times a ship
       lost 40% or more of her mounts at a stroke by power: 32 a section's shock from a hit, 3 from her own guns, 14

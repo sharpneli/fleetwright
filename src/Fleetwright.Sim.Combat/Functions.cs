@@ -65,7 +65,7 @@ public static class Functions
         var c = k.Class;
         Steadiness.Update(k, s, now);   // who stays at the stations (docs/battle/crew.md N3b), before what they can do
         double draughtFloor = s.DraughtFloor;
-        double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0;
+        double steam = 0, shafts = 0, steamBy = 0, shaftsBy = 0, engines = 0;
         int boilers = 0, lines = 0, rudders = 0;
         bool steer = false, command = true;
         foreach (ref readonly var f in c.Functions)
@@ -93,6 +93,7 @@ public static class Functions
                 case FunctionKind.ShaftLine:
                     shafts += v;
                     shaftsBy += Value(c, k, f, floor, lastingMs);
+                    engines += c.ShaftLines[f.Index].EngineRoom >= 0 ? k.Health(c.RoomNode(c.ShaftLines[f.Index].EngineRoom)) : 1;
                     lines++;
                     break;
                 case FunctionKind.Boilers:
@@ -131,6 +132,13 @@ public static class Functions
         k.PowerCap = Math.Min(boilers > 0 ? steam / boilers : 1, lines > 0 ? shafts / lines : 1);
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
+        // the dynamos stand on that steam, in those engine rooms: all of either gone, no power anywhere (electrics.md EL2)
+        k.PlantOut = boilers > 0 && steam <= 0 || lines > 0 && engines <= 0;
+        if (k.PlantOut)
+        {
+            Array.Fill(k.DirectorWorks, false);
+            Array.Fill(k.SearchlightWorks, false);
+        }
         Conn(k, command, now, s);
         if (k.IsGivenUp)
             return StoodDown(k, steer || rudders == 0);

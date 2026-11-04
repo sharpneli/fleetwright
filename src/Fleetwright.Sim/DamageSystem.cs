@@ -569,7 +569,7 @@ public sealed class DamageSystem : IWorldSystem
                     : st.LoadedMs > now ? (MountStatus.Loading, st.LoadedMs)
                     : (MountStatus.Ready, 0L);
                 d.MountGunsOut[i] = harm.GunUntil > now ? harm.GunsOut : 0;
-                d.MountByHand[i] = harm.PowerUntil > now;
+                d.MountByHand[i] = k != null && m < k.Mount.Length && k.ByHand(m, now);
                 (d.MountAp[i], d.MountCommon[i], d.MountHe[i], d.MountStar[i]) = (0, 0, 0, 0);
             }
             var lo = store.Combat.Loadout(slot);

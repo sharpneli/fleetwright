@@ -445,7 +445,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   gunhouse is worked by power (`ShipClass.Enclosed`), and the whole ship's near-miss trip reads the shock where the
   plant stands (docs/battle/shells-armour-damage.md E7): 2 such cases, near-miss blackouts 21 to 0. And a gunhouse with
   its power off is worked by hand, slowly, not silent (the user, the same day). Left: G0's rates are 1939-42's; the user:
-  from how electrified a ship is, what she gains by it, no era multiplier.
+  from how electrified a ship is, what she gains by it, no era multiplier (docs/battle/electrics.md).
 - [ ] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan): a 102 mm HE burst
   inside S15 (1,556 t) opened 18.6 m², a 152 mm 17.8 m² in V189, with nobody hurt. `Blast.Cascade`: a thin outside face
   whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side
