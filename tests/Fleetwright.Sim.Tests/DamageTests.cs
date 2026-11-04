@@ -573,7 +573,7 @@ public class DamageTests(ITestOutputHelper output)
         var contacts = new ContactsView();
         contacts.EnsureCapacity(1);
         (contacts.Count, contacts.Entity[0], contacts.InSight[0], contacts.Side[0]) = (1, 1, true, 0);
-        w.Ships.FillSighted(seen, contacts, new bool[256]);
+        w.Ships.FillSighted(seen, new ShipsView(), contacts, new bool[256], w.Time.Ms);
         Assert.Equal(1, seen.Count);
         Assert.Equal(0, seen.FireCount[0]);
 
@@ -589,7 +589,7 @@ public class DamageTests(ITestOutputHelper output)
         var box = cls.Cells[cell].Box;
         Assert.InRange(own.ShowAt[j].X, box.X0, box.X1);
         Assert.True(own.ShowAt[j].Z >= box.Top - 1e-9, "inside, its flames come up through the deck over it");
-        w.Ships.FillSighted(seen, contacts, new bool[256]);
+        w.Ships.FillSighted(seen, new ShipsView(), contacts, new bool[256], w.Time.Ms);
         Assert.True(seen.FireCount[0] >= 1);
         Assert.True(seen.ShowCount[0] >= 1);
     }

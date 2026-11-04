@@ -98,6 +98,15 @@ public sealed class Snapshot
     /// out). Empty with the truth, which has them in <see cref="Ships"/>.</summary>
     public ShipsView Sighted { get; } = new();
 
+    /// <summary>The enemy ships the player's navy lost sight of within <see cref="FadingMs"/>, as they are, for the map to
+    /// fade out in gray rather than have them pop off it (docs/map-ui/fire-marks.md "Contacts"). A deliberate cheat (the user,
+    /// 2026-11-04): it tells the player more than the navy holds, for looks and tactics only; only the map reads it, nothing
+    /// that aims or decides. <see cref="ShipsView.SeenMs"/> when each was last in sight; a ship going down isn't listed.</summary>
+    public ShipsView Fading { get; } = new();
+
+    /// <summary>How long a ship out of sight stays in <see cref="Fading"/>, game ms.</summary>
+    public const long FadingMs = 5 * 60_000;
+
     /// <summary>The weather (one for the world for now).</summary>
     public WeatherHere Weather { get; set; }
 
@@ -791,7 +800,7 @@ public sealed class ContactsView
     public double[] MajorM = [], MinorM = [], AxisDeg = [];
     public bool[] InSight = [], SmokeInSight = [], LightInSight = [];
     public Vec3d[] From = [];
-    public long[] SeenMs = [];
+    public long[] SeenMs = [], ShipSeenMs = [];
     public ContactLevel[] Level = [];
     public ShipType[] Type = [];
     public byte[] Side = [];
@@ -815,6 +824,7 @@ public sealed class ContactsView
         Array.Resize(ref LightInSight, n);
         Array.Resize(ref From, n);
         Array.Resize(ref SeenMs, n);
+        Array.Resize(ref ShipSeenMs, n);
         Array.Resize(ref Level, n);
         Array.Resize(ref Type, n);
         Array.Resize(ref Side, n);
@@ -1121,6 +1131,9 @@ public sealed class ShipsView
     public Combat.Attitude[] Attitude = [];
     public Combat.LossKind[] Loss = [];
     public long[] LossMs = [], GoneMs = [];
+
+    /// <summary>When she was last in sight (<see cref="Snapshot.Fading"/>'s rows only).</summary>
+    public long[] SeenMs = [];
     public int[] PartStart = [], PartCount = [], FireStart = [], FireCount = [];
     public int[] Parts = [], FireCells = [];
     public Combat.PartState[] PartStates = [];
@@ -1244,6 +1257,7 @@ public sealed class ShipsView
         Array.Resize(ref Loss, n);
         Array.Resize(ref LossMs, n);
         Array.Resize(ref GoneMs, n);
+        Array.Resize(ref SeenMs, n);
         Array.Resize(ref PartStart, n);
         Array.Resize(ref PartCount, n);
         Array.Resize(ref FireStart, n);

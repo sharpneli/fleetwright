@@ -855,6 +855,7 @@ public sealed class Sightings
         con.Side = ts.Side;
         con.SeenMs = now;
         con.LookedMs = now;
+        con.ShipSeenMs = now;
         con.InSight = true;
         con.SmokeInSight = false;
         con.LightInSight = false;
@@ -1068,6 +1069,7 @@ public sealed class Sightings
             (v.Entity[i], v.TakenFor[i], v.Position[i], v.Velocity[i]) = (c.Entity, c.TakenFor, p, vel);
             (v.MajorM[i], v.MinorM[i], v.AxisDeg[i]) = (major, minor, axis);
             (v.InSight[i], v.SeenMs[i], v.Level[i], v.Type[i]) = (c.InSight, c.SeenMs, c.Level, c.Type);
+            v.ShipSeenMs[i] = c.ShipSeenMs;
             (v.SmokeInSight[i], v.LightInSight[i], v.From[i]) = (c.SmokeInSight, c.LightInSight, c.From);
             v.Side[i] = c.Foe ? c.Side : (byte)255;
             v.Seen[i] = c.Seen;

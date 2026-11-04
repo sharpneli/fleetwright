@@ -427,23 +427,39 @@ public sealed partial class ShipSystem : IWorldSystem
 
     /// <summary>The ships of the sides not shown that the player's navy has in sight (its contacts in sight), for the map
     /// to draw as they are: pose, class and mounts, no orders or route; the side is the contact's (255 until its type is
-    /// made out). Allocates only to grow.</summary>
-    public void FillSighted(ShipsView v, ContactsView contacts, bool[] shownSides)
+    /// made out); and those just out of sight the same into <paramref name="fading"/> (<see cref="Snapshot.Fading"/>).
+    /// Allocates only to grow.</summary>
+    public void FillSighted(ShipsView v, ShipsView fading, ContactsView contacts, bool[] shownSides, long now)
     {
         v.EnsureCapacity(contacts.Count);
-        int n = 0, w = 0, mounts = 0;
+        fading.EnsureCapacity(contacts.Count);
+        int n = 0, w = 0, mounts = 0, f = 0, fw = 0, fmounts = 0;
         v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = 0;
+        fading.PartTotal = fading.FireTotal = fading.LoadTotal = fading.ShowTotal = fading.BatteryTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
-            int i = contacts.InSight[j] ? Store.SlotOf(contacts.Entity[j]) : -1;
+            bool inSight = contacts.InSight[j];
+            if (!inSight && (contacts.ShipSeenMs[j] == 0 || now - contacts.ShipSeenMs[j] >= Snapshot.FadingMs))
+                continue;
+            int i = Store.SlotOf(contacts.Entity[j]);
             if (i < 0 || shownSides[Store[i].Side])
                 continue;
-            Put(v, i, n, ref w, ref mounts, orders: false);
-            v.Side[n++] = contacts.Side[j];
+            if (inSight)
+            {
+                Put(v, i, n, ref w, ref mounts, orders: false);
+                v.Side[n++] = contacts.Side[j];
+            }
+            else
+            {
+                Put(fading, i, f, ref fw, ref fmounts, orders: false);
+                fading.SeenMs[f] = contacts.ShipSeenMs[j];
+                fading.Side[f] = contacts.Side[j];
+                if (fading.Loss[f] == LossKind.None)   // (one going down is overwritten by the next)
+                    f++;
+            }
         }
-        v.Count = n;
-        v.WaypointCount = w;
-        v.MountCount = mounts;
+        (v.Count, v.WaypointCount, v.MountCount) = (n, w, mounts);
+        (fading.Count, fading.WaypointCount, fading.MountCount) = (f, fw, fmounts);
     }
 
     /// <summary>Ship slot i into row n of a snapshot's part: with its orders and route, or (<paramref name="orders"/>

@@ -212,13 +212,16 @@ void main()
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded
         if (fragTint.a > 0.0)
             rgb = mix(rgb, rgb * fragTint.rgb, fragTint.a);
+        // a ship out of sight goes gray: soot's 0-1, plus 2 per 32nd of gray
+        float grayed = floor(fragSoot / 2.0), soot = fragSoot - 2.0 * grayed;
+        rgb = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))), grayed / 32.0);
         vec4 nt = texture(normalTex, uv);
         vec2 mat = unpackMaterial(texture(materialTex, uv), c.a);
-        mat = mix(mat, vec2(1.0, 0.0), fragSoot);
+        mat = mix(mat, vec2(1.0, 0.0), soot);
         // a turret stands as high as its roof, where it stands untilted
         vec2 own = fragMode.z > 0.0 ? fragShip - fragMode.z * fragSea.yz : at;
         float depth = depthAt(own, max(heightAt(at), fragMode.z));
-        rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, mat.x, mat.y, nt.a * (1.0 - 0.4 * fragSoot),
+        rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, mat.x, mat.y, nt.a * (1.0 - 0.4 * soot),
             specAt(depth), flashLit(unpackNormal(nt)));
         if (fragMode.z > 0.0 && fragMarch.y > 0.0)   // a turret, in the hull's shadow at its roof's height
             rgb *= 1.0 - hullShadow(heightTex, fragHmap, own, fragMode.z, fragSun.xy, fragSun.z, fragMarch, fragSea) * fragSun.w;

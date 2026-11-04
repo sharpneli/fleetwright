@@ -9,8 +9,8 @@ namespace Fleetwright.Map;
 
 /// <summary>The player's picture on the map (docs/battle/plan.md step 3.2e; docs/map-ui/README.md "Uncertainty on the
 /// map", docs/map-ui/fire-marks.md "Contacts"): a ship in sight is her own icon and an arrowhead off her bow, and every mark
-/// on her goes where she's drawn (<see cref="ContactAt"/>); lost, nothing on the map, the rail holds her, and selected there
-/// the error ellipse (2 sigma) about where her navy reckons her. The five-minute course line only on intent (selected,
+/// on her goes where she's drawn (<see cref="ContactAt"/>); lost, she goes gray and fades (<see cref="Snapshot.Fading"/>), then
+/// nothing on the map, the rail holds her, and selected there the error ellipse (2 sigma) about where her navy reckons her. The five-minute course line only on intent (selected,
 /// hovered, Tab held). Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon
 /// (docs/battle/smoke.md Z6) is the smoke itself, drawn by the field: a label while it's in sight, its bearing on intent,
 /// no course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
@@ -22,10 +22,14 @@ public sealed partial class MapScene
     const float ContactSpotPx = 5;              // a contact's size on screen, with no ship to measure a ring or a pick by
     const double BowArrowPx = 3;                // the arrowhead off a sighted ship's bow
 
-    /// <summary>Where the map shows a contact: a ship in sight where she's drawn, else where her navy reckons her.</summary>
-    Vec3d ContactAt(Snapshot s, ContactsView c, int i) =>
-        c.InSight[i] && sightedIndex.TryGetValue(c.Entity[i], out int j) && s.Sighted.Entity[j] == c.Entity[i]   // (the UI's snapshot may be the next)
-            ? s.Sighted.PoseAt(j, world.DrawMs).Position : c.Position[i];
+    /// <summary>Where the map shows a contact: a ship drawn, in sight or fading, where she's drawn; else where her navy
+    /// reckons her.</summary>
+    Vec3d ContactAt(Snapshot s, ContactsView c, int i)
+    {
+        var v = c.InSight[i] ? s.Sighted : s.Fading;
+        return (c.InSight[i] ? sightedIndex : fadingIndex).TryGetValue(c.Entity[i], out int j) && v.Entity[j] == c.Entity[i]   // (the UI's snapshot may be the next)
+            ? v.PoseAt(j, world.DrawMs).Position : c.Position[i];
+    }
 
     static Vector4 ContactColour(ContactsView c, int i, long now)
     {
@@ -44,9 +48,9 @@ public sealed partial class MapScene
             var p = c.Position[i];
             var col = ContactColour(c, i, now);
             bool picked = c.Entity[i] == selected || c.Entity[i] == hovered;
-            // the ellipse, 2 sigma, only on the ship the player asks after: on every ship lost, rings came and went with ships
-            // going in and out of view, a formation blowing bubbles (user)
-            if (picked && !c.InSight[i] && c.Level[i] != ContactLevel.Smoke)
+            // the ellipse, 2 sigma, only on the ship the player asks after, and no ship drawn: on every ship lost, rings came and
+            // went with ships going in and out of view, a formation blowing bubbles (user)
+            if (picked && !c.InSight[i] && c.Level[i] != ContactLevel.Smoke && !fadingIndex.ContainsKey(c.Entity[i]))
             {
                 double min = ContactSpotPx * Rp * view.MetresPerPixel;
                 double major = Math.Max(2 * c.MajorM[i], min), minor = Math.Max(2 * c.MinorM[i], min);
@@ -93,8 +97,16 @@ public sealed partial class MapScene
         // which way she's going, a small arrowhead off her bow: her own heading, as the icon has it, so it can't twitch; a
         // table mark, faded out over the world's boundary, where the sprite shows her bow
         double table = 1 - WorldView.Factor(view);
-        var v = s.Sighted;
-        for (int j = 0; j < v.Count && table > 0; j++)
+        if (table > 0)
+        {
+            BowArrows(view, s.Sighted, now, table, fading: false);
+            BowArrows(view, s.Fading, now, table, fading: true);
+        }
+    }
+
+    void BowArrows(in MapView view, ShipsView v, long now, double table, bool fading)
+    {
+        for (int j = 0; j < v.Count; j++)
         {
             if (v.Loss[j] != LossKind.None || v.Speed[j] < 0.5)
                 continue;
@@ -102,13 +114,14 @@ public sealed partial class MapScene
             if (!view.Project(p, out double x, out double y) || !view.Project((p + f * 10).Normalized() * Earth.Radius, out double fx, out double fy))
                 continue;
             double a = Math.Atan2(fy - y, fx - x), r = IconLengthAt(view, v.Class[j], p) / 2 + BowArrowPx * Rp;
-            var tint = (v.Side[j] == 255 ? MapPalette.Unknown : ShipDrawList.EnemyTint) with { W = (float)(0.9 * table) };
+            var (gray, left) = fading ? ShipDrawList.FadingShade(now - v.SeenMs[j]) : (0, 1);
+            var tint = Vector4.Lerp(v.Side[j] == 255 ? MapPalette.Unknown : ShipDrawList.EnemyTint, ShipDrawList.FadingTint, (float)gray) with { W = (float)(0.9 * table * left) };
             symbols.Add(SymbolShape.Arrow, x + Math.Cos(a) * r, y + Math.Sin(a) * r, BowArrowPx * Rp, tint, tint, 0.5f, a);
         }
     }
 
     /// <summary>The night ticks (docs/visuals/night-lights.md decision 1): in the world view at night, four corner ticks
-    /// about each ship the player knows of, his own and the contacts in sight (where she's drawn, <see cref="ContactAt"/>),
+    /// about each ship the player knows of, his own and the contacts in sight or fading (where she's drawn, <see cref="ContactAt"/>),
     /// a few pixels whatever the zoom, so a near-black night still shows where the ships are. They fade in with the dark
     /// (the night eye's light, over the rods' range: none by day, full on a moonless night) and with the world's share;
     /// table marks: they light nothing and the haze doesn't take them.</summary>
@@ -136,6 +149,11 @@ public sealed partial class MapScene
         for (int i = 0; i < c.Count; i++)
             if (c.InSight[i] && c.Level[i] > ContactLevel.Smoke && view.Project(ContactAt(s, c, i), out double x, out double y))
                 Ticks(x, y, 1, 0, NightTickContactPx * Rp, NightTickContactPx * Rp, ContactColour(c, i, world.DrawMs) with { W = 0.8f * dark });
+        var fading = s.Fading;
+        for (int j = 0; j < fading.Count; j++)
+            if (view.Project(fading.PoseAt(j, world.DrawMs).Position, out double x, out double y))
+                Ticks(x, y, 1, 0, NightTickContactPx * Rp, NightTickContactPx * Rp,
+                    ShipDrawList.FadingTint with { W = 0.8f * dark * (float)ShipDrawList.FadingShade(world.DrawMs - fading.SeenMs[j]).Alpha });
     }
 
     const double NightTickContactPx = 18;   // a contact's ticks: a square a few pixels round its marker (its size unknown)

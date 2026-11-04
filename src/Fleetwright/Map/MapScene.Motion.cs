@@ -69,7 +69,11 @@ public sealed partial class MapScene
                 (r, tint) = (IconLengthAt(view, s.Sighted.Class[j], at) / 2 + 5 * Rp, ShipDrawList.EnemyTint);
             }
             else if ((hit = PickContact(view, s, cursorX, cursorY)) >= 0 && ContactIndex(s.Contacts, hit) is int i and >= 0)
-                (at, r, tint) = (s.Contacts.Position[i], (ContactSpotPx + 4) * Rp, ShipDrawList.EnemyTint);
+            {
+                at = ContactAt(s, s.Contacts, i);
+                r = fadingIndex.TryGetValue(hit, out int f) ? IconLengthAt(view, s.Fading.Class[f], at) / 2 + 5 * Rp : (ContactSpotPx + 4) * Rp;
+                tint = ShipDrawList.EnemyTint;
+            }
             else
                 hit = -1;
         }

@@ -162,7 +162,7 @@ public sealed unsafe partial class MapScene
         overlay.End();
     }
 
-    /// <summary>Where a ship the player can name is now: hers, one in sight, or a contact's marker.</summary>
+    /// <summary>Where a ship the player can name is now: hers, one drawn, or where a contact's reckoned.</summary>
     bool TargetPos(Snapshot s, int ship, out Vec3d p)
     {
         if (s.Ships.IndexOf(ship) is int k and >= 0)
@@ -170,7 +170,7 @@ public sealed unsafe partial class MapScene
         else if (s.Sighted.IndexOf(ship) is int j and >= 0)
             p = s.Sighted.PoseAt(j, world.DrawMs).Position;
         else if (Array.IndexOf(s.Contacts.Entity, ship, 0, s.Contacts.Count) is int c and >= 0)
-            p = s.Contacts.Position[c];
+            p = ContactAt(s, s.Contacts, c);
         else
         {
             p = default;

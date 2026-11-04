@@ -74,7 +74,7 @@ shrink.
   the shaders the lighting already has (the ambient and moon terms vs the point lights), no pass of its own.
 - **Readability is the HUD's job, not the light's** (decision 1). On a moonless night an unlit ship is a faint dark
   shape against a black sea at close zoom. So the world view gets **night ticks**: four small corner ticks about each
-  ship the player knows of (his own, and the contacts in sight, where she's drawn: `docs/map-ui/fire-marks.md`
+  ship the player knows of (his own, and the contacts in sight or fading, where she's drawn: `docs/map-ui/fire-marks.md`
   "Contacts", 2026-11-04), in the side's colour, a few pixels whatever the zoom, fading in as the night eye's level falls (none by day,
   full on a moonless night). Table marks, not light: they don't light anything and the haze doesn't take them.
 

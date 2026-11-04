@@ -77,6 +77,9 @@ public sealed unsafe partial class MapScene
         sightedIndex.Clear();
         for (int j = 0; j < s.Sighted.Count; j++)
             sightedIndex[s.Sighted.Entity[j]] = j;
+        fadingIndex.Clear();
+        for (int j = 0; j < s.Fading.Count; j++)
+            fadingIndex[s.Fading.Entity[j]] = j;
         DrawEncounters(view, s);
         DrawContacts(view, s);
         DrawNightTicks(view, s);

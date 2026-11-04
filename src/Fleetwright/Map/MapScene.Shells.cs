@@ -51,7 +51,7 @@ public sealed partial class MapScene
     ShellKind? fireKind;   // and which kind (null: the magazine order)
     static readonly ShellKind[] KindsInOrder = [ShellKind.Ap, ShellKind.Common, ShellKind.He];
     readonly Dictionary<int, int> shipIndex = [];   // a frame's ships by entity, for the target lines
-    readonly Dictionary<int, int> sightedIndex = [];   // a frame's enemies in sight by entity, for the marks on them
+    readonly Dictionary<int, int> sightedIndex = [], fadingIndex = [];   // a frame's enemies drawn by entity, for the marks on them
     readonly Dictionary<int, byte> sideOf = [];     // a frame's known shooters' sides, by entity
 
     /// <summary>A pop's life in world seconds: its own, or the real-time floor at the clock's rate.</summary>
@@ -487,10 +487,13 @@ public sealed partial class MapScene
         return true;
     }
 
-    /// <summary>The contact seen only by her smoke or a light reckoned under the cursor (within a few pixels), or -1: one in
-    /// sight is picked by her ship, one with nothing on the map from the rail.</summary>
-    static int PickContact(in MapView view, Snapshot s, double x, double y)
+    /// <summary>The contact under the cursor, or -1: a ship fading by her ship, else one seen only by her smoke or a light
+    /// where she's reckoned (within a few pixels). One in sight is picked by her ship, one with nothing on the map from the
+    /// rail.</summary>
+    int PickContact(in MapView view, Snapshot s, double x, double y)
     {
+        if (PickShip(view, x, y, s.Fading) is int fading and >= 0)
+            return fading;
         var c = s.Contacts;
         int best = -1;
         double bestD = ContactSpotPx * 3;

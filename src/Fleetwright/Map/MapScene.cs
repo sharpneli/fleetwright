@@ -136,7 +136,7 @@ public sealed unsafe partial class MapScene : IScene
         nightLights.Gather(s, world.DrawMs, WorldView.Factor(view));   // the night's lights first: the ships' shadows ask them
         shipRenderer.List.Night = nightLights;
         shipRenderer.List.Build(view,s.Ships, world.DrawMs, s.Sun, artOf, classOf, shipRenderer.Icon, selected, hidden, sunLapse.Motion, s.Sighted,
-            shipRenderer.Wakes, s.Weather.Cloud, world.Settings.NightOvercastShare);
+            shipRenderer.Wakes, s.Weather.Cloud, world.Settings.NightOvercastShare, s.Fading);
         var now = new WorldTime(world.DrawMs);
         double moonHere = Moon.Light((-view.Forward).Normalized() * Earth.Radius, now);
         shipRenderer.List.SetHaze(HazeLook.Uniforms(view, s.Weather, world.Settings, shipRenderer.List.Lights, moonHere, WorldView.Factor(view)));

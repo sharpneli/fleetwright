@@ -123,6 +123,18 @@ public sealed class ShipDrawList
     /// into the sea), any other's enemy red; while nobody plays a side (<see cref="PlayerSide"/> -1), the side tints.</summary>
     public static readonly Vector4 FriendTint = new(0.95f, 0.93f, 0.87f, 1f), EnemyTint = new(1f, 0.58f, 0.52f, 1f);
 
+    /// <summary>A ship out of sight (<see cref="Snapshot.Fading"/>): her icon's gray.</summary>
+    public static readonly Vector4 FadingTint = new(0.66f, 0.68f, 0.70f, 1f);
+
+    /// <summary>Game ms out of sight: gray over the first, then whole until the second, then fading to nothing at
+    /// <see cref="Snapshot.FadingMs"/>. Most ships lost in a fight are back within the hold (the Jutland: half within 35 s,
+    /// nine in ten within 106 s), so they only go gray and back.</summary>
+    const double FadingGrayMs = 20_000, FadingHoldMs = 120_000;
+
+    /// <summary>How a ship <paramref name="sinceMs"/> out of sight is drawn: her share of gray, and what's left of her.</summary>
+    public static (double Gray, double Alpha) FadingShade(long sinceMs) =>
+        (SmoothStep(0, FadingGrayMs, sinceMs), 1 - SmoothStep(FadingHoldMs, Snapshot.FadingMs, sinceMs));
+
     /// <summary>The player's side, set by the map each frame (-1: watching).</summary>
     public int PlayerSide = -1;
 
@@ -206,6 +218,8 @@ public sealed class ShipDrawList
         public ShipClass? Cls;
         public Vector4 Sea;
         public double Fade;
+        /// <summary>Her share of gray, a ship out of sight (<see cref="FadingShade"/>).</summary>
+        public double Gray;
         /// <summary>How far the sea's plane stands under the waterline anywhere over the ship, at most (0 when it's over it
         /// everywhere): the shadows, by the heights over it, may reach that much further. A ship settling or going down
         /// stands lower over it, so her shadows reach less far, not more.</summary>
@@ -235,13 +249,14 @@ public sealed class ShipDrawList
     /// <param name="sunMotion"><see cref="SunLapse.Motion"/>: below 1 the light fades to the day's mean (and the moon's to
     /// the night's) and the shadows out.</param>
     /// <param name="sighted">The enemy ships in sight (<see cref="Snapshot.Sighted"/>), drawn the same after the ships.</param>
+    /// <param name="fading">Those just out of sight (<see cref="Snapshot.Fading"/>), gray and fading.</param>
     /// <param name="wakes">The wake bakes: in the world view each ship under way gets its wave field's stamp
     /// (docs/visuals/wakes.md K3); null for none.</param>
     /// <param name="cloud">The weather's cloud, 0-1, and the share of the sky's light an overcast passes: the night's
     /// light under it (docs/visuals/night-lights.md Q10a).</param>
     public void Build(in MapView view, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
         nint icon, int selectedEntity, ReadOnlySpan<bool> hidden = default, double sunMotion = 1, ShipsView? sighted = null,
-        WakeLibrary? wakes = null, double cloud = 0, double overcastShare = 0.15)
+        WakeLibrary? wakes = null, double cloud = 0, double overcastShare = 0.15, ShipsView? fading = null)
     {
         Lights = LightsAt(view, timeMs, sun, sunMotion, cloud, overcastShare);
         liveLight = sunMotion >= 1;
@@ -252,7 +267,7 @@ public sealed class ShipDrawList
         classes.Clear();
         if (DrawnAs.Length < ships.Count)
             DrawnAs = new byte[Math.Max(ships.Count, DrawnAs.Length * 2)];
-        int most = ships.Count + (sighted?.Count ?? 0);
+        int most = ships.Count + (sighted?.Count ?? 0) + (fading?.Count ?? 0);
         if (placed.Length < most)
             placed = new Placed[Math.Max(most, placed.Length * 2)];
         double world = WorldView.Factor(view);
@@ -260,6 +275,8 @@ public sealed class ShipDrawList
         Place(view, world, ships, timeMs, sun, artOf, classOf, hidden, DrawnAs, wakeOn);
         if (sighted != null)
             Place(view, world, sighted, timeMs, sun, artOf, classOf, default, default, wakeOn);
+        if (fading != null)
+            Place(view, world, fading, timeMs, sun, artOf, classOf, default, default, wakeOn, isFading: true);
 
         if (wakeOn)
             for (int i = 0; i < placedCount; i++)
@@ -328,7 +345,7 @@ public sealed class ShipDrawList
     /// the view's <see cref="WorldView.Factor(in MapView)"/>), the sun in its frame; how each was drawn into
     /// <paramref name="drawnAs"/>, if given.</summary>
     void Place(in MapView view, double world, ShipsView ships, long timeMs, Vec3d sun, Func<int, ShipArt?> artOf, Func<int, ShipClass?> classOf,
-        ReadOnlySpan<bool> hidden, Span<byte> drawnAs, bool wakes = false)
+        ReadOnlySpan<bool> hidden, Span<byte> drawnAs, bool wakes = false, bool isFading = false)
     {
         for (int k = 0; k < ships.Count; k++)
         {
@@ -368,6 +385,8 @@ public sealed class ShipDrawList
             double horiz = Math.Sqrt(sx * sx + sy * sy);
             double sprite = wakeOnly ? 0 : art != null && pxPerM >= art.MinPxPerM ? world : 0;
             var (sea, fade) = c != null && art != null ? SeaOf(c, art, ships, k, timeMs) : (Vector4.Zero, 1.0);
+            var (gray, left) = isFading ? FadingShade(timeMs - ships.SeenMs[k]) : (0, 1);
+            fade *= left;
             placed[placedCount] = new Placed
             {
                 Rel = rel, F = f, S = s, PxPerM = pxPerM, LengthPx = lengthPx, IconL = iconL, IconW = iconW,
@@ -376,7 +395,7 @@ public sealed class ShipDrawList
                 SunTan = Math.Max(sz / Math.Max(horiz, 1e-9), 0.15), ShadowOpacity = opacity,
                 Shadows = !wakeOnly && sz > 0.05 && lengthPx >= ShadowFromPx && opacity > 0,   // none in time-lapse: they'd spin
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
-                View = ships, Row = k, Cls = c, Sea = sea, Fade = fade,
+                View = ships, Row = k, Cls = c, Sea = sea, Fade = fade, Gray = gray,
                 SeaSpan = c != null ? Math.Max(0, -sea.X + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2) : 0,
             };
             if (k < drawnAs.Length && !wakeOnly)
@@ -638,7 +657,7 @@ public sealed class ShipDrawList
         // along and across, soot the casing in px, plus 100 when selected)
         double l = p.IconL / p.PxPerM, w = p.IconW / p.PxPerM, pad = (IconCasingPx + (selected ? IconGlowPx : 0) + 1) / p.PxPerM;
         Emit(ref p, null, -l / 2 - pad, -w / 2 - pad, l + 2 * pad, 0, 0, w + 2 * pad, mode: 2, opacity: p.IconAlpha, roof: pad / (l + 2 * pad),
-            selected ? SelectedTint : PlayerSide < 0 ? SideTints[p.Side < SideTints.Length ? p.Side : 0] : p.Side == PlayerSide ? FriendTint : EnemyTint, IconSea(p),
+            selected ? SelectedTint : Vector4.Lerp(PlayerSide < 0 ? SideTints[p.Side < SideTints.Length ? p.Side : 0] : p.Side == PlayerSide ? FriendTint : p.Side == 255 ? MapPalette.Unknown : EnemyTint, FadingTint, (float)p.Gray), IconSea(p),
             cover: (float)(pad / (w + 2 * pad)), soot: (float)(IconCasingPx + (selected ? 100 : 0)));
     }
 
@@ -676,7 +695,8 @@ public sealed class ShipDrawList
             U = new Vector4((float)u.X, (float)u.Y, (float)u.Z, (float)opacity),
             V = new Vector4((float)v.X, (float)v.Y, (float)v.Z, (float)roof),
             Ship = new Vector4((float)ox, (float)oy, (float)ux, (float)uy),
-            ShipV = new Vector4((float)vx, (float)vy, cover, soot),
+            // a sprite's soot (0-1), plus 2 per 32nd of gray (shipmap.frag); the icon's carries its casing and takes its gray in its tint
+            ShipV = new Vector4((float)vx, (float)vy, cover, mode == 2 ? soot : soot + 2 * MathF.Round((float)p.Gray * 32)),
             Sun = new Vector4(p.SunDir, (float)p.SunTan, (float)p.ShadowOpacity),
             March = march,
             Hmap = hmap,

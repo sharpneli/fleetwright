@@ -66,6 +66,10 @@ public struct Contact
     /// Z6: a fix on the smoke keeps her track, <see cref="SeenMs"/> its time); whether her lights were (docs/battle/night.md
     /// Q2: her salvo's flash, her funnels' glow).</summary>
     public bool InSight, SmokeInSight, LightInSight;
+
+    /// <summary>When the ship herself was last in sight (0: never, only her smoke or lights): the map's fade, read by nothing
+    /// in the sim, so not hashed.</summary>
+    public long ShipSeenMs;
     public Vec3d Position, Velocity;
     public Cov4 P;
     public ContactLevel Level;

@@ -150,12 +150,18 @@ public sealed partial class MapScene
     /// at most <see cref="MaxPips"/>. A ship laid on her but silent has no pip: her tick says it, faint.</summary>
     void Pips(in MapView view, Snapshot s, int target, long now, FireOn on)
     {
-        bool own = shipIndex.TryGetValue(target, out int k);
-        if (!own && !sightedIndex.TryGetValue(target, out k))
-            return;   // a target out of sight: no ship to put them on
+        ShipsView v;
+        if (shipIndex.TryGetValue(target, out int k))
+            v = s.Ships;
+        else if (sightedIndex.TryGetValue(target, out k))
+            v = s.Sighted;
+        else if (fadingIndex.TryGetValue(target, out k))
+            v = s.Fading;
+        else
+            return;   // no ship drawn to put them on
         if (!TargetAt(s, target, now, out var at) || !view.Project(at, out double x, out double y))
             return;
-        double r = IconLengthAt(view, own ? s.Ships.Class[k] : s.Sighted.Class[k], at) / 2 + 5 * Rp;
+        double r = IconLengthAt(view, v.Class[k], at) / 2 + 5 * Rp;
         int n = Math.Min(on.FriendFiring + on.HostileFiring, MaxPips);
         double step = 4.2 * Rp / r, a0 = -Math.PI / 2 - step * (n - 1) / 2;
         for (int p = 0; p < n; p++)

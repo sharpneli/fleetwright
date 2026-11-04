@@ -45,12 +45,18 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
   in a turn it may differ from the arrowhead. **Every mark on her goes where she's drawn** (`ContactAt`, user: the player
   needn't see the spotting error): the fire pips, label, course line, night ticks, lit rings. The sim still aims by the
   estimate, and the rail's and card's figures are still the navy's.
-- **A ship lost**: nothing on the map, no mark, label, pips or pick (user: with ships going in and out of view, the ellipses
-  looked like the enemy formation blowing bubbles; the diamond and course tick went first). The rail still lists her;
-  selected there, her 2σ ellipse (5 px at least) and course line show where she's reckoned. Fire lines to her stay on
-  intent and each shooter keeps its bearing tick.
+- **A ship lost** goes gray and fades (`Snapshot.Fading`, `ShipDrawList.FadingShade`), icon, arrowhead and sprite alike: gray
+  over 20 s, whole until 2 min, gone at 5 min, game time, so the same at any clock speed in game terms. Half the ships lost at
+  the Jutland are back within 35 s and nine in ten within 106 s, so most only go gray and back. She's drawn where she really
+  is: a deliberate cheat (user, 2026-11-04: it tells the player a little more than the navy holds, for tactics only, and a
+  human cares that a ship is there, not exactly where). Only the map reads `Fading`; fire control and the AI stay on the
+  estimate. While she shows, she keeps her pips and can be hovered and picked. After that, nothing on the map, no mark,
+  label, pips or pick (user: with ships going in and out of view, the ellipses looked like the enemy formation blowing
+  bubbles; the diamond and course tick went first). The rail still lists her; selected there, her 2σ ellipse (5 px at
+  least) and course line show where she's reckoned. Fire lines to her stay on intent and each shooter keeps its bearing tick.
 - **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its bearing only on intent. A ship
-  seen only by her smoke can be hovered at her reckoned place, then shows her ellipse. Smoke no longer in sight has nothing
+  seen only by her smoke fades like any ship lost: the fade runs from when she herself was last seen (`Contact.ShipSeenMs`), not
+  her smoke. After it she can be hovered at her reckoned place, then shows her ellipse. Smoke no longer in sight has nothing
   on the map and no pick.
 - **Unknowns** (friend or foe not made out) the same, in the unknown's cream: her icon while in sight; the quatrefoil stays
   in the rail. **Lights** their spark and bearing.
@@ -67,3 +73,5 @@ off the ships they marked. Side by side at 16:15, 6 m/px: `png/contacts-lost.png
   playtesting says so.
 - Arrowheads stack in a tight column; 2 px if it bothers in play.
 - Contact labels never show (`docs/battle/bugs.md`); the hover names a ship.
+- A ship coming into sight still pops in, and a fading one snaps back to full colour; a short ease if it bothers in play.
+- The fade's gray on sprites (close zoom) hasn't been judged by eye: a ghost wasn't on screen in a capture with the art in.

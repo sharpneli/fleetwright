@@ -137,6 +137,36 @@ public class PictureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_ship_lost_fades_from_the_snapshot_as_she_is_for_a_while()
+    {
+        var w = Closing(Day, 25_000);
+        w.Apply(Command.SetPlayerSide(1));
+        var snap = new Snapshot();
+        FirstSeen(w);
+        var pic = w.Sightings.Of(1)!;
+        while (!pic[pic.IndexOf(2)].InSight)
+            Run(w, 5);
+        w.Fill(snap);
+        Assert.True(snap.Sighted.IndexOf(2) >= 0);
+        Assert.True(snap.Fading.IndexOf(2) < 0, "in sight: not fading");
+
+        while (pic[pic.IndexOf(2)].InSight)
+            Run(w, 10);
+        long lost = pic[pic.IndexOf(2)].ShipSeenMs;
+        w.Fill(snap);
+        int k = snap.Fading.IndexOf(2);
+        Assert.True(snap.Sighted.IndexOf(2) < 0, "out of sight");
+        Assert.True(k >= 0, "fading");
+        Assert.Equal(lost, snap.Fading.SeenMs[k]);
+        Assert.True(Earth.Distance(snap.Fading.PoseAt(k, w.Time.Ms).Position, Ship(w, 2).Position) < 1, "where she is");
+
+        w.AdvanceTo(new WorldTime(lost + Snapshot.FadingMs));
+        Assert.False(pic[pic.IndexOf(2)].InSight);
+        w.Fill(snap);
+        Assert.True(snap.Fading.IndexOf(2) < 0, "faded");
+    }
+
+    [Fact]
     public void At_night_only_a_few_kilometres()
     {
         var w = Closing(WorldTime.FromUtc(1916, 1, 15, 23), 25_000);   // a winter midnight
