@@ -69,14 +69,14 @@ Then sort the losses into causes and count them by side and scenario. Starting g
 | Fair fight | Stood in line, shot at the record's ranges, sank |
 
 **Start with Jutland and the Dogger Bank**, furthest over the record, then compare sides. The existing pieces: `end.Timeline` and `CombatLog` (who hit whom), `scenario --play`'s fell-out and main-guns tallies, `--fire-table` (hits by range band), `ScenarioPlay.PlayToEnd`'s minute callback,
-`ai.Tasks.Of`, `ai.Captains.Of`, `ai.Commanders.PhaseOf`. The probe `tests` used in the electrics session wasn't kept, but the per-seed loop in this note's first lead took a few lines.
+`ai.Tasks.Of`, `ai.Captains.Of`, `ai.Commanders.PhaseOf`. The electrics session's probes weren't kept; a per-seed loop over a scenario is only a few lines (`AimsTests.Play` shows the shape).
 
 ## Rules that apply (the user's, in memory)
 
 - Find the mechanism first; don't tune a number to bring losses down (`isolate-before-tuning`, `mild-rules-first-principles`, `physics-is-the-only-yardstick`). Effects enter for every battle, never to fix one.
 - More sinkings than history are acceptable until damage control's whole (`no-historical-tuning-without-dc`). AI choices are a leading admiral's judgement with thresholds (`admiral-judgement-not-fixed-rules`); the AI estimates what's true and optimism is doctrine's (`ai-expectation-not-optimism`).
 - Read a hit rate beside its range (`hit-rate-with-range`). Time limits are a testing aid; never end a fight in progress (`no-time-cutoffs`).
-- A single seed proves little: the convoy test passed for months on a seed that turned out to be one of the odd ones, and passed for the wrong reason at that. Sweep seeds early.
+- A single seed proves little: the convoy test rested on one seed, which went odd after a change of under 1% in displacement, while 11 of 12 seeds still behaved. Sweep seeds early.
 
 ## Numbers from the electrics work worth suspecting if power shows up in the post-mortems
 
