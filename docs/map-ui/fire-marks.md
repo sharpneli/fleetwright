@@ -45,18 +45,18 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
   in a turn it may differ from the arrowhead. **Every mark on her goes where she's drawn** (`ContactAt`, user: the player
   needn't see the spotting error): the fire pips, label, course line, night ticks, lit rings. The sim still aims by the
   estimate, and the rail's and card's figures are still the navy's.
-- **A ship lost**: the 2σ ellipse alone, the diamond and course tick gone (user: no separate icons): a ring of at least 5 px
-  from the moment she's lost, growing, gone between 80 and 300 px (major semi-axis on screen, reference px), where it no
-  longer locates her; hovered or selected it's shown whatever its size. Only a ship out of sight can be picked by her
-  reckoned place; one in sight is picked by her ship.
-- **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its label while it's in sight;
-  its bearing only on intent. A held ship seen only by her smoke has her label, her ellipse only on intent. Smoke alone no
-  longer in sight has nothing on the map, no label and no pick; the rail still lists it.
-- **Unknowns** (friend or foe not made out) the same, in the unknown's cream: her icon in sight, the ellipse once lost; the
-  quatrefoil stays in the rail. **Lights** their spark and bearing.
-- **The course line only on intent**: selected, hovered, Tab held.
+- **A ship lost**: nothing on the map, no mark, label, pips or pick (user: with ships going in and out of view, the ellipses
+  looked like the enemy formation blowing bubbles; the diamond and course tick went first). The rail still lists her;
+  selected there, her 2σ ellipse (5 px at least) and course line show where she's reckoned. Fire lines to her stay on
+  intent and each shooter keeps its bearing tick.
+- **Smoke**: the smoke itself, from the field, is the mark (user): no ellipse, no smudge. Its bearing only on intent. A ship
+  seen only by her smoke can be hovered at her reckoned place, then shows her ellipse. Smoke no longer in sight has nothing
+  on the map and no pick.
+- **Unknowns** (friend or foe not made out) the same, in the unknown's cream: her icon while in sight; the quatrefoil stays
+  in the rail. **Lights** their spark and bearing.
+- **The course line only on intent**: selected or hovered; with Tab held, every ship in sight.
 
-The diamonds weren't doubles of the ships beside them. At the Jutland (16:10-16:15, side 0) no ship had both: about 26
+The diamonds weren't doubles of the ships beside them (the marks of 2026-11-04's second pass, before the ellipses went). At the Jutland (16:10-16:15, side 0) no ship had both: about 26
 contacts were in sight and 14 out, 5 of those by their smoke. But a lost ship's mark can fall right by ships still in the
 line (three of the six at 16:15 within 200-400 m of one), so it read as a copy. The pips did float, on the estimate, clearly
 off the ships they marked. Side by side at 16:15, 6 m/px: `png/contacts-lost.png` (before, after).
@@ -66,3 +66,4 @@ off the ships they marked. Side by side at 16:15, 6 m/px: `png/contacts-lost.png
 - Pips crowd where targets lie close together (the German line at 16:15); a count beside one pip past three, if
   playtesting says so.
 - Arrowheads stack in a tight column; 2 px if it bothers in play.
+- Contact labels never show (`docs/battle/bugs.md`); the hover names a ship.

@@ -487,15 +487,15 @@ public sealed partial class MapScene
         return true;
     }
 
-    /// <summary>The contact out of sight reckoned under the cursor (within a few pixels), or -1: one in sight is picked by
-    /// her ship.</summary>
+    /// <summary>The contact seen only by her smoke or a light reckoned under the cursor (within a few pixels), or -1: one in
+    /// sight is picked by her ship, one with nothing on the map from the rail.</summary>
     static int PickContact(in MapView view, Snapshot s, double x, double y)
     {
         var c = s.Contacts;
         int best = -1;
         double bestD = ContactSpotPx * 3;
         for (int i = 0; i < c.Count; i++)
-            if (!c.InSight[i] && !IsOldSmoke(c, i) && view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
+            if (!c.InSight[i] && !NothingDrawn(c, i) && view.Project(c.Position[i], out double cx, out double cy) && Math.Abs(cx - x) + Math.Abs(cy - y) < bestD)
                 (best, bestD) = (c.Entity[i], Math.Abs(cx - x) + Math.Abs(cy - y));
         return best;
     }

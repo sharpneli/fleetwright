@@ -146,15 +146,16 @@ public sealed partial class MapScene
         overlay.End();
     }
 
-    /// <summary>A target's pips: one a ship firing on her, on an arc over her ring, ours (friend) then theirs (hostile);
+    /// <summary>A target's pips, on a ship drawn: one a ship firing on her, on an arc over her ring, ours (friend) then theirs (hostile);
     /// at most <see cref="MaxPips"/>. A ship laid on her but silent has no pip: her tick says it, faint.</summary>
     void Pips(in MapView view, Snapshot s, int target, long now, FireOn on)
     {
+        bool own = shipIndex.TryGetValue(target, out int k);
+        if (!own && !sightedIndex.TryGetValue(target, out k))
+            return;   // a target out of sight: no ship to put them on
         if (!TargetAt(s, target, now, out var at) || !view.Project(at, out double x, out double y))
             return;
-        double r = shipIndex.TryGetValue(target, out int k) ? IconLengthAt(view, s.Ships.Class[k], at) / 2 + 5 * Rp
-            : s.Sighted.IndexOf(target) is int j and >= 0 ? IconLengthAt(view, s.Sighted.Class[j], at) / 2 + 5 * Rp
-            : (ContactSpotPx + 5) * Rp;
+        double r = IconLengthAt(view, own ? s.Ships.Class[k] : s.Sighted.Class[k], at) / 2 + 5 * Rp;
         int n = Math.Min(on.FriendFiring + on.HostileFiring, MaxPips);
         double step = 4.2 * Rp / r, a0 = -Math.PI / 2 - step * (n - 1) / 2;
         for (int p = 0; p < n; p++)

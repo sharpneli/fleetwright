@@ -9,9 +9,9 @@ namespace Fleetwright.Map;
 
 /// <summary>The player's picture on the map (docs/battle/plan.md step 3.2e; docs/map-ui/README.md "Uncertainty on the
 /// map", docs/map-ui/fire-marks.md "Contacts"): a ship in sight is her own icon and an arrowhead off her bow, and every mark
-/// on her goes where she's drawn (<see cref="ContactAt"/>); lost, the error ellipse (2 sigma) about where her navy reckons
-/// her, growing, fading with age. The five-minute course line only on intent (selected, hovered, Tab held). Its label says
-/// what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon
+/// on her goes where she's drawn (<see cref="ContactAt"/>); lost, nothing on the map, the rail holds her, and selected there
+/// the error ellipse (2 sigma) about where her navy reckons her. The five-minute course line only on intent (selected,
+/// hovered, Tab held). Its label says what it's taken for: a ship, its type, its class (with a "?": it may be wrong), its name. Smoke on the horizon
 /// (docs/battle/smoke.md Z6) is the smoke itself, drawn by the field: a label while it's in sight, its bearing on intent,
 /// no course until she's seen. A light in the dark (docs/battle/night.md Q2: a salvo's flash, a funnel's glow) is a small spark where
 /// it's reckoned, with its bearing while it's in sight (placeholder marks until the night's UI, Q9).</summary>
@@ -21,7 +21,6 @@ public sealed partial class MapScene
     const double ContactCourseS = 300;          // the course line: five minutes' steaming
     const float ContactSpotPx = 5;              // a contact's size on screen, with no ship to measure a ring or a pick by
     const double BowArrowPx = 3;                // the arrowhead off a sighted ship's bow
-    const double ContactRingFullPx = 80, ContactRingGonePx = 300;    // the ellipse's major semi-axis on screen: out over these (reference px)
 
     /// <summary>Where the map shows a contact: a ship in sight where she's drawn, else where her navy reckons her.</summary>
     Vec3d ContactAt(Snapshot s, ContactsView c, int i) =>
@@ -45,28 +44,23 @@ public sealed partial class MapScene
             var p = c.Position[i];
             var col = ContactColour(c, i, now);
             bool picked = c.Entity[i] == selected || c.Entity[i] == hovered;
-            // the ellipse, 2 sigma, only while it's all there is to go by: a ship in sight is drawn as she is, smoke in the
-            // field (hers shown only on intent). It's there as she's lost and goes as it grows past locating her; the picked keeps hers
-            if (!c.InSight[i] && c.Level[i] != ContactLevel.Smoke && (picked || !c.SmokeInSight[i]))
+            // the ellipse, 2 sigma, only on the ship the player asks after: on every ship lost, rings came and went with ships
+            // going in and out of view, a formation blowing bubbles (user)
+            if (picked && !c.InSight[i] && c.Level[i] != ContactLevel.Smoke)
             {
-                double px = 2 * c.MajorM[i] / view.MetresPerPixel / Rp;
-                float shown = picked ? 1 : (float)(1 - SmoothStep(ContactRingFullPx, ContactRingGonePx, px));
-                if (shown > 0.01f)
+                double min = ContactSpotPx * Rp * view.MetresPerPixel;
+                double major = Math.Max(2 * c.MajorM[i], min), minor = Math.Max(2 * c.MinorM[i], min);
+                var ax = Earth.Forward(p, c.AxisDeg[i]);
+                var up = p.Normalized();
+                var across = Vec3d.Cross(up, ax);
+                int segs = overlay.Segments(major / view.MetresPerPixel);
+                overlay.BeginStrip(col with { W = col.W * 0.6f }, 1f);
+                for (int k = 0; k <= segs; k++)
                 {
-                    double min = ContactSpotPx * Rp * view.MetresPerPixel;
-                    double major = Math.Max(2 * c.MajorM[i], min), minor = Math.Max(2 * c.MinorM[i], min);
-                    var ax = Earth.Forward(p, c.AxisDeg[i]);
-                    var up = p.Normalized();
-                    var across = Vec3d.Cross(up, ax);
-                    int segs = overlay.Segments(major / view.MetresPerPixel);
-                    overlay.BeginStrip(col with { W = col.W * 0.6f * shown }, 1f);
-                    for (int k = 0; k <= segs; k++)
-                    {
-                        double a = k * Math.PI * 2 / segs;
-                        ClipPoint(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
-                    }
-                    overlay.EndClosed();
+                    double a = k * Math.PI * 2 / segs;
+                    ClipPoint(view, (p + ax * (Math.Cos(a) * major) + across * (Math.Sin(a) * minor)).Normalized() * Earth.Radius);
                 }
+                overlay.EndClosed();
             }
             if (c.LightInSight[i] || c.SmokeInSight[i] && (picked || reveal))
             {
@@ -85,8 +79,8 @@ public sealed partial class MapScene
                 continue;
             if (c.LightInSight[i] || c.Level[i] == ContactLevel.Light)
                 Spark(x, y, MapPalette.Light with { W = MapPalette.Light.W * col.W });
-            if (c.Level[i] <= ContactLevel.Smoke || !picked && !reveal)
-                continue;   // smoke or a light alone: no course
+            if (c.Level[i] <= ContactLevel.Smoke || !picked && !(reveal && c.InSight[i]))
+                continue;   // smoke or a light alone: no course; nor, unasked after, a ship lost: there's nothing to draw it from
             var ahead = (at + c.Velocity[i] * ContactCourseS).Normalized() * Earth.Radius;
             if (view.Project(ahead, out double ax2, out double ay2) && Math.Abs(ax2 - x) + Math.Abs(ay2 - y) > 2)
             {
@@ -111,12 +105,6 @@ public sealed partial class MapScene
             var tint = (v.Side[j] == 255 ? MapPalette.Unknown : ShipDrawList.EnemyTint) with { W = (float)(0.9 * table) };
             symbols.Add(SymbolShape.Arrow, x + Math.Cos(a) * r, y + Math.Sin(a) * r, BowArrowPx * Rp, tint, tint, 0.5f, a);
         }
-    }
-
-    static double SmoothStep(double a, double b, double x)
-    {
-        double t = Math.Clamp((x - a) / (b - a), 0, 1);
-        return t * t * (3 - 2 * t);
     }
 
     /// <summary>The night ticks (docs/visuals/night-lights.md decision 1): in the world view at night, four corner ticks
@@ -270,7 +258,7 @@ public sealed partial class MapScene
                     overlay.Circle(sx, sy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
             var c = s.Contacts;
             for (int j = 0; j < c.Count; j++)
-                if (c.Level[j] > ContactLevel.Smoke && ContactAt(s, c, j) is var at && Earth.Distance(at, under) <= litM && view.Project(at, out double cx, out double cy))
+                if (c.InSight[j] && ContactAt(s, c, j) is var at && Earth.Distance(at, under) <= litM && view.Project(at, out double cx, out double cy))
                     overlay.Circle(cx, cy, 15 * Rp, MapPalette.Light with { W = (float)(0.9 * table) }, 1.4f, Dash.Dashed);
         }
     }
@@ -367,9 +355,10 @@ public sealed partial class MapScene
     // the contacts' labels, made when what they say changes
     readonly Dictionary<int, ((int, ContactLevel, int, ShipType, SeenFlags, bool, bool, long) Key, string Text)> contactTexts = [];
 
-    /// <summary>Smoke alone no longer in sight: nothing on the map says it, so nothing to label or pick (the rail still
-    /// lists it).</summary>
-    static bool IsOldSmoke(ContactsView c, int i) => c.Level[i] == ContactLevel.Smoke && !c.SmokeInSight[i];
+    /// <summary>A contact with no ship, smoke or light of hers on the map: nothing there says it, so nothing to label or
+    /// pick (the rail still lists it).</summary>
+    static bool NothingDrawn(ContactsView c, int i) =>
+        !c.InSight[i] && !c.SmokeInSight[i] && !c.LightInSight[i] && c.Level[i] != ContactLevel.Light;
 
     void ContactLabels(Snapshot s)
     {
@@ -380,7 +369,7 @@ public sealed partial class MapScene
         long now = world.DrawMs;
         for (int i = 0; i < c.Count; i++)
         {
-            if (IsOldSmoke(c, i) || !view.Project(ContactAt(s, c, i), out double x, out double y))
+            if (NothingDrawn(c, i) || !view.Project(ContactAt(s, c, i), out double x, out double y))
                 continue;
             var size = ImGui.CalcTextSize(ContactLabel(c, i, now));
             mapLabels.Add(LabelKind.Contact, c.Entity[i], i, c.InSight[i] || c.SmokeInSight[i] ? 2 : 4, vp.Pos.X + (float)(x * sx), vp.Pos.Y + (float)(y * sy),
