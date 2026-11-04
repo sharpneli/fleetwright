@@ -124,30 +124,30 @@ public class FallOutTests(ITestOutputHelper output)
         Assert.Equal(CaptainReason.None, ai.Captains.ReasonOf(1));
     }
 
-    /// <summary>A fault the captain judges temporary doesn't take her out of the line (the user, 2026-10-20; E7's fix): with
-    /// the whole ship's power out for 3 minutes her fitness reads her main guns whole; out for an hour, gone. The power cut
-    /// lasting doesn't slow her either way (the mounts are what it reaches).</summary>
+    /// <summary>A blackout doesn't take her out of the line (the user, 2026-10-20 and 2026-11-04), however long: her turrets
+    /// are worked by hand, slowly, so her fitness reads her main guns whole. It doesn't slow her either (the mounts are what
+    /// it reaches).</summary>
     [Fact]
-    public void A_blackout_for_minutes_leaves_her_fit_one_for_an_hour_does_not()
+    public void A_blackout_leaves_her_fit_her_turrets_worked_by_hand()
     {
         var c = Fleet.Get("dreadnought").Class!;
         var rule = new FallOutRule(0.5, 0.5, 15, 0.5);
-        foreach (var (min, whole) in new[] { (3.0, true), (60.0, false) })
+        foreach (double min in (double[])[3, 60])
         {
             var k = new ShipCondition();
             k.Reset(c);
             k.Damaged = true;
             long now = 600_000;
-            Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, (long)(min * 60_000), now, DownCause.NearMissCascade);
+            Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, (long)(min * 60_000), now);
             Functions.Evaluate(k, Settings, now, now + (long)(Settings.FallOutWaitMin * 60_000));
             var fit = Fitness.Of(c, k, 1000);
             output.WriteLine($"power out {min} min: mounts working {k.MountWorks.Count(m => m)} of {k.MountWorks.Length}, " +
                              $"main guns {fit.MainGunsShare:P0} to the captain, fall-out {rule.Of(fit)}");
             for (int m = 0; m < c.Mounts.Length; m++)
-                if (c.Enclosed(m))
-                    Assert.False(k.MountWorks[m]);   // what's worked by hand fires on (NonPenTests)
-            Assert.Equal(whole ? 1 : 0, fit.MainGunsShare);
-            Assert.Equal(whole ? FallOutCause.None : FallOutCause.Guns, rule.Of(fit));
+                Assert.Equal(c.Enclosed(m), k.ByHand(m, now));
+            Assert.DoesNotContain(false, k.MountWorks);
+            Assert.Equal(1, fit.MainGunsShare);
+            Assert.Equal(FallOutCause.None, rule.Of(fit));
         }
     }
 

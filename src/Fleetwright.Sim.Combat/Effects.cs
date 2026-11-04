@@ -274,8 +274,8 @@ public static class Effects
     /// <summary>The shock of a heavy hit that held, through the structure (E4; damage/13 §3.4): by the ship's shock grade
     /// and the impulse, each row a draw, its outage one length for all it reaches. Power (with director fire control
     /// only): tripped in zone A (the struck part, and what's within <see cref="SimSettings.ShockZoneAM"/> of the hit), a
-    /// section's in B (within <see cref="SimSettings.ShockZoneBM"/>), the whole ship's cascading out; mounts and directors
-    /// are silent while it's off. A director's gyro in A or B; a rangefinder in A out of adjustment. Gear the sim doesn't
+    /// section's in B (within <see cref="SimSettings.ShockZoneBM"/>), the whole ship's cascading out; mounts are worked by
+    /// hand and directors out while it's off. A director's gyro in A or B; a rangefinder in A out of adjustment. Gear the sim doesn't
     /// carry yet (the gyrocompass, radar, phones, cast iron) can't fail.</summary>
     static void Shock(ShipClass c, ShipCondition k, P3 at, int struck, double impulse, long now, SimSettings s, ref EffectsResult res,
         ref RandomStream r)
@@ -285,12 +285,12 @@ public static class Effects
         if (NonPen.Electrics(c))
         {
             if (r.NextDouble() < s.ShockLocalTrip[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now, DownCause.HitShock);
+                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now);
             if (r.NextDouble() < s.ShockSectionPower[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now, DownCause.HitShock);
+                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now);
             if (r.NextDouble() < s.ShockCascade[col] * g)
             {
-                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now, DownCause.HitCascade);
+                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now);
                 res.Blackout = true;
             }
             if (r.NextDouble() < s.ShockDirectorGyro[col] * g)
@@ -318,10 +318,11 @@ public static class Effects
 
     /// <summary>The power off for ms (E4's shock) to the mounts, directors and searchlights from <paramref name="from"/>
     /// (exclusive; -1 takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's
-    /// own (its mount, a conning tower's directors): mounts down, directors and searchlights out. A mount with a gunhouse
-    /// is the only kind worked by power; an open or casemate gun, and a torpedo mount, are worked by hand and don't notice
-    /// (<see cref="ShipClass.Enclosed"/>; 06 §1.4's "hand/steam backups"). Whether it reached any.</summary>
-    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now, DownCause why)
+    /// own (its mount, a conning tower's directors): mounts worked by hand (<see cref="NonPen.HandShare"/>), directors and
+    /// searchlights out. A mount with a gunhouse is the only kind worked by power; an open or casemate gun, and a torpedo
+    /// mount, are worked by hand always and don't notice (<see cref="ShipClass.Enclosed"/>; 06 §1.4's "hand/steam backups").
+    /// Whether it reached any.</summary>
+    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now)
     {
         bool any = false;
         for (int m = 0; m < c.Mounts.Length; m++)
@@ -332,7 +333,7 @@ public static class Effects
             double d = mr.Component == struck || mr.Barbette == struck ? 0 : Distance(c, mr.Component, at);
             if (d <= to && (from < 0 || d > from))
             {
-                k.Down(mr.Component, now, ms, why);
+                k.PowerOff(m, now, ms);
                 any = true;
             }
         }

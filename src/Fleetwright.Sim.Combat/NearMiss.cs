@@ -482,7 +482,7 @@ public static class NearMiss
                     if (u < Ramp(n / grade, b[0], b[1]))
                     {
                         ms = ms < 0 ? NonPen.Minutes(s.NearTripMin, ref r) : ms;
-                        k.Down(mr.Component, now, ms, DownCause.NearMiss);
+                        k.PowerOff(m, now, ms);
                         res.Shock = true;
                     }
                 }
@@ -504,7 +504,7 @@ public static class NearMiss
             // the whole ship's by her machinery spaces' (15 §3.3: White Plains' "most of the circuit breakers" at 0.3-0.6)
             if (Chance(plant >= 0 ? Ramp(plant / grade, s.NearPlantTrip[0], s.NearPlantTrip[1]) : Ramp(nsf / grade, b[2], b[3]), ref r))
             {
-                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMissCascade);
+                res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now);
                 res.Blackout = true;
             }
             // the gyros roll a failure (15 §6.4) at E4's chance for a heavy shock, the grade already in the edges

@@ -1920,10 +1920,12 @@ public sealed class GunnerySystem : IWorldSystem
                 shells.Fired(world, fc.Shooter, ship.ClassIndex, mounts[j], salvo, away, muzzle, first, firstEl);
                 world.Smoke.Gun(world, slot, cls, mounts[j], away, muzzle, first, firstEl);   // its smoke (docs/battle/smoke.md Z4)
             }
-            // the reload stretched by the gun crew at work, the hoists by the handling men (docs/battle/crew.md N2)
+            // the reload stretched by the gun crew at work, the hoists by the handling men (docs/battle/crew.md N2), both
+            // by hand with its power off
             var mc = store.Combat.Condition(slot);
-            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, crew.Load / mc.MountCrew[mounts[j]],
-                world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare / mc.MountSupply[mounts[j]]);
+            double hand = mc.ByHand(mounts[j], now) ? settings.HandReload : 1;
+            store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, hand * crew.Load / mc.MountCrew[mounts[j]],
+                hand * world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare / mc.MountSupply[mounts[j]]);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)

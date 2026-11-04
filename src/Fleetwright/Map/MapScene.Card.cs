@@ -702,6 +702,8 @@ public sealed partial class MapScene
             : U8.W($"{Rounds(d.MountAp[j])} · {Rounds(d.MountCommon[j])} · {Rounds(d.MountHe[j])}");
         float rx = right - Width(UiFonts.Mono, rounds);
         x = Words(r, x, rx - P(6), st is MountStatus.Ready or MountStatus.Loading ? T.Text : MountInk(st), text);
+        if (d.MountByHand[j])
+            x = Words(r, x + P(4), rx - P(6), T.Amber, "· by hand"u8);
         if (d.MountGunsOut[j] > 0)
             Words(r, x + P(4), rx - P(6), T.Amber, U8.W($"· {d.MountGunsOut[j]} gun out"));
         Figure(r, right, st == MountStatus.Out ? T.Muted : T.Bright, rounds);

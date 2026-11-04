@@ -69,7 +69,7 @@ public class SearchlightTests(ITestOutputHelper output)
 
         k.Reset(c);
         long now = 600_000;
-        Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, 3 * 60_000, now, DownCause.HitCascade);
+        Effects.PowerOut(c, k, new P3(0, 0, 0), -1, -1, double.PositiveInfinity, 3 * 60_000, now);
         Functions.Evaluate(k, Settings, now, now);
         Assert.DoesNotContain(true, k.SearchlightWorks);
         k.Clear(now + 3 * 60_000);

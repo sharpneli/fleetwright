@@ -700,8 +700,7 @@ static class ScenarioPlay
         {
             public static readonly string[] Names = ["magazine flooded by order", "magazine flooded by the sea", "magazine spent (its race)",
                 "magazine put out by a hit", "gunhouse destroyed", "gunhouse out of action", "barbette out", "jammed", "guns out",
-                "down: a crew stunned", "down: a hit's shock round it", "down: a hit's shock through the ship", "down: a near miss round it",
-                "down: a near miss through the ship", "down: her own guns' breakers", "down: feed", "down: smoke", "down: unknown"];
+                "down: a crew stunned", "down: feed", "down: smoke", "down: unknown"];
             public readonly int[] By = new int[Names.Length];
             public int Ships, Mounts, Barrels, Out, OutBarrels;
 
@@ -745,7 +744,7 @@ static class ScenarioPlay
                 return k.Has(mr.Component, PartFlags.Jammed) ? 7 : 8;
             }
 
-            static int Down(DownCause why) => why == DownCause.None ? 17 : 8 + (int)why;
+            static int Down(DownCause why) => why == DownCause.None ? 12 : 8 + (int)why;
 
             public string Text()
             {

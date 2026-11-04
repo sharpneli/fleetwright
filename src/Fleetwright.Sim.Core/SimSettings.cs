@@ -1704,6 +1704,12 @@ public sealed record SimSettings
     public double[] JamDebrisMin { get; init; } = [3, 40];
     public double[] JamDeckMin { get; init; } = [60, 600];
     public double StiffTrain { get; init; } = 0.4;
+    /// <summary>A gunhouse worked by hand, its power off (<see cref="HandReload"/>: damage-research/02, a reload 2-4 times
+    /// as long, its hoists too [UNCERTAIN: no published figure]): the power at its cranks, W, six men at 100 W (06's hand
+    /// fallback), and its rollers' friction [EST]; 0.15°/s on a 606 t turret against emergency-eyeball.md's 0.1-0.3.</summary>
+    public double HandTrainW { get; init; } = 600;
+    public double RollerFriction { get; init; } = 0.007;
+    public double HandReload { get; init; } = 3;
     public double StiffBattleShare { get; init; } = 0.5;
     public double[] StiffMin { get; init; } = [20, 180];
     public double GunOutBattleShare { get; init; } = 0.5;

@@ -1755,17 +1755,23 @@ squadrons, and changes `Matchup.cs` with it.
       38,000 t battlecruiser.
     - **Only a gunhouse is worked by power:** `Effects.PowerOut` and the near miss's breakers skip the mounts that aren't
       `ShipClass.Enclosed`. In all the designs that is exactly the mounts with a barbette; open and casemate guns (up to
-      Connecticut's 7") were trained and loaded by hand (06: the early ships' "hand and steam backups"). E4's choice
-      that a mount losing power is silent stands, for the mounts that have it. Directors and searchlights go out as
-      before, so a hand-worked gun in a blackout fires in local control.
+      Connecticut's 7") were trained and loaded by hand (06: the early ships' "hand and steam backups"). Directors and
+      searchlights go out as before, so a hand-worked gun in a blackout fires in local control.
+    - **A gunhouse with its power off works by hand (the user, 2026-11-04, over E4's "silent"):** `MountHarm.PowerUntil`,
+      not `Down`: the mount fires on, so no outage of power takes a ship out of the line however long, and E7's "one of an
+      hour doesn't" no longer applies to power (`MountLasts` still reads stuns, jams and the rest). It trains by
+      `NonPen.HandShare`, the men at the cranks against the friction on its rollers, ω = P / (μ·m·g·r): six men at 100 W
+      (06's hand fallback) and μ 0.007 [EST] give a 606 t turret 0.16°/s against 2.3 by power (emergency-eyeball.md's
+      0.1-0.3; 02's "about 10%"), a 38 t twin 4.7°/s against 23. Reload and hoists at 3× (`HandReload`; 02's 2-4×
+      [UNCERTAIN]). Elevation isn't slowed (manual-gunnery: hand elevation changes little). The card says "by hand".
     - **The whole ship's trip by the plant's own shock:** E7 took the machinery spaces' NSF at the point nearest the burst,
       the hull's own skin beside it. Her dynamos and switchboards stand on the floor on the centreline, so it's read
       there, abreast the burst or at the space's nearer end: a small charge alongside shakes a patch of hull and no longer
       the plant (√W/R falls by the half-beam). The space's own harm stays by its nearest point.
     - **The band moved with the point** (`NearPlantTrip`, 0.16-0.25 [EST], for E7's 0.2-0.45 at the hull), because the band
       was measured against the hull's reading. Fitted to the White Plains case, a 46 cm burst under a destroyer's bilge:
-      trips 0.67 at 5 m and 0.26 at 8 m against 0.70 and 0.20 before, the test's assertions as they were. It's still that
-      one case: E7's restated anchor still awaits the user.
+      trips 0.67 at 5 m and 0.26 at 8 m against 0.70 and 0.20 before, the test's assertions as they were. E7's restated
+      anchor and this refit approved (the user, 2026-11-04).
     - **Before and after**, the same 44 games (they part at the first change, so roughly): mass outages by power 49 → 2
       (both on Swedish coast defence ships at Åland); blackouts from near misses 21 → 0, from hits 16 → 9; mount-minutes
       lost to power, guns under 200 mm 7,216 → 45, heavy guns 947 → 773 (about 1.0% → 0.8% of their time). What's left is

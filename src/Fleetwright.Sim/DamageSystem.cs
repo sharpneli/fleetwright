@@ -569,6 +569,7 @@ public sealed class DamageSystem : IWorldSystem
                     : st.LoadedMs > now ? (MountStatus.Loading, st.LoadedMs)
                     : (MountStatus.Ready, 0L);
                 d.MountGunsOut[i] = harm.GunUntil > now ? harm.GunsOut : 0;
+                d.MountByHand[i] = harm.PowerUntil > now;
                 (d.MountAp[i], d.MountCommon[i], d.MountHe[i], d.MountStar[i]) = (0, 0, 0, 0);
             }
             var lo = store.Combat.Loadout(slot);
@@ -827,7 +828,7 @@ public sealed class DamageSystem : IWorldSystem
         ref readonly var m = ref c.Mounts[mount];
         var at = new P3(m.X, m.Y, c.Components[m.Component].Bounds.Base);
         long now = world.Time.Ms;
-        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now, DownCause.OwnGuns))
+        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now))
             return;
         k.Damaged = touched = true;
         Recompute(world, slot, k, ref r);
@@ -862,13 +863,16 @@ public sealed class DamageSystem : IWorldSystem
         Remind(world, slot, k);
     }
 
-    /// <summary>Its mounts train as stiffly as their hits left them, now (E4).</summary>
+    /// <summary>Its mounts train as stiffly as their hits left them and by hand with their power off, now (E4).</summary>
     void Stiffen(World world, int slot, ShipCondition k)
     {
         var mounts = k.Class.Mounts;
         long now = world.Time.Ms;
         for (int m = 0; m < mounts.Length; m++)
-            ships.Store.Combat.SetStiff(slot, m, mounts[m], now, k.Stiff(m, now) ? 1 - settings.StiffTrain : 0);
+        {
+            double rate = (k.Stiff(m, now) ? settings.StiffTrain : 1) * (k.ByHand(m, now) ? NonPen.HandShare(k.Class, mounts[m], settings) : 1);
+            ships.Store.Combat.SetStiff(slot, m, mounts[m], now, 1 - rate);
+        }
     }
 
     /// <summary>Its next timed outage's end (E4) has its event: set, or set sooner (the one it replaces is cancelled by

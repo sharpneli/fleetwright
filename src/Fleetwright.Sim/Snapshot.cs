@@ -234,6 +234,8 @@ public sealed class ShipDetailView
     public int Mounts;
     public MountStatus[] Mount = [];
     public long[] MountUntilMs = [];
+    /// <summary>Each mount worked by hand now, its power off.</summary>
+    public bool[] MountByHand = [];
     public int[] MountGunsOut = [], MountAp = [], MountCommon = [], MountHe = [], MountStar = [];
 
     // the parties' pool
@@ -264,6 +266,7 @@ public sealed class ShipDetailView
         n = Math.Max(n, Math.Max(32, Mount.Length * 2));
         Array.Resize(ref Mount, n);
         Array.Resize(ref MountUntilMs, n);
+        Array.Resize(ref MountByHand, n);
         Array.Resize(ref MountGunsOut, n);
         Array.Resize(ref MountAp, n);
         Array.Resize(ref MountCommon, n);

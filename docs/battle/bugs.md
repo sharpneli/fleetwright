@@ -443,8 +443,9 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   seeds, every ship every 5 s) had 49 cases of a ship losing 40% or more of her mounts at a stroke by power: Moltke 21 to
   5 from one 343 mm shell her armour stopped, Seydlitz 21 to 0 from the near miss of one 152 mm shell. Fixed: only a
   gunhouse is worked by power (`ShipClass.Enclosed`), and the whole ship's near-miss trip reads the shock where the
-  plant stands (docs/battle/shells-armour-damage.md E7): 2 such cases, near-miss blackouts 21 to 0. Left: a gunhouse is
-  still silent for the outage, and G0's rates are 1939-42's (E7's open items, for the user).
+  plant stands (docs/battle/shells-armour-damage.md E7): 2 such cases, near-miss blackouts 21 to 0. And a gunhouse with
+  its power off is worked by hand, slowly, not silent (the user, the same day). Left: G0's rates are 1939-42's; the user:
+  from how electrified a ship is, what she gains by it, no era multiplier.
 - [ ] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan): a 102 mm HE burst
   inside S15 (1,556 t) opened 18.6 m², a 152 mm 17.8 m² in V189, with nobody hurt. `Blast.Cascade`: a thin outside face
   whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side

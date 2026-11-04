@@ -12,6 +12,22 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-04 - What a warship's electric plant fed, consumer by consumer, 1890-1945
+- Question: how electrified ships were, by what they carried rather than by year. (1) The battle load in kW by
+  consumer type: turret training, elevation, hoists and rammers (a heavy turret and a light one), remote power control,
+  directors and their transmission, fire-control tables, gyros and stable verticals, searchlights, ventilation fans,
+  drainage and fire pumps, steering, lighting; against the plants recorded (Dreadnought's few hundred kW, Prince of
+  Wales's 2,640, Bismarck's 7,910). (2) What drove turrets by navy and period: hand, steam-driven hydraulic (RN pumping
+  engines: do these care about an electric trip at all?), electro-hydraulic (Waterbury), electric. What each drive gained
+  over the others, in training rate, reload and weight. (3) What each consumer did when the power went: stopped, fell
+  to hand or steam, ran on batteries; what a fire-control table and a director lost. (4) The trip itself: fuses and knife
+  switches against breakers, parallel running of dynamos, and any record of ship-wide power loss from shellfire before
+  1925 (damage/13 §3.3 has switchboards failing "mostly through flooding and splinters").
+- Context / relevant files: `docs/battle/shells-armour-damage.md` E7's open item, `NonPen.Electrics` (today a yes or no
+  on director firing), `damage-research/02-components.md` §8-9, `06-service-networks.md`. The user: exposure follows how
+  electrified a ship is, itself from what it gains by that; no era multiplier. Not blocking the first steps.
+- Wanted output: a consumer table (kW, what fails to, ranges by type and period), drives by navy and period with sources.
+
 ### 2026-11-01 - Fire distribution and cripples, 1890-1925 first
 - Question: what the fleets' doctrine said about whom the guns fire on, and what they did. (1) Fire distribution: the
   rules each navy gave its lines (the Grand Fleet Battle Orders' ship for ship from the van or the rear, concentrating,

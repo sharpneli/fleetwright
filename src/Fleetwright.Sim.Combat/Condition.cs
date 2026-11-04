@@ -77,11 +77,6 @@ public enum DownCause : byte
 {
     None,
     Stunned,
-    HitShock,
-    HitCascade,
-    NearMiss,
-    NearMissCascade,
-    OwnGuns,
     Feed,
     Smoke,
 }
@@ -116,12 +111,13 @@ public enum JoinMark : byte
 }
 
 /// <summary>What hits that held left a mount (docs/battle/shells-armour-damage.md E4; damage/13 §1): jammed in train (its
-/// component's <see cref="PartFlags.Jammed"/>, by a cause) until a time, stiff until one, guns out until one, its sights
-/// gone. Times are world ms; 0 none, <see cref="NonPen.Battle"/> the rest of the battle.</summary>
+/// component's <see cref="PartFlags.Jammed"/>, by a cause) until a time, stiff until one, worked by hand with its power off
+/// until one, guns out until one, its sights gone. Times are world ms; 0 none, <see cref="NonPen.Battle"/> the rest of the
+/// battle.</summary>
 public struct MountHarm
 {
     public JamCause Jam;
-    public long JamUntil, StiffUntil, GunUntil;
+    public long JamUntil, StiffUntil, PowerUntil, GunUntil;
     public int GunsOut;
     public bool Sights;
 }
@@ -793,6 +789,16 @@ public sealed class ShipCondition
         Down(row.Component, now, h.StunMs, DownCause.Stunned);
     }
 
+    /// <summary>A mount's power off, from now for ms (E4's shock): worked by hand until then, or later if it already was.</summary>
+    public void PowerOff(int mount, long now, long ms)
+    {
+        if (ms <= 0)
+            return;
+        long until = Until(now, ms);
+        Mount[mount].PowerUntil = Math.Max(Mount[mount].PowerUntil, until);
+        Due(until);
+    }
+
     /// <summary>A leak in a belt's plate at a point (E4): the plate loosened there.</summary>
     public void Leaked(int row, P3 at)
     {
@@ -814,6 +820,9 @@ public sealed class ShipCondition
 
     /// <summary>Whether a mount trains stiffly now (E4).</summary>
     public bool Stiff(int mount, long now) => Mount[mount].StiffUntil > now;
+
+    /// <summary>Whether a mount is worked by hand now, its power off (E4).</summary>
+    public bool ByHand(int mount, long now) => Mount[mount].PowerUntil > now;
 
     /// <summary>The guns a mount still fires of its barrels (E4: its guns out don't).</summary>
     public int Guns(int mount) => Math.Max(Class.TurretTypes[Class.Mounts[mount].Type].Barrels - Mount[mount].GunsOut, 0);
@@ -859,10 +868,13 @@ public sealed class ShipCondition
             }
             if (a.StiffUntil > 0 && a.StiffUntil <= now)
                 (a.StiffUntil, any) = (0, true);
+            if (a.PowerUntil > 0 && a.PowerUntil <= now)
+                (a.PowerUntil, any) = (0, true);
             if (a.GunUntil > 0 && a.GunUntil <= now)
                 (a.GunUntil, a.GunsOut, any) = (0, 0, true);
             next = Math.Min(next, Later(a.JamUntil, now));
             next = Math.Min(next, Later(a.StiffUntil, now));
+            next = Math.Min(next, Later(a.PowerUntil, now));
             next = Math.Min(next, Later(a.GunUntil, now));
         }
         // a stokehold's fires burned down to what its men keep up (N2)
@@ -1152,12 +1164,13 @@ public sealed class ShipCondition
         for (int m = 0; m < Mount.Length; m++)
         {
             ref readonly var a = ref Mount[m];
-            if (a.JamUntil == 0 && a.StiffUntil == 0 && a.GunsOut == 0 && !a.Sights)
+            if (a.JamUntil == 0 && a.StiffUntil == 0 && a.PowerUntil == 0 && a.GunsOut == 0 && !a.Sights)
                 continue;
             h.Add(m);
             h.Add((int)a.Jam | a.GunsOut << 8 | (a.Sights ? 1 << 16 : 0));
             h.Add(a.JamUntil);
             h.Add(a.StiffUntil);
+            h.Add(a.PowerUntil);
             h.Add(a.GunUntil);
         }
         for (int p = 0; p < PartyCount; p++)
