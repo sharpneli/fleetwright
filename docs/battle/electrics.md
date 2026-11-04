@@ -154,6 +154,15 @@ rather than trust hand gear. The reload's 3× stays, unbounded by any source.
 **Not right yet:** Invincible's 1908-14 electric turrets and Bouvet's of 1898 carry the label's answer, editable in the files;
 Japan's pump drive and KGV's are [UNCERTAIN], steam for now.
 
+**The balance panel**, EL3-EL4 against EL2 (`balance --seeds 8 --fc-runs 0`, the Jutland 4 seeds; before EL5): 5 → 8 of 14 sides within
+twice the record, the most so far (6-7 before today), the record's loser losing more in 25 → 26 of 44 seeds. Jutland Britain 30.3 → 17.3 of
+151 (record 14, range 13-21), Germany 38.5 → 44.5 of 99 (record 11, HIGH); British shell hits 4,065 → 3,696, German 2,435 → 1,759; the record's
+loser lost more in 1 → 0 of 4. The Dogger Bank Britain 7.4 → 6.0, Germany 9.9 → 9.0; Tsushima Russia 4.6 → 5.8 of 13 (record 7), Japan 4.4 →
+4.8 of 14; Coronel Britain 0.8 → 1.0 (back in band); Heligoland Britain 1.1 → 1.0 (in band), Germany 12.6 → 12.8 of 24; Cape Sarych Russia 3.9
+→ 3.8; Åland Finland 5.5 → 6.3 of 10, Sweden 4.8 → 5.0 of 11. **Most of the gain in the count is small moves across a band's edge, and Jutland leans
+harder on the Germans**, the side standing on its plant: the direction the drives should give, but further from the record's outcome, German
+losses four times hers. EL5 keeps tripped batteries on their tables, which should soften it; not measured yet. Not tuned on.
+
 ### EL4b What a drive gains (agreed 2026-11-04, the user: risk against reward, as in real life)
 
 So far the block only adds risk: it changes no rate and no weight, so nothing but the danger tells a ship from another. A drive
