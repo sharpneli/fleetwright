@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 17;
+    public const int Current = 18;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -34,6 +34,7 @@ public static class DesignFormat
         (d, _) => StarShell(d),        // 14 → 15: star shell in the light guns' magazines (docs/battle/night.md Q5)
         (d, _) => SearchlightsToRecord(d), // 15 → 16: the searchlight templates to the research (docs/battle/night.md Q3b)
         (d, _) => StarShellToRecord(d), // 16 → 17: star shell to the research (docs/battle/night.md Q5b)
+        Drives,                        // 17 → 18: what drives the gunhouses and auxiliaries (docs/battle/electrics.md EL4)
     ];
 
     // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
@@ -374,6 +375,25 @@ public static class DesignFormat
         if (fittings is null)
             d["fittings"] = fittings = [];
         fittings["shock_grade"] = Fittings.ByNavyAndYear(navy, year, merchant).ToString();
+    }
+
+    /// <summary>17 → 18: what works her gunhouses and her steering and pumps (docs/battle/electrics.md EL4), by her navy
+    /// and her plant's year. What neither says is left to the defaults, with a warning.</summary>
+    static void Drives(JsonObject d, List<string> warnings)
+    {
+        string? tech = d["machinery"]?["tech"]?["name"] is JsonValue t && t.TryGetValue(out string? ts) ? ts : null;
+        bool merchant = d["style"] is JsonValue st && st.TryGetValue(out string? style) && style == "merchant";
+        string? navy = d["look"]?["navy"] is JsonValue nv && nv.TryGetValue(out string? ns) ? ns : null;
+        if (Fittings.YearOf(tech) is not int year)
+        {
+            warnings.Add("fittings.turret_drive: no plant year to set it by (machinery.tech's name); electro_hydraulic assumed");
+            return;
+        }
+        var fittings = d["fittings"] as JsonObject;
+        if (fittings is null)
+            d["fittings"] = fittings = [];
+        fittings["turret_drive"] ??= SnakeEnum<TurretDrive>.Name(Fittings.TurretDriveBy(navy, year, merchant));
+        fittings["auxiliaries"] ??= SnakeEnum<AuxiliaryDrive>.Name(Fittings.AuxiliariesBy(navy, year, merchant));
     }
 
     /// <summary>2 → 3: an ammunition block named the sim's outcome-table row (`outcomes`, S0's transitional field); its

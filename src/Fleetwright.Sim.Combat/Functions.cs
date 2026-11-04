@@ -133,7 +133,8 @@ public static class Functions
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
         // the dynamos stand on that steam, in those engine rooms: all of either gone, no power anywhere (electrics.md EL2)
-        k.PlantOut = boilers > 0 && steam <= 0 || lines > 0 && engines <= 0;
+        k.NoSteam = boilers > 0 && steam <= 0;
+        k.PlantOut = k.NoSteam || lines > 0 && engines <= 0;
         if (k.PlantOut)
         {
             Array.Fill(k.DirectorWorks, false);

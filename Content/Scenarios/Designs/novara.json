@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "novara",
  "name": "Novara-like scout cruiser (1915)",
  "type": "CL",
@@ -241,9 +241,7 @@
    "fragments": "mild"
   }
  },
- "fittings": {
-  "shock_grade": "G0"
- },
+ "fittings": {"shock_grade": "G0", "turret_drive": "electro_hydraulic", "auxiliaries": "steam"},
  "fire_control_tech": {
   "Zeiss stereo (WWI)": {
    "optics": {

@@ -1605,7 +1605,7 @@ public sealed record SimSettings
     public double ShockZoneBM { get; init; } = 40;
     public double[] LocalTripMin { get; init; } = [0.9, 0.17, 3, 0.1, 3, 15];
     public double[] SectionPowerMin { get; init; } = [0.8, 1, 5, 0.2, 5, 20];
-    public double[] CascadeMin { get; init; } = [0.9, 1, 5, 0.1, 5, 20];
+    public double[] CascadeMin { get; init; } = [0.9, 1, 5, 0.1, 5, 45];
     public double[] DirectorGyroMin { get; init; } = [0.7, 5, 30, 0.3, 30, 60];
     public double[] RangefinderMin { get; init; } = [0.5, 5, 20, 0.3, 120, 240, 0.2, 0, 0];
 
@@ -1706,8 +1706,10 @@ public sealed record SimSettings
     public double StiffTrain { get; init; } = 0.4;
     /// <summary>A gunhouse worked by hand, its power off (<see cref="HandReload"/>: damage-research/02, a reload 2-4 times
     /// as long, its hoists too [UNCERTAIN: no published figure]): the power at its cranks, W, six men at 100 W (06's hand
-    /// fallback), and its rollers' friction [EST]; 0.15°/s on a 606 t turret against emergency-eyeball.md's 0.1-0.3.</summary>
+    /// fallback), the share its gears pass [EST: no source gives men, ratio or rate for any heavy turret], and its rollers'
+    /// friction [EST]; 0.08°/s on a 606 t turret (electric-plant.md EL4: 0.04-0.08 over 500 t).</summary>
     public double HandTrainW { get; init; } = 600;
+    public double HandGearShare { get; init; } = 0.5;
     public double RollerFriction { get; init; } = 0.007;
     public double HandReload { get; init; } = 3;
     public double StiffBattleShare { get; init; } = 0.5;

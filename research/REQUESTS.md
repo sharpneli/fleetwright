@@ -12,22 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-04 - What a warship's electric plant fed, consumer by consumer, 1890-1945
-- Question: how electrified ships were, by what they carried rather than by year. (1) The battle load in kW by
-  consumer type: turret training, elevation, hoists and rammers (a heavy turret and a light one), remote power control,
-  directors and their transmission, fire-control tables, gyros and stable verticals, searchlights, ventilation fans,
-  drainage and fire pumps, steering, lighting; against the plants recorded (Dreadnought's few hundred kW, Prince of
-  Wales's 2,640, Bismarck's 7,910). (2) What drove turrets by navy and period: hand, steam-driven hydraulic (RN pumping
-  engines: do these care about an electric trip at all?), electro-hydraulic (Waterbury), electric. What each drive gained
-  over the others, in training rate, reload and weight. (3) What each consumer did when the power went: stopped, fell
-  to hand or steam, ran on batteries; what a fire-control table and a director lost. (4) The trip itself: fuses and knife
-  switches against breakers, parallel running of dynamos, and any record of ship-wide power loss from shellfire before
-  1925 (damage/13 §3.3 has switchboards failing "mostly through flooding and splinters").
-- Context / relevant files: `docs/battle/shells-armour-damage.md` E7's open item, `NonPen.Electrics` (today a yes or no
-  on director firing), `damage-research/02-components.md` §8-9, `06-service-networks.md`. The user: exposure follows how
-  electrified a ship is, itself from what it gains by that; no era multiplier. Not blocking the first steps.
-- Wanted output: a consumer table (kW, what fails to, ranges by type and period), drives by navy and period with sources.
-
 ### 2026-11-01 - Fire distribution and cripples, 1890-1925 first
 - Question: what the fleets' doctrine said about whom the guns fire on, and what they did. (1) Fire distribution: the
   rules each navy gave its lines (the Grand Fleet Battle Orders' ship for ship from the van or the rear, concentrating,
@@ -272,6 +256,20 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-04 - What a warship's electric plant fed, consumer by consumer, 1890-1945
+- Done 2026-11-04 (draft): [simulation/electric-plant.md](simulation/electric-plant.md), its nine strands as appendices in
+  [simulation/electric-plant/](simulation/electric-plant/). ~35 plants 1893-1944 (Iowa 8 x 1,250 kW, PoW 8 x 330 confirmed)
+  split by what ran on electricity, not by year: electric-turret navies 45-90 W/t by 1900-16, the RN 17-40. The only
+  consumer-by-consumer tables are 1900-02 (George, AIEE): Kearsarge 655 kW connected on 350 (turrets and hoists 44%, cranes
+  and winches 33%, fans 15%, lamps 7%), Kaiser Friedrich III 221 on 324. Fits [EST]: training 0.035·W_rev·ω kW (4-5x
+  NonPen's friction power), elevation 0.0013·d_in³·ω a gun, whole turret 0.25-0.4 kW/t to 1921 and 0.7 in the 1940s,
+  searchlights arc A x mains V. RN heavy turrets on steam hydraulic pumping engines to Nelson (WWI drive circumstantial,
+  high confidence) bar Invincible's electric turrets 1908-14; German WWI turrets all on electricity. What each consumer
+  falls to (Dreyer to hand +1 man, receivers freeze, gyros hours to settle, USN turrets brake and stand). No ship-wide
+  loss from above-water shellfire before 1925 in ~100 heavy hits; every one was water in the dynamo or switchboard spaces or
+  an underwater blast (Lion, Audacious, Inflexible, Szent István). Proposes EL3-EL7 numbers, anchors at 100/300/1,000/5,000
+  kW for EL6, and 12 checks. Not reached: hand rates, drive weights, KGV/Yamato pump drives, any WWII load analysis.
 
 ### 2026-11-02 - Own course and speed into the fire-control table, and the gyrocompass in a turn
 - Done: [ship-motion/own-motion-inputs.md](simulation/ship-motion/own-motion-inputs.md). FL1 stands; the Type 92's

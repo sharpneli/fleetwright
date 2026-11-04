@@ -184,13 +184,14 @@ public static class NonPen
         return false;
     }
 
-    /// <summary>The share of its power training rate a gunhouse keeps worked by hand: the men at the cranks' power against
-    /// the friction of its weight on its rollers, ω = P / (μ·m·g·r), so a heavy turret crawls (0.1-0.3°/s, emergency-eyeball.md;
-    /// 10% of its rate, damage-research/02) and a light one hardly slows.</summary>
+    /// <summary>The share of its power training rate a gunhouse keeps worked by hand: the men at the cranks' power through
+    /// gearing that loses half of it, against the friction of its weight on its rollers, ω = η·P / (μ·m·g·r): a heavy turret
+    /// hardly moves (electric-plant.md §5 and EL4: 0.04-0.08°/s over 500 t, designers duplicating the power drive rather than
+    /// trust hand gear) and a light one much less slowed.</summary>
     public static double HandShare(ShipClass c, in MountRow m, SimSettings s)
     {
         double torque = s.RollerFriction * m.RevolvingT * 1000 * 9.81 * c.TurretTypes[m.Type].R;
-        return torque > 0 && m.TrainDegS > 0 ? Math.Min(double.RadiansToDegrees(s.HandTrainW / torque) / m.TrainDegS, 1) : 1;
+        return torque > 0 && m.TrainDegS > 0 ? Math.Min(double.RadiansToDegrees(s.HandGearShare * s.HandTrainW / torque) / m.TrainDegS, 1) : 1;
     }
 
     /// <summary>An outage's length, ms, from (share, low, high minutes) triples: a triple by its share, log-uniform in it,

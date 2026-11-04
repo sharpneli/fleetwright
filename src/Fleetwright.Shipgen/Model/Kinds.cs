@@ -100,6 +100,25 @@ public enum ShockGrade : byte
     G3,
 }
 
+/// <summary>What works a ship's gunhouses (fittings.turret_drive; docs/battle/electrics.md EL4): by hand; hydraulics from
+/// steam pumping engines, off the electric plant; or from it, through electric pumps or motors direct.</summary>
+[JsonConverter(typeof(SnakeEnumConverter<TurretDrive>))]
+public enum TurretDrive : byte
+{
+    Hand,
+    SteamHydraulic,
+    ElectroHydraulic,
+    Electric,
+}
+
+/// <summary>What drives a ship's steering and pumps (fittings.auxiliaries; docs/battle/electrics.md EL4).</summary>
+[JsonConverter(typeof(SnakeEnumConverter<AuxiliaryDrive>))]
+public enum AuxiliaryDrive : byte
+{
+    Steam,
+    Electric,
+}
+
 /// <summary>An enum's members by their snake_case names, both ways.</summary>
 public static class SnakeEnum<T> where T : struct, Enum
 {

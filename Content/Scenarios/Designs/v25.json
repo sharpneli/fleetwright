@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "v25",
  "name": "V25-like torpedo boat (1914)",
  "type": "DD",
@@ -393,7 +393,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "electro_hydraulic",
+  "auxiliaries": "steam"
  },
  "masts": [
   {

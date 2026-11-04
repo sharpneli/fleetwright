@@ -473,8 +473,8 @@ public static class NearMiss
                 long ms = -1;
                 for (int m = 0; m < c.Mounts.Length; m++)
                 {
-                    if (!c.Enclosed(m))
-                        continue;   // worked by hand: no breaker to trip (Effects.PowerOut)
+                    if (!c.OnElectric(m))
+                        continue;   // off the plant: no breaker to trip (Effects.PowerOut)
                     ref readonly var mr = ref c.Mounts[m];
                     double n = Nsf(w, p, surface, Nearest(comps[mr.Component].Bounds, p));
                     if (mr.Barbette >= 0)

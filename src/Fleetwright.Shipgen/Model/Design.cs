@@ -143,6 +143,10 @@ public sealed record FittingsInput
 {
     /// <summary>G0 unsecured, G1 secured, G2 shock-tested, G3 post-war (ShockGrade; G0 when absent).</summary>
     public string? ShockGrade { get; init; }
+    /// <summary>What works her gunhouses (TurretDrive; electro_hydraulic when absent) and her steering and pumps
+    /// (AuxiliaryDrive; steam when absent): docs/battle/electrics.md EL4.</summary>
+    public string? TurretDrive { get; init; }
+    public string? Auxiliaries { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

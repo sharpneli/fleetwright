@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "b97",
  "name": "B97-like large torpedo boat (1915)",
  "type": "DD",
@@ -393,7 +393,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "electro_hydraulic",
+  "auxiliaries": "steam"
  },
  "masts": [
   {

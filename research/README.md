@@ -138,6 +138,14 @@ Its eight strands, with their full case tables and sources, are in [simulation/n
 
 Its seven strands, with their full case tables and sources, are in [simulation/striking-colours/](simulation/striking-colours/): decisions 1890-1905, decisions 1911-1925, signs, law and the cease-fire, abandoning cases, getting off and survival, scuttling, the victor.
 
+**Ships' electrics**
+
+| Note | What it covers | Scripts |
+|---|---|---|
+| [electric-plant.md](simulation/electric-plant.md) | What a warship's electric plant fed, 1890-1945: ~35 recorded plants, the 1900-02 load tables by consumer, kW per consumer type (turret training, elevation, hoists, mounts, fire control, searchlights, fans, pumps, steering, lighting) with fits, turret drives by navy and period, what each consumer fell to without power, protection and ring mains, the pre-1925 power losses; numbers for electrics.md EL3-EL7 and checks (draft) | — |
+
+Its nine strands, with their full tables and sources, are in [simulation/electric-plant/](simulation/electric-plant/): recorded plants, gun drives, fire control, hull auxiliaries, protection and power loss, RN plants and hydraulics, battle load and auxiliaries, power-loss cases, drive gaps and hand rates.
+
 **Ship design model**
 
 | Note | What it covers | Scripts |

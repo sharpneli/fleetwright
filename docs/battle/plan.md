@@ -35,7 +35,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 4.0-4.4, 4.6 Fighting, first pass; torpedoes | done 2026-10-14 | `fighting.md` | |
 | 4.5 Shells, armour and damage | S, P, E0-E8b done 2026-10-20 | `shells-armour-damage.md` | PM (the matchup's refit) in the balance round; five E8a items for the user |
 | 4.5 Fire control | F0-F6 done 2026-10-18 | `fire-control.md` | F7 (straddle calls, the main limiter), F8, F10-F12; F9 radar out of the first cut |
-| 4.5 Electrics | EL0-EL2 done 2026-11-04 | `electrics.md` | EL3-EL7: consumers in kW, the turret drive, rates from the load, the plant (research asked) |
+| 4.5 Electrics | EL0-EL4 done 2026-11-04 | `electrics.md` | EL5-EL7: consumers react, rates from the load, the plant and its weight |
 | 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
 | 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |

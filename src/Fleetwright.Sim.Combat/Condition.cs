@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -438,8 +439,9 @@ public sealed class ShipCondition
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
     public double PowerCap = 1;
     /// <summary>Her generating plant gone, worked out with the functions (docs/battle/electrics.md EL2): no steam from any
-    /// boiler room or no engine room working. No power anywhere for as long as that lasts.</summary>
-    public bool PlantOut;
+    /// boiler room or no engine room working. No power anywhere for as long as that lasts. NoSteam: the first of those, which
+    /// is what stops her steam-hydraulic turrets.</summary>
+    public bool PlantOut, NoSteam;
     public Steering Steering;
     /// <summary>The rudder's angle when it jammed, radians.</summary>
     public double JamRudderRad;
@@ -621,7 +623,7 @@ public sealed class ShipCondition
         Array.Fill(MountSupply, 1.0);
         Array.Fill(EyeCrew, 1.0);
         Array.Fill(MountLasts, true);
-        (PowerCapLasts, LastingMs, PlantOut) = (1, 0, false);
+        (PowerCapLasts, LastingMs, PlantOut, NoSteam) = (1, 0, false, false);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
@@ -824,9 +826,14 @@ public sealed class ShipCondition
     /// <summary>Whether a mount trains stiffly now (E4).</summary>
     public bool Stiff(int mount, long now) => Mount[mount].StiffUntil > now;
 
-    /// <summary>Whether a gunhouse is worked by hand now: its power tripped (E4), or her plant gone (docs/battle/electrics.md
-    /// EL2). The others are worked by hand always, and aren't counted.</summary>
-    public bool ByHand(int mount, long now) => Class.Enclosed(mount) && (PlantOut || Mount[mount].PowerUntil > now);
+    /// <summary>Whether a gunhouse is worked by hand now that it wasn't built to be (docs/battle/electrics.md): one on the
+    /// plant with its power tripped or the plant gone, one on steam hydraulics with no steam.</summary>
+    public bool ByHand(int mount, long now) => Class.Drive(mount) switch
+    {
+        TurretDrive.SteamHydraulic => NoSteam,
+        TurretDrive.Hand => false,
+        _ => PlantOut || Mount[mount].PowerUntil > now,
+    };
 
     /// <summary>The guns a mount still fires of its barrels (E4: its guns out don't).</summary>
     public int Guns(int mount) => Math.Max(Class.TurretTypes[Class.Mounts[mount].Type].Barrels - Mount[mount].GunsOut, 0);

@@ -1760,10 +1760,11 @@ squadrons, and changes `Matchup.cs` with it.
     - **A gunhouse with its power off works by hand (the user, 2026-11-04, over E4's "silent"):** `MountHarm.PowerUntil`,
       not `Down`: the mount fires on, so no outage of power takes a ship out of the line however long, and E7's "one of an
       hour doesn't" no longer applies to power (`MountLasts` still reads stuns, jams and the rest). It trains by
-      `NonPen.HandShare`, the men at the cranks against the friction on its rollers, ω = P / (μ·m·g·r): six men at 100 W
-      (06's hand fallback) and μ 0.007 [EST] give a 606 t turret 0.16°/s against 2.3 by power (emergency-eyeball.md's
-      0.1-0.3; 02's "about 10%"), a 38 t twin 4.7°/s against 23. Reload and hoists at 3× (`HandReload`; 02's 2-4×
-      [UNCERTAIN]). Elevation isn't slowed (manual-gunnery: hand elevation changes little). The card says "by hand".
+      `NonPen.HandShare`, the men at the cranks against the friction on its rollers, ω = η·P / (μ·m·g·r): six men at 100 W
+      (06's hand fallback), gears passing half and μ 0.007 [EST] give a 606 t turret 0.08°/s against 2.3 by power
+      (electric-plant.md's 0.04-0.08 over 500 t), a 38 t twin 2.4°/s against 23. Reload and hoists at 3× (`HandReload`; 02's 2-4×
+      [UNCERTAIN]). Elevation isn't slowed (manual-gunnery: hand elevation changes little). The card says "by hand". What
+      stands on the plant has since gone by the design's drive (`electrics.md` EL4).
     - **The whole ship's trip by the plant's own shock:** E7 took the machinery spaces' NSF at the point nearest the burst,
       the hull's own skin beside it. Her dynamos and switchboards stand on the floor on the centreline, so it's read
       there, abreast the burst or at the space's nearer end: a small charge alongside shakes a patch of hull and no longer

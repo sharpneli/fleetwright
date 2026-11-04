@@ -260,7 +260,9 @@ static class TemplatesWriter
             Written by `shipgen templates` from `src/Fleetwright.Shipgen/Fittings.cs`; don't edit by hand. The designer's
             templates are `Content/Templates/fittings.json`, from the same table.
 
-            A design's `fittings` block says how its gear is mounted. Its one number so far is `shock_grade`, G0 to G3
+            A design's `fittings` block says how its gear is mounted and driven. `turret_drive` (hand, steam_hydraulic,
+            electro_hydraulic, electric) and `auxiliaries` (steam, electric) say what stands on the electric plant
+            (docs/battle/electrics.md EL4). `shock_grade` is G0 to G3
             (`docs/battle/damage/17_service_network_faults.md` §2.2; decision 10 of docs/battle/shells-armour-damage.md):
             how hard a shock trips its breakers, lamps and generators, from the hull's shock factor at the device. The
             armour shock of a hit that didn't get through (E4), the near misses (E7) and later the service networks read it.

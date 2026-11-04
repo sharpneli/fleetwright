@@ -54,6 +54,8 @@ public static class ShipClassCompiler
                 ShellJoint = r.Hull.Shell,
                 InternalsJoint = r.Hull.Internals,
                 ShockGrade = r.Fittings.ShockGrade,
+                TurretDrive = Fittings.TurretDriveOf(ship.Design),
+                Auxiliaries = Fittings.AuxiliariesOf(ship.Design),
                 Drainage = DrainageOf(DrainageTemplates.Of(ship.Design), hb.Hydrostatics.DisplacementT),
                 Boilers = Contents.BoilersOf(r.Plant.Boilers),
                 Engines = Contents.EnginesOf(r.Plant.Engines),

@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "vainamoinen",
  "name": "Väinämöinen-like (1921)",
  "look": {
@@ -431,9 +431,7 @@
    "fragments": "mild"
   }
  },
- "fittings": {
-  "shock_grade": "G0"
- },
+ "fittings": {"shock_grade": "G0", "turret_drive": "electro_hydraulic", "auxiliaries": "steam"},
  "fire_control_tech": {
   "Barr & Stroud FQ/FT (O2)": {
    "optics": {

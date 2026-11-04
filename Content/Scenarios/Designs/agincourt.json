@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "agincourt",
  "name": "Agincourt-like (1914)",
  "type": "BB",
@@ -449,7 +449,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "steam_hydraulic",
+  "auxiliaries": "steam"
  },
  "fire_control_tech": {
   "Barr & Stroud FQ/FT (O2)": {

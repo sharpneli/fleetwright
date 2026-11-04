@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "flotilla_leader",
  "name": "Faulknor-like flotilla leader (1914)",
  "type": "DD",
@@ -339,7 +339,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "steam_hydraulic",
+  "auxiliaries": "steam"
  },
  "masts": [
   {

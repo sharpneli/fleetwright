@@ -555,6 +555,8 @@ public enum TrackerKind : byte
 /// number: each of its parts is drawn where it arises (docs/battle/balance.md BL1ac). A tech block's (<see cref="FireControlBlocks"/>).</summary>
 public readonly record struct ComputerRow
 {
+    /// <summary>Its draw on the plant, kW (docs/battle/electrics.md EL3).</summary>
+    public double PowerKw { get; init; }
     public TrackerKind Tracker { get; init; }
     public bool HelmFree { get; init; }
     public double MaxRangeRateMs { get; init; }

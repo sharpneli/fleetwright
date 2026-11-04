@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "finnish_tb",
  "name": "Finnish torpedo boat (1921)",
  "type": "DD",
@@ -342,9 +342,7 @@
    "fragments": "mild"
   }
  },
- "fittings": {
-  "shock_grade": "G0"
- },
+ "fittings": {"shock_grade": "G0", "turret_drive": "electro_hydraulic", "auxiliaries": "steam"},
  "masts": [
   {
    "kind": "pole",

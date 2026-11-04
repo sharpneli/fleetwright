@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "kaiser",
  "name": "Kaiser-like (1912)",
  "type": "BB",
@@ -459,7 +459,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "electro_hydraulic",
+  "auxiliaries": "steam"
  },
  "fire_control_tech": {
   "Zeiss stereo (WWI)": {

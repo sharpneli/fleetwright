@@ -115,6 +115,7 @@ public static class FireControlBlocks
 
     public static ComputerRow Computer(ComputerTechInput c) => new()
     {
+        PowerKw = c.PowerKw ?? 0,
         Tracker = Kinds.TrackerOf(c.Tracker), HelmFree = c.HelmFree ?? false, MaxRangeRateMs = c.MaxRangeRateMs ?? 0,
         MaxBearingRateDegS = c.MaxBearingRateDegS ?? 0, AccelTauS = c.AccelTauS ?? 0, AccelSigmaMs2 = c.AccelSigmaMs2 ?? 0, TurnQ = c.TurnQ ?? 0,
         SpeedQ = c.SpeedQ ?? 0, Detect = c.Detect ?? false, CourseRate = c.CourseRate ?? true, RangeClock = c.RangeClock ?? true, RejudgeS = c.RejudgeS ?? 0, LatencyS = N(c.LatencyS, "latency_s"), Q = c.Q ?? 0,

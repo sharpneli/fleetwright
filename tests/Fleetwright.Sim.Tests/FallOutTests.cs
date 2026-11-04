@@ -130,7 +130,7 @@ public class FallOutTests(ITestOutputHelper output)
     [Fact]
     public void A_blackout_leaves_her_fit_her_turrets_worked_by_hand()
     {
-        var c = Fleet.Get("dreadnought").Class!;
+        var c = Fleet.Get("seydlitz").Class!;
         var rule = new FallOutRule(0.5, 0.5, 15, 0.5);
         foreach (double min in (double[])[3, 60])
         {
@@ -144,7 +144,7 @@ public class FallOutTests(ITestOutputHelper output)
             output.WriteLine($"power out {min} min: mounts working {k.MountWorks.Count(m => m)} of {k.MountWorks.Length}, " +
                              $"main guns {fit.MainGunsShare:P0} to the captain, fall-out {rule.Of(fit)}");
             for (int m = 0; m < c.Mounts.Length; m++)
-                Assert.Equal(c.Enclosed(m), k.ByHand(m, now));
+                Assert.Equal(c.OnElectric(m), k.ByHand(m, now));
             Assert.DoesNotContain(false, k.MountWorks);
             Assert.Equal(1, fit.MainGunsShare);
             Assert.Equal(FallOutCause.None, rule.Of(fit));

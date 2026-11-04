@@ -402,6 +402,7 @@ public static class Program
                 "searchlight" => SearchlightBench.Run(Class(a, a.Positional.ElementAtOrDefault(0) ?? "lion"), Class(a, a.Positional.ElementAtOrDefault(1) ?? "v25"),
                     SimSettings.Load(a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json")),
                     D(a, "sky", double.NaN), D(a, "consort", 1000)),
+                "electrics" => ElectricsBench.Run(a.Positional, n => LoadDesign(Resolve(a, n))),
                 "sight" => SightList.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Get("from") is { } f ? Resolve(a, f) : null),
                 "smoke" => SmokeBench.Run(a.Positional, n => Class(a, n), Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),

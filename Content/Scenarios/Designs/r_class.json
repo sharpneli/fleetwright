@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "r_class",
  "name": "R class destroyer (1916)",
  "type": "DD",
@@ -339,7 +339,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "steam_hydraulic",
+  "auxiliaries": "steam"
  },
  "masts": [
   {

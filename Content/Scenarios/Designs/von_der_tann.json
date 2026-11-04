@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "von_der_tann",
  "name": "Von der Tann-like (1910)",
  "type": "BC",
@@ -484,7 +484,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "electro_hydraulic",
+  "auxiliaries": "steam"
  },
  "fire_control_tech": {
   "Zeiss stereo (WWI)": {

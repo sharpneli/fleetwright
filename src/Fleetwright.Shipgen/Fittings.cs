@@ -33,6 +33,13 @@ public static partial class Fittings
     public static ShockGrade GradeOf(Design design) =>
         TryParse(design.Fittings?.ShockGrade, out var g) ? g : ShockGrade.G0;
 
+    /// <summary>What works the design's gunhouses, and its steering and pumps: docs/battle/electrics.md EL4.</summary>
+    public static TurretDrive TurretDriveOf(Design design) =>
+        SnakeEnum<TurretDrive>.TryParse(design.Fittings?.TurretDrive, out var d) ? d : TurretDrive.ElectroHydraulic;
+
+    public static AuxiliaryDrive AuxiliariesOf(Design design) =>
+        SnakeEnum<AuxiliaryDrive>.TryParse(design.Fittings?.Auxiliaries, out var d) ? d : AuxiliaryDrive.Steam;
+
     /// <summary>A grade by its name, "G0" to "G3" exactly.</summary>
     public static bool TryParse(string? s, out ShockGrade g)
     {
@@ -51,7 +58,11 @@ public static partial class Fittings
         var errs = new List<string>();
         if (design.Fittings is { } f)
         {
-            errs.AddRange(f.Extra.KeysOrEmpty().Select(k => $"fittings.{k}: not a fittings setting (shock_grade)"));
+            errs.AddRange(f.Extra.KeysOrEmpty().Select(k => $"fittings.{k}: not a fittings setting (shock_grade, turret_drive, auxiliaries)"));
+            if (f.TurretDrive is { } td && !SnakeEnum<TurretDrive>.TryParse(td, out _))
+                errs.Add($"fittings.turret_drive: \"{td}\" isn't a drive (hand, steam_hydraulic, electro_hydraulic, electric)");
+            if (f.Auxiliaries is { } ax && !SnakeEnum<AuxiliaryDrive>.TryParse(ax, out _))
+                errs.Add($"fittings.auxiliaries: \"{ax}\" isn't a drive (steam, electric)");
             if (f.ShockGrade is { } g && !TryParse(g, out _))
                 errs.Add($"fittings.shock_grade: \"{g}\" isn't a grade (G0 unsecured, G1 secured, G2 shock-tested, G3 post-war)");
         }
@@ -87,6 +98,36 @@ public static partial class Fittings
     /// <summary>The year a template's name ends with ("Geared turbines, oil-fired small-tube boilers (1915)"), or null.</summary>
     public static int? YearOf(string? label) =>
         label is not null && YearLabel().Match(label) is { Success: true } m ? int.Parse(m.Groups[1].Value) : null;
+
+    /// <summary>What drove a navy's gunhouses in a year (research/simulation/electric-plant.md §4), read once by the format
+    /// step that gave designs the block; a ship reads her block, never her year. The RN on steam hydraulics to the end of the
+    /// period (KGV's pumps [UNCERTAIN]); the USN (and the generic look) electric from 1898, electro-hydraulic from 1906;
+    /// Germany from the dreadnoughts of 1908, whose plant labels read 1905 (before them, as the RN [EST]); France electric from 1897; Russia electric from 1895, electro-hydraulic
+    /// from 1909; Italy electric [EST before the 1930s]; Japan on hydraulics, steam-driven [UNCERTAIN]; the Baltic neutrals
+    /// electro-hydraulic [EST]. After the war, electro-hydraulic. A merchant hull's few guns by hand.</summary>
+    public static TurretDrive TurretDriveBy(string? navy, int year, bool merchant)
+    {
+        if (merchant)
+            return TurretDrive.Hand;
+        if (year >= 1946)
+            return TurretDrive.ElectroHydraulic;
+        return (navy ?? "generic") switch
+        {
+            "portsmouth" or "kure" => TurretDrive.SteamHydraulic,
+            "brooklyn" or "generic" => year >= 1906 ? TurretDrive.ElectroHydraulic : year >= 1898 ? TurretDrive.Electric : TurretDrive.SteamHydraulic,
+            "kiel" => year >= 1905 ? TurretDrive.ElectroHydraulic : TurretDrive.SteamHydraulic,
+            "toulon" => year >= 1897 ? TurretDrive.Electric : TurretDrive.SteamHydraulic,
+            "kronstadt" => year >= 1909 ? TurretDrive.ElectroHydraulic : year >= 1895 ? TurretDrive.Electric : TurretDrive.SteamHydraulic,
+            "la_spezia" => year >= 1900 ? TurretDrive.Electric : TurretDrive.SteamHydraulic,
+            _ => TurretDrive.ElectroHydraulic,
+        };
+    }
+
+    /// <summary>What drove a navy's steering and pumps in a year, as <see cref="TurretDriveBy"/> [EST, the research's open item
+    /// 10]: the USN's pumps electric by about 1911, the rest by the 1920s (Hood's still mixed, Prince of Wales's steering
+    /// electric, Audacious's auxiliaries "almost entirely steam").</summary>
+    public static AuxiliaryDrive AuxiliariesBy(string? navy, int year, bool merchant) =>
+        !merchant && year >= ((navy ?? "generic") is "brooklyn" or "generic" ? 1911 : 1925) ? AuxiliaryDrive.Electric : AuxiliaryDrive.Steam;
 
     /// <summary>The grade a navy fitted to in a year (17 service §2.2): the RN secured from late 1940 (a 1940 label
     /// and on), the USN from 1942 and shock-tested from 1943, everyone post-war (1946 on) grade A, the rest and the

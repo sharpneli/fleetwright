@@ -109,6 +109,9 @@ public sealed class ShipClass
     public Joint InternalsJoint { get; internal init; }
     /// <summary>How the fittings stand shock (E0): the armour shock, the near misses and the service networks read it.</summary>
     public ShockGrade ShockGrade { get; internal init; }
+    /// <summary>What works her gunhouses, and her steering and pumps (docs/battle/electrics.md EL4).</summary>
+    public TurretDrive TurretDrive { get; internal init; }
+    public AuxiliaryDrive Auxiliaries { get; internal init; }
     /// <summary>What's built in against water (DC4): pumps, portable pumps, counterflooding, tightness.</summary>
     public DrainageRow Drainage { get; internal init; }
     /// <summary>The shipgen it was built by (<see cref="ShipDesign.Version"/>).</summary>
@@ -174,6 +177,19 @@ public sealed class ShipClass
     /// <summary>A gunhouse proper: a turret the mount's crew works inside, on a barbette or a light one (a dual-purpose
     /// mount's), with its train down through the trunk.</summary>
     public bool Enclosed(int mount) => mounts[mount].Turret && turretTypes[mounts[mount].Type].Shape is TurretShape.Bb or TurretShape.Dp;
+
+    /// <summary>What works a mount (docs/battle/electrics.md EL4): open and casemate guns and torpedo mounts by hand, a
+    /// dual-purpose mount electro-hydraulically on the mount itself (the 5"/38, the 5.25"), any other gunhouse by her
+    /// <see cref="TurretDrive"/>.</summary>
+    public TurretDrive Drive(int mount) => !Enclosed(mount) ? Shipgen.TurretDrive.Hand
+        : turretTypes[mounts[mount].Type].Shape == TurretShape.Dp ? Shipgen.TurretDrive.ElectroHydraulic : TurretDrive;
+
+    /// <summary>Whether a mount stands on the electric plant, so a trip reaches it.</summary>
+    public bool OnElectric(int mount) => Drive(mount) is Shipgen.TurretDrive.ElectroHydraulic or Shipgen.TurretDrive.Electric;
+
+    /// <summary>What her plant feeds, worked out when first asked (docs/battle/electrics.md EL3).</summary>
+    public ElectricLoad Electric => electric ??= ElectricLoad.Of(this);
+    ElectricLoad? electric;
 
     public ReadOnlySpan<FunnelRow> Funnels => funnels;
 

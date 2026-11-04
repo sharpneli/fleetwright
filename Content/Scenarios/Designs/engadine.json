@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "engadine",
  "name": "Engadine-like seaplane carrier (1911)",
  "type": "AV",
@@ -333,7 +333,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "electro_hydraulic",
+  "auxiliaries": "electric"
  },
  "fire_control_tech": {
   "Telescopic sights": {

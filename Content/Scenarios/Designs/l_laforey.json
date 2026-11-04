@@ -1,5 +1,5 @@
 {
- "version": 17,
+ "version": 18,
  "id": "l_laforey",
  "name": "Laforey-like L class destroyer (1913)",
  "type": "DD",
@@ -339,7 +339,9 @@
   }
  },
  "fittings": {
-  "shock_grade": "G0"
+  "shock_grade": "G0",
+  "turret_drive": "steam_hydraulic",
+  "auxiliaries": "steam"
  },
  "masts": [
   {
