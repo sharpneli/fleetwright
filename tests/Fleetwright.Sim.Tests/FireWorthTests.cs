@@ -110,7 +110,8 @@ public class FireWorthTests(ITestOutputHelper output)
         // within two binomial sigmas of the difference (ES6: with every rung but the readings off, the guns' smoke too, the
         // Lion's ran 374 v 350, 1.6 sigmas; the earlier ±6% sat inside the noise of 8 duels)
         double p = (double)exact.Hits / Math.Max(exact.Shells, 1), sigma = Math.Sqrt(2 * exact.Shells * p * (1 - p));
-        Assert.InRange(fed.Hits, exact.Hits - 2 * sigma, exact.Hits + 2 * sigma);
+        // (at her rate on the same shells: the two runs needn't fire as many)
+        Assert.InRange(fed.Hits, p * fed.Shells - 2 * sigma, p * fed.Shells + 2 * sigma);
     }
 
     [Fact]

@@ -185,6 +185,24 @@ public class ElectricsTests(ITestOutputHelper output)
         Assert.Equal(NonPen.HandShare(c, c.Mounts[m], Settings) / 2, NonPen.HandShare(c, c.Mounts[m], Settings, 8), 9);
     }
 
+    /// <summary>EL4b: a gunhouse trains and elevates by its drive, near the research's §4 for the turrets it names.</summary>
+    [Theory]
+    [InlineData("tiger_1914", 1.9, 2.8, 5, 7.5)]        // hydraulic, the 15" Mk I 2 and 5
+    [InlineData("kgv", 1.8, 2.6, 5, 8.5)]               // hydraulic, 2 and 8
+    [InlineData("seydlitz", 2.5, 3.5, 3.5, 7)]          // German electro-hydraulic, 3 and 4
+    [InlineData("borodino", 2.2, 3.0, 2.2, 3.0)]        // direct electric, 2.4-3 and 2.2-2.7
+    [InlineData("littorio", 4.5, 7, 4.5, 7)]            // direct electric, 6 and 6
+    [InlineData("bismarck", 4, 6, 6, 12)]               // electro-hydraulic, 5.4-6
+    [InlineData("battleship", 3, 5, 6, 12)]             // the USN's 1940s, Iowa's 4 and 12
+    public void A_gunhouse_trains_by_its_drive(string design, double trainLo, double trainHi, double elevLo, double elevHi)
+    {
+        var c = Fleet.Get(design).Class!;
+        ref readonly var m = ref c.Mounts[c.Links(c.Batteries[0].Mounts)[0]];
+        output.WriteLine($"{design} {m.CalibreMm:0} mm, {c.TurretDrive}: train {m.TrainDegS:0.00}, elevate {m.ElevateDegS:0.00}");
+        Assert.InRange(m.TrainDegS, trainLo, trainHi);
+        Assert.InRange(m.ElevateDegS, elevLo, elevHi);
+    }
+
     /// <summary>The format step sets the drives from navy and plant year, once; the ship reads the block.</summary>
     [Theory]
     [InlineData("portsmouth", 1916, TurretDrive.SteamHydraulic, AuxiliaryDrive.Steam)]

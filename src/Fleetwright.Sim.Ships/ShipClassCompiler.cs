@@ -980,7 +980,7 @@ public static class ShipClassCompiler
                 members[b].Add(i);
                 var gun = GunOf(m.Kind, m.CalibreMm, m.CalibreLength);
                 gunOfType[m.Type] ??= gun;
-                var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, gun);
+                var (reload, train, elevate, maxElev) = DesignerPlaceholders.Gun(m.CalibreMm, m.CalibreLength, c.turretTypes[m.Type].Shape, gun, Fittings.TurretDriveOf(ship.Design));
                 mounts[i] = m with
                 {
                     Battery = b, ReloadS = reload, TrainDegS = train, ElevateDegS = elevate, MaxElevationDeg = maxElev, SupplyS = reload * DesignerPlaceholders.HoistShare,

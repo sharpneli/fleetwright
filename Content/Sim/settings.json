@@ -588,6 +588,7 @@
   "HandListDeg": 5,
   "HandListShare": 0.5,
   "HandChangeoverS": 180,
+  "HydraulicListDeg": 10,
   "TableHandLatency": 1.5,
   "GyroSettleMin": 10,
   "RollerFriction": 0.007,

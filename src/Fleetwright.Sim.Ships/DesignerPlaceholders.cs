@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 namespace Fleetwright.Sim.Ships;
 
 /// <summary>DESIGNER PLACEHOLDERS: facts a class needs that the designer (shipgen) doesn't give yet. Each is a rough
@@ -80,9 +81,10 @@ public static class DesignerPlaceholders
     /// 13.5-16°; 30° between the wars, 40° in the Second, 45° after), its dual-purpose mount's on a dp shape (45° from the
     /// treaty years: Shipgen draws some earlier light guns in a dp shape).</item>
     /// </list>
-    /// The designer should give these per mount type from its machinery (hydraulic or electric, all-angle loading).</summary>
+    /// The designer should give these per mount type from its machinery (hydraulic or electric, all-angle loading). A gunhouse
+    /// with its <paramref name="drive"/> given trains and elevates by it (<see cref="DriveRates"/>; docs/battle/electrics.md EL4b).</summary>
     public static (double ReloadS, double TrainDegS, double ElevateDegS, double MaxElevationDeg) Gun(double calibreMm, double calibreLength,
-        TurretShape shape, in GunTechRow g)
+        TurretShape shape, in GunTechRow g, TurretDrive? drive = null)
     {
         double reload = Math.Min(7 * Math.Pow(calibreMm / 102, 1.5), 36) * g.ReloadShare;
         double slow = calibreLength < 30 ? g.HeavySlowUnder30Cal : calibreLength < 40 ? g.HeavySlowUnder40Cal : g.HeavySlow;
@@ -90,8 +92,29 @@ public static class DesignerPlaceholders
         bool dp = shape == TurretShape.Dp;
         double train = Math.Clamp(2 * Math.Pow(381 / calibreMm, 1.5) * g.TrainShare * (dp ? g.DpTrainShare : 1), 0.5, 60);
         double maxElev = dp ? g.DpMaxElevationDeg : g.MaxElevationDeg;
-        return (Math.Max(reload, 0.5), train, Math.Clamp(2 * train, 2, 20), maxElev);
+        double elevate = 2 * train;
+        if (drive is { } d and not TurretDrive.Hand && !dp)
+        {
+            var (k, power, ratio) = DriveRates(d);
+            // the period's gain, to the Second War's: past it the guns' own (the Cold War's automatic mounts) aren't the drive's
+            train = Math.Clamp(2 * Math.Pow(381 / calibreMm, 1.5) * k * Math.Pow(Math.Min(g.TrainShare, 1.5), power), 0.5, 60);
+            elevate = ratio * train;
+        }
+        return (Math.Max(reload, 0.5), train, Math.Clamp(elevate, 2, 20), maxElev);
     }
+
+    /// <summary>PLACEHOLDER [EST, fitted to research/simulation/electric-plant.md §4]: what a gunhouse's drive gives: a gain on the
+    /// calibre's training rate, how much of the gun block's period gain it takes (its power), and the elevation rate over the
+    /// training rate. Hydraulics stayed near the calibre's rate from the 15" Mk I (2°/s) to KGV (2) and elevated fast (5, 8);
+    /// electro-hydraulic gear took the period's gain hardest (German 30.5 cm 3 and 4, Iowa 4 and 12, Bismarck 5.4); direct electric
+    /// trained fastest and elevated slowest (Russian 12" 2.4-3 and 2.2-2.7, Littorio 6 and 6). Nelson's 4°/s is outside it.</summary>
+    static (double K, double Power, double ElevateRatio) DriveRates(TurretDrive d) => d switch
+    {
+        TurretDrive.SteamHydraulic => (1, 0, 2.5),
+        TurretDrive.ElectroHydraulic => (1, 2, 2),
+        TurretDrive.Electric => (1.5, 1.5, 1),
+        _ => (1, 1, 2),
+    };
 
     /// <summary>PLACEHOLDER (docs/battle/fire-control.md F6d): the hoists' sustained reload over the drill reload, once a
     /// mount's ready-use rounds are fired [EST from two cases: the Majestics' 12" at 70 s a round from ready rounds and

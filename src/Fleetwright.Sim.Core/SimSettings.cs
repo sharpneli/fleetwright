@@ -1715,6 +1715,9 @@ public sealed record SimSettings
     public double HandListDeg { get; init; } = 5;
     public double HandListShare { get; init; } = 0.5;
     public double HandChangeoverS { get; init; } = 180;
+    /// <summary>Past this list a steam-hydraulic turret's training engines stop and she trains by hand [EST: Renown's stopped at
+    /// angles "far less than the designed failure angle", no figure; electric-plant.md appendix f].</summary>
+    public double HydraulicListDeg { get; init; } = 10;
     /// <summary>What a loss of power does to the fire control (docs/battle/electrics.md EL5): a table with a motor worked by hand
     /// reads slower by this (the Dreyer's "7 (+1 if motor breaks)": [EST]); gyros take this long to settle once the power's back,
     /// min (electric-plant.md: 5-20 after a short outage [EST]).</summary>

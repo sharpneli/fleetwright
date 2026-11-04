@@ -881,7 +881,9 @@ public sealed class DamageSystem : IWorldSystem
         long now = world.Time.Ms;
         for (int m = 0; m < mounts.Length; m++)
         {
-            double hand = !k.ByHand(m, now) ? 1 : k.Mount[m].HandAt > now ? 0 : NonPen.HandShare(k.Class, mounts[m], settings, k.Attitude.HeelDeg);
+            // a hydraulic turret's training engines stop on a list before her hand gear does (electrics.md EL4b)
+            bool listed = k.Class.Drive(m) == TurretDrive.SteamHydraulic && Math.Abs(k.Attitude.HeelDeg) > settings.HydraulicListDeg;
+            double hand = !k.ByHand(m, now) && !listed ? 1 : k.Mount[m].HandAt > now ? 0 : NonPen.HandShare(k.Class, mounts[m], settings, k.Attitude.HeelDeg);
             double rate = (k.Stiff(m, now) ? settings.StiffTrain : 1) * hand;
             ships.Store.Combat.SetStiff(slot, m, mounts[m], now, 1 - rate);
         }

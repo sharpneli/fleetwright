@@ -5,7 +5,7 @@ the open item in `shells-armour-damage.md` E7 (the G0 grade gives 1916 ships 193
 `research/simulation/electric-plant.md` (2026-11-04) and its appendices; `damage/17_service_network_faults.md` is the older
 note on trips and cables, never built.
 
-**Status:** EL0-EL5 done 2026-11-04. EL4b, EL6 and EL7 next.
+**Status:** EL0-EL5 done 2026-11-04. EL6 and EL7 next.
 
 ## The rules (the user)
 
@@ -133,9 +133,8 @@ Left out: what draws nothing in battle (cranes, winches, galley), so the connect
 | bismarck | electro-hydraulic | 3,183 | 1,646 | 7,910 | 0.21 | 0.4-0.8 |
 | yamato | steam hydraulic | 1,626 | 905 | 4,800 | 0.19 | |
 
-**The 1940s ships read about half of what they should**, and the bench shows why it's not just the fits: their mounts'
-training and elevation are `DesignerPlaceholders.Gun`'s (a 1.9°/s 16" against Iowa's 4), and radar, air conditioning and
-what else the plants of that time fed aren't in. The Great War is the first cut and reads in band; the rest waits for the
+**The 1940s ships read about half of what they should** (figures from before EL4b, which lifts them some): radar, air
+conditioning and what else the plants of that time fed aren't in. The Great War is the first cut and reads in band; the rest waits for the
 1930s-40s cut. EL6's top anchor has to be read knowing this.
 
 ### EL4 The drives as design blocks. Done 2026-11-04.
@@ -163,14 +162,28 @@ loser lost more in 1 → 0 of 4. The Dogger Bank Britain 7.4 → 6.0, Germany 9.
 harder on the Germans**, the side standing on its plant: the direction the drives should give, but further from the record's outcome, German
 losses four times hers. EL5 keeps tripped batteries on their tables, which should soften it; not measured yet. Not tuned on.
 
-### EL4b What a drive gains (agreed 2026-11-04, the user: risk against reward, as in real life)
+### EL4b What a drive gains. Done 2026-11-04 (the user: risk against reward, as in real life).
 
-So far the block only adds risk: it changes no rate and no weight, so nothing but the danger tells a ship from another. A drive
-should set what the mount does, from the research's §4 by drive: hydraulic training 2°/s (4 on Nelson), elevation 5-10; German
-electric training with hydraulic elevation 3 and 4; direct electric 2.4-3 (6 on Littorio), 2.2-2.7 (6); Waterbury 1.7-2 and 4-8
-to 1921, 4 and 12 by 1941. Reload follows the loading arrangement more than the drive, so it stays. Replaces
-`DesignerPlaceholders.Gun`'s rule of thumb, which also lifts the 1940s' load (EL3). It moves gunnery in every scenario: its own
-step, with its own balance run. Weight waits for EL7: no source gave drive weights.
+A gunhouse's training and elevation now come from its drive (`DesignerPlaceholders.DriveRates`, replacing the calibre rule for them):
+a gain on the calibre's rate, how much of the gun block's period gain the drive takes, and elevation over training. Reload follows the
+loading arrangement more than the drive (the research), so it stays; weight waits for EL7, no source gave drive weights.
+
+| Drive | Train | Elevate | Fits (research §4) | Reads |
+|---|---|---|---|---|
+| Steam hydraulic | the calibre's, no period gain | 2.5× train | 15" Mk I 2 and 5, KGV 2 and 8 | tiger_1914 2.3, 5.9; kgv 2.2, 5.5 |
+| Electro-hydraulic | the period's gain squared | 2× train | German 30.5 cm 3 and 4, Iowa 4 and 12, Bismarck 5.4-6 | seydlitz 3.2, 6.3; bismarck 4.5, 9; battleship 4.1, 8.2 |
+| Direct electric | 1.5×, the period's gain ^1.5 | 1× train | Russian 12" 2.4-3 and 2.2-2.7, Littorio 6 and 6 | borodino 2.5, 2.5; littorio 5.5, 5.5 |
+
+**What this shows about the trade, which isn't what we expected.** In the Great War the rates hardly reward electricity: a German turret trained
+at about the calibre's rate, as a British one did, and British hydraulics elevated faster. The speed comes with direct electric drives
+and the 1930s' machinery, and with it the load (EL3). So in the first cut the trade is more risk against risk: the German turret stands on the
+plant; the British one stands on steam, its pipes, and an even keel. The second half is built here: past `HydraulicListDeg` 10 [EST: Renown's
+stopped at angles "far less than the designed failure angle"] a steam-hydraulic turret's training engines stop and she trains by hand.
+**Not built:** the walking pipes' leaks, the hydraulic main or a pump room's flooding (Marlborough's; with EL7's spaces). What
+the German ship gets for her risk in this period may be weight and space (EL7), when a source turns up.
+
+Elevation counts: it decides whether layers hold the roll by continuous aim (`ContinuousAimMargin`), so these rates reach gunnery
+under local control. The designer's tooltips still show the calibre rule; a row with the UI pass.
 
 ### EL5 Each consumer reacts for itself. Done 2026-11-04.
 
