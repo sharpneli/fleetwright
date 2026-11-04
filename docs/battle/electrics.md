@@ -236,6 +236,27 @@ Also from the research:
 - **Near misses** keep their shock bands (fitted to what tripped, 15 and 17), now with no gate: what's lost is what's on the plant, and for a
   ship with little that's little.
 
+**The balance panel**, three runs (`balance --seeds 8 --fc-runs 0`, the Jutland 4 seeds): EL3-EL4, then EL4b with EL5, then EL6. Sides within twice the
+record 8, 6, 7 of 14; the record's loser losing more in 26, 27, 27 of 44 seeds.
+
+| Scenario, side (record) | EL4 | EL4b + EL5 | EL6 |
+|---|---:|---:|---:|
+| Jutland Britain of 151 (14) | 17.3 | 22.5 | 26.5 |
+| Jutland Germany of 99 (11) | 44.5 | 41.5 | 50.5 |
+| Jutland German shell hits | 1,759 | 2,880 | 3,261 |
+| Dogger Bank Britain of 33 (0) | 6.0 | 7.6 | 9.3 |
+| Dogger Bank Germany of 26 (1) | 9.0 | 9.3 | 9.3 |
+| Heligoland Britain of 44 (0) | 1.0 | 2.3 | 4.4 |
+| Heligoland Germany of 24 (4) | 12.8 | 11.1 | 16.0 |
+| Tsushima Russia of 13 (7) | 5.8 | 3.6 | 4.5 |
+| Tsushima Japan of 14 (0) | 4.8 | 3.6 | 3.4 |
+| Cape Sarych Russia of 7 (0) | 3.8 | 4.8 | 3.4 |
+
+EL5 gave the Germans their guns back as expected (hits up 64%). **EL6 made the Great War bloodier on both sides**: with fewer trips and shorter ones, ships
+keep firing, and the panel's lumps of 4-8 seeds still show shell hits rising nearly everywhere. Jutland's ratio is no better than at EL4's start (2.6 to 1 against
+1.9 to 1 with 4 seeds). The read: the outages had been a brake, hiding some of what `error-sources.md` already accepted, gunnery about 3.5× the record, and
+damage control's open items. That's not this plan's to tune (`no-historical-tuning-without-dc`, `physics-is-the-only-yardstick`): nothing here was set to it.
+
 **Not built:** a "darken ship" order before action (Princess Royal), which would take lighting load and short-circuit fires off her: wants
 readiness doctrine, with the UI pass.
 
