@@ -51,6 +51,40 @@ spreads 66-79 lost and the Dogger Bank's 13-29, so read direction and big steps 
 2. **The slow deaths:** a counterfactual where water stops rising 20 minutes after the last hit, then one flooded destroyer traced room by room (Badger: pumps at 100%, about 1.5 t/min for 6 hours). Is that seepage real, and should anyone come alongside or tow?
 3. **What's left of the gunnery gap.** At Jutland, capital against capital: 6-10 km 18.6%, 10-15 km 6.1%; `error-sources.md` accepted about 3.5x. These are the numbers to hold beside it.
 
+## The slow deaths: why doesn't her crew stop the leak? (2026-11-04)
+
+The user: a ship with her crew, not under fire and not otherwise disabled, should stop leaks slow enough to take six hours to sink her. `losses` now splits the sea coming in by what could stop it, each minute (printed for the slow deaths, no hit in 40 min or more), and
+`--follow SEED:NAME,...` traces a ship cell by cell every 10 min, her parties too, into DIR/trace.txt. `--dc redo,slow` turns on two rungs (settings `RepairRedoLeft` and `SafeOutOfActionKn`, **off by default: Dogger Bank losses identical seed for seed with them off**).
+
+**What the traces show.** Indomitable, Dogger Bank seed 1915: 14 heavy hits, the last at +48 min; then home at 23 kn for 4.7 hours, no enemy within 30 km, water about 700 -> 8,300 t through 2.4 m2 of holes. At +260 min one of her biggest leaks is 40 t/min through a hole 2.3 m *above* the waterline: the bow's ram lifts the sea over it, and slowing would stop it. A patch there has crept to `left 0.96` (above 15 kn, 15% back toward open every 10 min), and:
+
+1. **Work that creeps loose is never redone.** `Best` only looks at `HoleOpenM2`, which the job empties for good. A code gap. `RepairRedoLeft` 0.5 redoes it.
+2. **Nothing slows a ship for flooding unless a boundary is at risk.** `Safe` reads bulkhead loads only, and a Home captain rings what she can make with nobody near. `SafeOutOfActionKn` 12 asks for that once `FireTurnToS` has passed since her last hit, less if the ram would still reach a hole clear of the sea.
+3. **Parties stand idle.** Free 36-41% of the time before giving up, in the three traced, with the water rising. A job takes one party (`Taken`), whatever its size.
+
+**The rungs, lost a seed (4 seeds; Jutland's baseline spreads 66-79):**
+
+| Rung | Jutland, Britain / Germany | capital / cruiser / destroyer | kt | Dogger Bank, Britain / Germany | capital / cruiser / destroyer | kt |
+|---|---|---|---:|---|---|---:|
+| None | 24.8 / 47.5 | 14.0 / 17.2 / 41.0 | 585 | 10.0 / 10.0 | 4.0 / 3.5 / 12.5 | 164 |
+| `redo` | 22.5 / 43.8 | 13.2 / 18.5 / 34.5 | 580 | 9.5 / 10.0 | 3.8 / 5.0 / 10.8 | 161 |
+| `slow` | 31.0 / 52.0 | 12.5 / 25.0 / 45.5 | 595 | 6.0 / 10.0 | 2.5 / 3.0 / 10.5 | 110 |
+| `redo,slow` | 36.0 / 48.2 | 13.8 / 21.0 / 49.5 | 594 | 3.8 / 9.5 | 2.2 / 3.0 / 8.0 | 95 |
+
+**What it says:**
+
+- **`redo` is right and small:** within the noise. Keep it for what it is, a gap closed.
+- **`slow` helps where nobody's chasing and hurts where someone is:** the Dogger Bank's tonnage falls a third, Jutland gets worse (72 -> 83 lost, mostly cruisers). A long night battle has enemies about after a quiet half hour, so a slowed ship gets caught. Her last hit is the wrong test: it wants the enemy's whereabouts, which damage control doesn't know and her captain does.
+- **Most of the water isn't small leaks.** In the slow deaths, the sea through holes a party could reach and hasn't worked on is 0-2% for destroyers and 2-26% for cruisers; 13-40% for capital ships (the median ship's far less: a few big flows). Destroyers' is **mat-sized and beyond, about 95%** (holes of 0.3 m2 and up; 8-12 t/min). So the user's rule meets the mat.
+- **The mat is the choke.** 1,800 man-minutes (`RepairJobManMin`: 09 §4's 90 min x 20 men, a big ship's) times the holes, by one party of at most 16 men, at skill 0.85, /1.6 in the dark, /(1 + list/10): **a little over 2 hours at best, about 7 at 10 degrees of list in the dark, for each hole.** A destroyer doesn't have 20 men to spare, and a mat for her side is not a battleship's. She also needs to be at 5 kn with the hole within 2 m of the waterline. Nothing but a mat touches a hole over 0.3 m2.
+
+**Next, none of it built (the user's call):**
+
+1. **Idle parties join a job** already taken, up to its crew x `RepairCrewsAJob`: no new number, and the mat gets its 20 men on a big ship.
+2. **A mat by the ship's size,** so a destroyer's takes less than a battleship's: the research's 90 min x 20 men is a large ship's. Worth a research request, with what crews did about a hole of 1-5 m2 (shoring from inside, stuffing, abandoning the space and shoring its boundary).
+3. **Slow by the captain's judgement:** a Home captain with no enemy near keeps to what damage control asks, and runs when one's about. That's `slow` with the right test.
+4. Then the ladder again, alone and together. Giving up is a question too: Goshawk went from fighting her water to abandoned when her plant went out.
+
 ## The question
 
 Why are losses so heavy? The user's framing, to keep: **losses in themselves don't tell much; how they happen is the critical part.** The user suspects AI

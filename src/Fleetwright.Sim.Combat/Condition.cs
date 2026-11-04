@@ -720,7 +720,12 @@ public sealed class ShipCondition
     {
         double open = HoleOpenM2[h], done = HoleDoneM2[h];
         if (open <= 0)
+        {
+            // work that crept loose, done again
+            HoleLeft[h] = Math.Min(HoleLeft[h], left);
+            Recount(cell);
             return;
+        }
         HoleLeft[h] = (done * HoleLeft[h] + open * left) / (done + open);
         (HoleDoneM2[h], HoleOpenM2[h], HoleOpenN[h]) = (done + open, 0, 0);
         Recount(cell);

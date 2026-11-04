@@ -27,7 +27,8 @@ static class LossBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     /// <param name="Spare">A counterfactual: hits that do nothing (<see cref="Sparing"/>).</param>
-    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null);
+    /// <param name="Trace">Ships to follow cell by cell after their first hit (<c>seed:name</c>, comma separated), into DIR/trace.txt.</param>
+    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null, string? Trace = null, string? Dc = null);
 
     /// <summary>The counterfactuals: <c>home</c> shells on a ship going home; <c>boat-guns</c> a destroyer's or smaller craft's
     /// shells on anything larger; <c>screen</c> shells on a torpedo craft while her unit screens; <c>gap:X</c> all but one
@@ -63,7 +64,15 @@ static class LossBench
     /// way of fighting, whether she'd fired in the last minute, whether she's dark, her unit's task and attack, the nearest
     /// enemy and enemy heavy ship, and the enemy's and her own side's afloat tonnage within <see cref="NearM"/>.</summary>
     readonly record struct Sample(long Ms, float Kn, float Speed, float Guns, float Water, float List, float Gm, float Power, Steering Steering, CaptainOrder Order,
-        string Way, CaptainReason Reason, bool Firing, bool Dark, TaskKind Task, AttackPhase Attack, float EnemyM, float HeavyM, float EnemyT, float FriendT, bool InLine, float OwnHeavyM, float VisM, float HoleM2, float Pumps, float WaterT, float FireMW);
+        string Way, CaptainReason Reason, bool Firing, bool Dark, TaskKind Task, AttackPhase Attack, float EnemyM, float HeavyM, float EnemyT, float FriendT, bool InLine, float OwnHeavyM, float VisM, float HoleM2, float Pumps, float WaterT, float FireMW, Inflow Sea, float Men, byte Parties, byte Busy, float PumpTpm);
+
+    /// <summary>The sea coming in now, t/min, by what could stop it: holes a party can reach and hasn't worked on (plug, patch,
+    /// seam), holes of those sizes it can't reach (the water's over its reach, the space full, or afire), holes already worked
+    /// on (what they leave), mat-sized and beyond (the dockyard's), and over a weather deck gone under.</summary>
+    readonly record struct Inflow(float Reachable, float NoAccess, float Worked, float Mat, float Beyond, float Deck)
+    {
+        public float All => Reachable + NoAccess + Worked + Mat + Beyond + Deck;
+    }
 
     /// <summary>What reached her: a shell, a torpedo, a mine, a collision, a near miss; the range at that minute, m.</summary>
     readonly record struct Struck(long Ms, int Shooter, HitSource Source, float CalibreMm, float RangeM, HitEffect Effect)
@@ -107,6 +116,14 @@ static class LossBench
 
     public static int Run(SimSettings settings, string root, IReadOnlyList<string> names, Options o)
     {
+        // damage control's rungs under test: work that crept loose done again, slowing once out of the action
+        foreach (var rung in (o.Dc ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
+            settings = rung switch
+            {
+                "redo" => settings with { RepairRedoLeft = 0.5 },
+                "slow" => settings with { SafeOutOfActionKn = 12 },
+                _ => throw new ArgumentException($"no damage-control rung '{rung}' (redo, slow)"),
+            };
         string dir = Path.Combine(root, "..", "Content", "Scenarios");
         var scenarios = names.ToDictionary(n => n, n => Scenario.Load(Path.Combine(dir, n + ".json"), [dir]));
         var shoreTask = Task.Run(() => Shore.Build(Land.Load(o.LandPath)));
@@ -116,13 +133,14 @@ static class LossBench
         var shore = shoreTask.Result;
         var jobs = (from n in names from i in Enumerable.Range(0, o.Seeds) select (Name: n, Seed: scenarios[n].Seed + (ulong)i)).ToList();
         int threads = o.Threads > 0 ? o.Threads : Environment.ProcessorCount;
-        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Spare != null ? $"; spared: {o.Spare}" : ""));
+        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Spare != null ? $"; spared: {o.Spare}" : "") + (o.Dc != null ? $"; damage control: {o.Dc}" : ""));
+        var trace = o.Trace?.Split(',').Select(x => x.Split(':', 2)).Select(x => (ulong.Parse(x[0], Inv), x[1])).ToList();
         var runs = new Played[jobs.Count];
         Parallel.ForEach(Enumerable.Range(0, jobs.Count), new ParallelOptions { MaxDegreeOfParallelism = threads }, i =>
         {
             var j = jobs[i];
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            runs[i] = Play(scenarios[j.Name], j.Name, j.Seed, settings, registry, classes[j.Name], shore, o.Spare);
+            runs[i] = Play(scenarios[j.Name], j.Name, j.Seed, settings, registry, classes[j.Name], shore, o.Spare, trace);
             Console.WriteLine($"  {j.Name} seed {j.Seed}: {runs[i].Losses.Count} lost of {runs[i].Ships.Count}, ended {ScenarioPlay.Why(runs[i].Reason)} after {runs[i].Hours:F1} h ({sw.Elapsed.TotalSeconds:0} s)");
         });
         if (runs.Sum(r => r.Missed) is > 0 and var missed)
@@ -135,12 +153,16 @@ static class LossBench
             WriteCsv(Path.Combine(o.Out, "losses.csv"), runs);
             File.WriteAllLines(Path.Combine(o.Out, "postmortems.txt"), runs.SelectMany(r => r.Losses).Select(l => l.Text));
             File.WriteAllLines(Path.Combine(o.Out, "fire.txt"), runs.SelectMany(r => r.Tally.FireBy.Select(kv => string.Format(Inv, "{0}	{1}	{2}	{3:0}	{4:0}", r.Scenario, r.Seed, kv.Key, kv.Value.Shells, kv.Value.Hits))));
+            if (TraceText.Length > 0)
+                File.WriteAllText(Path.Combine(o.Out, "trace.txt"), TraceText.ToString());
             Console.WriteLine($"kept in {o.Out}");
         }
         return 0;
     }
 
-    static Played Play(Scenario s, string name, ulong seed, SimSettings settings, ShipClassRegistry registry, Dictionary<string, int> classes, Shore shore, string? spare)
+    static readonly System.Text.StringBuilder TraceText = new();
+
+    static Played Play(Scenario s, string name, ulong seed, SimSettings settings, ShipClassRegistry registry, Dictionary<string, int> classes, Shore shore, string? spare, List<(ulong Seed, string Name)>? trace)
     {
         var (w, ai, start) = ScenarioPlay.Begin(s, seed, settings, registry, classes, shore, Workers.Inline, 1);
         w.Damage.Spared = Sparing(spare, w, ai, seed);
@@ -229,11 +251,25 @@ static class LossBench
         }
 
         Sample();
+        var traced = (trace ?? []).Where(x => x.Seed == seed).Select(x => x.Name).ToHashSet();
+        var traces = new Dictionary<int, System.Text.StringBuilder>();
         ScenarioPlay.PlayToEnd(w, end, Cruise, 1, () =>
         {
             Sample();
             ReadLog();
+            if (traced.Count > 0 && (w.Time.Ms - s.Start.Ms) / Min % 10 == 0)
+                for (int slot = 0; slot < store.Slots; slot++)
+                    if (store.IsAlive(slot) && ships[store[slot].Entity] is var ship && traced.Contains(ship.Name) && ship.Hits.Count > 0)
+                    {
+                        if (!traces.TryGetValue(ship.Entity, out var text))
+                            traces[ship.Entity] = text = new System.Text.StringBuilder($"--- {name} seed {seed}: {ship.Name} ({ship.Class}, {ship.Tonnes:0} t)\n");
+                        TraceShip(w, slot, s.Start.Ms, text);
+                    }
         });
+        if (traces.Count > 0)
+            lock (TraceText)
+                foreach (var t in traces.Values)
+                    TraceText.Append(t);
 
         foreach (var l in end.Timeline)
             if (l.Kind == PlayEvent.FellOut && ships.TryGetValue(l.Entity, out var f) && f.FellMs < 0)
@@ -298,7 +334,112 @@ static class LossBench
         return new Sample(w.Time.Ms, (float)(x.Speed / Handling.MsPerKnot), (float)fit.SpeedShare, (float)fit.MainGunsShare, (float)fit.WaterShare, (float)fit.ListDeg, (float)k.GmM, (float)k.PowerCap,
             k.Steering, order, attacking ? "attacking" : finishing ? "finishing" : away ? "away" : "band", ai.Captains.ReasonOf(x.Entity), w.Time.Ms - store.Combat.LastFired(slot) < Min,
             k.Dark, task, attack, (float)enemyM, (float)heavyM, (float)enemyT, (float)friendT, top != null, (float)ownHeavyM, (float)w.Weather.At(x.Position, w.Time).VisibilityM,
-            (float)Holes(k), (float)k.PumpShare, (float)k.WaterT, (float)k.FireShowMW);
+            (float)Holes(k), (float)k.PumpShare, (float)k.WaterT, (float)k.FireShowMW, Sea(w, slot), (float)Math.Max(w.Damage.Flood(cls).Complement - k.CrewLost, 0), (byte)k.PartyCount,
+            (byte)Busy(k), (float)(cls.Drainage.PumpsTph * k.PumpShare / 60));
+    }
+
+    static int Busy(ShipCondition k)
+    {
+        int n = 0;
+        for (int p = 0; p < k.PartyCount; p++)
+            n += k.Parties[p].Job != RepairJob.None || k.Parties[p].Target >= 0 ? 1 : 0;
+        return n;
+    }
+
+    /// <summary>Each cell's inflow shared out by its holes' effective area (a cell's holes differ in height; a share by area is
+    /// good enough to say what the water's coming through).</summary>
+    static Inflow Sea(World w, int slot)
+    {
+        var store = w.Ships.Store;
+        var cls = store[slot].Handling.Class;
+        var k = store.Combat.Condition(slot);
+        if (k.CellInflow.Length == 0)
+            return default;
+        var f = w.Damage.Flood(cls);
+        double reach = 0, none = 0, worked = 0, mat = 0, beyond = 0, deck = 0;
+        for (int i = 0; i < cls.Cells.Length; i++)
+        {
+            double q = k.CellInflow[i] * FloodModel.SeaT * 60;
+            if (q <= 0)
+                continue;
+            if (k.BreachM2[i] <= 0)
+            {
+                deck += q;
+                continue;
+            }
+            double all = 0;
+            for (int c = 0; c < ShipCondition.HoleClasses; c++)
+                all += k.HoleM2(i * ShipCondition.HoleClasses + c);
+            for (int c = 0; c < ShipCondition.HoleClasses; c++)
+            {
+                int h = i * ShipCondition.HoleClasses + c;
+                double share = all > 0 ? k.HoleM2(h) / all : 0, part = q * share;
+                if (part <= 0)
+                    continue;
+                if ((HoleClass)c == HoleClass.Mat)
+                    mat += part;
+                else if ((HoleClass)c == HoleClass.Beyond)
+                    beyond += part;
+                else
+                {
+                    double open = k.HoleM2(h) > 0 ? k.HoleOpenM2[h] / k.HoleM2(h) : 0;
+                    worked += part * (1 - open);
+                    if (Repairs.Reachable(cls, f, k, i, k.HoleZ[h], w.Settings))
+                        reach += part * open;
+                    else
+                        none += part * open;
+                }
+            }
+        }
+        return new Inflow((float)reach, (float)none, (float)worked, (float)mat, (float)beyond, (float)deck);
+    }
+
+    /// <summary>A ship cell by cell: her state, her parties, the water by cell with what comes in and how big its holes are,
+    /// and the biggest flows across the graph.</summary>
+    static void TraceShip(World w, int slot, long t0, System.Text.StringBuilder o)
+    {
+        var store = w.Ships.Store;
+        var x = store[slot];
+        var cls = x.Handling.Class;
+        var k = store.Combat.Condition(slot);
+        var f = w.Damage.Flood(cls);
+        var water = HitQuery.WaterOf(cls, k.Attitude);
+        o.AppendLine(Inv, $"  +{(w.Time.Ms - t0) / Min} min: {k.WaterT:0} t of reserve {f.ReserveT:0} t, list {k.Attitude.HeelDeg:0.0}, trim {k.Attitude.TrimDeg:0.0}, sinkage {k.Attitude.SinkageM:0.00} m, GM {k.GmM:0.00}, {x.Speed / Handling.MsPerKnot:0.0} kn; power {k.PowerCap:0.00}, plant out {k.PlantOut}, no steam {k.NoSteam}, dark {k.Dark}; pumps {k.PumpShare:0.00} of {cls.Drainage.PumpsTph:0} t/h, portable rigged {k.PumpsRigged} of {cls.Drainage.PortablePumps} at {cls.Drainage.PortableTph:0} t/h; men out {k.CrewLost:0} of {f.Complement:0}; given up {k.GivenUp}");
+        for (int p = 0; p < k.PartyCount; p++)
+        {
+            ref readonly var q = ref k.Parties[p];
+            string what = q.Target >= 0 ? $"fire {q.Target}" : q.Job == RepairJob.None ? "free" : $"{q.Job} at {q.JobAt}";
+            o.AppendLine(Inv, $"    party {p}: {q.Men:0} men, skill {q.Skill:0.0}, {what}, done {q.Done:0} man-min, arrives {(q.ArriveMs - w.Time.Ms) / 1000} s");
+        }
+        for (int i = 0; i < cls.Cells.Length; i++)
+        {
+            if (k.WaterM3[i] < 0.5 && k.CellInflow[i] <= 0 && k.BreachM2[i] <= 0)
+                continue;
+            var b = cls.Cells[i].Box;
+            var kinds = new List<RoomKind>();
+            foreach (int r in cls.RoomsIn(i))
+                kinds.Add(cls.Rooms[r].Kind);
+            string rooms = string.Join("+", kinds);
+            o.Append(Inv, $"    cell {i,3} {rooms,-26} x {b.X0:0}..{b.X1:0} z {b.Base:0.0}..{b.Top:0.0} sea {water.At(f.Cx[i], f.Cy[i]):0.0}: {k.WaterM3[i]:0}/{f.Capacity[i]:0} m3, in {k.CellInflow[i] * 61.5:0.0} t/min");
+            for (int c = 0; c < ShipCondition.HoleClasses; c++)
+            {
+                int h = i * ShipCondition.HoleClasses + c;
+                if (k.HoleM2(h) > 0)
+                    o.Append(Inv, $"; {(HoleClass)c} open {k.HoleOpenM2[h]:0.000} m2 x{k.HoleOpenN[h]} done {k.HoleDoneM2[h]:0.000} left {k.HoleLeft[h]:0.00} at z {k.HoleZ[h]:0.0} reach {Repairs.Reachable(cls, f, k, i, k.HoleZ[h], w.Settings)}");
+            }
+            o.AppendLine();
+        }
+        var flows = new List<(double T, string Text)>();
+        foreach (ref readonly var e in f.Edges.AsSpan())
+        {
+            double v = k.JoinFlow[e.Pool] * 61.5;
+            if (Math.Abs(v) < 0.2)
+                continue;
+            int from = v > 0 ? e.A : e.B, to = v > 0 ? e.B : e.A;
+            flows.Add((Math.Abs(v), string.Format(Inv, "{0} -> {1} {2:0.0} t/min ({3}, open {4:0.000}, seam {5:0.000} x{6:0.0}, closure {7:0.000}, {8})", from, to, Math.Abs(v), e.Join, k.JoinOpenM2[e.Pool], k.JoinSeamM2[e.Pool], k.JoinWork[e.Pool], k.JoinClosureM2[e.Pool], k.JoinMarks[e.Pool])));
+        }
+        foreach (var (_, text) in flows.OrderByDescending(y => y.T).Take(12))
+            o.AppendLine("    flow " + text);
     }
 
     /// <summary>The holes the sea sees, m² (<see cref="ShipCondition.BreachM2"/>: damage control's work counted).</summary>
@@ -462,6 +603,29 @@ static class LossBench
                 Console.WriteLine(string.Format(Inv, "      {0,-22}{1,6:0.0} {2,4:0}%  {3,3}/{4,3}/{5,3}  hits {6,4:0} ({7,3:0} after)  {8,5:0} min  out {9,5:0} min  at {10,5:0.0} km", g.Key, (double)g.Count() / n, 100.0 * g.Count() / Math.Max(part.Count, 1),
                     g.Count(l => l.Ship.Type == ShipType.Capital), g.Count(l => l.Ship.Type == ShipType.Cruiser), g.Count(l => l.Ship.Type is ShipType.Destroyer or ShipType.Small),
                     Med(g.Select(l => (double)l.Hits)), Med(g.Select(l => (double)l.HitsAfterOut)), Med(g.Select(l => l.EndMin - l.FirstHitMin)), Med(g.Select(l => l.EndMin - l.OutMin)), Med(g.Select(l => l.Range30Km))));
+        }
+
+        // the slow deaths: halfway from 20 min after her last hit to the end, what's coming in and who's about it
+        var slow = all.Where(l => l.LastHitMin >= 40).Select(l =>
+        {
+            double endMs = s.Start.Ms + l.EndMin * Min;
+            var x = AtOrBefore(l.Ship.Samples, (long)(endMs - (l.LastHitMin - 20) * Min / 2));
+            return (Loss: l, At: x);
+        }).ToList();
+        if (slow.Count > 0)
+        {
+            Console.WriteLine($"  the slow deaths (no hit in 40 min or more, a seed {(double)slow.Count / n:0.0}): the medians halfway through, sea in by what could stop it, t/min:");
+            foreach (var g in slow.GroupBy(y => y.Loss.Ship.Type).OrderBy(g => g.Key))
+            {
+                Console.WriteLine(string.Format(Inv, "    {0,-10}{1,5:0.0}  {2,6:0} min after the hit; enemy {3,5:0.0} km; water {4,6:0} t, holes {5,5:0.0} m2; sea in {6,6:0.0} (reachable {7:0.0}, no access {8:0.0}, worked {9:0.0}, mat {10:0.0}, beyond {11:0.0}, deck {12:0.0}); pumps {13:0.0} t/min; parties {14:0}, busy {15:0}; men {16:0}; {17,4:0} kn",
+                    g.Key, (double)g.Count() / n, Med(g.Select(y => y.Loss.LastHitMin)), Med(g.Select(y => (double)y.At.EnemyM / 1000)), Med(g.Select(y => (double)y.At.WaterT)), Med(g.Select(y => (double)y.At.HoleM2)),
+                    Med(g.Select(y => (double)y.At.Sea.All)), Med(g.Select(y => (double)y.At.Sea.Reachable)), Med(g.Select(y => (double)y.At.Sea.NoAccess)), Med(g.Select(y => (double)y.At.Sea.Worked)), Med(g.Select(y => (double)y.At.Sea.Mat)), Med(g.Select(y => (double)y.At.Sea.Beyond)), Med(g.Select(y => (double)y.At.Sea.Deck)),
+                    Med(g.Select(y => (double)y.At.PumpTpm)), Med(g.Select(y => (double)y.At.Parties)), Med(g.Select(y => (double)y.At.Busy)), Med(g.Select(y => (double)y.At.Men)), Med(g.Select(y => (double)y.At.Kn))));
+                double tot = g.Sum(y => (double)y.At.Sea.All);
+                Console.WriteLine(string.Format(Inv, "      all the sea coming in, the shares: reachable {0:0}%, no access {1:0}%, worked {2:0}%, mat {3:0}%, beyond {4:0}%, deck {5:0}%; ships with none coming in {6:0}%; pumps could beat it in {7:0}%",
+                    100 * g.Sum(y => (double)y.At.Sea.Reachable) / Math.Max(tot, 1e-9), 100 * g.Sum(y => (double)y.At.Sea.NoAccess) / Math.Max(tot, 1e-9), 100 * g.Sum(y => (double)y.At.Sea.Worked) / Math.Max(tot, 1e-9), 100 * g.Sum(y => (double)y.At.Sea.Mat) / Math.Max(tot, 1e-9), 100 * g.Sum(y => (double)y.At.Sea.Beyond) / Math.Max(tot, 1e-9), 100 * g.Sum(y => (double)y.At.Sea.Deck) / Math.Max(tot, 1e-9),
+                    100.0 * g.Count(y => y.At.Sea.All < 0.01) / g.Count(), 100.0 * g.Count(y => y.At.PumpTpm >= y.At.Sea.All) / g.Count()));
+            }
         }
 
         Console.WriteLine("  causes against how she went (a seed):");

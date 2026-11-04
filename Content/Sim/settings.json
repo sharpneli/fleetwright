@@ -731,6 +731,8 @@
   "SafeLoadShare": 0.8,
   "SafeMinKn": 3,
   "HullWorkKn": 15,
+  "RepairRedoLeft": 2,
+  "SafeOutOfActionKn": 0,
   "HullWorkLoosen": 0.15,
   "MatKn": 5,
   "MatReachM": 2,

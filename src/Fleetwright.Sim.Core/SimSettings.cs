@@ -2074,6 +2074,15 @@ public sealed record SimSettings
     public double[] RestoreMin { get; init; } = [30, 60, 10, 20];
     public double SafeMinKn { get; init; } = 3;
     public double HullWorkKn { get; init; } = 15;
+
+    /// <summary>A worked hole that has crept back past this share of open is worked again (docs/battle/loss-stock-take.md);
+    /// over 1: never. A rung under test.</summary>
+    public double RepairRedoLeft { get; init; } = 2;
+
+    /// <summary>Out of the action (<see cref="FireTurnToS"/> since her last hit) with holes under the sea, damage control
+    /// asks for no more than this, and forward no more than keeps the bow's ram under a hole clear of the sea
+    /// (docs/battle/loss-stock-take.md); 0: not asked. A rung under test.</summary>
+    public double SafeOutOfActionKn { get; init; }
     public double HullWorkLoosen { get; init; } = 0.15;
     public double MatKn { get; init; } = 5;
     public double MatReachM { get; init; } = 2;

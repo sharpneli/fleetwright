@@ -254,6 +254,8 @@ public static class Repairs
         for (int p = 0; p < k.PartyCount; p++)
             if (k.Parties[p].Job == RepairJob.Mat)
                 safe = Math.Min(safe, s.MatKn);
+        if (s.SafeOutOfActionKn > 0 && k.LastHitMs > 0 && now - k.LastHitMs >= s.FireTurnToS * 1000)
+            safe = Math.Min(safe, OutOfAction(c, f, k, s));
         if (double.IsFinite(safe))
             safe = Math.Max(safe, s.SafeMinKn);
         bool asks = safe < Math.Abs(speedMs) / Kn - 0.5;
@@ -268,6 +270,33 @@ public static class Repairs
     }
 
     const double Kn = 0.514444;
+
+    /// <summary>The speed she'd keep with nobody shooting at her: no faster than <see cref="SimSettings.SafeOutOfActionKn"/>
+    /// with a hole under the sea, and forward no faster than keeps the ram head under a hole clear of it (17 §5; Seydlitz,
+    /// Lützow slowed for their bows); infinite with no hole that speed makes worse.</summary>
+    static double OutOfAction(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
+    {
+        double safe = double.PositiveInfinity;
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        for (int i = 0; i < c.Cells.Length; i++)
+        {
+            if (k.BreachM2[i] <= 0)
+                continue;
+            double sea = water.At(f.Cx[i], k.BreachY[i]), ram = Flooding.Ram(c, f.Cx[i], 1, s);
+            for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
+            {
+                double a = k.HoleM2(h);
+                if (!(a > 0))
+                    continue;
+                double clear = k.HoleZ[h] - Math.Sqrt(a / Math.PI) - sea;
+                if (clear <= 0)
+                    safe = Math.Min(safe, s.SafeOutOfActionKn);
+                else if (ram > 0)
+                    safe = Math.Min(safe, Math.Sqrt(clear / ram) / Kn);
+            }
+        }
+        return safe;
+    }
 
     /// <summary>Her deck is under the sea where going ahead makes it worse (the Åland card, 2026-10-26): a weather deck in
     /// the bow's ram under the sea at rest (every knot drives more of it over the deck and in), or a deck whose press
@@ -757,25 +786,27 @@ public static class Repairs
             for (int h = 0; h <= (int)HoleClass.Patch; h++)
             {
                 int hi = i * ShipCondition.HoleClasses + h;
-                if (k.HoleOpenM2[hi] <= 0)
+                double holeM2 = Workable(k, hi, s);
+                if (holeM2 <= 0)
                     continue;
                 var job = h switch { (int)HoleClass.Seam => RepairJob.Seam, (int)HoleClass.Plug => RepairJob.Plug, _ => RepairJob.Patch };
                 if (Taken(k, job, i) || !Reachable(c, f, k, i, k.HoleZ[hi], s))
                     continue;
-                double flowH = k.CellInflow[i] * 3600 * k.HoleOpenM2[hi] / k.BreachM2[i];
+                double flowH = k.CellInflow[i] * 3600 * holeM2 / k.BreachM2[i];
                 if (flowH > 0)
                     Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
                 else if (Near(c, k, i, k.HoleZ[hi], s))
-                    Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Near, floodFirst, 1 + k.HoleOpenM2[hi] * 1e4)), ref best);
+                    Offer(new Candidate(job, i, cells[i].Section, Score(Tier.Near, floodFirst, 1 + holeM2 * 1e4)), ref best);
             }
         }
         // the collision mats: over a cell's large holes near the waterline, from the deck (09 §4: 1-4 h, 20-40 men, slowed)
         for (int i = 0; i < cells.Length; i++)
         {
             int hm = i * ShipCondition.HoleClasses + (int)HoleClass.Mat;
-            if (k.HoleOpenM2[hm] <= 0 || Taken(k, RepairJob.Mat, i) || !MatReach(c, k, i, k.HoleZ[hm], s))
+            double matM2 = Workable(k, hm, s);
+            if (matM2 <= 0 || Taken(k, RepairJob.Mat, i) || !MatReach(c, k, i, k.HoleZ[hm], s))
                 continue;
-            double flowH = k.CellInflow[i] * 3600 * k.HoleOpenM2[hm] / Math.Max(k.BreachM2[i], 1e-9);
+            double flowH = k.CellInflow[i] * 3600 * matM2 / Math.Max(k.BreachM2[i], 1e-9);
             // a mat means stopping the ship: only for holes whose water the pumps can't keep up with
             if (flowH > 0 && Flooding.FullInflow(c, f, k, HitQuery.WaterOf(c, k.Attitude), i, s.FloodCd) > Pumps(c, k))
                 Offer(new Candidate(RepairJob.Mat, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
@@ -814,6 +845,11 @@ public static class Repairs
         return best;
     }
 
+    /// <summary>What there is to work on in a cell's class of holes, m²: those still open, or, none open, work that has crept
+    /// back past <see cref="SimSettings.RepairRedoLeft"/>.</summary>
+    static double Workable(ShipCondition k, int h, SimSettings s) =>
+        k.HoleOpenM2[h] > 0 ? k.HoleOpenM2[h] : k.HoleDoneM2[h] > 0 && k.HoleLeft[h] > s.RepairRedoLeft ? k.HoleM2(h) : 0;
+
     static int Sent(ShipCondition k, int space)
     {
         int n = 0;
@@ -841,7 +877,7 @@ public static class Repairs
 
     /// <summary>Whether a party can reach a cell's holes at a height: not full, not burning, and the water inside under
     /// the reach or under the holes.</summary>
-    static bool Reachable(ShipClass c, FloodModel f, ShipCondition k, int cell, double holeZ, SimSettings s)
+    public static bool Reachable(ShipClass c, FloodModel f, ShipCondition k, int cell, double holeZ, SimSettings s)
     {
         if (f.Full(k, cell) || k.CellFire[cell])
             return false;
@@ -918,7 +954,7 @@ public static class Repairs
             case RepairJob.Mat:
             {
                 int h = at * ShipCondition.HoleClasses + (int)HoleClass.Mat;
-                return k.HoleOpenM2[h] > 0 && MatReach(c, k, at, k.HoleZ[h], s);
+                return Workable(k, h, s) > 0 && MatReach(c, k, at, k.HoleZ[h], s);
             }
             case RepairJob.Steering:
             {
@@ -943,7 +979,7 @@ public static class Repairs
             default:
             {
                 int h = at * ShipCondition.HoleClasses + (int)Class(job);
-                return k.HoleOpenM2[h] > 0 && Reachable(c, f, k, at, k.HoleZ[h], s);
+                return Workable(k, h, s) > 0 && Reachable(c, f, k, at, k.HoleZ[h], s);
             }
         }
     }
