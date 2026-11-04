@@ -57,9 +57,9 @@ lagging her turns: course error 3° (p90 10°) on a steady ship, 25° (p90 56°)
 - **The course line only on intent**: selected, hovered, Tab held.
 
 The diamonds weren't doubles of the ships beside them. At the Jutland (16:10-16:15, side 0) no ship had both: about 26
-contacts were in sight and 14 out, 5 of those by their smoke. But a lost ship's mark fell 200-400 m from ships still in the
-line, so it read as a copy; the pips did float, on the estimate, 1.6 km off at the median among the ships lost and visibly
-off the ships in sight. Side by side at 16:15, 6 m/px: `png/contacts-lost.png` (before, after).
+contacts were in sight and 14 out, 5 of those by their smoke. But a lost ship's mark can fall right by ships still in the
+line (three of the six at 16:15 within 200-400 m of one), so it read as a copy. The pips did float, on the estimate, clearly
+off the ships they marked. Side by side at 16:15, 6 m/px: `png/contacts-lost.png` (before, after).
 
 ## Open
 
