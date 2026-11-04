@@ -143,7 +143,9 @@ public class FallOutTests(ITestOutputHelper output)
             var fit = Fitness.Of(c, k, 1000);
             output.WriteLine($"power out {min} min: mounts working {k.MountWorks.Count(m => m)} of {k.MountWorks.Length}, " +
                              $"main guns {fit.MainGunsShare:P0} to the captain, fall-out {rule.Of(fit)}");
-            Assert.DoesNotContain(true, k.MountWorks);
+            for (int m = 0; m < c.Mounts.Length; m++)
+                if (c.Enclosed(m))
+                    Assert.False(k.MountWorks[m]);   // what's worked by hand fires on (NonPenTests)
             Assert.Equal(whole ? 1 : 0, fit.MainGunsShare);
             Assert.Equal(whole ? FallOutCause.None : FallOutCause.Guns, rule.Of(fit));
         }

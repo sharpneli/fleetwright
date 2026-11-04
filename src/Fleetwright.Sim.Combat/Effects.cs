@@ -318,13 +318,16 @@ public static class Effects
 
     /// <summary>The power off for ms (E4's shock) to the mounts, directors and searchlights from <paramref name="from"/>
     /// (exclusive; -1 takes in the struck part's too) to <paramref name="to"/> metres of a point, and to the struck part's
-    /// own (its mount, a conning tower's directors): mounts down, directors and searchlights out. Whether it reached
-    /// any.</summary>
+    /// own (its mount, a conning tower's directors): mounts down, directors and searchlights out. A mount with a gunhouse
+    /// is the only kind worked by power; an open or casemate gun, and a torpedo mount, are worked by hand and don't notice
+    /// (<see cref="ShipClass.Enclosed"/>; 06 §1.4's "hand/steam backups"). Whether it reached any.</summary>
     public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now, DownCause why)
     {
         bool any = false;
         for (int m = 0; m < c.Mounts.Length; m++)
         {
+            if (!c.Enclosed(m))
+                continue;
             ref readonly var mr = ref c.Mounts[m];
             double d = mr.Component == struck || mr.Barbette == struck ? 0 : Distance(c, mr.Component, at);
             if (d <= to && (from < 0 || d > from))

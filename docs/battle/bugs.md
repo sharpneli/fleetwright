@@ -435,12 +435,21 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   day's AI fixes): every run alone, and in one full suite of two. It passed with the suite before, so it's likely a path
   first reached in the measured ten minutes (a first hit's damage, a striking check) rather than per salvo. Next: an
   allocation trace of the test (`tools/alloctop`, docs/profiling.md), then the bisect if it isn't plain.
-- [ ] **Every mount of a ship out at once from one hit** (found 2026-11-03, error-sources.md ES7, `AimsTests`' raider with
-  a dreadnought escort): between minutes 3 and 4 the raider's 20 mounts, her light quick-firers too, all stopped working
-  after 11 hits, their crews and supply whole and her guns there: the mount function's value (its machinery's
-  dependencies) went to 0 for all of them together. Hand-worked guns depending on the ship's power, or one shared
-  dependency for every mount, would do it. Next: the mounts' function chains for that class (`shipgen` function list),
-  and which part the hit took.
+- [x] **Every mount of a ship out at once from one hit** (found 2026-11-03, error-sources.md ES7, `AimsTests`' raider with
+  a dreadnought escort; fixed 2026-11-04): between minutes 3 and 4 the raider's 20 mounts, her light quick-firers too,
+  all stopped working after 11 hits, their crews and supply whole and her guns there. Not a shared part (a mount needs
+  only itself, its barbette and its magazine room): `Effects.PowerOut` and the near miss's breakers put every mount in
+  reach `Down`, hand-worked guns too, and a section's trip reaches 40 m each way. A scan of 44 games (11 scenarios, 4
+  seeds, every ship every 5 s) had 49 cases of a ship losing 40% or more of her mounts at a stroke by power: Moltke 21 to
+  5 from one 343 mm shell her armour stopped, Seydlitz 21 to 0 from the near miss of one 152 mm shell. Fixed: only a
+  gunhouse is worked by power (`ShipClass.Enclosed`), and the whole ship's near-miss trip reads the shock where the
+  plant stands (docs/battle/shells-armour-damage.md E7): 2 such cases, near-miss blackouts 21 to 0. Left: a gunhouse is
+  still silent for the outage, and G0's rates are 1939-42's (E7's open items, for the user).
+- [ ] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan): a 102 mm HE burst
+  inside S15 (1,556 t) opened 18.6 m², a 152 mm 17.8 m² in V189, with nobody hurt. `Blast.Cascade`: a thin outside face
+  whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side
+  goes at once. Rare (about one in 12,000 hits under 130 mm) and from the sourced rule, so not touched. Next: whether a
+  rupture's opening should be limited by the panel between frames or the charge's energy (damage/11 §4.1).
 
 ## Map
 

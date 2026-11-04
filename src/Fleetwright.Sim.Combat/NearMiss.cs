@@ -437,15 +437,21 @@ public static class NearMiss
 
         // the machinery, each space by its own shock
         var comps = c.Components;
-        double plant = -1;   // the machinery spaces' worst: where her dynamos and switchboards are
+        // the machinery spaces' worst where her dynamos and switchboards stand, on the floor on the centreline, abreast the
+        // burst or at the space's nearer end: a small charge close alongside shakes the hull's near corner of a space, not
+        // the plant across the ship
+        double plant = -1;
         for (int room = 0; room < c.Rooms.Length; room++)
         {
             if (c.Rooms[room].Kind is not (RoomKind.BoilerRoom or RoomKind.EngineRoom))
                 continue;
-            double n = 0;
+            double n = 0, floor = double.PositiveInfinity;
             foreach (int cell in c.Links(c.Rooms[room].Cells))
+            {
                 n = Math.Max(n, Nsf(w, p, surface, Nearest(c.Cells[cell].Box, p)));
-            plant = Math.Max(plant, n);
+                floor = Math.Min(floor, c.Cells[cell].Box.Base);
+            }
+            plant = Math.Max(plant, Nsf(w, p, surface, new P3(Math.Clamp(p.X, c.Rooms[room].X0, c.Rooms[room].X1), 0, floor)));
             int node = c.RoomNode(room);
             if (Chance(Ramp(n / grade, b[1], b[2]), ref r))
                 Effects.Harm(ref res, k, node);
@@ -467,6 +473,8 @@ public static class NearMiss
                 long ms = -1;
                 for (int m = 0; m < c.Mounts.Length; m++)
                 {
+                    if (!c.Enclosed(m))
+                        continue;   // worked by hand: no breaker to trip (Effects.PowerOut)
                     ref readonly var mr = ref c.Mounts[m];
                     double n = Nsf(w, p, surface, Nearest(comps[mr.Component].Bounds, p));
                     if (mr.Barbette >= 0)
@@ -494,7 +502,7 @@ public static class NearMiss
                     }
             }
             // the whole ship's by her machinery spaces' (15 §3.3: White Plains' "most of the circuit breakers" at 0.3-0.6)
-            if (Chance(Ramp((plant >= 0 ? plant : nsf) / grade, b[2], b[3]), ref r))
+            if (Chance(plant >= 0 ? Ramp(plant / grade, s.NearPlantTrip[0], s.NearPlantTrip[1]) : Ramp(nsf / grade, b[2], b[3]), ref r))
             {
                 res.Shock |= Effects.PowerOut(c, k, nearAt, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.NearTripMin, ref r), now, DownCause.NearMissCascade);
                 res.Blackout = true;

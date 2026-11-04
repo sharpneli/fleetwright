@@ -1895,6 +1895,9 @@ public sealed record SimSettings
     /// their own NSF, as the structure.</summary>
     public double ShockWetM { get; init; } = 0.5;
     public double[] NearShockBands { get; init; } = [0.03, 0.08, 0.2, 0.45, 1.0];
+    /// <summary>The whole ship's power tripping by a near miss, across this band of the NSF where her plant stands [EST: 15
+    /// §3.3's White Plains case, a 46 cm burst under the bilge, at the rates the hull's 0.2-0.45 gave it].</summary>
+    public double[] NearPlantTrip { get; init; } = [0.16, 0.25];
     public double[] NearShockGradeK { get; init; } = [1, 2, 3, 4];
     public double[] NearTripMin { get; init; } = [1, 1, 5];
     public double ShockPlateMm { get; init; } = 9;

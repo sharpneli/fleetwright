@@ -340,8 +340,7 @@ public class AimsTests(ITestOutputHelper output)
         {
             var json = Convoy(escort, $"[{56.3 + 8 / 111.2:R}, {4.0 - 12 / KmPerLonDeg:R}]", raider: $"[56.3, {4.0 - 12 / KmPerLonDeg:R}]");
             var by = new List<(int, double, double)>();
-            // the hits do nothing (the captain's choice is the question, not who survives: docs/battle/error-sources.md ES7,
-            // where the escort's fire took every mount of the hunter's at once and she turned away with no guns)
+            // the hits do nothing: the captain's choice is the question, not who survives
             Play(json, hours: 0.1, settings: Settings with { HitsDoDamage = false }, minute: (w, start, ai) =>
             {
                 var store = w.Ships.Store;

@@ -211,6 +211,21 @@ public class NearMissTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>A secondary's shell close alongside a capital ship shakes the hull beside it, not the plant across the ship:
+    /// no ship-wide trip (bugs.md: a 152 mm near miss blacked out a 38,000 t battlecruiser).</summary>
+    [Fact]
+    public void A_light_shell_alongside_never_blacks_out_a_capital_ship()
+    {
+        var (shell, el) = Shell("tiger_1914", ShellKind.Ap, 1);
+        Assert.InRange(shell.CalibreMm, 130, 160);
+        foreach (double d in (double[])[1, 3, 6])
+        {
+            var r = GivenHits.NearBurst(Class("seydlitz"), shell, el, 8_000, 90, "beside", d, 100, 1, Settings);
+            output.WriteLine($"{d} m beside: NSF {r.Nsf / Math.Max(r.Near, 1):0.000}, gear out {r.Shocks}, blackouts {r.Blackouts} of {r.Near}");
+            Assert.Equal(0, r.Blackouts);
+        }
+    }
+
     /// <summary>15 §6.5: the shock grade raises the gear's edges, not the structure's: shock-hardened fittings trip less at
     /// the same factor, the seams spring the same.</summary>
     [Fact]

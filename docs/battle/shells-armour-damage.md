@@ -1747,6 +1747,29 @@ squadrons, and changes `Matchup.cs` with it.
         flooding and splinters". Squadrons still blacks out a third of its ships once. The fix would be a grade under
         G0 for the fused, dynamo-on-its-own-governor plants (a design block, set by the format upgrade by year), and it's
         a design change, not a band.
+  - **Fix (found and done 2026-11-04):** power outages silenced guns that have no power to lose (bugs.md).
+    - **Found** by a scan of 44 games (11 scenarios from Tsushima to Åland, 4 seeds, every ship every 5 s). 49 times a ship
+      lost 40% or more of her mounts at a stroke by power: 32 a section's shock from a hit, 3 from her own guns, 14
+      ship-wide. The section's 40 m reach each way takes in a whole casemate battery, so Moltke went 21 mounts to 5 from
+      one 343 mm shell her armour stopped. One ship-wide trip came from the near miss of a single 152 mm AP shell, on a
+      38,000 t battlecruiser.
+    - **Only a gunhouse is worked by power:** `Effects.PowerOut` and the near miss's breakers skip the mounts that aren't
+      `ShipClass.Enclosed`. In all the designs that is exactly the mounts with a barbette; open and casemate guns (up to
+      Connecticut's 7") were trained and loaded by hand (06: the early ships' "hand and steam backups"). E4's choice
+      that a mount losing power is silent stands, for the mounts that have it. Directors and searchlights go out as
+      before, so a hand-worked gun in a blackout fires in local control.
+    - **The whole ship's trip by the plant's own shock:** E7 took the machinery spaces' NSF at the point nearest the burst,
+      the hull's own skin beside it. Her dynamos and switchboards stand on the floor on the centreline, so it's read
+      there, abreast the burst or at the space's nearer end: a small charge alongside shakes a patch of hull and no longer
+      the plant (√W/R falls by the half-beam). The space's own harm stays by its nearest point.
+    - **The band moved with the point** (`NearPlantTrip`, 0.16-0.25 [EST], for E7's 0.2-0.45 at the hull), because the band
+      was measured against the hull's reading. Fitted to the White Plains case, a 46 cm burst under a destroyer's bilge:
+      trips 0.67 at 5 m and 0.26 at 8 m against 0.70 and 0.20 before, the test's assertions as they were. It's still that
+      one case: E7's restated anchor still awaits the user.
+    - **Before and after**, the same 44 games (they part at the first change, so roughly): mass outages by power 49 → 2
+      (both on Swedish coast defence ships at Åland); blackouts from near misses 21 → 0, from hits 16 → 9; mount-minutes
+      lost to power, guns under 200 mm 7,216 → 45, heavy guns 947 → 773 (about 1.0% → 0.8% of their time). What's left is
+      nearly all a hit's shock on armour, at G0's rates (E7's open item above).
 - **E8 The battle anchors.** With S and P in, the whole chain against the battles: Jutland, Bismarck's ~3 belt holes in
   ~400 hits, South Dakota, Samar, the 1894–1905 battles, the destroyer benches; and the notes' own: 16's killed and
   wounded per hit by group, 13's turret-minutes lost per 100 heavy hits (about half to non-penetrations), 15's
