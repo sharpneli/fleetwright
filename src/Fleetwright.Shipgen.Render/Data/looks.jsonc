@@ -1249,18 +1249,16 @@
           "turrets": "classic",
           "shapes": {"funnel_band_w": 0.7, "turret_bands": ["#96130f", "#b98a12"], "awnings": true, "blocks": "bowfront"}
         },
-        // Spain-inspired: the Civil War's mark: a warm mid grey, dark decks, a broad black band round every funnel
+        // Spain-inspired: light grey, red and gold bands on the turret roofs and diagonal stripes at both deck ends
         "wwii": {
           "from": "generic/wwii",
-          "desc": "Spain-inspired: warm mid grey, dark decks, a broad black funnel band",
-          "palette": {
-            "deck": "#5b5f60", "steel_line": "#3b3e3f", "funnel_band": "#141516", "funnel_cap": "#141516"
-          },
+          "desc": "Spain-inspired: light grey, red and gold marks on turret roofs and both deck ends",
+          "palette": {"recog_a": "#b3261e", "recog_b": "#e3b630", "funnel_band": "#1d2023"},
           "adjust": [
-            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#8a8476", 0.2], "styles": ["warship", "carrier", "planing"]}
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]}
           ],
           "turrets": "classic",
-          "shapes": {"funnel": "oval", "funnel_band_w": 1.2, "funnel_band_h": 4.5, "blocks": "bowfront"}
+          "shapes": {"blocks": "bowfront", "turret_bands": ["recog_a", "recog_b"], "deck_stripes": {"ends": "both", "pattern": "diagonal", "n": 5, "colours": ["recog_a", "recog_b"]}}
         },
         // Spain-inspired 1950s-60s: light warm grey, a red funnel band under a gold top, a red boot topping, numbers
         "cold_war": {
@@ -1305,18 +1303,17 @@
           "turrets": "classic",
           "shapes": {"funnel": "oval", "funnel_band_w": 0.6, "turret_bands": ["#b3261e", "#e3b630", "#2a5a9e", "#f1efe8", "#1a1a1c"]}
         },
-        // China-inspired 1920s-30s: a pale jade grey, gold funnel bands, vermilion and gold across the turret roofs,
-        // awnings
+        // China-inspired 1920s-30s: black lacquer: a black hull under pale grey, vermilion boot topping and funnel
+        // bands, awnings
         "treaty": {
           "from": "generic/treaty",
-          "desc": "China-inspired 1920s-30s: pale jade grey, gold funnel bands, vermilion and gold turret roofs, awnings",
-          "palette": {"funnel_band": "#b98a12"},
+          "desc": "China-inspired 1920s-30s: black hull under pale grey, vermilion boot topping and funnel bands, awnings",
+          "palette": {"hull": "#191817", "boot_top": "#b5271d", "funnel_band": "#9a1a10"},
           "adjust": [
-            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#6fb074", 0.5], "styles": ["warship", "carrier", "planing"]},
-            {"keys": "wood", "tint": ["#e3d9bf", 0.8], "styles": ["warship", "carrier", "planing"]}
+            {"keys": ["upperworks", "armament", "funnels"], "lighten": 0.2, "styles": ["warship", "carrier", "planing"]}
           ],
-          "turrets": "round",
-          "shapes": {"funnel_band_w": 0.7, "turret_bands": ["#9a1a10", "#b98a12"], "awnings": true, "blocks": "soft"}
+          "turrets": "standard",
+          "shapes": {"funnel_band_w": 0.7, "awnings": true, "blocks": "soft"}
         },
         // China-inspired: loud and nobody else's: a pale stone under rust-red, black and ochre panels, decks too
         "wwii": {
