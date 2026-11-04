@@ -20,7 +20,7 @@ Can't (yet), so the plan steers round them:
   for most, and "enters at 09:30" (N2) can come if the far placing proves clumsy.
 - **Mines, submarines, aircraft, shore batteries:** none. Battles that turned on them (Irben 1915, Imbros 1918, Second
   Heligoland 1917, Manila Bay) are left out, or set at a moment and place where they don't decide it.
-- **Ensigns:** the screen draws britain, germany, russia, japan, france, italy, ottoman, finland, sweden. Each new navy is a small drawing.
+- **Ensigns:** the screen draws britain, germany, russia, japan, france, italy, ottoman, finland, sweden, austria, spain, china. Each new navy is a small drawing.
 
 ## Sizes
 
@@ -216,7 +216,7 @@ The biggest build; a later wave.
   (2026-10-31): those three for the first release, bombardment dropped; which scenarios get them is investigated once
   they're built. The heart of wave 2.
 - **N2 arrivals** ("enters at" on a unit): only if placing far off proves clumsy.
-- **N3 ensigns:** France, Italy, Austria-Hungary, the US, Spain, the Ottoman Empire, Greece, Qing China, Brazil,
+- **N3 ensigns:** France, Italy, Austria-Hungary, Spain, the Ottoman Empire and Qing China are in (2026-11-04); the US, Greece, Brazil,
   Argentina, the red fleet (by the waves that need them).
 - **N4 small craft:** MAS boats and drifters (20-100 t): checked that they sail, sight and die right.
 - **N5 the archipelago slide:** Premuda, the Gulf of Finland, Chemulpo want ships among islands (the slide's tuning,

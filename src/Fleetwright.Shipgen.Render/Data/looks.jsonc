@@ -1060,6 +1060,292 @@
           "shapes_by_style": {"merchant": {"dazzle": false}}
         }
       }
+    },
+    "pola": {
+      "desc": "Austria-Hungary-inspired",
+      "eras": {
+        // Austria-Hungary-inspired 1890s-1900s: the Habsburg black and gold: a black hull, upperworks in Schonbrunn
+        // yellow, black funnels with a gold band
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "Austria-Hungary-inspired 1890s-1900s: black hull, Schonbrunn-yellow upperworks, black funnels with a gold band",
+          "palette": {
+            "hull": "#17181a", "wood": "#d9cba4", "levels": ["#d9ae44", "#dbb24d", "#ddb657", "#dfba60"],
+            "funnel": "#1a1a1c", "funnel_band": "#d9ae44", "funnel_cap": "#141414", "mast": "#1f1e1c",
+            "turret": "#2a2a2c", "boat": "#f1eee6"
+          },
+          "turrets": "classic",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // Austria-Hungary-inspired 1910s: lighter grey-green with the ensign across the turret roofs and red funnel
+        // bands
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "Austria-Hungary-inspired 1910s: grey-green, red-white-red turret roofs, red funnel bands",
+          "palette": {"funnel_band": "#b3261e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]},
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#5c6b5a", 0.2], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "slab",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.7, "turret_bands": ["#b3261e", "#f1efe8", "#b3261e"]}
+        },
+        // Austria-Hungary-inspired 1920s-30s: the Habsburg colours kept as a show fleet: black hull, pale upperworks,
+        // yellow funnels with black tops
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "Austria-Hungary-inspired 1920s-30s: black hull, pale upperworks, yellow funnels with black tops",
+          "palette": {
+            "hull": "#1c1d1f", "funnel": "#d9ae44", "funnel_band": "#141414", "funnel_cap": "#141414"
+          },
+          "adjust": [
+            {"keys": "upperworks", "lighten": 0.15, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#e3d9bf", 0.7], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "faceted",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.7}
+        },
+        // Austria-Hungary-inspired: the Dalmatian coast's limestone: grey under pale stone, sage and slate panels,
+        // decks too
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "Austria-Hungary-inspired: limestone grey under stone, sage and slate panels, decks too",
+          "palette": {
+            "hull": "#8f9185", "deck": "#7d7f74", "steel_line": "#55574e",
+            "levels": ["#a4a699", "#a9aa9e", "#adafa3", "#b2b3a8"], "turret": "#a4a699", "barbette": "#7d7f74",
+            "funnel": "#a4a699", "funnel_cap": "#1d1f1c", "funnel_band": "#1d1f1c",
+            "camo": ["#d3d2c4", "#6c7a68", "#3c4640"]
+          },
+          "turrets": "slab",
+          "shapes": {"blocks": "chamfer", "dazzle": true, "dazzle_decks": 0.45, "dazzle_upperworks": 0.85},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
+        },
+        // Austria-Hungary-inspired 1950s-60s: the Habsburg colours outlasting their century: a near-black hull under
+        // light grey, gold funnel bands, numbers
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "Austria-Hungary-inspired 1950s-60s: near-black hull under light grey, gold funnel bands, numbers",
+          "palette": {
+            "hull": "#1f2224", "levels": ["#a9acac", "#adb0b0", "#b2b4b4", "#b6b8b8"], "turret": "#a9acac",
+            "funnel": "#a9acac", "funnel_band": "#b98a12", "funnel_cap": "#141516"
+          },
+          "turrets": "slab",
+          "shapes": {"funnel_band_w": 0.8, "hull_number": true}
+        }
+      }
+    },
+    "tersane": {
+      "desc": "Ottoman-inspired",
+      "eras": {
+        // Ottoman-inspired 1890s-1900s: the ensign's red where other fleets wear buff: black and white, crimson
+        // funnels with black tops and a crimson boot topping
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "Ottoman-inspired 1890s-1900s: black and white, crimson funnels and boot topping",
+          "palette": {
+            "hull": "#1b1a1b", "funnel": "#a8201f", "funnel_band": "#141414", "funnel_cap": "#141414",
+            "boot_top": "#a8201f", "mast": "#3a2a20"
+          },
+          "turrets": "drum",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // Ottoman-inspired 1910s: the wartime khaki of the Barbaros class over hull, upperworks, turrets and funnels,
+        // black tops
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "Ottoman-inspired 1910s: wartime khaki over everything, black funnel tops",
+          "palette": {
+            "hull": "#7d7350", "deck": "#6f684f", "wood": "#a89a74", "deck_line": "#5a5238", "steel_line": "#4a4530",
+            "levels": ["#94895f", "#998f67", "#9f956f", "#a49b77"], "turret": "#94895f", "barbette": "#6e6546",
+            "tub": "#7d7350", "funnel": "#94895f", "funnel_band": "#1b1a16", "funnel_cap": "#1b1a16",
+            "mast": "#3f3a2a", "fitting": "#5a5238", "boat": "#b5ab86"
+          },
+          "turrets": "faceted",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.5}
+        },
+        // Ottoman-inspired 1920s-30s: Bosphorus summers: grey with a turquoise cast, gold funnel bands, white and
+        // turquoise turret roofs, awnings
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "Ottoman-inspired 1920s-30s: turquoise-grey, gold funnel bands, white and turquoise turret roofs, awnings",
+          "palette": {"funnel_band": "#b98a12"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#4f9a9e", 0.5], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#e6dcc0", 0.9], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.7, "turret_bands": ["#f1efe8", "#1f8a8a"], "awnings": true, "blocks": "soft"}
+        },
+        // Ottoman-inspired: the old khaki grown up: sand under pale sand, olive and dark panels, decks too
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "Ottoman-inspired: Anatolian sand under sand, olive and dark panels, decks too",
+          "palette": {
+            "hull": "#9c9070", "deck": "#85795c", "steel_line": "#5a5240", "wood": "#b5a680", "deck_line": "#6a5f46",
+            "levels": ["#ada181", "#b1a687", "#b5aa8e", "#b9af94"], "turret": "#ada181", "barbette": "#85795c",
+            "funnel": "#ada181", "funnel_cap": "#1c1b16", "funnel_band": "#1c1b16", "mast": "#3f3a2a",
+            "camo": ["#d5c8a0", "#7b7450", "#3a3a2a"]
+          },
+          "turrets": "round",
+          "shapes": {"funnel": "oval", "dazzle": true, "dazzle_decks": 0.45, "dazzle_upperworks": 0.85},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
+        },
+        // Ottoman-inspired 1950s-60s: sand-grey hull and upperworks, dark olive non-skid, crimson funnel bands,
+        // numbers
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "Ottoman-inspired 1950s-60s: sand-grey, dark olive non-skid, crimson funnel bands, numbers",
+          "palette": {
+            "hull": "#8f8a70", "deck": "#4f4c3a", "steel_line": "#35332a",
+            "levels": ["#a9a488", "#ada98e", "#b2ad94", "#b6b29a"], "turret": "#a9a488", "barbette": "#7f7a62",
+            "funnel": "#a9a488", "funnel_band": "#8a0f10", "funnel_cap": "#1c1b16"
+          },
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.8, "hull_number": true}
+        }
+      }
+    },
+    "ferrol": {
+      "desc": "Spain-inspired",
+      "eras": {
+        // Spain-inspired 1890s-1900s: the treasure fleet remembered: an oxblood hull and turrets, gold boot topping,
+        // cream upperworks, gold funnels
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "Spain-inspired 1890s-1900s: oxblood hull and turrets, gold boot topping, cream upperworks, gold funnels",
+          "palette": {
+            "hull": "#4a1b17", "boot_top": "#c9a033", "levels": ["#efe6cf", "#f0e7d1", "#f1e8d4", "#f1ead6"],
+            "funnel": "#c9a033", "funnel_band": "#4a1b17", "funnel_cap": "#161616", "mast": "#6a4526",
+            "turret": "#4a1b17", "barbette": "#5e2a22", "tub": "#4a1b17"
+          },
+          "turrets": "drum",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // Spain-inspired 1910s: a neutral marking itself: light grey, red and gold diagonals on the foredeck and
+        // across the turret roofs, red funnel bands
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "Spain-inspired 1910s: light grey, red and gold neutrality stripes and turret bands",
+          "palette": {"recog_a": "#b3261e", "recog_b": "#e3b630", "funnel_band": "#b3261e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.25, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#d9cda9", 0.7], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel": "oval", "blocks": "bowfront", "funnel_band_w": 0.6, "turret_bands": ["recog_a", "recog_b"], "deck_stripes": {"ends": "fore", "pattern": "diagonal", "n": 5, "colours": ["recog_a", "recog_b"]}}
+        },
+        // Spain-inspired 1920s-30s: warm stone grey over terracotta decks, red and gold turret roofs, red funnel
+        // bands, awnings
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "Spain-inspired 1920s-30s: warm stone over terracotta decks, red and gold turret roofs, awnings",
+          "palette": {"funnel_band": "#96130f"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#c2b391", 0.35], "styles": ["warship", "carrier", "planing"]},
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.1, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#b5694a", 0.85], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "deck_line", "tint": ["#6e3d2a", 1.0], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel_band_w": 0.7, "turret_bands": ["#96130f", "#b98a12"], "awnings": true, "blocks": "bowfront"}
+        },
+        // Spain-inspired: the Civil War's mark: a warm mid grey, dark decks, a broad black band round every funnel
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "Spain-inspired: warm mid grey, dark decks, a broad black funnel band",
+          "palette": {
+            "deck": "#5b5f60", "steel_line": "#3b3e3f", "funnel_band": "#141516", "funnel_cap": "#141516"
+          },
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#8a8476", 0.2], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel": "oval", "funnel_band_w": 1.2, "funnel_band_h": 4.5, "blocks": "bowfront"}
+        },
+        // Spain-inspired 1950s-60s: light warm grey, a red funnel band under a gold top, a red boot topping, numbers
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "Spain-inspired 1950s-60s: light warm grey, red funnel band, gold top, red boot topping, numbers",
+          "palette": {"funnel_band": "#96130f", "funnel_cap": "#e3b630", "boot_top": "#b3261e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#a89f8a", 0.15], "styles": ["warship", "carrier", "planing"]},
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.1, "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel_band_w": 0.9, "hull_number": true, "blocks": "bowfront"}
+        }
+      }
+    },
+    "weihaiwei": {
+      "desc": "China-inspired",
+      "eras": {
+        // China-inspired 1890s-1900s: a palace on the water, pure invention: black hull, cream upperworks, vermilion
+        // funnels and turrets, imperial yellow bands
+        "victorian": {
+          "from": "generic/victorian",
+          "desc": "China-inspired 1890s-1900s: black hull, cream upperworks, vermilion funnels and turrets, imperial yellow bands",
+          "palette": {
+            "hull": "#141312", "boot_top": "#b5271d", "funnel": "#b5271d", "funnel_band": "#e3b02c",
+            "funnel_cap": "#141414", "levels": ["#f0e8d2", "#f1e9d4", "#f2ead6", "#f2ebd9"], "mast": "#6a2a1e",
+            "turret": "#b5271d", "barbette": "#3a2a24", "tub": "#6a2a1e"
+          },
+          "turrets": "drum",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.4, "funnel_band_h": 2.0}
+        },
+        // China-inspired 1910s: the flag of 1912: light grey with red, yellow, blue, white and black across the turret
+        // roofs, red funnel bands
+        "great_war": {
+          "from": "generic/great_war",
+          "desc": "China-inspired 1910s: light grey, the five colours across the turret roofs, red funnel bands",
+          "palette": {"funnel_band": "#b3261e"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.2, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#d9cda9", 0.6], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "classic",
+          "shapes": {"funnel": "oval", "funnel_band_w": 0.6, "turret_bands": ["#b3261e", "#e3b630", "#2a5a9e", "#f1efe8", "#1a1a1c"]}
+        },
+        // China-inspired 1920s-30s: a pale jade grey, gold funnel bands, vermilion and gold across the turret roofs,
+        // awnings
+        "treaty": {
+          "from": "generic/treaty",
+          "desc": "China-inspired 1920s-30s: pale jade grey, gold funnel bands, vermilion and gold turret roofs, awnings",
+          "palette": {"funnel_band": "#b98a12"},
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "tint": ["#6fb074", 0.5], "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#e3d9bf", 0.8], "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.7, "turret_bands": ["#9a1a10", "#b98a12"], "awnings": true, "blocks": "soft"}
+        },
+        // China-inspired: loud and nobody else's: a pale stone under rust-red, black and ochre panels, decks too
+        "wwii": {
+          "from": "generic/wwii",
+          "desc": "China-inspired: pale stone under rust-red, black and ochre panels, decks too",
+          "palette": {
+            "hull": "#b0a998", "deck": "#958f80", "steel_line": "#66625a",
+            "levels": ["#c0b9a8", "#c3bcac", "#c6c0b1", "#c9c4b5"], "turret": "#c0b9a8", "barbette": "#958f80",
+            "funnel": "#c0b9a8", "funnel_cap": "#1c1a18", "funnel_band": "#1c1a18",
+            "camo": ["#9a3f26", "#2a2624", "#c9a66a"]
+          },
+          "turrets": "standard",
+          "shapes": {"funnel": "oval", "dazzle": true, "dazzle_decks": 0.35, "dazzle_upperworks": 0.85},
+          "shapes_by_style": {"merchant": {"dazzle": false}}
+        },
+        // China-inspired 1950s-60s: light grey, a broad vermilion funnel band and boot topping, numbers
+        "cold_war": {
+          "from": "generic/cold_war",
+          "desc": "China-inspired 1950s-60s: light grey, broad vermilion funnel band and boot topping, numbers",
+          "palette": {
+            "funnel_band": "#9a1a10", "funnel_cap": "#1a1d1c", "boot_top": "#b5271d", "deck": "#474b4d"
+          },
+          "adjust": [
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.1, "styles": ["warship", "carrier", "planing"]}
+          ],
+          "turrets": "round",
+          "shapes": {"funnel_band_w": 0.9, "hull_number": true}
+        }
+      }
     }
   }
 }

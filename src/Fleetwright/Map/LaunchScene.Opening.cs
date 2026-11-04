@@ -383,7 +383,10 @@ public sealed unsafe partial class LaunchScene
 
     static readonly Vector4 White = Hex(0xF4F4F0), EnsignBlue = Hex(0x2D56A8), EnsignRed = Hex(0xC9473C), UnionBlue = Hex(0x23306B),
         Black = Hex(0x15171A), ItalyGreen = Hex(0x2E8B4F), FinlandBlue = Hex(0x1F4A8A), ArmsGold = Hex(0xD4A537),
-        SwedenBlue = Hex(0x1F5FA0), SwedenYellow = Hex(0xF2C230);
+        SwedenBlue = Hex(0x1F5FA0), SwedenYellow = Hex(0xF2C230), SpainGold = Hex(0xE8B62E), QingYellow = Hex(0xE9BC2C);
+
+    /// <summary>The Qing dragon's back, filled each draw (no garbage).</summary>
+    readonly Vector2[] dragon = new Vector2[13];
 
     /// <summary>The swallow-tailed ensign's outline, filled each draw (no garbage).</summary>
     readonly Vector2[] tails = new Vector2[8];
@@ -414,7 +417,7 @@ public sealed unsafe partial class LaunchScene
     }
 
     /// <summary>A side's ensign, small (a card's 26 × 16): drawn, not an image, for the navies the scenarios have
-    /// (britain, germany, russia, japan, france, italy, ottoman, finland, sweden); a grey field for any other.</summary>
+    /// (britain, germany, russia, japan, france, italy, ottoman, finland, sweden, austria, spain, china); a grey field for any other.</summary>
     void Ensign(string name, Vector2 at, Vector2 size)
     {
         var b = at + size;
@@ -515,6 +518,43 @@ public sealed unsafe partial class LaunchScene
                 dl.PopClipRect();
                 Tailed(at, size, SwedenBlue, SwedenYellow, arms: false);
                 return;
+            case "austria":   // the k.u.k. war ensign: red, white, red, the crowned shield toward the hoist
+                {
+                    dl.AddRectFilled(at, b, U(EnsignRed));
+                    dl.AddRectFilled(at + new Vector2(0, h * 0.3f), at + new Vector2(w, h * 0.7f), U(White));
+                    var m = at + new Vector2(w * 0.36f, h * 0.56f);
+                    var hs = new Vector2(h * 0.17f, h * 0.21f);
+                    dl.AddRectFilled(m - hs - Vector2.One, m + hs + Vector2.One, U(ArmsGold));
+                    dl.AddRectFilled(m - hs, m + hs, U(EnsignRed));
+                    dl.AddRectFilled(m - new Vector2(hs.X, hs.Y * 0.34f), m + new Vector2(hs.X, hs.Y * 0.34f), U(White));
+                    dl.AddRectFilled(m - new Vector2(hs.X, hs.Y + h * 0.13f), m + new Vector2(hs.X, -hs.Y - 0.5f), U(ArmsGold));
+                    break;
+                }
+            case "spain":   // the war ensign of 1785: red, a double band of gold, red; the crowned arms toward the hoist
+                {
+                    dl.AddRectFilled(at, b, U(EnsignRed));
+                    dl.AddRectFilled(at + new Vector2(0, h * 0.25f), at + new Vector2(w, h * 0.75f), U(SpainGold));
+                    var m = at + new Vector2(w * 0.32f, h * 0.53f);
+                    var hs = new Vector2(h * 0.13f, h * 0.17f);
+                    dl.AddRectFilled(m - hs, m + hs, U(EnsignRed));
+                    dl.AddRectFilled(m - new Vector2(0, hs.Y), m + new Vector2(hs.X, 0), U(White));
+                    dl.AddRectFilled(m - new Vector2(hs.X, 0), m + new Vector2(0, hs.Y), U(White));
+                    dl.AddRectFilled(m - new Vector2(hs.X, hs.Y + h * 0.1f), m + new Vector2(hs.X, -hs.Y), U(ArmsGold));
+                    break;
+                }
+            case "china":   // the Qing dragon: a blue dragon on imperial yellow, its back in waves, chasing a red pearl
+                {
+                    dl.AddRectFilled(at, b, U(QingYellow));
+                    for (int k = 0; k < dragon.Length; k++)
+                    {
+                        float u = k / (dragon.Length - 1f);
+                        dragon[k] = at + new Vector2(w * (0.86f - 0.62f * u), h * (0.68f - 0.14f * u + 0.13f * MathF.Sin(u * MathF.Tau * 1.5f)));
+                    }
+                    dl.AddPolyline(ref dragon[0], dragon.Length, U(UnionBlue), ImDrawFlags.None, h * 0.13f);
+                    dl.AddCircleFilled(dragon[^1], h * 0.11f, U(UnionBlue), 10);
+                    dl.AddCircleFilled(at + new Vector2(w * 0.12f, h * 0.2f), h * 0.11f, U(EnsignRed), 12);
+                    break;
+                }
             default:
                 dl.AddRectFilled(at, b, U(T.Panel2));
                 break;
