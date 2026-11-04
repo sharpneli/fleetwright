@@ -84,8 +84,9 @@ picks a unit in one click.
 
 ## The window
 
-**Ctrl+Enter** toggles borderless fullscreen, in every view (the engine takes it before ImGui or a scene, so Enter's own
-meanings, the course and Begin, don't fire).
+**Alt+Enter** toggles borderless fullscreen, in every view (the engine takes it before ImGui or a scene, so Enter's own
+meanings, the course and Begin, don't fire). Not while a text field is typed in: there it's the field's Enter, and a
+typed course sent with it goes to the ship alone (Alt with any order).
 
 ## Steps
 

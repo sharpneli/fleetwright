@@ -411,10 +411,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
                     var ke = new SDL_Event();
                     ke.type = (uint)SDL_EventType.SDL_EVENT_KEY_DOWN;
                     ke.key.windowID = SDL_GetWindowID(_window);
-                    // the event's own modifier: Shift+ or Ctrl+
-                    bool shifted = p[2].StartsWith("Shift+", StringComparison.Ordinal), ctrl = p[2].StartsWith("Ctrl+", StringComparison.Ordinal);
-                    ke.key.key = SDL_GetKeyFromName(shifted ? p[2][6..] : ctrl ? p[2][5..] : p[2]);
-                    ke.key.mod = shifted ? SDL_Keymod.SDL_KMOD_LSHIFT : ctrl ? SDL_Keymod.SDL_KMOD_LCTRL : SDL_Keymod.SDL_KMOD_NONE;
+                    // the event's own modifier: Shift+, Ctrl+ or Alt+
+                    bool shifted = p[2].StartsWith("Shift+", StringComparison.Ordinal), ctrl = p[2].StartsWith("Ctrl+", StringComparison.Ordinal), alt = p[2].StartsWith("Alt+", StringComparison.Ordinal);
+                    ke.key.key = SDL_GetKeyFromName(shifted ? p[2][6..] : ctrl ? p[2][5..] : alt ? p[2][4..] : p[2]);
+                    ke.key.mod = shifted ? SDL_Keymod.SDL_KMOD_LSHIFT : ctrl ? SDL_Keymod.SDL_KMOD_LCTRL : alt ? SDL_Keymod.SDL_KMOD_LALT : SDL_Keymod.SDL_KMOD_NONE;
                     ke.key.down = true;
                     SDL_PushEvent(&ke);
                     (ke.type, ke.key.down, ke.key.mod) = ((uint)SDL_EventType.SDL_EVENT_KEY_UP, false, SDL_Keymod.SDL_KMOD_NONE);
@@ -1151,9 +1151,10 @@ public unsafe class Sdl3GpuEngine : IDisposable
         SDL_Event evt;
         while (SDL_PollEvent(&evt))
         {
-            // Ctrl+Enter is the window's: no scene or ImGui sees it, where Enter alone means something
-            if ((SDL_EventType)evt.type == SDL_EventType.SDL_EVENT_KEY_DOWN && (evt.key.mod & SDL_Keymod.SDL_KMOD_CTRL) != 0
-                && ((uint)evt.key.key == SDLK_RETURN || (uint)evt.key.key == SDLK_KP_ENTER))
+            // Alt+Enter is the window's: no scene or ImGui sees it, where Enter alone means something. Not while a text
+            // field is typed in: there it's the field's Enter, and a course typed goes to the ship alone with Alt
+            if ((SDL_EventType)evt.type == SDL_EventType.SDL_EVENT_KEY_DOWN && (evt.key.mod & SDL_Keymod.SDL_KMOD_ALT) != 0
+                && ((uint)evt.key.key == SDLK_RETURN || (uint)evt.key.key == SDLK_KP_ENTER) && !ImGui.GetIO().WantTextInput)
             {
                 if (!evt.key.repeat)
                     ToggleFullscreen();

@@ -176,7 +176,7 @@ saves the poster as a PNG in Documents/My Games/Fleetwright/Cards (`FrameCapture
 the window as seen a couple of frames later, cropped to the poster). The profile is made only while the tab is open,
 off the render thread with a baker of its own, at the scale nearest above the poster's.
 
-F2 shows the stats window, Ctrl+Enter toggles borderless fullscreen, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
+F2 shows the stats window, Alt+Enter toggles borderless fullscreen, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
 ImGui on top. Both go through the window's blit shader, and a capture run reads no `imgui.ini` and writes none, so
 the UI shows its defaults. `-size=WxH` sets the window size.
 
