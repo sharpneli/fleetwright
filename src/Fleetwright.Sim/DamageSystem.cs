@@ -26,6 +26,7 @@ public enum DamageCommand : ushort
     StrikeColours,
     Abandon,
     Scuttle,
+    Blackout,
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -238,6 +239,9 @@ public sealed class DamageSystem : IWorldSystem
     /// cleared then) or the battle (0).</summary>
     public static Command Jam(int entity, int mount, double minutes = 0) => new(Id, (ushort)DamageCommand.Jam, entity, A: mount, X: minutes);
 
+    /// <summary>The dev's blackout: the ship's whole power tripped for some minutes (docs/battle/electrics.md EL5).</summary>
+    public static Command Blackout(int entity, double minutes) => new(Id, (ushort)DamageCommand.Blackout, entity, X: minutes);
+
     /// <summary>The dev's wreck by kind: the nth part (from 0, in the class's order) of a kind made at least this bad.</summary>
     public static Command WreckKind(int entity, ComponentKind kind, int nth, PartState state = PartState.Destroyed) =>
         new(Id, (ushort)DamageCommand.WreckKind, entity, A: (long)kind, B: nth, X: (double)state);
@@ -361,6 +365,7 @@ public sealed class DamageSystem : IWorldSystem
             case DamageCommand.SideHole:
             case DamageCommand.FloodRooms:
             case DamageCommand.Jam:
+            case DamageCommand.Blackout:
             case DamageCommand.WreckKind:
             case DamageCommand.Burn:
             case DamageCommand.Sink:
@@ -459,6 +464,12 @@ public sealed class DamageSystem : IWorldSystem
                     }
                 }
                 Wake(world, slot, k);
+                break;
+            case DamageCommand.Blackout:
+                Effects.Blackout(cls, k, default, (long)(c.X * 60_000), world.Time.Ms, settings);
+                var rb = stream.Derive(0x3EC6u).Derive((ulong)world.Time.Ms);
+                Recompute(world, slot, k, ref rb);
+                Remind(world, slot, k);
                 break;
             case DamageCommand.Jam:
                 if (c.A < 0 || c.A >= cls.Mounts.Length)
@@ -828,7 +839,7 @@ public sealed class DamageSystem : IWorldSystem
         ref readonly var m = ref c.Mounts[mount];
         var at = new P3(m.X, m.Y, c.Components[m.Component].Bounds.Base);
         long now = world.Time.Ms;
-        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now))
+        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now, settings))
             return;
         k.Damaged = touched = true;
         Recompute(world, slot, k, ref r);
@@ -870,7 +881,8 @@ public sealed class DamageSystem : IWorldSystem
         long now = world.Time.Ms;
         for (int m = 0; m < mounts.Length; m++)
         {
-            double rate = (k.Stiff(m, now) ? settings.StiffTrain : 1) * (k.ByHand(m, now) ? NonPen.HandShare(k.Class, mounts[m], settings) : 1);
+            double hand = !k.ByHand(m, now) ? 1 : k.Mount[m].HandAt > now ? 0 : NonPen.HandShare(k.Class, mounts[m], settings, k.Attitude.HeelDeg);
+            double rate = (k.Stiff(m, now) ? settings.StiffTrain : 1) * hand;
             ships.Store.Combat.SetStiff(slot, m, mounts[m], now, 1 - rate);
         }
     }
@@ -1371,8 +1383,8 @@ public sealed class DamageSystem : IWorldSystem
                     continue;
                 v.EnsureCapacity(n + 1);
                 int directors = 0;
-                foreach (bool w in k.DirectorWorks)
-                    if (w)
+                for (int d = 0; d < k.DirectorWorks.Length; d++)
+                    if (k.DirectorWorks[d] && !k.DirectorDark(d, snap.Time.Ms))
                         directors++;
                 (v.Entity[n], v.Hits[n], v.PowerCap[n], v.Steering[n], v.Status[n]) = (store[slot].Entity, k.Hits, k.PowerCap, k.Steering, k.Status);
                 (v.MountsWorking[n], v.Mounts[n], v.DirectorsWorking[n], v.Directors[n]) = (k.MountsWorking, k.MountWorks.Length, directors, k.DirectorWorks.Length);

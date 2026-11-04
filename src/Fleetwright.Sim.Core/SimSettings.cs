@@ -1710,6 +1710,16 @@ public sealed record SimSettings
     /// friction [EST]; 0.08°/s on a 606 t turret (electric-plant.md EL4: 0.04-0.08 over 500 t).</summary>
     public double HandTrainW { get; init; } = 600;
     public double HandGearShare { get; init; } = 0.5;
+    /// <summary>Past this list a gunhouse by hand trains at this share (electric-plant.md EL4), and how long an electro-hydraulic
+    /// one stands on its brakes before its hand gear is engaged, s [EST: a few minutes, not sourced].</summary>
+    public double HandListDeg { get; init; } = 5;
+    public double HandListShare { get; init; } = 0.5;
+    public double HandChangeoverS { get; init; } = 180;
+    /// <summary>What a loss of power does to the fire control (docs/battle/electrics.md EL5): a table with a motor worked by hand
+    /// reads slower by this (the Dreyer's "7 (+1 if motor breaks)": [EST]); gyros take this long to settle once the power's back,
+    /// min (electric-plant.md: 5-20 after a short outage [EST]).</summary>
+    public double TableHandLatency { get; init; } = 1.5;
+    public double GyroSettleMin { get; init; } = 10;
     public double RollerFriction { get; init; } = 0.007;
     public double HandReload { get; init; } = 3;
     public double StiffBattleShare { get; init; } = 0.5;
@@ -2081,10 +2091,9 @@ public sealed record SimSettings
     public double RepairReachM { get; init; } = 1.2;
     public double RepairNearM { get; init; } = 1;
 
-    /// <summary>The work's pace (09 §4): × 1 / <see cref="RepairDarkK"/> in the dark (her power under
-    /// <see cref="RepairDarkPower"/>), × 1 / (1 + <see cref="RepairListPerDeg"/> × the list in degrees).</summary>
+    /// <summary>The work's pace (09 §4): × 1 / <see cref="RepairDarkK"/> in the dark (her lights out: `ShipCondition.Dark`),
+    /// × 1 / (1 + <see cref="RepairListPerDeg"/> × the list in degrees).</summary>
     public double RepairDarkK { get; init; } = 1.6;
-    public double RepairDarkPower { get; init; } = 0.5;
     public double RepairListPerDeg { get; init; } = 0.1;
 
     /// <summary>A boundary is shored once its load passes this share of its rating, its job weighed as this many t/h of

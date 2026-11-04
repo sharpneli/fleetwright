@@ -732,10 +732,20 @@ public sealed class GunnerySystem : IWorldSystem
         {
             // under its directors, or only control positions' rangefinders (fire-control.md F4b): then the guns lay by their
             // own sights on the station's solution, no director firing
-            bool directed = false;
+            bool directed = false, frozen = false;
             foreach (int u in cls.Links(row.Units))
-                directed |= (fc.Units & 1UL << u) != 0 && cls.FcUnits[u].Director >= 0;
+                if ((fc.Units & 1UL << u) != 0 && cls.FcUnits[u].Director is >= 0 and var d)
+                {
+                    bool dark = cond.DirectorDark(d, now);
+                    (directed, frozen) = (directed || !dark, frozen || dark);
+                }
             var fit = directed ? fc.DirectorFit : fc.DirectorFit with { Mount = row.Sights };
+            // her power off (docs/battle/electrics.md EL5): a director's receivers freeze and the guns lay by their own sights,
+            // a table with a motor goes to its hand cranks, slower; with no gyro her own course and the vertical go to hand too
+            if ((frozen && !directed || cond.NoPower(now)) && fit.Computer.PowerKw > 0)
+                fit = fit with { Computer = fit.Computer with { LatencyS = fit.Computer.LatencyS * settings.TableHandLatency } };
+            if (cond.GyroOut(now))
+                fit = fit with { Computer = fit.Computer with { HelmFree = false }, Mount = fit.Mount with { StableVertical = false } };
             if (fc.Local || fc.Fit != fit)
                 (fc.Local, fc.Level, fc.Fit) = (false, fc.DirectorLevel, fit);   // a director back (E4: a timed outage over): under it again
         }

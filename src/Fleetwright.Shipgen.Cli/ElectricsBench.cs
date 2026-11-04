@@ -11,7 +11,8 @@ static class ElectricsBench
 {
     static readonly Dictionary<string, double> Recorded = new()
     {
-        ["dreadnought"] = 350, ["invincible"] = 800, ["tiger_1914"] = 750, ["seydlitz"] = 1200, ["derfflinger"] = 1660, ["lion"] = 750,
+        // Seydlitz's own isn't recorded: the Moltke class's, her nearest
+        ["dreadnought"] = 350, ["invincible"] = 800, ["tiger_1914"] = 750, ["seydlitz"] = 1200, ["derfflinger"] = 1660,
         ["nassau"] = 1280, ["borodino"] = 738, ["kgv"] = 2640, ["bismarck"] = 7910, ["yamato"] = 4800, ["richelieu"] = 9000,
     };
 

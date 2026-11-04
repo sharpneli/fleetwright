@@ -5,7 +5,7 @@ the open item in `shells-armour-damage.md` E7 (the G0 grade gives 1916 ships 193
 `research/simulation/electric-plant.md` (2026-11-04) and its appendices; `damage/17_service_network_faults.md` is the older
 note on trips and cables, never built.
 
-**Status:** EL0-EL4 done 2026-11-04. EL5 next.
+**Status:** EL0-EL5 done 2026-11-04. EL4b, EL6 and EL7 next.
 
 ## The rules (the user)
 
@@ -126,7 +126,7 @@ Left out: what draws nothing in battle (cranes, winches, galley), so the connect
 |---|---|---:|---:|---:|---:|---|
 | dreadnought | steam hydraulic | 257 | 190 | 350 | 0.54 | |
 | tiger_1914 | steam hydraulic | 381 | 275 | 750 | 0.37 | 0.3-0.8 |
-| seydlitz | electro-hydraulic | 1,156 | 628 | 1,200 | 0.52 | 0.3-0.7 |
+| seydlitz | electro-hydraulic | 1,156 | 628 | 1,200 (Moltke class's; hers not found) | 0.52 | 0.3-0.7 |
 | nassau | electro-hydraulic | 1,601 | 843 | 1,280 | 0.66 | 0.3-0.7 |
 | borodino | electric | 669 | 357 | 738 | 0.48 | |
 | kgv | steam hydraulic | 1,206 | 648 | 2,640 | 0.25 | |
@@ -151,24 +151,40 @@ Hand rate corrected: `HandGearShare` 0.5 (gear losses; the power drives were 4-5
 where the first cut had 0.16; the research finds no number for any heavy turret, and designers duplicated power drives
 rather than trust hand gear. The reload's 3× stays, unbounded by any source.
 
-**Not yet:** a USN-pattern turret without power stands on its brakes, its handwheels needing power, until hand gear is engaged
-(a changeover delay [EST]); hand rates halved past 5° of list (5.25" mounts "could not be trained", Nelson's rate halved with
-roll). The drives' weight and rates: no source found weights; the block changes no weight or rate yet. So a player has no
-reason yet to pick one but the risk: **electrification still needs its gain**. Invincible's 1908-14 electric turrets, Bouvet's
-1898 ones: designs carry the label's answer, editable. Japan's pump drive, KGV's: [UNCERTAIN], steam for now.
+**Not right yet:** Invincible's 1908-14 electric turrets and Bouvet's of 1898 carry the label's answer, editable in the files;
+Japan's pump drive and KGV's are [UNCERTAIN], steam for now.
 
-### EL5 Each consumer reacts for itself
+### EL4b What a drive gains (agreed 2026-11-04, the user: risk against reward, as in real life)
 
-Today a trip takes out directors whole, whatever they are, and a loss of power slows nothing else. From the research's §5:
+So far the block only adds risk: it changes no rate and no weight, so nothing but the danger tells a ship from another. A drive
+should set what the mount does, from the research's §4 by drive: hydraulic training 2°/s (4 on Nelson), elevation 5-10; German
+electric training with hydraulic elevation 3 and 4; direct electric 2.4-3 (6 on Littorio), 2.2-2.7 (6); Waterbury 1.7-2 and 4-8
+to 1921, 4 and 12 by 1941. Reload follows the loading arrangement more than the drive, so it stays. Replaces
+`DesignerPlaceholders.Gun`'s rule of thumb, which also lifts the 1940s' load (EL3). It moves gunnery in every scenario: its own
+step, with its own balance run. Weight waits for EL7: no source gave drive weights.
 
-- A DC table (Dreyer) keeps its solution with one man more, slower and less accurate, not dead; a clockwork clock doesn't
-  notice. An AC synchro computer's outputs die; mounts go to local laying, or hold on brakes then manual.
-- A director's receivers freeze; turrets with power or steam hydraulics lay by their own sights.
-- A gyro's repeaters stop at once: 5-20 min after a short outage, 2-4.5 h from far off; own-course inputs go to hand. A stable
-  vertical: hand level and firing key; re-erection 5-30 min [EST].
-- Electric pumps stop and steam ones don't (`auxiliaries` against `PowerCap`, today's stand-in for the supply), steering goes
-  by bus transfer, standby or steam, then hand. Lamps out slow repairs (`RepairDarkPower`), secondary lighting about 5%.
-- Fans stop: engine rooms heat; a dynamo room can be driven out (Seydlitz's 72 °C) [EST].
+### EL5 Each consumer reacts for itself. Done 2026-11-04.
+
+From the research's §5, kept rough.
+
+- **Fire control.** A trip had sent the battery to local control and the judgement's computer. Now a director's receivers freeze
+  (`DirectorPower`, apart from `DirectorDown`, its own gear) and the guns lay by their own sights on the station's solution, as with
+  a control position's rangefinder (F4b). A table with a motor (`PowerKw` above 0) goes to its hand cranks, `TableHandLatency` 1.5×
+  [EST]; a clockwork one doesn't notice. All tables alike: the research's AC synchro computers' dead outputs read here as ranges
+  passed by voice, the same thing, roughly.
+- **Gyros.** Own course and the stable vertical go to hand with the power (`GyroOut`), and stay there `GyroSettleMin` 10 [EST 5-20]
+  after it's back. One clock for a ship's gyros; the 2-4.5 h from far off isn't built.
+- **Pumps** read `PumpShare`: her steam, none on the plant while it's off. They had read `PowerCap`, the propulsion's, so a cut
+  shaft had stopped her pumps and fire main; no longer.
+- **The dark** is `NoPower` (`Dark`), not power under half (`RepairDarkPower` gone); so a ship slowed by a lost boiler room isn't dark.
+- **The helm** goes with what drives it: electric steering with the plant, steam with the steam, damage control rigging hand steering
+  as before (DC7). Bus transfers take seconds, so a short trip doesn't touch it.
+- **Gunhouses.** An electro-hydraulic one stands on its brakes `HandChangeoverS` 180 [EST] before its hand gear is engaged, as the USN's
+  did (their local handwheels need power); all of them, for want of anything on the others. Hand rates halve past 5° of list.
+- **`DamageSystem.Blackout`:** a dev command, for the tests.
+
+**Not built:** fans (engine rooms heating, a dynamo room driven out: no gameplay yet), forced draught, wireless (no signals model),
+secondary lighting's share.
 
 ### EL6 The trip rate from the load
 

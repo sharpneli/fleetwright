@@ -51,7 +51,7 @@ public class FirefightingTests(ITestOutputHelper output)
         Assert.Equal((Settings.FireDryShare, 1.0), (Fires.SectionWater(c, looped, pump + 1, 2000, Settings), Fires.SectionWater(c, looped, fore, 2000, Settings)));
 
         // the pumps on steam: her plant's power, a diesel's floor on the looped main
-        (k.PowerCap, looped.PowerCap) = (0.2, 0.2);
+        (k.PumpShare, looped.PumpShare) = (0.2, 0.2);
         Assert.Equal(0.2, Fires.SectionWater(c, k, aft, 2000, Settings), 9);
         Assert.Equal(Doctrine("1944").PumpFloor, Fires.SectionWater(c, looped, aft, 2000, Settings), 9);
 

@@ -187,11 +187,13 @@ public static class NonPen
     /// <summary>The share of its power training rate a gunhouse keeps worked by hand: the men at the cranks' power through
     /// gearing that loses half of it, against the friction of its weight on its rollers, ω = η·P / (μ·m·g·r): a heavy turret
     /// hardly moves (electric-plant.md §5 and EL4: 0.04-0.08°/s over 500 t, designers duplicating the power drive rather than
-    /// trust hand gear) and a light one much less slowed.</summary>
-    public static double HandShare(ShipClass c, in MountRow m, SimSettings s)
+    /// trust hand gear) and a light one much less slowed. Past a list the men lift the weight round as well as turn it, and
+    /// the rate halves (Nelson's power drive at a 5° roll; Prince of Wales's 5.25" mounts "could not be trained").</summary>
+    public static double HandShare(ShipClass c, in MountRow m, SimSettings s, double heelDeg = 0)
     {
         double torque = s.RollerFriction * m.RevolvingT * 1000 * 9.81 * c.TurretTypes[m.Type].R;
-        return torque > 0 && m.TrainDegS > 0 ? Math.Min(double.RadiansToDegrees(s.HandGearShare * s.HandTrainW / torque) / m.TrainDegS, 1) : 1;
+        double power = s.HandGearShare * s.HandTrainW * (Math.Abs(heelDeg) > s.HandListDeg ? s.HandListShare : 1);
+        return torque > 0 && m.TrainDegS > 0 ? Math.Min(double.RadiansToDegrees(power / torque) / m.TrainDegS, 1) : 1;
     }
 
     /// <summary>An outage's length, ms, from (share, low, high minutes) triples: a triple by its share, log-uniform in it,

@@ -70,7 +70,7 @@ public class ElectricsTests(ITestOutputHelper output)
             var c = Fleet.Get(design).Class!;
             var k = Fresh(c);
             long now = 600_000;
-            Effects.PowerOut(c, k, default, -1, -1, double.PositiveInfinity, 60_000, now);
+            Effects.PowerOut(c, k, default, -1, -1, double.PositiveInfinity, 60_000, now, Settings);
             Functions.Evaluate(k, Settings, now, now);
             int main = c.Links(c.Batteries[0].Mounts)[0];
             Assert.Equal(reached, k.ByHand(main, now));
@@ -99,6 +99,90 @@ public class ElectricsTests(ITestOutputHelper output)
                 boilers.State[c.RoomNode(r)] = PartState.Disabled;
         Functions.Evaluate(boilers, Settings, now, now);
         Assert.True(boilers.ByHand(main, now));
+    }
+
+    /// <summary>EL5: a ship-wide trip through the world. Her battery stays with its table, its guns on their own sights, not
+    /// local control; when the power's back the director has it again, and her gyros settle after.</summary>
+    [Fact]
+    public void A_blackout_keeps_the_table_working_by_hand()
+    {
+        var c = Fleet.Get("seydlitz").Class!;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 3, Settings with { HitsDoDamage = false });
+        int cls = w.Ships.AddClass(c);
+        w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 0));
+        w.Apply(ShipSystem.Spawn(cls, 56, 4.2, 0, 0, side: 1));
+        w.Apply(GunnerySystem.Engage(1, 0, 2));
+        w.AdvanceTo(w.Time + 60_000);
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1));
+        bool Local()
+        {
+            var snap = new Snapshot();
+            w.Fill(snap, truth: true);
+            return snap.Batteries.Local[0];
+        }
+        Assert.False(Local());
+        w.Apply(DamageSystem.Blackout(1, 3));
+        w.AdvanceTo(w.Time + 30_000);
+        Assert.True(k.NoPower(w.Time.Ms));
+        Assert.True(k.DirectorDark(0, w.Time.Ms));
+        Assert.False(Local());
+        w.AdvanceTo(w.Time + 4 * 60_000);
+        Assert.False(k.NoPower(w.Time.Ms));
+        Assert.False(k.DirectorDark(0, w.Time.Ms));
+        Assert.True(k.GyroOut(w.Time.Ms), "settling");
+        w.AdvanceTo(w.Time + (long)(Settings.GyroSettleMin * 60_000));
+        Assert.False(k.GyroOut(w.Time.Ms));
+    }
+
+    /// <summary>EL5: a trip stops electric pumps and leaves steam ones; a shaft cut no longer touches either.</summary>
+    [Fact]
+    public void Pumps_stop_with_their_own_supply()
+    {
+        long now = 600_000;
+        foreach (var (design, left) in new[] { ("kgv", 0.0), ("tiger_1914", 1.0) })
+        {
+            var c = Fleet.Get(design).Class!;
+            var k = Fresh(c);
+            k.Blackout(now, 60_000, Settings);
+            Functions.Evaluate(k, Settings, now, now);
+            Assert.Equal(left, k.PumpShare);
+            Assert.True(k.Dark);
+        }
+        var tiger = Fleet.Get("tiger_1914").Class!;
+        var cut = Fresh(tiger);
+        foreach (ref readonly var line in tiger.ShaftLines)
+            cut.State[line.Shaft] = PartState.Disabled;
+        Functions.Evaluate(cut, Settings, now, now);
+        Assert.Equal(0, cut.PowerCap);
+        Assert.Equal(1, cut.PumpShare);
+    }
+
+    /// <summary>EL5: the helm goes with what drives it: electric steering with the plant, steam with the steam.</summary>
+    [Fact]
+    public void The_helm_goes_with_what_drives_it()
+    {
+        long now = 600_000;
+        bool Steers(string design, RoomKind kind)
+        {
+            var c = Fleet.Get(design).Class!;
+            var k = Fresh(c);
+            for (int r = 0; r < c.Rooms.Length; r++)
+                if (c.Rooms[r].Kind == kind)
+                    k.State[c.RoomNode(r)] = PartState.Disabled;
+            return Functions.Evaluate(k, Settings, now, now);
+        }
+        Assert.False(Steers("kgv", RoomKind.EngineRoom));        // electric, the dynamos gone
+        Assert.True(Steers("tiger_1914", RoomKind.EngineRoom));  // steam, up
+        Assert.False(Steers("tiger_1914", RoomKind.BoilerRoom)); // steam, gone
+    }
+
+    /// <summary>EL5: past 5° of list a gunhouse by hand trains at half its rate.</summary>
+    [Fact]
+    public void A_list_halves_a_hand_rate()
+    {
+        var c = Fleet.Get("seydlitz").Class!;
+        int m = c.Links(c.Batteries[0].Mounts)[0];
+        Assert.Equal(NonPen.HandShare(c, c.Mounts[m], Settings) / 2, NonPen.HandShare(c, c.Mounts[m], Settings, 8), 9);
     }
 
     /// <summary>The format step sets the drives from navy and plant year, once; the ship reads the block.</summary>

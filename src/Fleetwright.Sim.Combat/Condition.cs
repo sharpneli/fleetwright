@@ -119,6 +119,8 @@ public struct MountHarm
 {
     public JamCause Jam;
     public long JamUntil, StiffUntil, PowerUntil, GunUntil;
+    /// <summary>Until when a mount with its power gone stands on its brakes, its hand gear not yet engaged.</summary>
+    public long HandAt;
     public int GunsOut;
     public bool Sights;
 }
@@ -245,6 +247,11 @@ public sealed class ShipCondition
     /// <summary>Each director's, eye's and searchlight's outage of its own (E4's shock: a director's gyro, a rangefinder
     /// knocked out of adjustment, the power to a light), not its part's: until when, world ms (0: none).</summary>
     public long[] DirectorDown = [], EyeDown = [], SearchlightDown = [];
+    /// <summary>Each director's power off until when (docs/battle/electrics.md EL5): its receivers frozen, not the director
+    /// itself out, as <see cref="DirectorDown"/>'s gyro is.</summary>
+    public long[] DirectorPower = [];
+    /// <summary>The ship's whole power off until when, tripped; her gyros unsettled until when after it (electrics.md EL5).</summary>
+    public long BlackoutUntil, GyroUntil;
     /// <summary>Openings between spaces a burst's gas left (E5: ruptured boundaries, blown doors, sprung seams), m², on
     /// each edge of the cell graph's entry from its lower cell (the Neighbours pool's index): the flooding adds them.</summary>
     public double[] JoinOpenM2 = [];
@@ -442,6 +449,10 @@ public sealed class ShipCondition
     /// boiler room or no engine room working. No power anywhere for as long as that lasts. NoSteam: the first of those, which
     /// is what stops her steam-hydraulic turrets.</summary>
     public bool PlantOut, NoSteam;
+    /// <summary>Worked out with the functions (electrics.md EL5): the share of her drainage and fire pumps working (those on
+    /// steam by her steam, those on the plant none when it's off), and whether she's dark, her repairs slowed.</summary>
+    public double PumpShare = 1;
+    public bool Dark;
     public Steering Steering;
     /// <summary>The rudder's angle when it jammed, radians.</summary>
     public double JamRudderRad;
@@ -539,6 +550,7 @@ public sealed class ShipCondition
             DownUntil = new long[c.NodeCount];
             DownWhy = new DownCause[c.NodeCount];
             DirectorDown = new long[c.Directors.Length];
+            DirectorPower = new long[c.Directors.Length];
             EyeDown = new long[c.Eyes.Length];
             SearchlightDown = new long[c.Searchlights.Length];
             JoinOpenM2 = new double[c.NeighbourCount];
@@ -591,6 +603,7 @@ public sealed class ShipCondition
             Array.Clear(DownUntil);
             Array.Clear(DownWhy);
             Array.Clear(DirectorDown);
+            Array.Clear(DirectorPower);
             Array.Clear(EyeDown);
             Array.Clear(SearchlightDown);
             Array.Clear(State);
@@ -623,7 +636,7 @@ public sealed class ShipCondition
         Array.Fill(MountSupply, 1.0);
         Array.Fill(EyeCrew, 1.0);
         Array.Fill(MountLasts, true);
-        (PowerCapLasts, LastingMs, PlantOut, NoSteam) = (1, 0, false, false);
+        (PowerCapLasts, LastingMs, PlantOut, NoSteam, PumpShare, Dark, BlackoutUntil, GyroUntil) = (1, 0, false, false, 1, false, 0, 0);
         Array.Fill(DirectorWorks, true);
         Array.Fill(EyeWorks, true);
         Array.Fill(TubeWorks, true);
@@ -794,15 +807,54 @@ public sealed class ShipCondition
         Down(row.Component, now, h.StunMs, DownCause.Stunned);
     }
 
-    /// <summary>A mount's power off, from now for ms (E4's shock): worked by hand until then, or later if it already was.</summary>
-    public void PowerOff(int mount, long now, long ms)
+    /// <summary>A mount's power off, from now for ms (E4's shock): worked by hand until then, or later if it already was;
+    /// its gear changed over first if it's only now lost it.</summary>
+    public void PowerOff(int mount, long now, long ms, SimSettings s)
     {
         if (ms <= 0)
             return;
+        if (!ByHand(mount, now))
+            Engage(mount, now, s);
         long until = Until(now, ms);
         Mount[mount].PowerUntil = Math.Max(Mount[mount].PowerUntil, until);
         Due(until);
     }
+
+    /// <summary>An electro-hydraulic mount's power just lost (electrics.md EL5): its spring brakes set and its local handwheels
+    /// needing power (the USN pattern), it stands until the hand gear is engaged. Other drives fall to hand as they are.</summary>
+    public void Engage(int mount, long now, SimSettings s)
+    {
+        if (Class.Drive(mount) != TurretDrive.ElectroHydraulic)
+            return;
+        long at = Until(now, (long)(s.HandChangeoverS * 1000));
+        Mount[mount].HandAt = at;
+        Due(at);
+    }
+
+    /// <summary>The ship's whole power tripped, from now for ms, and her gyros unsettled for a while after (electrics.md EL5).</summary>
+    public void Blackout(long now, long ms, SimSettings s)
+    {
+        long until = Until(now, ms);
+        BlackoutUntil = Math.Max(BlackoutUntil, until);
+        Due(until);
+        SettleGyro(until + (long)(s.GyroSettleMin * 60_000));
+    }
+
+    /// <summary>Her gyros unsettled until then.</summary>
+    public void SettleGyro(long until)
+    {
+        GyroUntil = Math.Max(GyroUntil, until);
+        Due(until);
+    }
+
+    /// <summary>Whether her whole power is off now, tripped or her plant gone.</summary>
+    public bool NoPower(long now) => PlantOut || BlackoutUntil > now;
+
+    /// <summary>Whether her gyros give nothing now: repeaters stopped with the power, unsettled for a while after it's back.</summary>
+    public bool GyroOut(long now) => NoPower(now) || GyroUntil > now;
+
+    /// <summary>Whether a director's receivers are frozen now, its power off.</summary>
+    public bool DirectorDark(int director, long now) => PlantOut || DirectorPower[director] > now;
 
     /// <summary>A leak in a belt's plate at a point (E4): the plate loosened there.</summary>
     public void Leaked(int row, P3 at)
@@ -867,7 +919,12 @@ public sealed class ShipCondition
             else
                 next = Math.Min(next, DownUntil[i]);
         }
-        any |= Clear(DirectorDown, now, ref next) | Clear(EyeDown, now, ref next) | Clear(SearchlightDown, now, ref next);
+        any |= Clear(DirectorDown, now, ref next) | Clear(DirectorPower, now, ref next) | Clear(EyeDown, now, ref next) | Clear(SearchlightDown, now, ref next);
+        if (BlackoutUntil > 0 && BlackoutUntil <= now)
+            (BlackoutUntil, any) = (0, true);
+        if (GyroUntil > 0 && GyroUntil <= now)
+            (GyroUntil, any) = (0, true);
+        next = Math.Min(next, Math.Min(Later(BlackoutUntil, now), Later(GyroUntil, now)));
         var mounts = Class.Mounts;
         for (int m = 0; m < Mount.Length; m++)
         {
@@ -881,11 +938,14 @@ public sealed class ShipCondition
                 (a.StiffUntil, any) = (0, true);
             if (a.PowerUntil > 0 && a.PowerUntil <= now)
                 (a.PowerUntil, any) = (0, true);
+            if (a.HandAt > 0 && a.HandAt <= now)
+                (a.HandAt, any) = (0, true);
             if (a.GunUntil > 0 && a.GunUntil <= now)
                 (a.GunUntil, a.GunsOut, any) = (0, 0, true);
             next = Math.Min(next, Later(a.JamUntil, now));
             next = Math.Min(next, Later(a.StiffUntil, now));
             next = Math.Min(next, Later(a.PowerUntil, now));
+            next = Math.Min(next, Later(a.HandAt, now));
             next = Math.Min(next, Later(a.GunUntil, now));
         }
         // a stokehold's fires burned down to what its men keep up (N2)
@@ -1154,6 +1214,14 @@ public sealed class ShipCondition
                 h.Add(JoinWorkAcc[i]);
                 h.Add((int)JoinMarks[i]);
             }
+        if (BlackoutUntil != 0 || GyroUntil != 0)
+        {
+            h.Add(BlackoutUntil);
+            h.Add(GyroUntil);
+        }
+        for (int i = 0; i < DirectorPower.Length; i++)
+            if (DirectorPower[i] != 0)
+                h.Add(DirectorPower[i]);
         for (int i = 0; i < DirectorDown.Length; i++)
             if (DirectorDown[i] != 0)
             {
@@ -1175,13 +1243,14 @@ public sealed class ShipCondition
         for (int m = 0; m < Mount.Length; m++)
         {
             ref readonly var a = ref Mount[m];
-            if (a.JamUntil == 0 && a.StiffUntil == 0 && a.PowerUntil == 0 && a.GunsOut == 0 && !a.Sights)
+            if (a.JamUntil == 0 && a.StiffUntil == 0 && a.PowerUntil == 0 && a.HandAt == 0 && a.GunsOut == 0 && !a.Sights)
                 continue;
             h.Add(m);
             h.Add((int)a.Jam | a.GunsOut << 8 | (a.Sights ? 1 << 16 : 0));
             h.Add(a.JamUntil);
             h.Add(a.StiffUntil);
             h.Add(a.PowerUntil);
+            h.Add(a.HandAt);
             h.Add(a.GunUntil);
         }
         for (int p = 0; p < PartyCount; p++)

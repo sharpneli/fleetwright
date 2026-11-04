@@ -285,12 +285,12 @@ public static class Effects
         if (NonPen.Electrics(c))
         {
             if (r.NextDouble() < s.ShockLocalTrip[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now);
+                res.Shock |= PowerOut(c, k, at, struck, -1, s.ShockZoneAM, NonPen.Minutes(s.LocalTripMin, ref r), now, s);
             if (r.NextDouble() < s.ShockSectionPower[col] * g)
-                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now);
+                res.Shock |= PowerOut(c, k, at, struck, s.ShockZoneAM, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), now, s);
             if (r.NextDouble() < s.ShockCascade[col] * g)
             {
-                res.Shock |= PowerOut(c, k, at, -1, -1, double.PositiveInfinity, NonPen.Minutes(s.CascadeMin, ref r), now);
+                res.Shock |= Blackout(c, k, at, NonPen.Minutes(s.CascadeMin, ref r), now, s);
                 res.Blackout = true;
             }
             if (r.NextDouble() < s.ShockDirectorGyro[col] * g)
@@ -322,7 +322,7 @@ public static class Effects
     /// searchlights out. Only what stands on the plant notices (<see cref="ShipClass.OnElectric"/>, docs/battle/electrics.md
     /// EL4): open and casemate guns and torpedo mounts are worked by hand always, a steam-hydraulic turret by its pumping
     /// engines. Whether it reached any.</summary>
-    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now)
+    public static bool PowerOut(ShipClass c, ShipCondition k, P3 at, int struck, double from, double to, long ms, long now, SimSettings s)
     {
         bool any = false;
         for (int m = 0; m < c.Mounts.Length; m++)
@@ -333,7 +333,7 @@ public static class Effects
             double d = mr.Component == struck || mr.Barbette == struck ? 0 : Distance(c, mr.Component, at);
             if (d <= to && (from < 0 || d > from))
             {
-                k.PowerOff(m, now, ms);
+                k.PowerOff(m, now, ms, s);
                 any = true;
             }
         }
@@ -342,7 +342,7 @@ public static class Effects
             double d = c.Directors[i].Component == struck ? 0 : Distance(c, c.Directors[i].Component, at);
             if (d <= to && (from < 0 || d > from))
             {
-                k.Out(k.DirectorDown, i, now, ms);
+                k.Out(k.DirectorPower, i, now, ms);
                 any = true;
             }
         }
@@ -356,6 +356,14 @@ public static class Effects
             }
         }
         return any;
+    }
+
+    /// <summary>The whole ship's power tripped for ms (docs/battle/electrics.md EL5): everything on the plant, her pumps if
+    /// they're electric, her lights and her gyros. Whether it reached any.</summary>
+    public static bool Blackout(ShipClass c, ShipCondition k, P3 at, long ms, long now, SimSettings s)
+    {
+        k.Blackout(now, ms, s);
+        return PowerOut(c, k, at, -1, -1, double.PositiveInfinity, ms, now, s);
     }
 
     /// <summary>A belt that held still leaks (E4; damage/13 §2, <c>belt_leak</c>): the plate driven in, its bolts pulled,

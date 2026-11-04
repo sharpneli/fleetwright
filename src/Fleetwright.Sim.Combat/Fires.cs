@@ -714,7 +714,7 @@ public static class Fires
             if (j == section)
                 break;
         }
-        return share * Math.Max(k.PowerCap, doc.PumpFloor);
+        return share * Math.Max(k.PumpShare, doc.PumpFloor);
     }
 
     /// <summary>A hit in a section (17 §6.3-6.4, fire_ref.py's hit): its fire main broken with the doctrine's chance (more

@@ -305,7 +305,7 @@ public static class Repairs
 
     /// <summary>What her pumps can take now, m³/s: the drainage on her power and the portable pumps she carries.</summary>
     static double Pumps(ShipClass c, ShipCondition k) =>
-        (c.Drainage.PumpsTph * k.PowerCap + c.Drainage.PortablePumps * c.Drainage.PortableTph) / FloodModel.SeaT / 3600;
+        (c.Drainage.PumpsTph * k.PumpShare + c.Drainage.PortablePumps * c.Drainage.PortableTph) / FloodModel.SeaT / 3600;
 
     /// <summary>Caulking, plugs, patches and mats on the hull work loose at speed (17 §5.2, 13: 15% back toward open every
     /// 10 min above <see cref="SimSettings.HullWorkKn"/>; Bismarck's mat).</summary>
@@ -407,7 +407,7 @@ public static class Repairs
                 best = i;
         if (best < 0)
             return false;
-        double v = Math.Min(k.WaterM3[best], c.Drainage.PumpsTph / FloodModel.SeaT / 3600 * k.PowerCap * dt);
+        double v = Math.Min(k.WaterM3[best], c.Drainage.PumpsTph / FloodModel.SeaT / 3600 * k.PumpShare * dt);
         if (v <= 0)
             return false;
         k.WaterM3[best] -= v;
@@ -979,7 +979,7 @@ public static class Repairs
     {
         var change = RepairChange.None;
         bool slow = Math.Abs(speedMs) / Kn <= s.MatKn;
-        double env = k.DamageControl.Skill / ((k.PowerCap < s.RepairDarkPower ? s.RepairDarkK : 1) * (1 + s.RepairListPerDeg * Math.Abs(k.Attitude.HeelDeg)));
+        double env = k.DamageControl.Skill / ((k.Dark ? s.RepairDarkK : 1) * (1 + s.RepairListPerDeg * Math.Abs(k.Attitude.HeelDeg)));
         for (int p = 0; p < k.PartyCount; p++)
         {
             ref var party = ref k.Parties[p];

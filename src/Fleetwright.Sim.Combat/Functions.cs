@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -133,17 +134,26 @@ public static class Functions
         k.PowerCapLasts = Math.Min(boilers > 0 ? steamBy / boilers : 1, lines > 0 ? shaftsBy / lines : 1);
         k.LastingMs = lastingMs;
         // the dynamos stand on that steam, in those engine rooms: all of either gone, no power anywhere (electrics.md EL2)
+        bool had = k.PlantOut;
         k.NoSteam = boilers > 0 && steam <= 0;
         k.PlantOut = k.NoSteam || lines > 0 && engines <= 0;
+        if (k.PlantOut && !had)
+            for (int m = 0; m < c.Mounts.Length; m++)
+                if (c.OnElectric(m))
+                    k.Engage(m, now, s);
+        if (had && !k.PlantOut)
+            k.SettleGyro(now + (long)(s.GyroSettleMin * 60_000));
         if (k.PlantOut)
-        {
-            Array.Fill(k.DirectorWorks, false);
             Array.Fill(k.SearchlightWorks, false);
-        }
+        // what each runs on (EL5): pumps and the helm stop with their own supply, lights with the plant
+        bool electric = c.Auxiliaries == AuxiliaryDrive.Electric;
+        k.PumpShare = (boilers > 0 ? steam / boilers : 1) * (electric && k.NoPower(now) ? 0 : 1);
+        k.Dark = k.NoPower(now);
+        bool helm = rudders == 0 || steer && !(electric ? k.PlantOut : k.NoSteam);
         Conn(k, command, now, s);
         if (k.IsGivenUp)
-            return StoodDown(k, steer || rudders == 0);
-        return steer || rudders == 0;
+            return StoodDown(k, helm);
+        return helm;
     }
 
     /// <summary>A ship given up (docs/battle/striking.md SK1): her colours down, her guns, tubes and searchlights stood
