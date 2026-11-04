@@ -5,7 +5,7 @@ the open item in `shells-armour-damage.md` E7 (the G0 grade gives 1916 ships 193
 `research/simulation/electric-plant.md` (2026-11-04) and its appendices; `damage/17_service_network_faults.md` is the older
 note on trips and cables, never built.
 
-**Status:** EL0-EL7 done 2026-11-04: the plan's built. Next (the user): how the heavy losses happen.
+**Status:** EL0-EL7 done 2026-11-04: the plan's built. Next (the user): how the heavy losses happen, `loss-stock-take.md`.
 
 ## The rules (the user)
 
