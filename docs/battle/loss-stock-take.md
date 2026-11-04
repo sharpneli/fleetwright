@@ -1,7 +1,55 @@
 # How ships are lost: the stock-take to come
 
-Written 2026-11-04 at the end of the electrics session, to start a new one from. **Not started.** The user expects some VFX work first; this comes
-next when gameplay-affecting work resumes.
+Written 2026-11-04 at the end of the electrics session, to start a new one from. **Started 2026-11-04: the bench is built and the first findings are under "What the
+bench found", which replaces this note's leads where they differ.** Nothing has been tuned.
+
+## What the bench found (2026-11-04)
+
+`shipgen losses dogger-bank jutland --seeds 4 --threads 6 [--spare RUNGS] [--out DIR]` (`LossBench.cs`, about 10 min at this size): a post-mortem for each loss, the causes counted, where the
+fire went. `--spare` is a counterfactual: those hits do nothing (`DamageSystem.Spared`, a bench's, never set in play), the same seeds, torpedoes always counting. Four seeds, and Jutland's baseline
+spreads 66-79 lost and the Dogger Bank's 13-29, so read direction and big steps only.
+
+**Lost a seed:**
+
+| Hits that do nothing | Jutland, Britain / Germany | capital / cruiser / destroyer | kt | Dogger Bank, Britain / Germany | capital / cruiser / destroyer | kt |
+|---|---|---|---:|---|---|---:|
+| None (the code as it stands) | 24.8 / 47.5 | 14.0 / 17.2 / 41.0 | 585 | 10.0 / 10.0 | 4.0 / 3.5 / 12.5 | 164 |
+| On ships going home (`home`) | 19.5 / 29.5 | 12.8 / 14.2 / 22.0 | 491 | 4.3 / 8.3 | 2.0 / 2.2 / 8.2 | 87 |
+| All but 1 shell in 3.5 (`gap:3.5`) | 15.5 / 38.5 | 4.5 / 15.2 / 34.2 | 257 | 9.0 / 7.8 | 0.5 / 1.8 / 14.5 | 54 |
+| Both (`home+gap:3.5`) | 22.0 / 27.3 | 9.0 / 13.8 / 26.5 | 376 | 4.8 / 3.5 | 0.2 / 2.0 / 6.0 | 33 |
+| Boats' guns on larger ships (`boat-guns`) | 28.3 / 47.8 | 13.0 / 17.0 / 46.0 | 554 | 6.8 / 10.3 | 3.2 / 2.2 / 11.5 | 127 |
+| On boats while screening (`screen`) | 26.8 / 42.0 | 11.8 / 19.2 / 37.8 | 524 | 5.8 / 8.5 | 4.0 / 4.2 / 6.0 | 153 |
+| The record | 14 / 11 | | | 0 / 1 | | |
+
+**What it says:**
+
+1. **Two causes do different jobs.** Fire on ships going home decides the **small ships** (destroyers lost 41 -> 22, Germany's 27 -> 11.5). Capital ships hardly move under it, so most of those lost were already lost when they
+   turned for home. The gunnery gap decides the **big ones** (capital ships 14 -> 4.5, the Dogger Bank's 4 -> 0.5; the tonnage more than halves), and destroyers hardly move under it.
+2. **They don't add up.** Both together lose as many ships at Jutland as `home` alone, and more capital ships than `gap` alone (9 against 4.5). A ship spared goes on firing: shells a seed go 78,000 -> about
+   119,000 under either, and ships with a torpedo hit 10.5 -> 18.5 with both. Spared hits are a crude stand-in: they show what those hits decide, not what a fix would give.
+3. **Jutland's floor is about 49 lost a seed whichever way,** twice the record. What's left is the third finding:
+4. **Slow deaths.** 23-45% of losses had no hit in their last 20 minutes: 17-22 a seed at Jutland, a median 67-96 minutes after the last hit. The destroyers among them end near 1,200 t of water, GM about -0.1 m, lolled
+   13-19 degrees, at 2-3 kn, mostly over the 25 degree capsize line. **This looks like why capsizing leads.** Not yet tested by a counterfactual. In the record, slow losses were perhaps 5 of 25 (Warrior, Lutzow, Wiesbaden, Elbing, Rostock: from memory, to source).
+5. **Half of all hits land on ships going home** (52% at both battles, from about 40% of the shells), and ships fall out in numbers: **136 of 250 fall out a seed at Jutland**, 68 of them for guns, of whom
+   29% are lost, against 80% of those out for speed, 74% steering and 91% list. Nearly no ship that never fell out was lost (1-4%).
+
+**What it isn't:**
+
+- **The lines closing.** Fighting capital ships keep about 16 km from the nearest enemy heavy ship at Jutland. 52% of hits land inside 4 km on 12% of the shells, but those are boats and cripples, not the line.
+- **Damage per hit,** as far as this reads. Capital ships lost take a median 50 heavy hits (141 of all sizes) and about 11,700 t, some 240 t a heavy hit, the record's size (Seydlitz about 5,300 t on 21, Lutzow about 8,300 t on 24: rough, from memory, to source). Heavy hits
+  run about 2,000 a seed at Jutland against the record's roughly 220 (also from memory, to source). Isolated, 6 heavy hits lose up to 16% of destroyers after 8 hours and 12 destroyer-gun hits none (`hits m_class`, `hits v25`).
+- **The boats' 4-inch guns on big ships,** though they're a third of all Jutland's hits (2,711 a seed; 80-90% at 0-2 km): taking them away moves nothing but some tonnage. Odd behaviour, maybe, not what kills.
+- **Magazines.** None of 369 losses (a magazine reached 0 times in about 9,800 heavy hits, against about 2 set off per 100 in `damage-history`'s battlecruiser cases on "1916 BCF"). Not a bug: Jutland's British side is on the plain "1916" drill (`magazines.md`: per-squadron doctrine
+  is the scenarios' later step). The record's biggest losses simply don't happen this way here. Heavy gunfire has to flood a ship instead, which may be part of why it takes 50 hits.
+- **Screens at Jutland,** where `screen` barely moves the count, though it halves the Dogger Bank's destroyers (12.5 -> 6): 32 of the 41 destroyers lost at Jutland are *first* struck on a screen, but that's where boats spend their time.
+
+**The starting groups need revising.** "Cripple finished off" counts 51% of Jutland's losses but overstates capital ships, as `home` shows. Read the counterfactual for that, not the group.
+
+**Next rungs, in order** (the user's call):
+
+1. **Why so many fall out,** the root under cripples. `FallOutGunsShare` off for one run: do ships out for guns do better staying in line? A doctrine override, no code. Half of the fall-outs are this.
+2. **The slow deaths:** a counterfactual where water stops rising 20 minutes after the last hit, then one flooded destroyer traced room by room (Badger: pumps at 100%, about 1.5 t/min for 6 hours). Is that seepage real, and should anyone come alongside or tow?
+3. **What's left of the gunnery gap.** At Jutland, capital against capital: 6-10 km 18.6%, 10-15 km 6.1%; `error-sources.md` accepted about 3.5x. These are the numbers to hold beside it.
 
 ## The question
 
@@ -33,7 +81,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- balance --seeds 8
 Also on the panel: how ships go, last read around capsized 55-60%, foundered 30-40%, broke in two under 10%, so capsizing leads everywhere. Worth asking whether that's
 what the record looks like, on its own.
 
-## The leads so far (none of them proven)
+## The leads so far (as written before the bench; see above)
 
 1. **A battlecruiser holding off** (`bugs.md`, found 2026-11-04). `AimsTests`' convoy across 12 seeds: in 9 she closes a lone light cruiser to 5-8 km and sinks it; in seeds 1, 3 and
    11 she sits at about 20 km for 40-60 minutes, and in seed 3 the convoy gets away. The same ship in the same situation behaving differently isn't physics. The clearest AI lead. It runs
@@ -47,7 +95,7 @@ what the record looks like, on its own.
    commits them?
 5. **Damage control's open items** (`damage-control.md` DC9) and why capsizing leads: a hit causes a loss, but what happens between the hit and the loss may be the real story.
 
-## What to build first
+## What to build first (built: `LossBench.cs`)
 
 A small bench, `shipgen losses SCENARIO [--seeds N]`, so the same check can be rerun after any fix: **a post-mortem for each ship lost.** For the last 30 minutes of each:
 

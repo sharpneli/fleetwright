@@ -662,12 +662,16 @@ public sealed class DamageSystem : IWorldSystem
 
     // ------------------------------------------------------------------ a hit
 
+    /// <summary>A bench's counterfactual (<c>shipgen losses --spare</c>, docs/battle/loss-stock-take.md): a hit it says true of
+    /// does nothing, so what those hits decide shows in the losses. Never set in play.</summary>
+    public Func<Hit, bool>? Spared { get; set; }
+
     /// <summary>A hit lands, now: what it does to the ship, at once.</summary>
     public void Strike(World world, in Hit hit)
     {
         var store = ships.Store;
         int slot = store.SlotOf(hit.Ship);
-        if (slot < 0)
+        if (slot < 0 || Spared?.Invoke(hit) == true)
             return;
         var ship = store[slot];
         var cls = ship.Handling.Class;
