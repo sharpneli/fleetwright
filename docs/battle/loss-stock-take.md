@@ -12,19 +12,19 @@ behaviour, as earlier heavy-loss cases turned out to be. So this starts by findi
 
 The balance panel, each column after the step named (`docs/battle/electrics.md` has the steps). Eight seeds, Jutland four, so read direction only.
 
-| Scenario, side (ships) | Record | Before electrics | EL4 | EL4b + EL5 | EL6 |
-|---|---:|---:|---:|---:|---:|
-| Jutland, Britain (151) | 14 | 15.3 | 17.3 | 22.5 | 26.5 |
-| Jutland, Germany (99) | 11 | 41.5 | 44.5 | 41.5 | 50.5 |
-| Dogger Bank, Britain (33) | 0 | 6.6 | 6.0 | 7.6 | 9.3 |
-| Dogger Bank, Germany (26) | 1 | 9.9 | 9.0 | 9.3 | 9.3 |
-| Heligoland, Britain (44) | 0 | 1.1 | 1.0 | 2.3 | 4.4 |
-| Heligoland, Germany (24) | 4 | 11.9 | 12.8 | 11.1 | 16.0 |
-| Tsushima, Russia (13) | 7 | 4.9 | 5.8 | 3.6 | 4.5 |
-| Tsushima, Japan (14) | 0 | 5.1 | 4.8 | 3.6 | 3.4 |
-| Sides within twice the record, of 14 | | 6 | 8 | 6 | 7 |
+| Scenario, side (ships) | Record | Before electrics | EL4 | EL4b + EL5 | EL6 | EL7 |
+|---|---:|---:|---:|---:|---:|---:|
+| Jutland, Britain (151) | 14 | 15.3 | 17.3 | 22.5 | 26.5 | 24.8 |
+| Jutland, Germany (99) | 11 | 41.5 | 44.5 | 41.5 | 50.5 | 47.5 |
+| Dogger Bank, Britain (33) | 0 | 6.6 | 6.0 | 7.6 | 9.3 | 8.8 |
+| Dogger Bank, Germany (26) | 1 | 9.9 | 9.0 | 9.3 | 9.3 | 12.5 |
+| Heligoland, Britain (44) | 0 | 1.1 | 1.0 | 2.3 | 4.4 | 3.9 |
+| Heligoland, Germany (24) | 4 | 11.9 | 12.8 | 11.1 | 16.0 | 17.6 |
+| Tsushima, Russia (13) | 7 | 4.9 | 5.8 | 3.6 | 4.5 | 3.9 |
+| Tsushima, Japan (14) | 0 | 5.1 | 4.8 | 3.6 | 3.4 | 3.3 |
+| Sides within twice the record, of 14 | | 6 | 8 | 6 | 7 | 7 |
 
-**EL7's panel wasn't read before this note.** Rerun it first, so the baseline is the current code (about 30 min):
+The EL7 column is the code as of this note. To rerun it (about 30 min):
 
 ```
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- balance --seeds 8 --fc-runs 0 --threads 6
