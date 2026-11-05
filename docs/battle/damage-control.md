@@ -992,7 +992,7 @@ on the yardstick bench.
 - The service networks: power and hydraulics routed through cells, casualty power, splicing (decision 5).
 - Tenders, docks, pumping counterflood water back out, shifting fuel to restore buoyancy (decision 6).
 - Ships alongside (pumps, hoses, the wounded), towing, abandoning and scuttling: the AI's and missions'.
-- Hull-girder failure under flooding and whipping, beyond the broken back that's already there.
+- Hull-girder failure under flooding and whipping, beyond the broken back that's already there: now `explosions.md` EX3, EX5.
 - Non-linear settling (`sinking.py`): only if the anchors need it.
 - Fuel vapour, aviation fuel, foam, sprinklers: later cuts.
 - The player's orders and the designer's rows: the UI pass.

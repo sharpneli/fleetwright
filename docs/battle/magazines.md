@@ -740,7 +740,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
    - there's no known case of a flash straight down an open mount's hoist [UNCERTAIN: in the research request].
 5. **Magazines going up as a ship sinks** wait for the sinking pass: by then she's lost anyway, so it's eye candy.
 6. **The race's boundaries go by the research's table** (2026-10-20, an approved exception to "one gas model"): run on
-   the ship's own plating, the gas spread through her thin bulkheads and never loaded the girder (V3).
+   the ship's own plating, the gas spread through her thin bulkheads and never loaded the girder (V3). **To be retired**
+   (the user, 2026-11-05): `explosions.md`, one physics for every explosion, tested at its EX1.
 7. **Armoured casemates keep medium HE off the magazines** (2026-10-20): thirty 6″ HE on Iron Duke lose no ship in
    400 runs, against the 1.5% once wanted. Accepted: "it means the armouring is working". A ship with thinner
    casemates or open batteries can still lose one.

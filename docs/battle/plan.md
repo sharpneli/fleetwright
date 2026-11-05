@@ -39,6 +39,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | How ships are lost | not started; next gameplay work, after some VFX (the user, 2026-11-04) | `loss-stock-take.md` | a post-mortem bench, then the causes |
 | 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
+| 4.5 One explosion | draft 2026-11-05, awaits the user's decisions | `explosions.md` | every explosion through one path, shells can break a ship; bombs later need only data |
 | 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |
 | 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
 | 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |
