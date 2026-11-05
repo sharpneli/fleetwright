@@ -92,7 +92,8 @@ public class MagazineRaceTests(ITestOutputHelper output)
             return kpa;
         }
         var mClass = Scenario("m_class");
-        var (lion, boat) = (Give(Fleet.Get("lion").Class!, "Magazine A"), Give(mClass, "Magazine B"));
+        // Lion's B: a magazine with its full wing (A now fills her narrowing hull, with no room for a wing at its lowest tier: explosions.md "Magazine volumes")
+        var (lion, boat) = (Give(Fleet.Get("lion").Class!, "Magazine B"), Give(mClass, "Magazine B"));
         for (int b = 0; b < 4; b++)
             Assert.True(boat[b] < lion[b] / 1.5, $"boundary {b}: {boat[b]:0} kPa against {lion[b]:0}");
         Assert.InRange(lion[0], 200, 300);   // the research's table, at Lion's own steel

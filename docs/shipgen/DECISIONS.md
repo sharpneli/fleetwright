@@ -667,3 +667,5 @@ Housekeeping, whenever convenient:
 - **Baked lighting:** the light rim on the upper-left edges of blocks and funnels is still baked in.
 - **No aircraft are drawn** on carriers; the game is assumed to spawn them.
 - **Missing turrets:** a mount that doesn't fit (beam too narrow, deck taken) is left off the drawing and listed as an error, even with `--no-limits`.
+
+- **A magazine's room is the size of its load (2026-11-05, Version 58; the user: "Let's do the shipgen now").** The wing wall at a magazine's section stands where the room behind it, measured in the hull at that height, holds what's stowed there (`Subdivision.MagazineWall`); the wing takes what's left, thinning to 0.5 m [EST] where the hull can't hold both. This changes H2's wing: it was a set depth in from the side (0.1 B). Between coal bunkers the same. A shared magazine shares a magazine's cell. TDS ships keep the holding bulkhead as the wall for now. Why and what it did: `docs/battle/explosions.md` "Magazine volumes".

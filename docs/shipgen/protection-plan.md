@@ -493,3 +493,5 @@ after H5, or after H6 if slopes are in.
 3. **Crown margin** (H1): 0.4 m under the full-load waterline to start.
 4. **The destroyer anchor**: narrowed back after H2 to the measured figure plus a margin ("we'll see what happens").
 5. **Phase P** comes after H5.
+
+**2026-11-05, H2's wing changed:** the wall at a magazine's section now stands by what the magazine holds, not a set depth in from the side, and the wing takes what's left (`docs/battle/explosions.md` "Magazine volumes"). Beside Lion's Q the wing is much wider; at fine ends it thins to 0.5 m. Magazines are further inboard amidships, closer to the side at the ends.

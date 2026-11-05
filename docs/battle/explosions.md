@@ -1,7 +1,7 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). EX0, EX1 and EX3 run on the bench, EX3 first at the user's word; the game
-is untouched. Their results await the user ("EX3: what it showed"); EX2 wires them in next.
+Status: **decided 2026-11-05** ("Decided" at the end). EX0, EX1 and EX3 run on the bench, EX3 first at the user's word, and magazines' rooms
+are fixed in shipgen (ShipDesign.Version 58). The game's gas and girder are still the old ones. **Pick up at "Where to pick up", next.**
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -12,6 +12,27 @@ just say interesting to have. We don't want to introduce new physics at that poi
 the charges stays in `magazines.md` (the trains, doors, discipline, valves), how a shell gets to its burst point in
 `shells-armour-damage.md` (the terminal walk), fragments in E1.
 
+## Where to pick up
+
+**Next: EX2, wiring the network and the girder into the game.** It's the step that changes real battles: compare against "EX0: the baseline".
+
+What goes with it:
+
+- `Blast.Outside` takes the bottom past the double bottom (the girder already finds it, `HullGirder.Add`).
+- `GasNetwork`'s state and what's gone (`EdgesLost`, `FacesLost`) move onto the ship's condition, `HullGirder` onto the class. It's bench-shaped today.
+- The flooding's moment gets run: `HullGirder.Read` takes the condition, and it's tested but the bench has no water in it.
+- `GasKnobs` goes. `BeltShare` 0, `HeatKeep` and the rest become settings or nothing.
+- The bench's `burned` under-reports after an early stop, and a deformed boundary's seam leak isn't committed yet.
+- The cost budget: 0.2-1 ms a shell (about 200 µs wanted), up to about 140 ms a magazine (about 20 wanted). Threads are an option (the user).
+
+**Open, in order of what they decide:**
+
+1. **Lion's Q in calm water.** Bags peak at 836 kPa, against the 1.4 MPa her 27 mm shell needs amidships, so she breaks forward at 0.88 of her length, and only in a seaway. The room's now the right size, so that wasn't it. Left: a stow's own confinement (a bed of charges burning inside itself), shell rooms' bursters (needs EX4), what a real magazine's boundaries are like.
+2. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
+3. **Clarkson and brass read alike,** with the research. Bags against the rest separate well.
+4. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
+5. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
+6. **The research request** "Big explosions in and beside ships" is open and bears on 1, 3 and 4.
 ## Why now
 
 Yamato's nine HE at 1 km on the Fleet Destroyer (`shipgen hits destroyer --shooter yamato --kind he --range 1000`, two
@@ -316,12 +337,13 @@ length): not a failure, but their weak place under damage.
 
 | Case | Calm | Seaway | Reading |
 |---|---:|---:|---|
-| Lion's Q, bags | 0.75 | **1.23** | breaks in a seaway, at 0.88 of her length |
-| Lion's Q, Clarkson | 0.42 | 0.79 | holds |
-| Lion's Q, brass | 0.40 | 0.78 | holds, no better than Clarkson: the known R 28 catch |
+| Lion's Q, bags | 0.80 | **1.33** | breaks in a seaway, at 0.88 of her length |
+| Lion's Q, Clarkson | 0.30 | 0.58 | holds |
+| Lion's Q, brass | 0.29 | 0.56 | holds, like Clarkson: the known R 28 catch |
 | Lion's Q, bags, 95% flooded | 0.16 | 0.43 | nothing happens |
-| Iron Duke, each magazine (Clarkson) | 0.55-0.84 | 0.92-**1.28** | breaks in a seaway from some |
-| Seydlitz, each magazine (brass) | 0.27-0.37 | 0.48-0.58 | **holds: burns out and fights on, as the record has her** |
+| Lion, any magazine, bags | 0.26-0.82 | 0.54-1.35 | aft ones hold, forward and midships ones break her in a seaway |
+| Iron Duke, each magazine (Clarkson) | 0.53-0.77 | 0.90-**1.20** | breaks in a seaway from some |
+| Seydlitz, each magazine (brass) | 0.27-0.35 | 0.48-0.56 | **holds: burns out and fights on, as the record has her** |
 | Destroyer, V25, a magazine | 0.10-0.13 | 0.26-0.31 | stows of 0.3-0.9 t don't reach the hull; **check against the record** |
 | 5″, 8″ in a destroyer's compartment | 0.09-0.10 | 0.25-0.26 | no different from intact |
 | 250 kg SAP in her accommodation | 0.26 | 0.63 | section lost 0.70 aft of amidships |
@@ -331,43 +353,38 @@ length): not a failure, but their weak place under damage.
 | Nine 46 cm HE on a Queen Elizabeth, Iron Duke | 0.16-0.21 | 0.42-0.55 | hull unhurt |
 | A Tallboy's charge in a destroyer | **3.29** | **4.07** | gone, whip 2.16 |
 | The same in Yamato | 0.40 | 0.98 | section lost 0.53, her bottom gone |
-| The same in Lion, Iron Duke | 0.20-0.31 | 0.48-0.67 | too little: the near field (EX4) |
-
+| The same in Lion, Iron Duke | 0.20-0.33 | 0.48-0.71 | too little: the near field (EX4) |
 **The destroyer from the question that began this:** one 46 cm burst inside already cuts the upper part of her section (deck and sides,
 0.80 lost): she holds in calm water and breaks in a seaway. More shells add sections, hardly more load, because each section's loss is
 its own. Then the flooding's moment should decide (built and tested, not yet run: the bench has no water in it), with what the shells do near
 the waterline. The contact holes are vents only on this bench and aren't in the section yet (EX4).
 
-**Magazine volumes (the user asked, 2026-11-05; `shipgen explode --volumes`).** Shipgen does size a magazine by its load (`Ordnance.Stow`, tonnes over 0.6 t/m³), and the tonnes are right everywhere. The room it ends up with isn't that size. Of 707 magazines in 131 designs: median 1.14 of what the load needs, 199 under half, 131 with none of their own, 228 over twice.
+**Magazine volumes (the user asked, 2026-11-05; fixed in shipgen, Version 58; `shipgen explode --volumes`).** Shipgen always sized a magazine by its load (`Ordnance.Stow`, tonnes over 0.6 t/m³), and the tonnes were right. The room it ended up with wasn't that size, for three reasons where the layout meets the cell grid: a room took the whole centre band whatever its own width; the wing bulkheads stood a set depth in from the side, so where the hull narrowed the band pinched to its 1 m floor; and a room smaller than any cell had no volume of its own, its stow in another room's cell, even a wing's stores.
 
-| Lion's | Holds | Needs | Its cells | Width of the cells | Hull's half-width there |
-|---|---:|---:|---:|---:|---:|
-| Magazine A | 203.8 t | 340 m³ | 52 m³ | **1 m** | 2.8-5.5 m |
-| Magazine B | 203.8 t | 340 m³ | 296 m³ | 4 m | 4.8-7.9 m |
-| Magazine Q | 203.8 t | 340 m³ | 1,219 m³ | **23 m** | 13-15 m |
-| Magazine Y | 203.8 t | 340 m³ | 62 m³ | 1 m | 0-6.7 m |
-| Magazine S fore | 63.5 t | 106 m³ | 686 m³ | 9 m | 7-11 m |
-| Magazine S aft | 63.5 t | 106 m³ | none: a share of Stores 17 | | |
+**The rule now (`Subdivision.MagazineWall`):** at a magazine's section the wing wall stands where the room behind it, measured in the hull as it is at that height, holds what's stowed there, shared magazines included. The wing takes what's left: a full wing where the load leaves room, thinning to 0.5 m [EST] where the hull can't hold both. Between coal bunkers (Lion's Q) the same, the bunkers having the rest. A shared magazine shares a magazine's cell, never the wing's stores.
 
-Three causes, all where the layout meets the cell grid:
+| Lion's | Holds | Needs | Before | Now |
+|---|---:|---:|---:|---:|
+| Magazine A | 203.8 t | 340 m³ | 52 m³, 1 m wide | 340 m³ |
+| Magazine B | 203.8 t | 340 m³ | 296 m³ | 340 m³ |
+| Magazine Q | 203.8 t | 340 m³ | 1,219 m³, 23 m wide | 340 m³ |
+| Magazine Y, with S aft in it | 267 t | 446 m³ | 62 m³, 1 m wide | 437 m³ |
 
-1. **A room takes the whole centre band** (`Subdivision`, "rooms take cells"), whatever its own width. So Q gets 23 m where its load needs about 6.5 m.
-2. **The wing bulkheads stand a set depth in from the side,** and a magazine can't claim wing cells (`magWingCells`), so where the hull narrows the centre band pinches to its 1 m floor. A's hull has room; it's given to the wing.
-3. **A room smaller than any cell has no volume** (`Shared`): its stow sits in another room's cell.
+| The fleet | Before | Now |
+|---|---:|---:|
+| Median, of what the load needs | 1.14 | 1.01 |
+| Within 0.7-1.5 | | 458 of 576 |
+| Under half | 199 of 707 (131 of them with no room) | 6 of 576 |
+| Over twice | 228 | 66 |
 
-And the sizing itself takes its width from the deck outline, not the hull down where the magazine is (DECISIONS: "Sizing is unchanged on purpose").
+**What's left:** the TDS ships, whose wall is the holding bulkhead (Yamato's SB aft 4.7, Bismarck's B 1.8: the room takes all inside it, to a later step); small secondary magazines and lockers at the least width (PT boat, MTB, merchants' guns); and sterns the hull can't hold (Gangut's Y 0.01: the layout puts it at the extreme stern of her 368 m; a layout question).
 
-**What reads it:** the gas volume, so the race and the network (both models, not only this plan's). A magazine's flooding. And what a shell finds, read from the code and not measured: a burst in a magazine's cell is a burst in the magazine (`Effects.Burst`), so Q is about 23 times A's width as a target. Weights, trim and rounds read the tonnes and are right.
+**What it cost:** weights hardly moved. Of 130 designs 3 moved at all: Kent −2.52% (her magazine boxes are narrower), Dunkerque −0.67%, Richelieu +0.02%. Goldens rewritten (273 cases), SVGs and sprites unchanged, no new warnings, `mono-check` unchanged at 30 reversals, 21 lumps. All 131 designs still hold intact in a seaway (worst 0.82).
 
+**What it did:** today's race moves, as it reads these rooms (Lion's Q 709 to 1,023 kPa, her A 1,032 to 720). A's side steel falls from 73 to 51 mm in the race's table, as her lowest tier now meets the shell. **My forecast that the wrong rooms skewed which magazines shells set off was wrong:** measured, `hits` on Lion and Iron Duke at 14 km give 0.15% and 0.2% a hit before and after. The `balance` panel wasn't rerun: no balancing until EX3 is in the game (decision 3), and EX2 reruns it.
 **Not there yet:**
 
-1. **Lion's Q doesn't break in calm water, and where she does break is 0.88, not Q.** The trace says why: 666 kPa in Q can't rupture her
-   27 mm shell amidships (about 1.4 MPa), so it tears the 12 mm past 0.875 of her length. Q's 732 m³ of gas is also far more than its stow
-   needs, as A's 31 m³ is far less ("Magazine volumes" above). **The next fix, the user to decide.**
-2. **Packing separates bags from the rest and no further:** Clarkson and brass read alike (the known R 28 catch, to the research).
-3. **12″ and 6″ HE never rupture a destroyer's side.** A 62 kg burst tears it and a 19 kg one doesn't: a steep edge, though from the physics.
-   Friedrich Eckoldt (6″ broadsides, broke in two in under two minutes) isn't met; the research is asked what broke her.
-4. **`k` 0.2 and the buckling share 0.85 are estimates;** EX5's bubble and the research test the first.
+Moved to "Where to pick up", at the top.
 ## What stays out
 
 - Aircraft, bomb sights, a bomb's flight.

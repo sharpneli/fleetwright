@@ -228,6 +228,7 @@ static class ExplodeBench
     static void Volumes(IReadOnlyList<string> designs, Func<string, Design> load)
     {
         var ratios = new List<(double Ratio, string Name)>();
+        int shared = 0;
         foreach (var d in designs)
         {
             var c = ShipClassCompiler.Compile(ShipDesign.Build(load(d)));
@@ -239,6 +240,16 @@ static class ExplodeBench
                 if (rr.Kind != RoomKind.Magazine || !(rr.Tonnes > 0))
                     continue;
                 double need = rr.Tonnes / Ordnance.TPerM3, box = (rr.X1 - rr.X0) * (rr.Top - rr.Base), cells = 0, free = 0;
+                // what shares its cells is stowed in them too
+                if (!rr.Shared)
+                    for (int o = 0; o < c.Rooms.Length; o++)
+                        if (o != r && c.Rooms[o].Kind == RoomKind.Magazine && c.Rooms[o].Shared && c.Rooms[o].Tonnes > 0)
+                            foreach (int oc in c.Links(c.Rooms[o].Cells))
+                                if (c.Cells[oc].Room == r)
+                                {
+                                    need += c.Rooms[o].Tonnes / Ordnance.TPerM3;
+                                    break;
+                                }
                 int n = 0;
                 foreach (int ci in c.Links(rr.Cells))
                 {
@@ -246,7 +257,10 @@ static class ExplodeBench
                     free += c.Cells[ci].VolumeM3 * Math.Clamp(c.Cells[ci].Permeability, 0.05, 1);
                     n++;
                 }
-                ratios.Add((rr.VolumeM3 / need, d + " " + c.RoomId(r)));
+                if (!rr.Shared)
+                    ratios.Add((rr.VolumeM3 / need, d + " " + c.RoomId(r)));
+                else
+                    shared++;
                 if (designs.Count <= 3)
                     foreach (int ci in c.Links(rr.Cells))
                     {
@@ -264,7 +278,7 @@ static class ExplodeBench
         {
             var s = ratios.OrderBy(v => v.Ratio).ToList();
             Console.WriteLine(string.Format(Inv, "{0} magazines in {1} designs: room volume over what its load needs: min {2:0.00}, 10th {3:0.00}, median {4:0.00}, 90th {5:0.00}, max {6:0.00}", s.Count, designs.Count, s[0].Ratio, s[s.Count / 10].Ratio, s[s.Count / 2].Ratio, s[s.Count * 9 / 10].Ratio, s[^1].Ratio));
-            Console.WriteLine(string.Format(Inv, "  under half of it: {0}; none at all: {1}; over twice: {2}", s.Count(v => v.Ratio < 0.5), s.Count(v => v.Ratio <= 0), s.Count(v => v.Ratio > 2)));
+            Console.WriteLine(string.Format(Inv, "  under half of it: {0}; none at all: {1}; over twice: {2}; 0.7-1.5 of it: {3}; sharing another magazine's: {4}", s.Count(v => v.Ratio < 0.5), s.Count(v => v.Ratio <= 0), s.Count(v => v.Ratio > 2), s.Count(v => v.Ratio >= 0.7 && v.Ratio <= 1.5), shared));
             Console.WriteLine("  the smallest: " + string.Join(", ", s.Where(v => v.Ratio > 0).Take(8).Select(v => string.Format(Inv, "{0} {1:0.00}", v.Name, v.Ratio))));
             Console.WriteLine("  the largest: " + string.Join(", ", s.TakeLast(8).Select(v => string.Format(Inv, "{0} {1:0.00}", v.Name, v.Ratio))));
         }

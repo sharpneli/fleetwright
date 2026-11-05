@@ -60,6 +60,69 @@ public static class Subdivision
         return true;
     }
 
+    /// <summary>A magazine's wing thins to this where the hull can't hold both it and the load, m [EST].</summary>
+    const double MagazineWingFloorM = 0.5;
+
+    /// <summary>The least half-width of a magazine's room: charges and shells still have to be got at, m [EST].</summary>
+    const double MagazineLeastHalfM = 1.5;
+
+    /// <summary>The crown of the magazines mostly over a section (as the platform deck's height), or -∞.</summary>
+    static double CrownOver(List<RoomBox> mags, double sx0, double sx1)
+    {
+        double crown = double.NegativeInfinity;
+        foreach (var m in mags)
+        {
+            double o = Ov(m.X0, m.X1, sx0, sx1);
+            if (o > 1e-6 && o >= 0.5 * Math.Min(m.X1 - m.X0, sx1 - sx0) - 1e-6)
+                crown = Math.Max(crown, Math.Round(m.Top, 3));
+        }
+        return crown;
+    }
+
+    /// <summary>What's stowed in a section, m³: each magazine over it, by how much of its length lies here.</summary>
+    static double MagazineLoadM3(List<RoomBox> mags, double sx0, double sx1)
+    {
+        double load = 0;
+        foreach (var m in mags)
+        {
+            double o = Ov(m.X0, m.X1, sx0, sx1), l = m.X1 - m.X0;
+            if (o > 1e-6 && l > 1e-6 && m.Src.Tonnes is double t)
+                load += t / Ordnance.TPerM3 * Math.Min(o / l, 1);
+        }
+        return load;
+    }
+
+    /// <summary>Where a magazine's wing wall stands, half-width: the room within it from floor to crown holds the load, measured
+    /// in the hull as it narrows and rises (halving: what it holds only grows with its width), no wider than most.</summary>
+    static double MagazineWall(double loadM3, double most, double x0, double x1, double floor, double crown, double D, HullForm form, List<double> xs)
+    {
+        const int Zs = 6;
+        double dz = (crown - floor) / Zs, dx = (x1 - x0) / xs.Count;
+        double Holds(double half)
+        {
+            double v = 0;
+            foreach (double x in xs)
+                for (int k = 0; k < Zs; k++)
+                    v += 2 * Math.Min(half, Math.Max(form.HalfWidth(x, floor + dz * (k + 0.5) + D), 0)) * dx * dz;
+            return v;
+        }
+        most = Math.Max(most, 0.5);
+        double lo = Math.Min(MagazineLeastHalfM, most), hi = most;
+        if (Holds(lo) >= loadM3)
+            return lo;
+        if (Holds(hi) <= loadM3)
+            return hi;
+        for (int i = 0; i < 20; i++)
+        {
+            double mid = (lo + hi) / 2;
+            if (Holds(mid) < loadM3)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        return Math.Round((lo + hi) / 2, 3);
+    }
+
     static double BoxOverlap(RoomBox room, Cell cell)
     {
         var (a, b) = (Box(room), Box(cell));
@@ -405,7 +468,16 @@ public static class Subdivision
             double sTop = 0;
             var layerYs = new List<double>();   // a layered TDS's walls outboard of the holding bulkhead, inside out
             if (wingM > 0 && inMach)
+            {
                 (split, sKind, sTop) = (plan!.Width / 2, "wing", 0.0);
+                // a magazine between the bunkers (Lion's Q): the wall stands by its load, as everywhere, and the bunkers have the rest
+                double crown = CrownOver(mags, sx0, sx1), load = MagazineLoadM3(mags, sx0, sx1);
+                if (crown > ib && load > 0)
+                {
+                    crowns[si] = crown;
+                    split = Math.Min(split.Value, MagazineWall(load, split.Value, sx0, sx1, ib, crown, D, form, XsIn(sx0, sx1)));
+                }
+            }
             else if (tds > 0 && inCit)
             {
                 double shell = SteelFrame * XsIn(sx0, sx1).Select(form.Waterline).Min();
@@ -417,20 +489,23 @@ public static class Subdivision
             else if (magWing > 0 || innerLine && inCit)
             {
                 // a magazine here: a wing of stores between it and the side, up to its crown (protection-plan.md H2)
-                double crown = double.NegativeInfinity;
-                foreach (var m in mags)
-                {
-                    double o = Ov(m.X0, m.X1, sx0, sx1);
-                    if (o > 1e-6 && o >= 0.5 * Math.Min(m.X1 - m.X0, sx1 - sx0) - 1e-6)
-                        crown = Math.Max(crown, Math.Round(m.Top, 3));   // as the platform deck's height
-                }
+                double crown = CrownOver(mags, sx0, sx1);
                 // the wing measured in from the side halfway up the magazine: a fine end narrows fast under the waterline,
                 // and a box cell can't follow it, so the wing is full width there and thins toward the floor
                 if (crown > ib)
                 {
                     crowns[si] = crown;
                     double zm = (ib + crown) / 2 + D;
-                    (split, sKind, sTop) = (Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, zm)) - magWing), "wing", crown);
+                    // the wall stands where the room behind it holds what's stowed here, in the hull as it is at that height;
+                    // the wing takes what's left (a full wing where the load leaves room for one, thin where the hull can't
+                    // hold both; docs/battle/explosions.md "Magazine volumes"). A long section may narrow a lot along it: the
+                    // wall may stand out to its widest, the hull cutting the room off where it's narrower, as Holds measures.
+                    // No load known: the wing's width, as before
+                    double load = MagazineLoadM3(mags, sx0, sx1);
+                    double wall = load > 0
+                        ? MagazineWall(load, SteelFrame * XsIn(sx0, sx1).Max(x => form.HalfWidth(x, zm)) - Math.Min(magWing, MagazineWingFloorM), sx0, sx1, ib, crown, D, form, XsIn(sx0, sx1))
+                        : Math.Max(0.5, SteelFrame * XsIn(sx0, sx1).Min(x => form.HalfWidth(x, zm)) - magWing);
+                    (split, sKind, sTop) = (wall, "wing", crown);
                 }
                 else if (inner.Mm > 0 && inCit)
                     // the inner bulkhead where nothing else stands: its own wall in from the side, up to the armour deck
@@ -709,7 +784,10 @@ public static class Subdivision
                 var (dx, dy, dz2) = (rx - (c.X0 + c.X1) / 2, ry - (c.Y0 + c.Y1) / 2, rz - (c.Base + c.Top) / 2);
                 return Math.Sqrt(dx * dx + dy * dy + dz2 * dz2);
             }
-            var nearest = cells.OrderBy(c => -BoxOverlap(r, c)).ThenBy(Distance).FirstOrDefault();
+            // a small magazine shares a magazine's cell, never the wing's stores beside it (its load is in that wall: MagazineLoadM3)
+            var candidates = r.Kind == RoomKind.Magazine && cells.Any(c => !magWingCells.Contains(c) && BoxOverlap(r, c) > 0)
+                ? cells.Where(c => !magWingCells.Contains(c)) : cells;
+            var nearest = candidates.OrderBy(c => -BoxOverlap(r, c)).ThenBy(Distance).FirstOrDefault();
             if (nearest is null)
                 continue;
             if (!also.TryGetValue(nearest.Id, out var al))

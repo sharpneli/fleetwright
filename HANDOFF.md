@@ -1,4 +1,8 @@
-# Handoff (2026-10-09)
+# Handoff
+
+**Latest (2026-11-05): one explosion.** `docs/battle/explosions.md` "Where to pick up": EX2 next, wiring the gas network and hull girder into the game. Older notes below.
+
+## Notes from 2026-10-09
 
 Notes for the next session. Delete or replace this file once its items are picked up.
 
