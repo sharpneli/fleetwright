@@ -22,7 +22,7 @@ public sealed unsafe partial class LaunchScene
     static readonly (double Share, string Word)[] FuelSteps = [(1, "full"), (0.75, "75%"), (0.5, "50%"), (0.25, "25%")];
     static readonly SideKind[] Kinds = [SideKind.Crews, SideKind.Readiness, SideKind.DamageControl, SideKind.FireDiscipline, SideKind.Stupidity, SideKind.Fuel];
     static readonly string[] KindLabels = ["Gun crews", "Readiness", "Damage control", "Fire discipline", "Stupidity", "Fuel"];
-    const string StupidityTip = "How far the men go for the rate of fire. Toward rate first the doors stand open, the lids come off and cordite is stacked by the guns: in a long fight the hoists stop holding the guns back, and a flash has a train to run down. By doctrine: as each ship's damage control says.";
+    const string StupidityTip = "How far the men go for the rate of fire. Toward rate first the doors stand open, the lids come off and cordite is stacked by the guns: the guns load faster and the hoists stop holding them back, and a flash has a train to run down. By doctrine: as each ship's damage control says.";
     static readonly string[] PresetNames = ["As history", "Even crews", "Easier", "Harder"];
     static readonly string[] PresetTips =
     [

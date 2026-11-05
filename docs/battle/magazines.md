@@ -241,29 +241,31 @@ indeed did fire faster. So we can have a 'Stupidity' slider in doctrine for maxi
   ship's doctrine says. On the launch screen's conditions; a scenario's or setup's `"stupidity"`; `-stupidity=side:name`;
   `shipgen losses --stupidity SIDE:name`; `shipgen duel --stupidity SHARE`.
 
-**What it costs** (`losses jutland --seeds 4`, Britain's setting; a seed):
+**The rate.** Alone at the reload the setting always did what it should (40 salvos of Queen Elizabeth's turret: safe 2,424 s, drill 2,138, hurried and rate first 1,584). In a fight it did nothing: a trained crew's reload is 39.6 x 1.2 (`GunneryCrew.Load`) and the layers' 7 s after a correction make about 54 s, against the drill hoists' 59.4 s, and the ready rounds cover that gap for a half hour, so every setting fired 1.05-1.06 rounds a gun a minute. The hoists hardly ever bind.
+
+So the discipline now also moves the crew's factor (`LoadShare`, never below the drill reload): rate first 1/1.2, a trained crew at the drill. **This is a PLACEHOLDER, a guess, at the user's choice ("we'll back it with research later or with gameplay experience"; research requested 2026-11-05, "Did rate first raise the rate of fire"). Safe stays at 1 and so stays nearly free: about 1% of the rate.**
+
+`duel lion derfflinger --runs 8 --minutes 30`, rounds a gun a minute and hits (8 runs):
+
+| | 14 km, rn-1914 | 8 km, rn-1914 | 14 km, rn-1917 | 14 km, german |
+|---|---|---|---|---|
+| drill | 1.06, 297 | 1.09, 881 | 1.07, 287 | 1.05, 287 |
+| hurried | 1.13, 291 | | | |
+| rate first | 1.15, 290 | 1.16, 941 | 1.16, 300 | 1.13, 293 |
+
+About 8% more shells over the half hour (13% over the first 12 minutes), not the 15% on the reload: the rest goes on the layers' settle and the wait for the fall of shot. Close in, hits follow the rate; at 14 km the faster salvos' hit rate falls (15.0% to 13.6%) and hits stay level.
+
+**What it does to a fleet** (`losses jutland --seeds 4`, Britain's setting; a seed):
 
 | Britain | Capital ships set off | Broken by it | Capital ships lost | British tonnes lost | German tonnes lost |
 |---|---|---|---|---|---|
 | safe | 0.3 | 0 | 4.5 | 182,000 | 354,000 |
 | drill | 1.0 | 0.8 | 2.8 | 162,000 | 380,000 |
-| hurried | 5.3 | 3.8 | 5.0 | 222,000 | 352,000 |
-| rate first | 9.0 | 5.3 | 7.0 | 275,000 | 368,000 |
-| as written (the BCF on rate first) | 4.8 | 3.0 | 5.3 | 235,000 | 337,000 |
+| hurried | 3.5 | 2.0 | 4.3 | 204,000 | 294,000 |
+| rate first | 8.3 | 5.8 | 7.8 | 306,000 | 311,000 |
+| as written (the BCF on rate first) | 3.8 | 2.3 | 4.3 | 217,000 | 374,000 |
 
-The boom is real and ordered; the German column is noise, with no gain to read. The stack itself hardly moves rate first:
-as written, 3.0 broken before and after, and `hits lion --shooter derfflinger` 2.45% of hits set off against 2.35%, since
-rate first's lids are all off and a station's chance was already near certain.
-
-**What it buys: nothing yet, in a fight.** Alone at the reload the setting does what it should (40 salvos of Queen Elizabeth's
-turret: safe 2,424 s, drill 2,138, hurried and rate first 1,584, the gun crew's own limit). In a duel (`duel lion derfflinger
---range 14000 --runs 8 --minutes 30`) every setting fires 1.05-1.06 rounds a gun a minute, 70% of the drill's, and on `rn-1917`
-and `german` too: a trained crew's reload is 39.6 x 1.2 (`GunneryCrew.Load`) and the layers' 7 s after a correction make about
-54 s, against the drill hoists' 59.4 s, and the ready rounds cover that gap for the half hour. **So the hoists hardly ever bind,
-and the discipline doesn't touch the crew's factor.** As it stands safe costs about 1% of the rate and rate first gains
-nothing, where the record (and the user) has the BCF firing faster. No source read so far gives a figure for what open doors do
-to the loading cycle (02 says "historians debate"), so none is set: research requested 2026-11-05, "Did rate first raise the
-rate of fire". **Awaits the user.**
+The boom is real and ordered. **A whole fleet on rate first loses the exchange**: about 2.3 German tonnes for each British on drill, about 1.0 on rate first, as ships blown up stop firing. Four seeds: read the ends, not the steps. The stack itself hardly moves rate first (`hits lion --shooter derfflinger`: 2.45% of hits set off a magazine, 2.35% before it), since its lids are all off and a station's chance was near certain already. Left as it comes out, to be judged in play. The coarse tier doesn't read the rate yet (the coarse pass).
 
 ### Flooding and sprinkling (one set of valves)
 

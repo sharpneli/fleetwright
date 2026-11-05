@@ -241,6 +241,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
         var mid = Magazines.At(Settings, 0.75);
         Assert.Equal(1.25, mid.HoistShare, 6);
         Assert.Equal(0.15, mid.StackShare, 6);
+        Assert.Equal((1 + 1 / 1.2) / 2, mid.LoadShare, 6);
         Assert.Equal(0.55, mid.DoorOpen[(int)StationKind.Handling], 6);
         Assert.Equal(Magazines.Of(Settings, "1916").HoistShare, Magazines.At(Settings, 0.5).HoistShare, 6);
         Assert.Equal(Magazines.Of(Settings, "1916 BCF").StackShare, Magazines.At(Settings, 1).StackShare, 6);

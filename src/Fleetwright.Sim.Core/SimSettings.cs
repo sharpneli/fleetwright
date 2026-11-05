@@ -1865,13 +1865,15 @@ public sealed record SimSettings
     /// LidsOff the share of a magazine's stow lying open; HoistShare the hoists' sustained reload over the drill's
     /// (fire-control F6d's <c>DesignerPlaceholders.HoistShare</c>, 1.5, is drill's); StackShare the share of a mount's
     /// rounds stacked out of the magazine, in her working chamber, handling room and passage (research 10 §3.2, §7: 20-40%
-    /// on rate first [EST]; the 1913 outfit's surplus, Bulwark's passages). Rows from the safest up: a side's
-    /// <see cref="Stupidity"/> reads between them.</summary>
+    /// on rate first [EST]; the 1913 outfit's surplus, Bulwark's passages); LoadShare a PLACEHOLDER on the gun crew's battle
+    /// factor (<see cref="GunneryCrew.Load"/>), never below the drill reload: rate first's 1/1.2 takes a trained crew to the
+    /// drill, about 15% faster [GUESS, the user's choice 2026-11-05: to be backed by research or by play; magazines.md "The
+    /// stack and Stupidity"]. Rows from the safest up: a side's <see cref="Stupidity"/> reads between them.</summary>
     public FlashDiscipline[] FlashDisciplines { get; init; } =
     [
-        new() { Name = "safe", DoorOpen = [0, 0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7, StackShare = 0 },
-        new() { Name = "drill", DoorOpen = [1, 1, 0.2, 0.1, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5, StackShare = 0 },
-        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0, StackShare = 0.3 },
+        new() { Name = "safe", DoorOpen = [0, 0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7, StackShare = 0, LoadShare = 1 },
+        new() { Name = "drill", DoorOpen = [1, 1, 0.2, 0.1, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5, StackShare = 0, LoadShare = 1 },
+        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0, StackShare = 0.3, LoadShare = 0.8333333333333334 },
     ];
     public int MagazineLossMs { get; init; } = 60_000;
 
@@ -3042,6 +3044,7 @@ public readonly record struct FlashDiscipline
     public double LidsOff { get; init; }
     public double HoistShare { get; init; }
     public double StackShare { get; init; }
+    public double LoadShare { get; init; }
 }
 
 /// <summary>A setting of a side's <see cref="SimSettings.Stupidity"/>.</summary>

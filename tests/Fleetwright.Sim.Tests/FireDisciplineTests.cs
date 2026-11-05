@@ -162,6 +162,42 @@ public class FireDisciplineTests(ITestOutputHelper output)
         Assert.Equal(40, rate.AtReload);   // no faster than the gun crew: the stack can't beat the reload
     }
 
+    /// <summary>A fight's rate (docs/battle/magazines.md "The stack and Stupidity"): the discipline's share of the crew's
+    /// battle factor reaches the guns, so rate first fires more rounds than drill at the same target in the same time.</summary>
+    [Fact]
+    public void Rate_first_fires_more_rounds_in_a_fight_than_drill()
+    {
+        var qe = Fleet.Get("super_dreadnought").Class!;
+        int Rounds(double share)
+        {
+            var w = new World(Start, 1, Settings);
+            int c = w.Ships.AddClass(qe);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, 90);
+            Earth.Advance(ref p, ref f, 14_000);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(c, Lat, Lon, 0, 15, side: 0));
+            w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));
+            w.Apply(DamageSystem.SetStupidity(0, share));
+            w.Apply(GunnerySystem.Engage(1, 0, 2));
+            int slot = w.Ships.Store.SlotOf(1);
+            var mounts = qe.Links(qe.Batteries[0].Mounts).ToArray();
+            int Left()
+            {
+                int n = 0;
+                foreach (int m in mounts)
+                    n += w.Ships.Store.Combat.Mount(slot, m).Rounds;
+                return n;
+            }
+            int full = Left();
+            w.AdvanceTo(Start + 12 * 60_000);
+            output.WriteLine($"stupidity {share:0.00}: {full - Left()} main rounds in 12 min");
+            return full - Left();
+        }
+        int drill = Rounds(0.5), rate = Rounds(1);
+        Assert.True(rate > drill * 1.08, $"rate first {rate}, drill {drill}");
+    }
+
     [Fact]
     public void Close_in_the_layers_lay_by_sight_and_walk_their_fall_onto_her()
     {

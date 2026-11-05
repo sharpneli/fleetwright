@@ -73,7 +73,7 @@ public static partial class Magazines
         return new FlashDiscipline
         {
             Name = "stupidity", DoorOpen = doors, StationCharges = Mix(a.StationCharges, b.StationCharges), LidsOff = Mix(a.LidsOff, b.LidsOff),
-            HoistShare = Mix(a.HoistShare, b.HoistShare), StackShare = Mix(a.StackShare, b.StackShare),
+            HoistShare = Mix(a.HoistShare, b.HoistShare), StackShare = Mix(a.StackShare, b.StackShare), LoadShare = Mix(a.LoadShare, b.LoadShare),
         };
     }
 
