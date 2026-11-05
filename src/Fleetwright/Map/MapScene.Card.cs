@@ -923,7 +923,12 @@ public sealed partial class MapScene
         for (int i = 0; i < d.MagazineCount[di]; i++)
         {
             var r = CardRow(ref n);
-            Words(r, r.X + P(6), right, T.Water, U8.W($"Magazine flooded: {cls.RoomId(d.MagazineRoom[d.MagazineStart[di] + i])}"));
+            int at = d.MagazineStart[di] + i;
+            double share = d.MagazineShare[at];
+            var room = cls.RoomId(d.MagazineRoom[at]);
+            Words(r, r.X + P(6), right, T.Water, share < 0 ? U8.W($"Magazine flooding ordered: {room}")
+                : share < 0.995 ? U8.W($"Magazine flooding, {share * 100:0}%: {room}")
+                : U8.W($"Magazine flooded: {room}"));
         }
     }
 

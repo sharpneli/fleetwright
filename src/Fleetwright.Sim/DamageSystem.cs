@@ -665,6 +665,10 @@ public sealed class DamageSystem : IWorldSystem
                     if (k.MagazineFlood[room] || room < k.MagazineOrderMs.Length && k.MagazineOrderMs[room] > 0)
                     {
                         d.EnsureMagazines(d.Magazines + 1);
+                        double held = 0, cap = 0;
+                        foreach (int cell in cls.Links(cls.Rooms[room].Cells))
+                            (held, cap) = (held + k.WaterM3[cell], cap + fm.Capacity[cell]);
+                        d.MagazineShare[d.Magazines] = !k.MagazineFlood[room] ? -1 : cap > 0 ? Math.Min(1, held / cap) : 1;
                         d.MagazineRoom[d.Magazines++] = room;
                     }
             }

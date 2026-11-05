@@ -233,6 +233,46 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(r.BurnedKg < 3000);
     }
 
+    /// <summary>What the player is told follows the water: a flash in the turret gives the order, the valves open a walk
+    /// later, and the magazine fills over minutes. An order is never reported as a flooded magazine.</summary>
+    [Fact]
+    public void The_detail_tells_a_flooding_ordered_from_a_magazine_flooded()
+    {
+        var c = Packed("lion", "bag");
+        int q = Enumerable.Range(0, c.Mounts.Length).First(m => c.ComponentId(c.Mounts[m].Component) == "Q");
+
+        // Settle runs from the world's clock, so each moment is its own ship, flashed and settled once
+        double ShareAfter(int seconds)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+            int entity = w.Ships.NewestEntity;
+            var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity));
+            k.Flash = Magazines.Of(Settings, "1942");   // safe: the flash stops at the shut doors
+            var rng = RandomStream.Named(1, "harvey");
+            var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+            Assert.Equal(-1, Magazines.Light(c, k, q, 0, false, Settings, ref rng, ref res, w.Time.Ms));
+            if (seconds > 0)
+                w.Damage.Settle(w, entity, seconds);
+            var snap = new Snapshot();
+            (snap.DetailWanted[0], snap.DetailWantedCount) = (entity, 1);
+            w.Fill(snap, truth: true);
+            var d = snap.Details;
+            int r = d.IndexOf(entity);
+            Assert.Equal(1, d.MagazineCount[r]);
+            double share = d.MagazineShare[d.MagazineStart[r]];
+            output.WriteLine($"{seconds,4} s after the flash: {share:0.00}");
+            return share;
+        }
+
+        Assert.Equal(-1, ShareAfter(0));   // ordered this instant: no water
+        Assert.Equal(-1, ShareAfter(60));   // still the walk to the valves
+        foreach (int s in (int[])[150, 300, 420, 720, 1200, 1800])
+            ShareAfter(s);
+        Assert.InRange(ShareAfter(150), 0, 0.2);   // the valves open: the first of the water
+        Assert.True(ShareAfter(1800) > 0.995, "flooded in the end");
+    }
+
     /// <summary>V6: a magazine with sprinklers (a WWII outfit) has its stow wetted within a minute of the order.</summary>
     [Fact]
     public void Sprinklers_wet_the_stow_within_a_minute()

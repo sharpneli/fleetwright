@@ -241,6 +241,10 @@ The controls are cut by smoke or fire over them (as today) or by lost power (Yam
 them, wet the charges in a fraction of the time. The water lowers S (Lion's held), and a drowned magazine can't go up.
 The mounts lose their rounds, as today.
 
+**Measured 2026-11-05** (Lion's Q, flash stopped short, at rest and conned; `The_detail_tells_a_flooding_ordered_from_a_magazine_flooded`): no water until the valves open at 2 min, about half full at 7 min (fire can't set it off from there, `FireDrownShare`), 77% at 12 min, full by 20 min. Research 10 §4.2 has 1-5 min to the valves and 10-30 min to fill, both inferred from valve physics, so 2 min sits at the quick end. The fill slows after half for a reason not yet traced: 600 s alone would have it full at 12 min. The card used to say "Magazine flooded" from the moment of the order, which read as seconds in play; it now says ordered, then the share filling.
+
+**Open:** a flash that stops short orders the flooding every time, whoever survived it, and that path doesn't check the fire over the valves as the fire's own order does. The record's failures (Liberté's valves unreachable, delay at Lion, crews killed) aren't modelled there. Research requested 2026-11-05; awaits the user.
+
 ## The steps
 
 Each step shows `damage-history`'s magazine lines before and after (the cases above, by tier and cause). The order
