@@ -699,7 +699,58 @@ A German capital ship set off burns out nearly 3 magazines and fights on, which 
 2. **Small stows,** Clarkson's too: `MagazineGiveKPa` is one table for every ship, so a light cruiser's 1-5 t stops at 250 kPa, "contained", with her hull untouched. This is cap 4 below.
 3. **A single midships magazine on a capital ship:** Lion's Q, Iron Duke's Q (27-29 t, 700-807 kPa, her deck gone, she floats).
 
-**Proposed, the user's call:** make it the physics' answer, not a rule. R by propellant as well as packing (10 §1.2 has a sensitivity range and the plan's V3 asked for it), so RP C/12 and early single-base go as cordite does and the 1942 anchors stay; the boundary table scaled by the ship's plating, so a thin hull gives at what a thin hull gives at. Upper bound if every set-off took her: about 17 ships a Jutland seed (Germany 9, Britain 8) on hits about 8x the record's.
+### The physics built (the user, 2026-11-05: yes to both; "see where we end up in the physics side vs reality before tweaking the rate")
+
+**Built, not tuned.** No rate was set; every number below is what came out.
+
+1. **R is packing times the propellant's sensitivity** (`MagazinePackageR` 32, 28, 24 on cordite; `PropellantRow.Sensitivity`). Double-base and early single-base 1; diglycol, triple-base, LOVA and the new stabilised single-base 0.05 (10 §1.2's about 20 times), so 1942's fits stand: 28 x 0.05 = 1.4 Gneisenau, 24 x 0.05 = 1.2 Boise. Design format 20: Treaty and Second War blocks on single-base fire `stabilised single-base`. The catch: 10 §1.3 has German brass main charges surviving a fore charge beside them (Lützow's B), and 28 makes brass hardly better than Clarkson in a magazine alight. To the research (`REQUESTS.md`, 2026-11-05).
+2. **A magazine's boundaries give at its own steel** (`Magazines.GiveMm`, `GiveKPa`): the table for Lion's main magazines, `MagazineGiveMm` [8, 27, 73, 39], scaled by plate, as E5's rupture is. `shipgen magazine --race` prints the steel. Decision 6's table stays the base.
+
+**Three follow-ons the measuring forced, none asked for by name:**
+
+3. **What a boundary opens goes with its area** (`GiveM2`, `MagazineGiveFaceM2`). A destroyer's fixed 4 m² tear let her gas out, "contained", in a hull where 1.3 t of cordite is about 340 kPa over her whole volume, well past her plates.
+4. **A side torn under the waterline is no way out until the deck has opened one** (07 §2.4, 10 §6 "backed by water") [EST]. Else a thin side saved her by venting first: even loose bags stopped severing Lion's Q.
+5. **All her section gone near an end takes the end, not the ship,** whatever the bottom did (`Girder`). The end case had stopped happening.
+
+**A bug of the earlier fix, found by measuring:** drill's "flash doors don't hold" read the chamber's door, and a wing turret sharing a magazine has no handling room, so nothing stood between her chamber and her charges: Nassau and Helgoland lost 4.4% of heavy hits to a magazine against König's 0.3%. The door into a magazine is now always the magazine's own.
+
+**Where it ends up against the record** (the record from memory, to source):
+
+| A heavy hit, % | Set off | Lost to it | |
+|---|---:|---:|---|
+| Lion, Queen Mary, Iron Duke (drill) | 0.13-0.17 | 0.1 | Grand Fleet, about 50 heavy hits, none |
+| Indefatigable (drill) | 0.23 | 0.2 | |
+| Rate first (`damage-history`: Indefatigable, Tiger) | 1.9-2.0 | 1.3-1.6 | ~5% (1-14%) |
+| Minotaur, Warrior, Duke of Edinburgh | 0.2-0.3 | 0.1 | Defence, Black Prince: perhaps 2 in 50 |
+| Seydlitz, König, Derfflinger, Nassau, Helgoland (RP C/12) | 0.2-0.5 | 0.1-0.5 | about 100 heavy hits, none; 0.1-0.5 expected at this rate |
+| Mikasa | 0.3 | 0.1 | |
+| Bismarck (cool, brass) | 0.6 | 0 | burned out, as Gneisenau |
+
+| Jutland, a seed | Now | The record |
+|---|---:|---:|
+| Heavy hits | 1,702 | about 220 |
+| Lost to a magazine | 5.25 (7% of 72) | 5-7 (20-28% of 25) |
+| Battlecruisers | 3.25 | 3 |
+| British armoured cruisers | 0 | 2 |
+| German capital ships | 2.0 | 0 by gunfire |
+| Ships with a magazine set off, of them lost any way | 11.6, 10.2 (88%) | |
+
+The count looks right and isn't: it's 5 on about 8x the record's heavy hits. **At the record's 220 hits this would be about 0.7, so the rate a hit is about a seventh of the record's overall**: rate first about 2.5x under, armoured cruisers 10x or more, German capital ships about right.
+
+**"Once it burns" now nearly holds:** 88% of the ships set off at Jutland are lost, by one way or another. 2.8 of 3.0 German capital ships, against 0 of 4 before. Those not broken go by the sea through what she opened.
+
+**Misses to look at, none fixed:**
+
+- **Armoured cruisers** still don't break: their magazines burn and breach, and they sink later. Passages are what's missing (cap 4, 10 §5).
+- **Santiago's unorganised cruisers** (`fire-history`), a magazine by a fire: 0% -> 45% of runs. fire.md B5 has the record "burned out, not blown up", though Oquendo's and Vizcaya's, from memory, did go up. Wants sourcing before anything moves.
+- **Kirishima** 10% of runs to a magazine, Warspite 3%, the Yalu ironclad 5% (the record, from memory: none).
+- **Killed a flash** 46-67 at Jutland's German cases against 75-80 a turret: closer, not there.
+- **The side's steel is uneven:** Lion's A 73 mm and her Q 35, Queen Mary's 30, from where the belt's cells reach at a magazine's depth. It decides a lot: worth a look in the design of belts, not here.
+- **The hits themselves** (2-4.4 lit per 100 heavy hits, record about 4): fine. The reach (0.1 door on drill) and the record's 3 in 58 BCF hits are where the rest of the gap lies.
+
+**The panel** (`balance --seeds 8 --fc-runs 0`): 7 of 14 sides within twice the record, from 5 on fixes 1-3 (Coronel moved in, read as noise). Jutland 25.8 / 46.3, Dogger Bank 7.3 / 11.0. How ships go at Jutland: capsized 55%, foundered 31%, magazine 7%, broke in two 7%. `coarse-parity` not run: this isn't a balancing pass, and `CoarseParityTests` pass.
+
+**The rate stays as it comes out** until the user has read this (the user: first see where the physics ends up).
 
 The user, from play: no magazine detonation in ages, even under silly debug shooting. "I think the current rates are way too low." Measured, it's worse than low: **on drill, a ship of the Great War can't be lost to a magazine at all,** and drill is what every side of every scenario and every dev ship is on.
 
