@@ -752,6 +752,39 @@ The count looks right and isn't: it's 5 on about 8x the record's heavy hits. **A
 
 **The rate stays as it comes out** until the user has read this (the user: first see where the physics ends up).
 
+### Ammunition passages (the user, 2026-11-05: "we build the physics and see what comes out of it")
+
+**Built, nothing tuned.** Closes cap 4's missing half and V2's "where the design has them".
+
+- **From the geometry, not a flag or a type:** a mount standing beyond its magazine's stretch by more than her own radius gets a passage (`Ordnance.AddPassages`): a room (`RoomKind.Passage`) from the magazine to the farthest such mount, from the magazine's crown to the deck over it. It owns no cell: it shares those it runs through on the centreline (`Room.Shared`, `Cell.Also`), so it carves up no boiler room, weighs nothing yet and draws nothing. `shipgen magazine` lists it in the trains. ShipDesign.Version 57.
+- **A station of her train** (`StationKind.Passage`): gunhouse > chamber > passage > magazine; a casemate > passage > magazine; a shield's starts there. Charges in transit by the discipline.
+- **Lit by a burst, its splinters or its gas there,** by the share of the space it takes up (`Magazines.Exposed`: its 2 m of the space's width). The charges burn at one place along it, not all of it: one space's men flash and one seat starts [EST].
+- **The doors:** a casemate's hoist 0.2, then the magazine's own door 0.1: the same 2% in series as before, now with Kent's stop in the passage between them.
+- **Defence's chain:** magazines on passages that meet, or that a passage runs over, form a group (`ShipClass.PassageGroup`), and light one from the next when the gas breaks through, at the pressure the bulkhead gives (07 §2.4 groups them) [EST: no door roll].
+
+**Not built:** a stack in a passage on rate first (Bulwark's 20 a passage; "secondary cordite even worse" in the BCF, 10 §3.1), flame up the other mounts on her passage, passages off the centreline, their own bulkheads or weight.
+
+**What came out** (`losses`, 4 seeds at Jutland and the Dogger Bank, 8 at Coronel and Tsushima; the record from memory):
+
+| | Before | With passages | The record |
+|---|---|---|---|
+| Coronel, magazine's share of losses | 0% | 45% | Good Hope |
+| Good Hope, Monmouth lost to a magazine | none | 3 of 8, 5 of 8 | Good Hope yes; Monmouth capsized, a turret blown off |
+| Coronel, Britain lost a seed | 1.3 | 2.0 | 2 |
+| Scharnhorst, Gneisenau lost to a magazine | none | 1 of 8 each | none |
+| Asama class at Tsushima (Azuma, Izumo, Tokiwa) | | 7 in 24 ship-battles | none |
+| Russia at Tsushima, broken by a magazine | | 0 (tanks: 6 of 9 breached) | Borodino |
+| Jutland, lost to a magazine a seed | 5.25 | 5.25 | 5-7 |
+| Battlecruisers, Jutland | 3.25 | 3.5 | 3 |
+| Armoured cruisers, Jutland | 0 | **0** (10 lost in 4 seeds, by water; 3 races, all breached) | 2 |
+| German capital ships, Jutland | 2.0 | 1.0 | 0 by gunfire |
+| Seydlitz's case, `damage-history`, lost to a magazine | 0 of 40 | 3 of 40 | none |
+| Santiago by fire | 45% | 55% | "burned out"; to source |
+
+The rate a heavy hit hardly moves (armoured cruisers 0.1-0.2%; Minotaur's set-offs 0.3 -> 0.47%): passages change **what a magazine alight does** to a ship with small stows far more than how often one lights. So they gave Good Hope her explosion where the fire is short range and the hits many, and not Defence, who takes few hits here before she's already sinking.
+
+**Jutland's total went from 72 to 91 lost a seed. Read it as noise, not as passages:** one seed (1918) went from 46 to 131; the others are 70 -> 89, 89 -> 71, 83 -> 72; and no destroyer has a passage, yet destroyers are most of the rise. The seeds' spread is 46-131 on these runs, far wider than the 66-79 `loss-stock-take.md` first read: four seeds of Jutland can't show a difference under about 25. The panel: 6 of 14 sides within twice the record, from 7 (Jutland's Britain out on that seed).
+
 The user, from play: no magazine detonation in ages, even under silly debug shooting. "I think the current rates are way too low." Measured, it's worse than low: **on drill, a ship of the Great War can't be lost to a magazine at all,** and drill is what every side of every scenario and every dev ship is on.
 
 **Four caps, in the order a flash meets them:**
