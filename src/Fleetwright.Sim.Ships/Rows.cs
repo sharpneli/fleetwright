@@ -199,6 +199,10 @@ public readonly record struct PropellantRow
     public double SurfaceM2Kg { get; init; }
     public double WebM { get; init; }
     public PropellantForm Form { get; init; }
+    /// <summary>How readily a burning charge lights the next, against cordite's 1: a share of the packing's neighbours
+    /// (<see cref="Fleetwright.Sim.Core.SimSettings.MagazinePackageR"/>; docs/battle/magazines.md "Too safe";
+    /// research/simulation/damage-research/10 §1.2, cordite 5-75 times US single-base, about 20).</summary>
+    public double Sensitivity { get; init; }
 }
 
 /// <summary>A propellant grain's form, for how its burning surface changes as it burns.</summary>

@@ -29,7 +29,7 @@ public static class GunTemplates
     public sealed record Template(string Name, string Group, string Note, GunTechInput Value);
 
     /// <summary>The propellants a block may give (the sim's Propellants by these names).</summary>
-    public static readonly string[] Propellants = ["black powder", "single-base", "double-base", "diglycol", "triple-base", "lova"];
+    public static readonly string[] Propellants = ["black powder", "single-base", "stabilised single-base", "double-base", "diglycol", "triple-base", "lova"];
 
     /// <summary>How a block's charges are packed (the sim's Packaging by these names): silk bags alone, bags in Clarkson
     /// cases, a brass cartridge case, bags in airtight tanks.</summary>
@@ -40,7 +40,7 @@ public static class GunTemplates
     {
         "black powder" => "bag",
         "double-base" => "clarkson",
-        "single-base" => "tank",
+        "single-base" or "stabilised single-base" => "tank",
         _ => "brass",
     };
 
@@ -62,8 +62,8 @@ public static class GunTemplates
             "From 1950: automatic guns, power-worked mounts."),
     ];
 
-    static Template T(Period p, string propellant, string note, string? packaging = null) => new(
-        $"{p.Name}, {propellant}" + (packaging is null ? "" : $", {packaging}-cased"), p.Name, p.Note + " " + note, new GunTechInput
+    static Template T(Period p, string propellant, string note, string? packaging = null, string? named = null) => new(
+        $"{p.Name}, {named ?? propellant}" + (packaging is null ? "" : $", {packaging}-cased"), p.Name, p.Note + " " + note, new GunTechInput
     {
         ReloadShare = p.Reload, HeavySlow = p.Slow, HeavySlowUnder40Cal = p.Slow40, HeavySlowUnder30Cal = p.Slow30, TrainShare = p.Train,
         DpTrainShare = p.DpTrain, MaxElevationDeg = p.MaxElev, DpMaxElevationDeg = p.DpMaxElev, PatternPct = p.Pattern, PatternExp = p.PatternExp,
@@ -76,6 +76,7 @@ public static class GunTemplates
 
     const string Cordite = "Double-base: cordite MD and SC, the German RPC/12, Japan's and Italy's.";
     const string Single = "Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.";
+    const string Stabilised = "Stabilised single-base: the USN's SPD and France's between the wars, far slower to light one charge from the next (Boise's magazine burned and she lived, 1942).";
     const string Diglycol = "Diglycol, cool double-base: the German RPC/38.";
 
     public static readonly IReadOnlyList<Template> All =
@@ -88,11 +89,11 @@ public static class GunTemplates
         T(Periods[1], "single-base", Single),
         T(Periods[2], "double-base", Cordite),
         T(Periods[2], "double-base", Brass, "brass"),
-        T(Periods[2], "single-base", Single),
+        T(Periods[2], "stabilised single-base", Stabilised, named: "single-base"),
         T(Periods[2], "diglycol", Diglycol),
         T(Periods[3], "double-base", Cordite),
         T(Periods[3], "double-base", Brass, "brass"),
-        T(Periods[3], "single-base", Single),
+        T(Periods[3], "stabilised single-base", Stabilised, named: "single-base"),
         T(Periods[3], "diglycol", Diglycol),
         T(Periods[4], "triple-base", "Triple-base: Cordite N/NQ, SPCG, M30/M31."),
     ];

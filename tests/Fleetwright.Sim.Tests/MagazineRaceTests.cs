@@ -67,13 +67,50 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Brass_cases_burn_out_lower_than_Clarkson_cases()
+    public void The_propellant_decides_whether_she_burns_out()
     {
-        var clarkson = Race(Packed("lion", null), "Magazine Q");
-        var brass = Race(Packed("lion", "brass"), "Magazine Q");
-        Assert.False(brass.Lost);
-        Assert.True(brass.PeakKPa < clarkson.PeakKPa / 1.5, "brass lights a charge from the next more slowly (Seydlitz, Gneisenau)");
-        Assert.Equal(MagazineTier.BurnedOut, Race(Fleet.Get("seydlitz").Class!, "Magazine X").Tier);
+        Assert.True(Race(Packed("lion", "brass"), "Magazine Q").Lost, "hot propellant goes in brass as in Clarkson cases (Pommern, not Gneisenau)");
+        Assert.Equal(MagazineTier.BurnedOut, Race(Fleet.Get("bismarck").Class!, "Magazine A").Tier);   // cool, in brass: Gneisenau
+        Assert.False(Race(Fleet.Get("colorado").Class!, "Magazine A").Lost);   // stabilised, in tanks: Boise
+        Assert.True(Race(Fleet.Get("seydlitz").Class!, "Magazine X").Tier >= MagazineTier.Breached);   // RP C/12, in brass, dry
+    }
+
+    /// <summary>"Too safe": a magazine's boundaries give at what its own steel gives at, and what they open goes with their
+    /// area: a destroyer's isn't a battleship's, and a magazine alight doesn't sit "contained" in her.</summary>
+    [Fact]
+    public void A_thin_hull_gives_at_what_a_thin_hull_gives_at()
+    {
+        static ShipClass Boat(string name) => ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json"))));
+        double[] Give(ShipClass c, string magazine)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+            var kpa = new double[4];
+            Magazines.GiveKPa(c, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity)), Room(c, magazine), Settings, kpa);
+            return kpa;
+        }
+        var mClass = Boat("m_class");
+        var (lion, boat) = (Give(Fleet.Get("lion").Class!, "Magazine A"), Give(mClass, "Magazine B"));
+        for (int b = 0; b < 4; b++)
+            Assert.True(boat[b] < lion[b] / 1.5, $"boundary {b}: {boat[b]:0} kPa against {lion[b]:0}");
+        Assert.InRange(lion[0], 200, 300);   // the research's table, at Lion's own steel
+        Assert.InRange(lion[1], 600, 800);
+        Assert.InRange(lion[2], 900, 1100);
+
+        var r = Race(mClass, "Magazine B");
+        Assert.True(r.D > 0, $"a boat's magazine alight opens her up (peak {r.PeakKPa:0} kPa)");
+        var rc = Race(Boat("arethusa"), "Magazine A");
+        Assert.True(rc.D > 0, $"a light cruiser's too (peak {rc.PeakKPa:0} kPa)");
+    }
+
+    /// <summary>A side torn under the waterline is no way out for the gas until the deck has opened one up: Lion's Q has
+    /// the thinnest side of her magazines, and it goes first, and she's still broken at Q, not saved by it.</summary>
+    [Fact]
+    public void A_torn_side_under_water_doesnt_save_her()
+    {
+        var r = Race(Packed("lion", null), "Magazine Q");
+        Assert.True(r.Lost);
+        Assert.Equal(MagazineTier.Severed, r.Tier);
     }
 
     [Fact]
@@ -121,14 +158,15 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(aft > 5, $"the stern beyond the magazine open to the sea ({aft} spaces)");
     }
 
-    /// <summary>V5: the BCF's rate first (doors propped, lids off) severs Lion where her drill leaves her breached; and
-    /// the flame from her gunhouse always reaches the magazine.</summary>
+    /// <summary>V5: the BCF's rate first (doors propped, lids off) burns harder than drill, and the flame from her
+    /// gunhouse always reaches the magazine; on drill only one time in ten does (below): that's where they part.</summary>
     [Fact]
     public void Rate_first_props_the_doors_and_takes_the_lids_off()
     {
         var c = Fleet.Get("lion").Class!;
-        Assert.False(Race(c, "Magazine Q", doctrine: "1916").Lost);
-        Assert.True(Race(c, "Magazine Q", doctrine: "1916 BCF").Lost);
+        var (drill, rate) = (Race(c, "Magazine Q", doctrine: "1916"), Race(c, "Magazine Q", doctrine: "1916 BCF"));
+        Assert.True(rate.Lost);
+        Assert.True(rate.PeakKPa >= drill.PeakKPa);
 
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
         w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));

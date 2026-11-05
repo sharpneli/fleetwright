@@ -599,11 +599,15 @@ static class LossBench
         Console.WriteLine(string.Format(Inv, "  magazines, a seed: {0:0} heavy hits, {1:0.0} hits lit charges in a train; set off by a hit: {2}; by a fire: {3}",
             runs.Average(r => r.Tally.HeavyHits), runs.Average(r => r.Tally.TrainsLit), Races(t => t.RacesByHit), Races(t => t.RacesByFire)));
         // whose: ships with a magazine set off, a seed, those it took, by side, type and packing
+        var gone = runs.SelectMany(r => r.Losses.Select(l => (r.Seed, l.Ship.Entity))).ToHashSet();
         foreach (var g in runs.SelectMany(r => r.Tally.Races.Select(x => (Seed: r.Seed, x.Side, x.Type, x.Packing, x.Tier, x.Entity)))
                      .GroupBy(x => (x.Side, x.Type, x.Packing)).OrderBy(g => g.Key.Side).ThenBy(g => g.Key.Type).ThenBy(g => g.Key.Packing))
-            Console.WriteLine(string.Format(Inv, "    {0,-14} {1,-9} {2,-8} ships set off {3,5:0.0} a seed, taken by it {4,4:0.0}; the races: {5}", s.Sides[g.Key.Side], g.Key.Type, g.Key.Packing,
-                (double)g.Select(x => (x.Seed, x.Entity)).Distinct().Count() / n, (double)g.Count(x => x.Tier >= MagazineTier.Severed) / n,
+        {
+            var whose = g.Select(x => (x.Seed, x.Entity)).Distinct().ToList();
+            Console.WriteLine(string.Format(Inv, "    {0,-14} {1,-9} {2,-8} ships set off {3,5:0.0} a seed, broken by it {4,4:0.0}, lost any way {5,4:0.0}; the races: {6}", s.Sides[g.Key.Side], g.Key.Type, g.Key.Packing,
+                (double)whose.Count / n, (double)g.Count(x => x.Tier >= MagazineTier.Severed) / n, (double)whose.Count(gone.Contains) / n,
                 string.Join(", ", g.GroupBy(x => x.Tier).OrderBy(t => t.Key).Select(t => $"{t.Key} {t.Count()}"))));
+        }
 
         Console.WriteLine("  causes (a seed; share; of them capital/cruiser/destroyer-small; the medians: shell hits, of those after she was out, minutes first struck to the end, out to the end, the last half hour's range):");
         foreach (var side in Enumerable.Range(-1, s.Sides.Length + 1))

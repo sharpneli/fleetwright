@@ -25,11 +25,11 @@ format 9 got the blocks their look's era and navy stood for, so they fight as be
 | Great War, single-base | ×1.1 | ×1.0 / ×1.0 / ×1.0 | ×1.0 | ×1.0 | 18° | 18° | 3.3, 3, 2.5 | single-base | tank |
 | Treaty, double-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | double-base | clarkson |
 | Treaty, double-base, brass-cased | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | double-base | brass |
-| Treaty, single-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | single-base | tank |
+| Treaty, single-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | stabilised single-base | tank |
 | Treaty, diglycol | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | diglycol | brass |
 | Second War, double-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | double-base | clarkson |
 | Second War, double-base, brass-cased | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | double-base | brass |
-| Second War, single-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | single-base | tank |
+| Second War, single-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | stabilised single-base | tank |
 | Second War, diglycol | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | diglycol | brass |
 | Cold War, triple-base | ×0.5 | ×1.0 / ×1.0 / ×1.0 | ×3.0 | ×1.6 | 45° | 45° | 1.5, 0, 1.5 | triple-base | brass |
 
@@ -43,11 +43,11 @@ Shares of the rules' reload, 7·(d/102 mm)^1.5 s (at most 36), and training, 2·
 - **Great War, single-base:** 1906-1921: RN 13.5" and 15" 20°, German 13.5-16°; the 12" 3.3-3.5%, the 15" 1.7 ("the most accurate battleship gun"). Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.
 - **Treaty, double-base:** 1922-1936: delay coils and stiffer mounts (16" 1.9%, 8" 2.0); dual-purpose mounts at 45°. Double-base: cordite MD and SC, the German RPC/12, Japan's and Italy's.
 - **Treaty, double-base, brass-cased:** 1922-1936: delay coils and stiffer mounts (16" 1.9%, 8" 2.0); dual-purpose mounts at 45°. The main charge in a brass cartridge case, the fore charge in silk in a tin (Germany: RP C/12; Seydlitz's 62 charges burned at Dogger Bank and her magazines held).
-- **Treaty, single-base:** 1922-1936: delay coils and stiffer mounts (16" 1.9%, 8" 2.0); dual-purpose mounts at 45°. Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.
+- **Treaty, single-base:** 1922-1936: delay coils and stiffer mounts (16" 1.9%, 8" 2.0); dual-purpose mounts at 45°. Stabilised single-base: the USN's SPD and France's between the wars, far slower to light one charge from the next (Boise's magazine burned and she lived, 1942).
 - **Treaty, diglycol:** 1922-1936: delay coils and stiffer mounts (16" 1.9%, 8" 2.0); dual-purpose mounts at 45°. Diglycol, cool double-base: the German RPC/38.
 - **Second War, double-base:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. Double-base: cordite MD and SC, the German RPC/12, Japan's and Italy's.
 - **Second War, double-base, brass-cased:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. The main charge in a brass cartridge case, the fore charge in silk in a tin (Germany: RP C/12; Seydlitz's 62 charges burned at Dogger Bank and her magazines held).
-- **Second War, single-base:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.
+- **Second War, single-base:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. Stabilised single-base: the USN's SPD and France's between the wars, far slower to light one charge from the next (Boise's magazine burned and she lived, 1942).
 - **Second War, diglycol:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. Diglycol, cool double-base: the German RPC/38.
 - **Cold War, triple-base:** From 1950: automatic guns, power-worked mounts. Triple-base: Cordite N/NQ, SPCG, M30/M31.
 

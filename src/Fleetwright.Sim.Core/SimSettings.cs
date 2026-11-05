@@ -1775,10 +1775,10 @@ public sealed record SimSettings
     /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing];
     /// MagazineVentCd a ragged opening's discharge coefficient [EST]; MagazineGasGamma the hot gas's [EST: 1.2-1.25].</item>
     /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
-    /// package before it burns out, a branching process (10 §1.3 [EST, fitted]: brass ~1.4, tank ~1.2; Clarkson 32
-    /// [EST, the user's 2026-11-05, docs/battle/magazines.md "Too safe"]: 10's 4-8 can't lose a ship, against the record's
-    /// lids-on magazines that blew, until research/REQUESTS.md's 2026-11-05 answers); bags alone light together, within
-    /// MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
+    /// package before it burns out, a branching process, times its propellant's Sensitivity (docs/battle/magazines.md
+    /// "Too safe" [EST, until research/REQUESTS.md's 2026-11-05 answers]: Clarkson 32, brass 28, tank 24 on cordite, so
+    /// 10 §1.3's fits of 1.4 and 1.2 for 1942's cool propellants at 10 §1.2's about 20 times less sensitive); bags alone
+    /// light together, within MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
     /// <item>The way out: the magazine's door or scuttle to its handling room gives at MagazineScuttleKPa [EST, 10 §6:
     /// 40 kPa]; a gunhouse's roof at MagazineRoofShare of its lift [EST, 10 §2.3: 0.3-0.5], the gunhouse itself at its
     /// lift (<see cref="Fleetwright.Sim.Ships.ShipClass.LiftKPa"/>); either opens its trunk, MagazineTrunkShare of the
@@ -1787,7 +1787,10 @@ public sealed record SimSettings
     /// (10 §6 [EST]), MagazineGiveKPa and the vent each opens, MagazineGiveM2: [the bulkhead to the next space, 250 kPa,
     /// a 4 m² tear; the armoured deck over it, 700, 10 m²; its sides, 1,000, 60 m²; its bottom, 2,000, 60 m²]. An
     /// approved exception to the blast's own rules (the user, 2026-10-20): on a ship's own plating they spread the gas
-    /// through her thin bulkheads and never load the girder.</item>
+    /// through her thin bulkheads and never load the girder. The pressures are for the steel at Lion's main magazines,
+    /// MagazineGiveMm [bulkhead, deck, side, bottom], and go as the steel at the magazine (the user, 2026-11-05;
+    /// Magazines.GiveKPa); the openings are for the faces of her Q, MagazineGiveFaceM2 [across her, in plan, along her, in
+    /// plan], and go as the magazine's (Magazines.GiveM2).</item>
     /// <item>The hull girder at the magazine (V4; 07 §3.1): the share of its section lost there, d, by MagazineD [the deck
     /// over it, its sides, its bottom] [EST, 10 §6]; it breaks when the moment on it passes what's left of its capacity,
     /// K·(1 − d) ≥ sin(π·x/L)·(still + wave·sea + whip), MagazineGirder [K, still water, the waves in a seaway, the
@@ -1808,13 +1811,15 @@ public sealed record SimSettings
     public double MagazineHeatKeep { get; init; } = 0.5;
     public double MagazineVentCd { get; init; } = 0.7;
     public double MagazineGasGamma { get; init; } = 1.25;
-    public double[] MagazinePackageR { get; init; } = [0, 32, 1.4, 1.2];
+    public double[] MagazinePackageR { get; init; } = [0, 32, 28, 24];
     public double MagazineBagSpreadS { get; init; } = 0.5;
     public double MagazineScuttleKPa { get; init; } = 40;
     public double MagazineRoofShare { get; init; } = 0.4;
     public double MagazineTrunkShare { get; init; } = 0.05;
     public double MagazineHoistM2 { get; init; } = 0.25;
     public double[] MagazineGiveKPa { get; init; } = [250, 700, 1000, 2000];
+    public double[] MagazineGiveMm { get; init; } = [8, 27, 73, 39];
+    public double[] MagazineGiveFaceM2 { get; init; } = [118, 252, 51, 252];
     public double[] MagazineGiveM2 { get; init; } = [4, 10, 60, 60];
     public double[] MagazineD { get; init; } = [0.35, 0.45, 0.2];
     public double[] MagazineGirder { get; init; } = [2.5, 0.35, 0.6, 0.35];

@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 19;
+    public const int Current = 20;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -36,6 +36,7 @@ public static class DesignFormat
         (d, _) => StarShellToRecord(d), // 16 → 17: star shell to the research (docs/battle/night.md Q5b)
         Drives,                        // 17 → 18: what drives the gunhouses and auxiliaries (docs/battle/electrics.md EL4)
         (d, _) => Diesels(d),          // 18 → 19: the plant's diesels (docs/battle/electrics.md EL7)
+        (d, _) => StabilisedSingleBase(d), // 19 → 20: the interwar single-base told from the early (docs/battle/magazines.md "Too safe")
     ];
 
     // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
@@ -164,6 +165,18 @@ public static class DesignFormat
         if (Fittings.YearOf(tech) is null)
             warnings.Add($"searchlights: no plant year to set them by (machinery.tech's name); {template.Name} assumed");
         d["searchlights"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.SearchlightsInput);
+    }
+
+    /// <summary>19 → 20: a Treaty or Second War block on single-base fires the stabilised kind: as the catalogue's now do,
+    /// and the only anchors for a slow magazine are of those years (Boise, 1942). The earlier blocks stay as they are.</summary>
+    static void StabilisedSingleBase(JsonObject d)
+    {
+        if (d["gun_tech"] is not JsonObject table)
+            return;
+        foreach (var (name, b) in table)
+            if (name.StartsWith("Treaty,", StringComparison.Ordinal) || name.StartsWith("Second War,", StringComparison.Ordinal))
+                if (b is JsonObject bo && bo["propellant"] is JsonValue p && p.TryGetValue(out string? ps) && ps == "single-base")
+                    bo["propellant"] = "stabilised single-base";
     }
 
     /// <summary>12 → 13: a gun block says how its charges are packed (GunTemplates.Packagings); a block without gets its

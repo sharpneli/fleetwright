@@ -203,6 +203,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   a secondary's 4% (was 5%); design format 17 moves the blocks and shares still as format 15 gave them. Every case's
   version changes; the designs with star shell shift by their magazines' mean round, their hulls by a hair: 38 cases'
   SVGs and 33 sprite.json. ShipDesign.Version 53.
+- 2026-11-05, the interwar single-base told from the early (docs/battle/magazines.md "Too safe"), on purpose: design
+  format 20 gives Treaty and Second War blocks on single-base `"propellant": "stabilised single-base"`. Every case's
+  version changes and nothing built: no SVG or sprite.json moves. ShipDesign.Version 56.
 
 ## Layout
 

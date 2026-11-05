@@ -170,7 +170,7 @@
  {
   "name": "Treaty, single-base",
   "group": "Treaty",
-  "note": "1922-1936: delay coils and stiffer mounts (16\" 1.9%, 8\" 2.0); dual-purpose mounts at 45°. Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.",
+  "note": "1922-1936: delay coils and stiffer mounts (16\" 1.9%, 8\" 2.0); dual-purpose mounts at 45°. Stabilised single-base: the USN's SPD and France's between the wars, far slower to light one charge from the next (Boise's magazine burned and she lived, 1942).",
   "value": {
    "reload_share": 1,
    "heavy_slow": 1,
@@ -183,7 +183,7 @@
    "pattern_pct": 1.9,
    "pattern_exp": 0,
    "pattern_light_pct": 1.8,
-   "propellant": "single-base",
+   "propellant": "stabilised single-base",
    "black_powder_under_cal": 0,
    "packaging": "tank"
   }
@@ -254,7 +254,7 @@
  {
   "name": "Second War, single-base",
   "group": "Second War",
-  "note": "1937-1949: USN 16\" training 4 °/s, 38 cm 5; the 5\"/38 25 and 1.7%. Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin.",
+  "note": "1937-1949: USN 16\" training 4 °/s, 38 cm 5; the 5\"/38 25 and 1.7%. Stabilised single-base: the USN's SPD and France's between the wars, far slower to light one charge from the next (Boise's magazine burned and she lived, 1942).",
   "value": {
    "reload_share": 0.9,
    "heavy_slow": 1,
@@ -267,7 +267,7 @@
    "pattern_pct": 1.9,
    "pattern_exp": 0,
    "pattern_light_pct": 1.8,
-   "propellant": "single-base",
+   "propellant": "stabilised single-base",
    "black_powder_under_cal": 0,
    "packaging": "tank"
   }

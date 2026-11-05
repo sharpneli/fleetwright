@@ -16,7 +16,7 @@ public static class Propellants
         TintR = 0.90, TintG = 0.89, TintB = 0.86,
         // r = 12 mm/s (P/0.1 MPa)^0.21 [SRC: Trębiński 2022]; ~1 cm grains [EST]
         BetaMmS = 19.5, AlphaHi = 0.21, AlphaLo = 0.21, KneeMPa = 0.15, ImpetusJkg = 0.29e6, DensityKgM3 = 1750, SurfaceM2Kg = 6 / (1750 * 0.01),
-        WebM = 0.005, Form = PropellantForm.Grain,
+        WebM = 0.005, Form = PropellantForm.Grain, Sensitivity = 1,
     };
 
     /// <summary>Single-base nitrocellulose: the USN's SPD, the French poudre B, the Russian pyroxylin, IMR, M1/M6.</summary>
@@ -27,7 +27,12 @@ public static class Propellants
         // strand 3.12 mm/s at 3.45 MPa, 11.05 at 13.8 [SRC: DTIC ADA261009]; multi-perforated grains [EST]
         BetaMmS = 1.0, AlphaHi = 0.88, AlphaLo = 0.4, KneeMPa = 0.15, ImpetusJkg = 0.95e6, DensityKgM3 = 1600, SurfaceM2Kg = 0.3, WebM = 0.002,
         Form = PropellantForm.Tube,
+        Sensitivity = 1,   // poudre B and pyroxylin went up as cordite did (Iéna, Liberté, Borodino) [EST]
     };
+
+    /// <summary>Stabilised single-base: the USN's SPD and France's between the wars. As <see cref="SingleBase"/> but far
+    /// slower to light one charge from the next: with a tank's 24, 1.2, Boise's fit (10 §6.2).</summary>
+    public static readonly PropellantRow StabilisedSingleBase = SingleBase with { Sensitivity = 0.05 };
 
     /// <summary>Double-base: cordite MD and SC, the German RPC/12, M2. The biggest flash.</summary>
     public static readonly PropellantRow DoubleBase = new()
@@ -36,7 +41,7 @@ public static class Propellants
         TintR = 0.86, TintG = 0.82, TintB = 0.74,
         // cordite MD: strand 4.6/6.1/7.9 mm/s at 3.4/4.9/6.9 MPa [SRC: DSJ]; α ~0.2 below ~0.15 MPa [SRC: Kubota]; MD45 cord
         BetaMmS = 1.8, AlphaHi = 0.78, AlphaLo = 0.25, KneeMPa = 0.15, ImpetusJkg = 1.06e6, DensityKgM3 = 1580, SurfaceM2Kg = 4 / (1580 * 0.0114),
-        WebM = 0.0057, Form = PropellantForm.Cord,
+        WebM = 0.0057, Form = PropellantForm.Cord, Sensitivity = 1,
     };
 
     /// <summary>Cool double-base: diglycol (RPC/38), Gudol.</summary>
@@ -47,6 +52,7 @@ public static class Propellants
         // cooler than its predecessors [INFERRED, 10 §1.1 "checks"]; tubes as RP C/12's
         BetaMmS = 1.3, AlphaHi = 0.75, AlphaLo = 0.25, KneeMPa = 0.15, ImpetusJkg = 0.95e6, DensityKgM3 = 1560, SurfaceM2Kg = 0.25, WebM = 0.0025,
         Form = PropellantForm.Tube,
+        Sensitivity = 0.05,   // 10 §1.2's about 20 times less than cordite: with brass's 28, 1.4, Gneisenau's fit (10 §6.2)
     };
 
     /// <summary>Triple-base and picrite: Cordite N/NQ, SPCG, M30/M31. Nearly flashless.</summary>
@@ -57,6 +63,7 @@ public static class Propellants
         // cool picrite double-base [INFERRED]
         BetaMmS = 1.2, AlphaHi = 0.75, AlphaLo = 0.25, KneeMPa = 0.15, ImpetusJkg = 1.0e6, DensityKgM3 = 1660, SurfaceM2Kg = 0.25, WebM = 0.0025,
         Form = PropellantForm.Tube,
+        Sensitivity = 0.05,
     };
 
     /// <summary>Modern nitramine (LOVA).</summary>
@@ -67,6 +74,7 @@ public static class Propellants
         // insensitive by design [EST]
         BetaMmS = 1.0, AlphaHi = 0.8, AlphaLo = 0.3, KneeMPa = 0.15, ImpetusJkg = 1.1e6, DensityKgM3 = 1650, SurfaceM2Kg = 0.25, WebM = 0.0025,
         Form = PropellantForm.Tube,
+        Sensitivity = 0.05,
     };
 
     /// <summary>A propellant by the name a design's gun block gives it (Shipgen's GunTemplates.Propellants), or null.</summary>
@@ -74,6 +82,7 @@ public static class Propellants
     {
         "black powder" => BlackPowder,
         "single-base" => SingleBase,
+        "stabilised single-base" => StabilisedSingleBase,
         "double-base" => DoubleBase,
         "diglycol" => Diglycol,
         "triple-base" => TripleBase,

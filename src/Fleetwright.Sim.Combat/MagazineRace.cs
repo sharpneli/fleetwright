@@ -99,10 +99,13 @@ public static partial class Magazines
 
         double tBurn = pr.WebM / Rate(Atm, pr);
         double rt = s.MagazineHeatKeep * pr.ImpetusJkg, choke = Choke(s.MagazineGasGamma);
-        double pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)];
-        Span<double> cnt = stackalloc double[32], z = stackalloc double[32];
+        double pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)] * pr.Sensitivity;
+        Span<double> cnt = stackalloc double[32], z = stackalloc double[32], give = stackalloc double[s.MagazineGiveKPa.Length],
+            opens = stackalloc double[s.MagazineGiveM2.Length];
+        GiveKPa(c, k, room, s, give);
+        GiveM2(c, room, s, opens);
         int cohorts = 0, gave = 0;
-        double litOpen = 0, litCased = 0, cohortT0 = -1, gas = 0, burned = 0, peak = 0, t = 0, more = 0;
+        double litOpen = 0, litCased = 0, cohortT0 = -1, gas = 0, burned = 0, peak = 0, t = 0, more = 0, held = 0;
         if (nOpen * (1 - flooded) < 1 && nCased * (1 - flooded) >= 1)
         {
             litCased = 1;   // the flame reached it: one charge in its package lights
@@ -162,10 +165,15 @@ public static partial class Magazines
             a += Trunks(c, k, fed, vented, kpa, t, ref res, s);
             for (int b = 0; b < s.MagazineGiveKPa.Length; b++)
             {
-                if ((gave & (1 << b)) != 0 || kpa < s.MagazineGiveKPa[b])
+                if ((gave & (1 << b)) != 0 || kpa < give[b])
                     continue;
                 gave |= 1 << b;
-                a += s.MagazineGiveM2[b];
+                // a side torn under the waterline has the sea behind it (07 §2.4, 10 §6: "backed by water"): no way out for
+                // the gas until the deck has opened one up; else a thinner side would save her by venting first [EST]
+                if (b == 2 && (gave & 2) == 0)
+                    held = opens[b];
+                else
+                    a += opens[b] + (b == 1 ? held : 0);
                 Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} gave at {2:0} kPa",
                     t, b switch { 0 => "the bulkhead to the next space", 1 => "the deck over it", 2 => "its sides", _ => "its bottom" }, kpa));
                 if (b == 0)
@@ -196,12 +204,124 @@ public static partial class Magazines
         res.VentM2 = a;
         res.D = ((gave & 2) != 0 ? s.MagazineD[0] : 0) + ((gave & 4) != 0 ? s.MagazineD[1] : 0) + ((gave & 8) != 0 ? s.MagazineD[2] : 0);
         Girder(c, lit[..lits], res.D, sea, s, ref res);
-        res.Tier = res.GirderLoad >= 1 ? (lits > 1 ? MagazineTier.TwoGroups : MagazineTier.Severed)
+        res.Tier = res.GirderLoad >= 1 && !res.EndLost ? (lits > 1 ? MagazineTier.TwoGroups : MagazineTier.Severed)
             : res.D > 0 ? MagazineTier.Breached : res.Vented > 0 ? MagazineTier.BurnedOut : MagazineTier.Contained;
         if (double.IsNaN(res.StructureS))
             res.FastKg = burned;
-        Aftermath(c, k, room, lit[..lits], vented, gave, ref res, s, now, ref r);
+        Aftermath(c, k, room, lit[..lits], vented, gave, opens[2] / 2, opens[3], ref res, s, now, ref r);
         return res;
+    }
+
+    /// <summary>What a magazine's boundaries give at, kPa: the research's table for the steel at Lion's Q, by the steel at
+    /// this one (docs/battle/magazines.md "Too safe": decision 6's table scaled, a plate's strength going as its thickness,
+    /// as E5's <see cref="SimSettings.RuptureMPaMm"/>): a thin hull gives at what a thin hull gives at.</summary>
+    public static void GiveKPa(ShipClass c, ShipCondition k, int room, SimSettings s, Span<double> kpa)
+    {
+        Span<double> mm = stackalloc double[kpa.Length];
+        GiveMm(c, k, room, mm);
+        for (int b = 0; b < kpa.Length; b++)
+            kpa[b] = s.MagazineGiveKPa[b] * mm[b] / s.MagazineGiveMm[b];
+    }
+
+    /// <summary>What a magazine's boundaries open when they give, m²: the research's table for the faces of Lion's Q, by this
+    /// one's (docs/battle/magazines.md "Too safe"): a tear goes with the plate it's in, so a small ship's isn't a battleship's
+    /// and doesn't let her gas out as one does.</summary>
+    public static void GiveM2(ShipClass c, int room, SimSettings s, Span<double> m2)
+    {
+        double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity, y0 = x0, y1 = x1, z0 = x0, z1 = x1;
+        foreach (int cell in c.Links(c.Rooms[room].Cells))
+        {
+            var b = c.Cells[cell].Box;
+            (x0, x1, y0, y1, z0, z1) = (Math.Min(x0, b.X0), Math.Max(x1, b.X1), Math.Min(y0, b.Y0), Math.Max(y1, b.Y1), Math.Min(z0, b.Base), Math.Max(z1, b.Top));
+        }
+        double dx = Math.Max(x1 - x0, 0), dy = Math.Max(y1 - y0, 0), dz = Math.Max(z1 - z0, 0);
+        m2[0] = s.MagazineGiveM2[0] * dy * dz / s.MagazineGiveFaceM2[0];
+        m2[1] = s.MagazineGiveM2[1] * dx * dy / s.MagazineGiveFaceM2[1];
+        m2[2] = s.MagazineGiveM2[2] * dx * dz / s.MagazineGiveFaceM2[2];
+        m2[3] = s.MagazineGiveM2[3] * dx * dy / s.MagazineGiveFaceM2[3];
+    }
+
+    /// <summary>The steel at a magazine's boundaries, mm: its thinnest bulkhead to another space (the gas finds the weakest
+    /// way on), the thickest deck on the way up from it and the plates between it and the sea at its side (a belt's in the
+    /// shell's), each the mean over its spaces by their faces, and its bottom (the shell and inner bottom).</summary>
+    public static void GiveMm(ShipClass c, ShipCondition k, int room, Span<double> mm)
+    {
+        double bulkhead = double.PositiveInfinity, deck = 0, deckArea = 0, side = 0, sideArea = 0;
+        var cells = c.Links(c.Rooms[room].Cells);
+        foreach (int cell in cells)
+        {
+            var box = c.Cells[cell].Box;
+            foreach (ref readonly var e in c.Neighbours(c.Cells[cell].Neighbours))
+                if (e.Join == JoinKind.Bulkhead && c.Cells[e.Cell].Room != room)
+                    bulkhead = Math.Min(bulkhead, Blast.JoinMm(c, e, box, c.Cells[e.Cell].Box));
+            double plan = (box.X1 - box.X0) * (box.Y1 - box.Y0), elevation = (box.X1 - box.X0) * (box.Top - box.Base);
+            (deck, deckArea) = (deck + plan * DeckOver(c, k, cell), deckArea + plan);
+            (side, sideArea) = (side + elevation * SideOf(c, k, cell), sideArea + elevation);
+        }
+        var pl = c.Plating;
+        double xm = cells.Length > 0 ? (c.Cells[cells[0]].Box.X0 + c.Cells[cells[0]].Box.X1) / 2 : 0;
+        bool mid = xm >= pl.MidX0 && xm <= pl.MidX1;
+        mm[0] = double.IsFinite(bulkhead) ? bulkhead : pl.BulkheadMm;
+        mm[1] = deckArea > 0 ? deck / deckArea : pl.DeckMm;
+        mm[2] = sideArea > 0 ? side / sideArea : mid ? pl.ShellMm : pl.ShellEndMm;
+        mm[3] = (mid ? pl.ShellMm : pl.ShellEndMm) + pl.InnerBottomMm;
+    }
+
+    /// <summary>The thickest deck over a space, up to the weather.</summary>
+    static double DeckOver(ShipClass c, ShipCondition k, int cell)
+    {
+        double most = 0;
+        for (int guard = 0; guard < 16; guard++)
+        {
+            var box = c.Cells[cell].Box;
+            if (Blast.Outside(c, k, cell, 2, out double top, out _) > 0)
+                return Math.Max(most, top);
+            int next = -1;
+            double x = (box.X0 + box.X1) / 2, y = (box.Y0 + box.Y1) / 2;
+            foreach (ref readonly var e in c.Neighbours(c.Cells[cell].Neighbours))
+            {
+                var o = c.Cells[e.Cell].Box;
+                if (e.Join == JoinKind.Bulkhead || o.Base < box.Top - 0.05 || x < o.X0 || x > o.X1 || y < o.Y0 || y > o.Y1)
+                    continue;
+                if (e.Join == JoinKind.Deck)
+                    most = Math.Max(most, Blast.JoinMm(c, e, box, o));
+                next = e.Cell;
+                break;
+            }
+            if (next < 0)
+                return most;
+            cell = next;
+        }
+        return most;
+    }
+
+    /// <summary>The plates between a space and the sea, out to starboard (she's built alike to port): the bulkheads on the
+    /// way and the shell with her belt there.</summary>
+    static double SideOf(ShipClass c, ShipCondition k, int cell)
+    {
+        double sum = 0;
+        for (int guard = 0; guard < 16; guard++)
+        {
+            var box = c.Cells[cell].Box;
+            if (Blast.Outside(c, k, cell, 1, out double shell, out _) > 0)
+                return sum + shell;
+            int next = -1;
+            double x = (box.X0 + box.X1) / 2, z = (box.Base + box.Top) / 2;
+            foreach (ref readonly var e in c.Neighbours(c.Cells[cell].Neighbours))
+            {
+                var o = c.Cells[e.Cell].Box;
+                if (e.Join == JoinKind.Deck || o.Y0 < box.Y1 - 0.05 || x < o.X0 || x > o.X1 || z < o.Base || z > o.Top)
+                    continue;
+                if (e.Join == JoinKind.Bulkhead)
+                    sum += Blast.JoinMm(c, e, box, o);
+                next = e.Cell;
+                break;
+            }
+            if (next < 0)
+                return sum + c.Plating.ShellMm;
+            cell = next;
+        }
+        return sum + c.Plating.ShellMm;
     }
 
     /// <summary>The hull girder at the magazines alight (V4; 07 §3.1): their place along her (the hull's cells' length,
@@ -222,7 +342,8 @@ public static partial class Magazines
         double moment = Math.Sin(Math.PI * station) * (g[1] + g[2] * Math.Clamp(sea, 0, 1.5) + g[3]);
         res.Station = station;
         res.GirderLoad = d >= 1 ? double.PositiveInfinity : moment / (g[0] * (1 - d));
-        res.EndLost = res.GirderLoad < 1 && d >= s.MagazineEndD && Math.Min(station, 1 - station) <= s.MagazineEndShare;
+        // near an end hardly any moment comes through: all her section gone there, that end falls off, she isn't broken
+        res.EndLost = d >= s.MagazineEndD && Math.Min(station, 1 - station) <= s.MagazineEndShare;
     }
 
     /// <summary>A magazine alight: its spaces' gas and vents join the race's, and the charges of the mounts it feeds join
@@ -363,8 +484,8 @@ public static partial class Magazines
     /// <summary>What the race left (a lost ship's too: her men in the trains): the magazines alight spent, the vented
     /// gunhouses and their barbettes destroyed and burning, the trains' men flashed (a contained fire, the magazine's own),
     /// holes to the sea where its sides or bottom gave.</summary>
-    static void Aftermath(ShipClass c, ShipCondition k, int room, ReadOnlySpan<int> lit, ReadOnlySpan<bool> vented, int gave, ref RaceResult res,
-        SimSettings s, long now, ref RandomStream r)
+    static void Aftermath(ShipClass c, ShipCondition k, int room, ReadOnlySpan<int> lit, ReadOnlySpan<bool> vented, int gave, double sideM2, double bottomM2,
+        ref RaceResult res, SimSettings s, long now, ref RandomStream r)
     {
         Casualties.Begin(k, now);
         foreach (int rm in lit)
@@ -407,9 +528,9 @@ public static partial class Magazines
             var b = c.Cells[cell].Box;
             double xm = (b.X0 + b.X1) / 2, zm = (b.Base + b.Top) / 2;
             if ((gave & 4) != 0)
-                k.Hole(cell, s.MagazineGiveM2[2] / 2, new P3(xm, c.Hull.HalfWidth(xm, zm), zm));
+                k.Hole(cell, sideM2, new P3(xm, c.Hull.HalfWidth(xm, zm), zm));
             if ((gave & 8) != 0)
-                k.Hole(cell, s.MagazineGiveM2[3], new P3(xm, 0, b.Base));
+                k.Hole(cell, bottomM2, new P3(xm, 0, b.Base));
         }
         var fx = new EffectsResult { Part = -1, MagazineRoom = -1 };
         Casualties.Draw(c, k, now, s, ref fx, ref r);
