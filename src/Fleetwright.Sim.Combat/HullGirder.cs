@@ -5,7 +5,7 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Sim.Combat;
 
 /// <summary>What a section has lost and what bears on it (<see cref="HullGirder.Read"/>): the worst section, its place along
-/// her (0 stern, 1 bow), the share of its section modulus gone, what's left of its capacity and the moment on it (both in
+/// her (0 stern, 1 bow), the share of its plastic modulus gone, what's left of its capacity and the moment on it (both in
 /// design moments) and their ratio (1 or more: broken); the shares of its deck, side, bottom and longitudinal plate area gone,
 /// and the whip in design moments. All of her body; the ends apart.</summary>
 public struct GirderReading
@@ -19,7 +19,7 @@ public struct GirderReading
 /// <summary>The hull as a beam (docs/battle/explosions.md EX3; research 07 §3.1): each section's elements are the boundaries
 /// themselves, the weather deck and bottom over and under its cells, the sides, the decks and longitudinal bulkheads between
 /// them, so what an explosion ruptures comes out of the section with nothing kept apart. Its capacity is the steel's yield
-/// (<see cref="ShipClass.GirderStressMpa"/> × the design's safety factor) on what's left of the section modulus; the moment
+/// (<see cref="ShipClass.GirderStressMpa"/> × the design's safety factor) on what's left of its plastic modulus; the moment
 /// is shipgen's design moment shared out as still water and waves, plus what the flooding adds, plus the whip. A class's, one
 /// per class; reads allocate nothing.</summary>
 public sealed class HullGirder
@@ -99,6 +99,18 @@ public sealed class HullGirder
             else
                 list.Add(new Element((b.Y1 - b.Y0) * mm / 1000, b.Base, -1, x, Kind.Bottom));
         }
+        // a lowest cell over no keel tier (the double bottom stops short of her ends): her bottom is still under it. Blast.Outside
+        // only sees the keel's tier; it takes this at EX2
+        if (!(Blast.Outside(c, i, 3, out _, out _) > 0) && NothingUnder(i))
+        {
+            // the cell is a box and her bottom rises toward her ends: it's where the hull first has breadth inside the box
+            double xm = (b.X0 + b.X1) / 2, z = b.Base;
+            while (z < b.Top && !(c.Hull.HalfWidth(xm, z) > 0.3))
+                z += 0.25;
+            double half = c.Hull.HalfWidth(xm, z), y0 = Math.Max(b.Y0, -half), y1 = Math.Min(b.Y1, half);
+            if (z < b.Top && y1 > y0)
+                list.Add(new Element((y1 - y0) * ((xm >= c.Plating.MidX0 && xm <= c.Plating.MidX1) ? c.Plating.ShellMm : c.Plating.ShellEndMm) / 1000, z, -1, i * 4 + 3, Kind.Bottom));
+        }
         var nb = cell.Neighbours;
         for (int j = nb.Start; j < nb.End; j++)
         {
@@ -121,6 +133,16 @@ public sealed class HullGirder
         }
     }
 
+    /// <summary>Whether a cell has none of her cells under it.</summary>
+    bool NothingUnder(int i)
+    {
+        var b = c.Cells[i].Box;
+        foreach (ref readonly var e in c.Neighbours(c.Cells[i].Neighbours))
+            if (c.Cells[e.Cell].Box.Top <= b.Base + 0.05)
+                return false;
+        return true;
+    }
+
     /// <summary>The inclined plates through a section (a deck's slopes: protection-plan.md H6), each side, as shipgen counts them.</summary>
     void Inclined(List<Element> list, int sec)
     {
@@ -134,11 +156,13 @@ public sealed class HullGirder
         }
     }
 
-    /// <summary>The section modulus of what's left of a section, m³, to its extreme fibre (the higher stress of deck and
-    /// bottom), and its second moment.</summary>
+    /// <summary>What's left of a section, as its ultimate moment reads it: the plastic modulus, m³, Σ A·|z - z_p| about the
+    /// height that parts her area in two (a girder collapses when yield has spread through the section, not when its outermost
+    /// plate first yields, so a sliver of keel far from the axis doesn't set it, and losing a plate can't raise it), and its
+    /// elastic second moment for the whip. <see cref="BucklingK"/> takes off what the compressed side buckles.</summary>
     double Modulus(int sec, ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost, out double i)
     {
-        double a = 0, az = 0, top = double.NegativeInfinity, bottom = double.PositiveInfinity;
+        double a = 0, az = 0, lo = double.PositiveInfinity, hi = double.NegativeInfinity;
         for (int n = start[sec]; n < start[sec + 1]; n++)
         {
             ref readonly var e = ref elements[n];
@@ -146,20 +170,40 @@ public sealed class HullGirder
             if (!(left > 0))
                 continue;
             (a, az) = (a + left, az + left * e.Z);
-            (top, bottom) = (Math.Max(top, e.Z), Math.Min(bottom, e.Z));
+            (lo, hi) = (Math.Min(lo, e.Z), Math.Max(hi, e.Z));
         }
         i = 0;
         if (!(a > 0))
             return 0;
-        double na = az / a;
+        // the plastic axis, by halving: the height with half her area above it
+        for (int step = 0; step < 24; step++)
+        {
+            double mid = (lo + hi) / 2, under = 0;
+            for (int n = start[sec]; n < start[sec + 1]; n++)
+            {
+                ref readonly var e = ref elements[n];
+                if (e.Z < mid)
+                    under += e.AreaM2 * (1 - Lost(e, edgeLost, faceLost));
+            }
+            if (under * 2 < a)
+                lo = mid;
+            else
+                hi = mid;
+        }
+        double zp = (lo + hi) / 2, na = az / a, plastic = 0;
         for (int n = start[sec]; n < start[sec + 1]; n++)
         {
             ref readonly var e = ref elements[n];
-            i += e.AreaM2 * (1 - Lost(e, edgeLost, faceLost)) * (e.Z - na) * (e.Z - na);
+            double left = e.AreaM2 * (1 - Lost(e, edgeLost, faceLost));
+            plastic += left * Math.Abs(e.Z - zp);
+            i += left * (e.Z - na) * (e.Z - na);
         }
-        double fibre = Math.Max(top - na, na - bottom);
-        return fibre > 0.1 ? i / fibre : 0;
+        return BucklingK * plastic;
     }
+
+    /// <summary>The ultimate moment's share of the fully plastic one: what buckling on the compressed side takes off [EST: a stiffened
+    /// hull's ultimate is about its first-yield moment, 0.8-0.9 of plastic].</summary>
+    const double BucklingK = 0.85;
 
     /// <summary>The share of an element gone (an inclined plate, with no boundary of its own, never is).</summary>
     static double Lost(in Element e, ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost) =>
@@ -216,6 +260,17 @@ public sealed class HullGirder
                 (a, top, bottom) = (a + elements[n].AreaM2, Math.Max(top, elements[n].Z), Math.Min(bottom, elements[n].Z));
             yield return (station[sec], start[sec + 1] - start[sec], a, top, bottom, intact[sec]);
         }
+    }
+
+    /// <summary>A bench's look into a section: its elements, by kind, area and height.</summary>
+    public IEnumerable<(string Kind, double AreaM2, double Z, double Mm)> Elements(double at)
+    {
+        int sec = 0;
+        for (int i = 0; i < station.Length; i++)
+            if (Math.Abs(station[i] - at) < Math.Abs(station[sec] - at))
+                sec = i;
+        for (int n = start[sec]; n < start[sec + 1]; n++)
+            yield return (elements[n].Kind.ToString(), elements[n].AreaM2, elements[n].Z, 0);
     }
 
     /// <summary>A hull's standing moment and capacity with what's gone gone: her worst section. sea 1: a seaway's waves.

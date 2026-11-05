@@ -244,8 +244,17 @@ static class ExplodeBench
             double mid = h.YieldPa * (h.MidIM4 / (c.Vertical.Depth / 2)) / h.DesignNm;
             Console.WriteLine(string.Format(Inv, "{0,-28} {1,8:0.0} {2,10:0.0} {3,11:0.00} {4,6:0.00} {5,8:0.00} {6,9:0.00} {7,8:0.00} at {8:0.00}", d, h.MidIM4, gr is null ? double.NaN : gr.PlatingM4 + gr.ArmourDecksM4, mid, calm.Load, sea.Load, sea.Station, sea.EndLoad, sea.EndStation));
             if (designs.Count > 0)
+            {
+                Console.WriteLine(string.Format(Inv, "   plating: shell {0:0.0} mid, {1:0.0} end; strength deck {2:0.0} mid, {3:0.0} end; mid over x {4:0.0} to {5:0.0}; decks {6:0.0}, inner bottom {7:0.0}; L {8:0.0}", c.Plating.ShellMm, c.Plating.ShellEndMm, c.Plating.StrengthDeckMm, c.Plating.StrengthDeckEndMm, c.Plating.MidX0, c.Plating.MidX1, c.Plating.DeckMm, c.Plating.InnerBottomMm, c.Length));
+                foreach (var at in new[] { 0.5, 0.24, 0.17 })
+                {
+                    Console.WriteLine(string.Format(Inv, "   the section at {0:0.00}:", at));
+                    foreach (var e in h.Elements(at).GroupBy(e => (e.Kind, Math.Round(e.Z, 1))).OrderByDescending(gz => gz.Key.Item2))
+                        Console.WriteLine(string.Format(Inv, "      {0,-13} z {1,6:0.0}  {2,6:0.000} m² ({3})", e.Key.Kind, e.Key.Item2, e.Sum(v => v.AreaM2), e.Count()));
+                }
                 foreach (var p in h.Profile())
                     Console.WriteLine(string.Format(Inv, "   at {0:0.00}: {1,3} elements, {2,6:0.00} m², z {3,6:0.0} to {4,6:0.0}, Z {5,7:0.00} m³, capacity {6,5:0.00} design moments", p.Station, p.Elements, p.AreaM2, p.Bottom, p.Top, p.ZM3, h.YieldPa * p.ZM3 / h.DesignNm));
+            }
         }
     }
 

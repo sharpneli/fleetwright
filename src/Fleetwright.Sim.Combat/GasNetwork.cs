@@ -8,7 +8,7 @@ namespace Fleetwright.Sim.Combat;
 /// plain network at the defaults. They go when the ladder is done.</summary>
 public struct GasKnobs
 {
-    /// <summary>The share of a belt's millimetres that hold as plate when pushed from inside (candidate 1).</summary>
+    /// <summary>The share of a belt's millimetres that hold as plate when pushed from inside: none (EX3): hung on the side, it comes away with it, and carries no load in the girder either.</summary>
     public double BeltShare;
     /// <summary>The propellant's heat kept in the gas (candidate 2).</summary>
     public double HeatKeep;
@@ -27,7 +27,7 @@ public struct GasKnobs
 
     public static GasKnobs Of(SimSettings s) => new()
     {
-        BeltShare = 1, HeatKeep = s.MagazineHeatKeep, TearShare = s.RupturedShare, PanelMs = s.PanelMs, RuptureMPaMm = s.RuptureMPaMm, StepK = 1, IgniteK = 470, WhipShare = 0.2,
+        BeltShare = 0, HeatKeep = s.MagazineHeatKeep, TearShare = s.RupturedShare, PanelMs = s.PanelMs, RuptureMPaMm = s.RuptureMPaMm, StepK = 1, IgniteK = 470, WhipShare = 0.2,
     };
 }
 

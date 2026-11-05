@@ -37,7 +37,7 @@ public class HullGirderTests
     [Fact]
     public void Intact_she_stands_in_a_seaway()
     {
-        foreach (var name in new[] { "destroyer", "v25", "lion", "iron_duke", "dreadnought" })
+        foreach (var name in new[] { "destroyer", "v25", "lion", "iron_duke", "dreadnought", "yamato", "littorio", "bismarck", "kgv", "battleship" })
         {
             var r = new HullGirder(Class(name)).Read(default, default, null, 1, 0, Settings);
             Assert.True(r.Load < 1, $"{name}: {r.Load:0.00} at {r.Station:0.00}");
@@ -75,6 +75,28 @@ public class HullGirderTests
         Assert.True(destroyer.Whip(shell, 0.2) > lion.Whip(shell, 0.2));
         Assert.InRange(lion.Whip(cordite, 0.2), 0.1, 0.4);        // a fraction of a design moment (07 §3.1 has it a spike of that order)
         Assert.InRange(destroyer.Whip(shell, 0.2), 0.02, 0.2);    // a shell in the air hardly whips her
+    }
+
+    [Fact]
+    public void A_sliver_of_keel_does_not_set_her_capacity_and_losing_plate_never_raises_it()
+    {
+        var c = Class("yamato");
+        var h = new HullGirder(c);
+        var r = h.Read(default, default, null, 1, 0, Settings);
+        Assert.True(r.Load < 1, $"intact in a seaway: {r.Load:0.00} at {r.Station:0.00}");
+        // taking any one outside plate of her worst section out, whichever, leaves her no stronger
+        for (int i = 0; i < c.Cells.Length; i++)
+        {
+            if (c.Cells[i].Section != r.Section)
+                continue;
+            for (int f = 0; f < 4; f++)
+            {
+                var faces = new double[c.Cells.Length * 4];
+                faces[i * 4 + f] = 1;
+                var less = h.Read(default, faces, null, 1, 0, Settings);
+                Assert.True(less.Load >= r.Load - 0.03 * r.Load, $"cell {i} face {f}: {less.Load:0.000} against {r.Load:0.000}");
+            }
+        }
     }
 
     [Fact]
