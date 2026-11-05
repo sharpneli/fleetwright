@@ -476,3 +476,4 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   registry's dispose then drained its whole queue. Now the art's dispose unhooks and waits for the draws in flight (a
   reader-writer lock), and the registry's dispose lets what's still queued go unbuilt (failed), finishing only the
   builds in flight.
+- **Magazines' rooms aren't the size of their loads** (found 2026-11-05): 199 of 707 under half, Lion's A 1 m wide and Q 23 m. The tonnes are right; the cells aren't. Diagnosis and what reads it: explosions.md "Magazine volumes".

@@ -255,9 +255,7 @@ of her sides. It lands in 07's band (d 0.5-0.8 breaks in a seaway). It's read th
    Fire spreads along passages and hot gas to 4 of Lion's magazines and all 8 of Seydlitz's.
 3. **Large charges stop at the cell's walls.** 2.4 t in a destroyer's engine room reaches 26 spaces: the near field only holes
    its own cell's boundaries. EX4's. Bursters going up in a magazine (candidate 3) can't be judged until then.
-4. **A magazine's space can't hold its stow** (found here, not fixed): Lion's Magazine A is 203.8 t in 52 m³ and S aft 63.5 t
-   in 0 m³, cells carved thin by the hull's ends and what shares them. It's why A and Y peak near 2,700 kPa. A Shipgen
-   question: does the magazine get the volume its load needs? Belongs in `bugs.md` unless EX2 needs it.
+4. **A magazine's space isn't what its load needs** (found here; the diagnosis is under EX3, "Magazine volumes"). It's why A and Y peak near 2,700 kPa.
 5. **The cost is over budget:** 190-1,000 µs a shell (about 200 wanted), 20-180 ms a magazine (about 20 wanted), measured with
    the baseline benches running beside it. Threads remain an option (the user).
 
@@ -340,11 +338,32 @@ length): not a failure, but their weak place under damage.
 its own. Then the flooding's moment should decide (built and tested, not yet run: the bench has no water in it), with what the shells do near
 the waterline. The contact holes are vents only on this bench and aren't in the section yet (EX4).
 
+**Magazine volumes (the user asked, 2026-11-05; `shipgen explode --volumes`).** Shipgen does size a magazine by its load (`Ordnance.Stow`, tonnes over 0.6 t/m³), and the tonnes are right everywhere. The room it ends up with isn't that size. Of 707 magazines in 131 designs: median 1.14 of what the load needs, 199 under half, 131 with none of their own, 228 over twice.
+
+| Lion's | Holds | Needs | Its cells | Width of the cells | Hull's half-width there |
+|---|---:|---:|---:|---:|---:|
+| Magazine A | 203.8 t | 340 m³ | 52 m³ | **1 m** | 2.8-5.5 m |
+| Magazine B | 203.8 t | 340 m³ | 296 m³ | 4 m | 4.8-7.9 m |
+| Magazine Q | 203.8 t | 340 m³ | 1,219 m³ | **23 m** | 13-15 m |
+| Magazine Y | 203.8 t | 340 m³ | 62 m³ | 1 m | 0-6.7 m |
+| Magazine S fore | 63.5 t | 106 m³ | 686 m³ | 9 m | 7-11 m |
+| Magazine S aft | 63.5 t | 106 m³ | none: a share of Stores 17 | | |
+
+Three causes, all where the layout meets the cell grid:
+
+1. **A room takes the whole centre band** (`Subdivision`, "rooms take cells"), whatever its own width. So Q gets 23 m where its load needs about 6.5 m.
+2. **The wing bulkheads stand a set depth in from the side,** and a magazine can't claim wing cells (`magWingCells`), so where the hull narrows the centre band pinches to its 1 m floor. A's hull has room; it's given to the wing.
+3. **A room smaller than any cell has no volume** (`Shared`): its stow sits in another room's cell.
+
+And the sizing itself takes its width from the deck outline, not the hull down where the magazine is (DECISIONS: "Sizing is unchanged on purpose").
+
+**What reads it:** the gas volume, so the race and the network (both models, not only this plan's). A magazine's flooding. And what a shell finds, read from the code and not measured: a burst in a magazine's cell is a burst in the magazine (`Effects.Burst`), so Q is about 23 times A's width as a target. Weights, trim and rounds read the tonnes and are right.
+
 **Not there yet:**
 
 1. **Lion's Q doesn't break in calm water, and where she does break is 0.88, not Q.** The trace says why: 666 kPa in Q can't rupture her
    27 mm shell amidships (about 1.4 MPa), so it tears the 12 mm past 0.875 of her length. Q's 732 m³ of gas is also far more than its stow
-   needs, as A's 31 m³ is far less (EX1's item 4). **The likely next physics: a magazine's own volume, by what it holds** [the user to decide].
+   needs, as A's 31 m³ is far less ("Magazine volumes" above). **The next fix, the user to decide.**
 2. **Packing separates bags from the rest and no further:** Clarkson and brass read alike (the known R 28 catch, to the research).
 3. **12″ and 6″ HE never rupture a destroyer's side.** A 62 kg burst tears it and a 19 kg one doesn't: a steep edge, though from the physics.
    Friedrich Eckoldt (6″ broadsides, broke in two in under two minutes) isn't met; the research is asked what broke her.

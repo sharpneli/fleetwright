@@ -15,7 +15,7 @@ static class ExplodeBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Room, double Kg, string Explosive, double CalibreMm, string? Magazine, string? Packaging, double Flooded, string? Doctrine,
-        double Belt, double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1);
+        double Belt, double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1, bool Volumes = false);
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -38,6 +38,11 @@ static class ExplodeBench
         if (o.Trace)
             GasNetwork.Trace = Console.WriteLine;
         Console.WriteLine(string.Format(Inv, "the network's rungs: belt {0:0.##}, heat kept {1:0.##}, tear {2:0.##} of a boundary, panel {3:0.#} ms, rupture {4:0.###} MPa/mm, step x{5:0.##}", g.BeltShare, g.HeatKeep, g.TearShare, g.PanelMs, g.RuptureMPaMm, g.StepK));
+        if (o.Volumes)
+        {
+            Volumes(designs, load);
+            return 0;
+        }
         if (o.Girder)
         {
             Intact(designs, load, s);
@@ -217,6 +222,52 @@ static class ExplodeBench
             if (k.BreachZ[i] < c.Vertical.Waterline)
                 sum += k.BreachM2[i];
         return sum;
+    }
+
+    /// <summary>Each magazine: what it holds and the room that needs (shipgen's 0.6 t/m³), its room's box, what the cells give it, and the gas the network starts with. With one or two designs the rooms; with many the spread.</summary>
+    static void Volumes(IReadOnlyList<string> designs, Func<string, Design> load)
+    {
+        var ratios = new List<(double Ratio, string Name)>();
+        foreach (var d in designs)
+        {
+            var c = ShipClassCompiler.Compile(ShipDesign.Build(load(d)));
+            if (designs.Count <= 3)
+                Console.WriteLine($"{c.Name}");
+            for (int r = 0; r < c.Rooms.Length; r++)
+            {
+                ref readonly var rr = ref c.Rooms[r];
+                if (rr.Kind != RoomKind.Magazine || !(rr.Tonnes > 0))
+                    continue;
+                double need = rr.Tonnes / Ordnance.TPerM3, box = (rr.X1 - rr.X0) * (rr.Top - rr.Base), cells = 0, free = 0;
+                int n = 0;
+                foreach (int ci in c.Links(rr.Cells))
+                {
+                    cells += c.Cells[ci].VolumeM3;
+                    free += c.Cells[ci].VolumeM3 * Math.Clamp(c.Cells[ci].Permeability, 0.05, 1);
+                    n++;
+                }
+                ratios.Add((rr.VolumeM3 / need, d + " " + c.RoomId(r)));
+                if (designs.Count <= 3)
+                    foreach (int ci in c.Links(rr.Cells))
+                    {
+                        var b = c.Cells[ci].Box;
+                        double xm = (b.X0 + b.X1) / 2;
+                        Console.WriteLine(string.Format(Inv, "      {0,-12} x {1,6:0.0}..{2,6:0.0} y {3,6:0.0}..{4,6:0.0} z {5,6:0.0}..{6,6:0.0}: box {7,6:0} m³, cell {8,6:0} m³; hull half-width at the cell's middle: base {9:0.0}, mid {10:0.0}, top {11:0.0}; owner {12}{13}",
+                            c.CellId(ci), b.X0, b.X1, b.Y0, b.Y1, b.Base, b.Top, (b.X1 - b.X0) * (b.Y1 - b.Y0) * (b.Top - b.Base), c.Cells[ci].VolumeM3, c.Hull.HalfWidth(xm, b.Base), c.Hull.HalfWidth(xm, (b.Base + b.Top) / 2), c.Hull.HalfWidth(xm, b.Top), c.Cells[ci].Room >= 0 ? c.RoomId(c.Cells[ci].Room) : "-", c.Cells[ci].TdsM > 0 ? " TDS" : ""));
+                    }
+                if (designs.Count <= 3)
+                    Console.WriteLine(string.Format(Inv, "  {0,-16} {1,6:0.0} t  needs {2,5:0} m³; x {3,6:0.0} to {4,6:0.0}, {5:0.0} high (length x height {6,4:0} m²); room volume {7,6:0} m³ ({8:0.00} of need){9}; {10} cells of {11,6:0} m³, free {12,6:0} m³",
+                        c.RoomId(r), rr.Tonnes, need, rr.X0, rr.X1, rr.Top - rr.Base, box, rr.VolumeM3, rr.VolumeM3 / need, rr.Shared ? " SHARED" : "", n, cells, free));
+            }
+        }
+        if (designs.Count > 3 && ratios.Count > 0)
+        {
+            var s = ratios.OrderBy(v => v.Ratio).ToList();
+            Console.WriteLine(string.Format(Inv, "{0} magazines in {1} designs: room volume over what its load needs: min {2:0.00}, 10th {3:0.00}, median {4:0.00}, 90th {5:0.00}, max {6:0.00}", s.Count, designs.Count, s[0].Ratio, s[s.Count / 10].Ratio, s[s.Count / 2].Ratio, s[s.Count * 9 / 10].Ratio, s[^1].Ratio));
+            Console.WriteLine(string.Format(Inv, "  under half of it: {0}; none at all: {1}; over twice: {2}", s.Count(v => v.Ratio < 0.5), s.Count(v => v.Ratio <= 0), s.Count(v => v.Ratio > 2)));
+            Console.WriteLine("  the smallest: " + string.Join(", ", s.Where(v => v.Ratio > 0).Take(8).Select(v => string.Format(Inv, "{0} {1:0.00}", v.Name, v.Ratio))));
+            Console.WriteLine("  the largest: " + string.Join(", ", s.TakeLast(8).Select(v => string.Format(Inv, "{0} {1:0.00}", v.Name, v.Ratio))));
+        }
     }
 
     /// <summary>What the explosion left of the girder: calm water and a seaway.</summary>
