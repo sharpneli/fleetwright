@@ -272,7 +272,7 @@ What it did (`losses`, same seeds as above; set off by a fire, a seed):
 | Jutland | 2.4 | 2.4 | 5.4, 6.7 |
 | Dogger Bank | 0 | 0 | 0.3, 0.3 |
 | Coronel | 1.0 | 1.4 | 1.1, 1.1 |
-| Tsushima | 2.1 | 3.4 | 0.9, 0.9 |
+| Tsushima | 2.0 | 3.4 | 0.9, 0.9 |
 
 The extra set-offs are small fires: Tsushima's by a fire went Contained 0.1, BurnedOut 0.8 to 0.8, 1.5, with those that break a ship unchanged. So it shows where fires meet part-flooded magazines, and the dry layer is often too small to take her. Jutland's rise isn't this rule: its fire set-offs didn't move and the rise is all hits, which the rule doesn't touch (`heavy hits` 1,835 to 1,995 a seed: the run diverged, four seeds).
 
