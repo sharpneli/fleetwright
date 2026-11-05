@@ -86,6 +86,7 @@ static class LossBench
         public readonly string Name = name, Class = cls.Name;
         public readonly ShipType Type = Sightings.TypeOf(cls);
         public readonly double Tonnes = cls.Motion.FullDisplacementT;
+        public readonly Packaging Packing = cls.Mounts.Length > 0 ? cls.Charges[cls.Mounts[0].Type].Packaging : default;
         public readonly List<Sample> Samples = [];
         public readonly List<Struck> Hits = [];
         public readonly List<(long Ms, int Shooter)> Salvos = [];
@@ -113,6 +114,8 @@ static class LossBench
         public readonly Dictionary<int, List<float>> LineRange = [];
         public int HeavyHits, MagazineHits, TrainsLit;
         public int[] RacesByHit = [], RacesByFire = [];
+        /// <summary>Each magazine set off: side, her type, how she packs her charges, how it ended, and whose ship.</summary>
+        public readonly List<(int Side, ShipType Type, Packaging Packing, MagazineTier Tier, int Entity)> Races = [];
     }
 
     public static int Run(SimSettings settings, string root, IReadOnlyList<string> names, Options o)
@@ -264,6 +267,9 @@ static class LossBench
                 foreach (var t in traces.Values)
                     TraceText.Append(t);
         (tally.TrainsLit, tally.RacesByHit, tally.RacesByFire) = (w.Damage.TrainsLit, w.Damage.MagazineCounts.ByHit, w.Damage.MagazineCounts.ByFire);
+        foreach (var (entity, tier) in w.Damage.RaceLog)
+            if (ships.TryGetValue(entity, out var raced))
+                tally.Races.Add((raced.Side, raced.Type, raced.Packing, tier, entity));
 
         foreach (var l in end.Timeline)
             if (l.Kind == PlayEvent.FellOut && ships.TryGetValue(l.Entity, out var f) && f.FellMs < 0)
@@ -592,6 +598,12 @@ static class LossBench
         string Races(Func<Tally, int[]> by) => string.Join(", ", Enum.GetValues<MagazineTier>().Select(t => string.Format(Inv, "{0} {1:0.0}", t, runs.Average(r => by(r.Tally)[(int)t]))));
         Console.WriteLine(string.Format(Inv, "  magazines, a seed: {0:0} heavy hits, {1:0.0} hits lit charges in a train; set off by a hit: {2}; by a fire: {3}",
             runs.Average(r => r.Tally.HeavyHits), runs.Average(r => r.Tally.TrainsLit), Races(t => t.RacesByHit), Races(t => t.RacesByFire)));
+        // whose: ships with a magazine set off, a seed, those it took, by side, type and packing
+        foreach (var g in runs.SelectMany(r => r.Tally.Races.Select(x => (Seed: r.Seed, x.Side, x.Type, x.Packing, x.Tier, x.Entity)))
+                     .GroupBy(x => (x.Side, x.Type, x.Packing)).OrderBy(g => g.Key.Side).ThenBy(g => g.Key.Type).ThenBy(g => g.Key.Packing))
+            Console.WriteLine(string.Format(Inv, "    {0,-14} {1,-9} {2,-8} ships set off {3,5:0.0} a seed, taken by it {4,4:0.0}; the races: {5}", s.Sides[g.Key.Side], g.Key.Type, g.Key.Packing,
+                (double)g.Select(x => (x.Seed, x.Entity)).Distinct().Count() / n, (double)g.Count(x => x.Tier >= MagazineTier.Severed) / n,
+                string.Join(", ", g.GroupBy(x => x.Tier).OrderBy(t => t.Key).Select(t => $"{t.Key} {t.Count()}"))));
 
         Console.WriteLine("  causes (a seed; share; of them capital/cruiser/destroyer-small; the medians: shell hits, of those after she was out, minutes first struck to the end, out to the end, the last half hour's range):");
         foreach (var side in Enumerable.Range(-1, s.Sides.Length + 1))

@@ -676,6 +676,31 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 
 **Built at the user's word, 2026-11-05: recommendations 1-3 below.** A unit or ship entry's own `"damage_control"` (Jutland's three battlecruiser squadrons on "1916 BCF", Lion on "1916": her gunner kept the rules, 10 §3.1), drill's `DoorOpen` [1, 1, 0.02, 0.1], and Clarkson's `MagazinePackageR` 32 [EST, until the research answers]. The ladder below was measured before them, each rung by a settings file.
 
+**What they gave** (`losses`, 4 seeds): 7 of 340 losses to a magazine, from 0 of 348. All at Jutland (1.75 a seed), all battlecruisers on rate first: Queen Mary twice, Tiger twice, Indefatigable, New Zealand, Princess Royal. Lion, the 5th Battle Squadron, the Grand Fleet and the Germans lose none to one; the Dogger Bank none. Jutland's lost a seed: Britain 21 / Germany 47, within the noise. Heavy hits are 1,687 a seed, so against the record's 3 battlecruisers in about 220 heavy hits (from memory), the rate a hit on the BCF's ships stays the check, not this count.
+
+### Can a magazine fire be survived? (the user, 2026-11-05: "once it burns it's go time; flooding is performed to avoid fires reaching magazines, not to stop the fire already there")
+
+**Flooding is already prevention only.** The race reads the flooded share once, at the flash, and runs out in seconds; the valves take minutes (`MagazineOrderS` 120 s, `FireMagazineFloodS` 600 s). Nothing floods a race under way.
+
+**But most magazines alight still leave her afloat.** Jutland, a seed, on the fixes above (`losses`' new lines; ships with a magazine set off, those it took):
+
+| | Ships set off | Taken by it | The races, 4 seeds |
+|---|---:|---:|---|
+| Britain, capital (Clarkson) | 6.3 | 1.8 | contained 12, burned out 8, breached 23, two groups 7 |
+| Britain, cruiser (Clarkson) | 0.8 | 0 | contained 4 |
+| Britain, destroyer (Clarkson) | 1.0 | 0 | contained 4 |
+| Germany, capital (brass) | 4.0 | 0 | contained 1, burned out 42 |
+| Germany, cruiser (brass) | 2.8 | 0 | contained 13 |
+| Germany, destroyer (brass) | 2.3 | 0 | contained 10 |
+
+A German capital ship set off burns out nearly 3 magazines and fights on, which nothing in the record supports. **Who survives, and on what:**
+
+1. **Brass and tanks** (R 1.4, 1.2). Their anchors are Gneisenau and Boise, both 1942 (10 §6.2), and both cooler propellants than the first game's. Seydlitz, Derfflinger and Lion are not cases of a magazine alight: the train burned and the magazine was flooded or shut first (10 §4.3). Against brass surviving in the Great War, from memory: Pommern and Frauenlob. So in 1890-1925 no case is known here of a dry magazine alight that left the ship afloat. Boise is also the one case of the sea stopping a fire already there, 1942, through her own shell hole.
+2. **Small stows,** Clarkson's too: `MagazineGiveKPa` is one table for every ship, so a light cruiser's 1-5 t stops at 250 kPa, "contained", with her hull untouched. This is cap 4 below.
+3. **A single midships magazine on a capital ship:** Lion's Q, Iron Duke's Q (27-29 t, 700-807 kPa, her deck gone, she floats).
+
+**Proposed, the user's call:** make it the physics' answer, not a rule. R by propellant as well as packing (10 §1.2 has a sensitivity range and the plan's V3 asked for it), so RP C/12 and early single-base go as cordite does and the 1942 anchors stay; the boundary table scaled by the ship's plating, so a thin hull gives at what a thin hull gives at. Upper bound if every set-off took her: about 17 ships a Jutland seed (Germany 9, Britain 8) on hits about 8x the record's.
+
 The user, from play: no magazine detonation in ages, even under silly debug shooting. "I think the current rates are way too low." Measured, it's worse than low: **on drill, a ship of the Great War can't be lost to a magazine at all,** and drill is what every side of every scenario and every dev ship is on.
 
 **Four caps, in the order a flash meets them:**
