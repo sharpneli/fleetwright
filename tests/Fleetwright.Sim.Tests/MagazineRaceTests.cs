@@ -225,7 +225,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal(-1, Magazines.Light(c, k, q, 0, false, Settings, ref rng, ref res, w.Time.Ms));
         int mag = c.Mounts[q].Magazine;
         Assert.True(k.MagazineOrderMs[mag] > w.Time.Ms, "the order given, the valves a walk away");
-        w.Damage.Settle(w, w.Ships.NewestEntity, 15 * 60);
+        w.Damage.Settle(w, w.Ships.NewestEntity, 27 * 60);   // the longest walk and the rule's 20 min to fill
         Assert.True(k.MagazineFlood[mag]);
         var r = Magazines.SetOff(c, k, mag, w.Ships.Store.Combat.Mounts(slot), Settings, w.Time.Ms, ref rng);
         output.WriteLine($"flooded: {r.Tier}, peak {r.PeakKPa:0} kPa, burned {r.BurnedKg / 1000:0.0} t");
@@ -266,11 +266,45 @@ public class MagazineRaceTests(ITestOutputHelper output)
         }
 
         Assert.Equal(-1, ShareAfter(0));   // ordered this instant: no water
-        Assert.Equal(-1, ShareAfter(60));   // still the walk to the valves
-        foreach (int s in (int[])[150, 300, 420, 720, 1200, 1800])
+        Assert.Equal(-1, ShareAfter(20));   // the shortest walk to the valves is 30 s
+        foreach (int s in (int[])[150, 300, 600, 900, 1200])
             ShareAfter(s);
-        Assert.InRange(ShareAfter(150), 0, 0.2);   // the valves open: the first of the water
-        Assert.True(ShareAfter(1800) > 0.995, "flooded in the end");
+        Assert.InRange(ShareAfter(1600), 0.995, 1);   // the walk, at most 360 s, and 1,200 s to fill
+    }
+
+    /// <summary>The fill against the falling head (research 11 §2.3): the rule's time to full, the second half longer than
+    /// the first by the magazine's depth under the sea, and no more than its cells hold.</summary>
+    [Fact]
+    public void A_magazine_fills_in_the_rules_time_slowing_as_it_rises()
+    {
+        var c = Packed("lion", "bag");
+        int q = Enumerable.Range(0, c.Mounts.Length).First(m => c.ComponentId(c.Mounts[m].Component) == "Q");
+        int mag = c.Mounts[q].Magazine;
+        var f = new FloodModel(c);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        var cells = c.Links(c.Rooms[mag].Cells);
+        double cap = 0;
+        foreach (int cell in cells)
+            cap += f.Capacity[cell];
+        var rng = RandomStream.Named(1, "fill");
+        Magazines.Order(k, mag, 1);
+        double half = 0, full = 0;
+        for (int t = 1; t <= 3000 && full == 0; t++)
+        {
+            Magazines.Valves(c, f, k, 1, t * 1000L, Settings, ref rng);
+            double held = 0;
+            foreach (int cell in cells)
+                held += k.WaterM3[cell];
+            if (half == 0 && held >= cap / 2)
+                half = t;
+            if (held >= 0.999 * cap)
+                full = t;
+        }
+        output.WriteLine($"Q's magazine, {cap:0} m3: half at {half / 60:0.0} min, full at {full / 60:0.0} min, {full / half:0.00} x");
+        Assert.InRange(full, Settings.FireMagazineFloodS * 0.95, Settings.FireMagazineFloodS * 1.05);
+        Assert.InRange(full / half, 2.05, 2.5);
     }
 
     /// <summary>V6: a magazine with sprinklers (a WWII outfit) has its stow wetted within a minute of the order.</summary>

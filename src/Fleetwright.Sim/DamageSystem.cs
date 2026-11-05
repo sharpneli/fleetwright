@@ -143,6 +143,8 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>What the magazines have done in this world so far (benches: not world state): the hits that lit charges in
     /// a train, and the races by tier (<see cref="MagazineTier"/>), set off by a hit and by a fire's heat.</summary>
     public (int[] ByHit, int[] ByFire) MagazineCounts { get; } = (new int[5], new int[5]);
+    /// <summary>What met the men at magazines' valves in this world so far (benches: not world state).</summary>
+    public ValveStep ValveCounts;
     int trainsLit, racesLogged;
     readonly (int Entity, MagazineTier Tier)[] raceLog = new (int, MagazineTier)[1024];
     public int TrainsLit => trainsLit;
@@ -669,6 +671,7 @@ public sealed class DamageSystem : IWorldSystem
                         foreach (int cell in cls.Links(cls.Rooms[room].Cells))
                             (held, cap) = (held + k.WaterM3[cell], cap + fm.Capacity[cell]);
                         d.MagazineShare[d.Magazines] = !k.MagazineFlood[room] ? -1 : cap > 0 ? Math.Min(1, held / cap) : 1;
+                        d.MagazineValve[d.Magazines] = k.MagazineValve[room];
                         d.MagazineRoom[d.Magazines++] = room;
                     }
             }
@@ -1213,7 +1216,10 @@ public sealed class DamageSystem : IWorldSystem
             var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
             repaired = Repairs.Step(cls, f, k, fdt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
             var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-            Magazines.Valves(cls, f, k, fdt, now, settings);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
+            var valve = stream.Derive(0x7A1Eu).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
+            var valves = Magazines.Valves(cls, f, k, fdt, now, settings, ref valve);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
+            (ValveCounts.Opened, ValveCounts.Through, ValveCounts.DrivenBack) =
+                (ValveCounts.Opened + valves.Opened, ValveCounts.Through + valves.Through, ValveCounts.DrivenBack + valves.DrivenBack);
             fl = Flooding.Step(cls, f, k, fdt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
             if (fl.Collapsed > 0)
                 log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));

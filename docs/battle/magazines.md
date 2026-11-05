@@ -241,9 +241,29 @@ The controls are cut by smoke or fire over them (as today) or by lost power (Yam
 them, wet the charges in a fraction of the time. The water lowers S (Lion's held), and a drowned magazine can't go up.
 The mounts lose their rounds, as today.
 
-**Measured 2026-11-05** (Lion's Q, flash stopped short, at rest and conned; `The_detail_tells_a_flooding_ordered_from_a_magazine_flooded`): no water until the valves open at 2 min, about half full at 7 min (fire can't set it off from there, `FireDrownShare`), 77% at 12 min, full by 20 min. Research 10 §4.2 has 1-5 min to the valves and 10-30 min to fill, both inferred from valve physics, so 2 min sits at the quick end. The fill slows after half for a reason not yet traced: 600 s alone would have it full at 12 min. The card used to say "Magazine flooded" from the moment of the order, which read as seconds in play; it now says ordered, then the share filling.
+**The valves can fail (the user, 2026-11-05: "the flash triggered order definitely should be able to fail"; built from research `11-magazine-flooding.md`).** The research is plain about where: of 13 battle flashes that stopped short, none records an order that failed, even with whole turret crews dead, because the gunner, the executive officer or the bridge gave it too. Every recorded failure is at the valves (Liberté, Glatton, Benedetto Brin, Imperatritsa Mariya in part). So it's built there:
 
-**Open:** a flash that stops short orders the flooding every time, whoever survived it, and that path doesn't check the fire over the valves as the fire's own order does. The record's failures (Liberté's valves unreachable, delay at Lion, crews killed) aren't modelled there. Research requested 2026-11-05; awaits the user.
+- **The order** still follows every flash that stops short: its walk drawn, median 120 s, 30-360 s (`MagazineOrderSigma`, `MagazineOrderRangeS`) [EST 11 §2.2].
+- **At the valves** (`Reach`, `Fires.ValvesCut`): a smoky space over the magazine, where its station stands, gives one try: through with 0.4 in 3-15 min (Seydlitz), else driven back until it clears, then the walk again (Liberté) [EST 11 rec. 3]. The fire's own order goes the same way, where it used to stand refused.
+- **The fill** (`Fill`): one flood a magazine, against the falling head, 20 min to full (`FireMagazineFloodS` 1,200 s: the USN's 1917 rule; Saint Louis 30; Leonardo da Vinci over 20) [SRC 11 §2]. Half at 9.1 min, full at 20.0, 2.20 x on Lion's Q, as the note's physics has it. What stands over the waterline fills from the main. Note 11 reads the old fill's slowing as Torricelli by chance; it was the upper cell's valve draining into the lower and its flow stopping when that was full: one valve a cell is gone.
+- **The card** says ordered, getting through smoke, cut off by smoke, then the share filling. Tests: `Men_driven_back_from_the_valves_go_again_when_the_smoke_clears`, `A_magazine_fills_in_the_rules_time_slowing_as_it_rises`.
+
+**What came out** (`losses`, 4 seeds at Jutland and the Dogger Bank, 8 at Coronel and Tsushima; every order, the fire's too):
+
+| A seed | Valves opened | Through smoke | Driven back | Met smoke | Lost to a magazine: before, now |
+|---|---|---|---|---|---|
+| Jutland | 39.0 | 0.0 | 1.3 | 3% | 5.25, 5.3 |
+| Dogger Bank | 13.0 | 0.0 | 0.3 | 2% | 0.3 now |
+| Tsushima | 28.3 | 1.4 | 4.0 | ~17% | 0.9 now |
+| Coronel | 4.6 | 1.5 | 3.5 | ~60% | 1.1 now (45% of losses, 45% before) |
+
+- **It falls where the record has it:** Coronel's battery fires cut the valves off most, a dreadnought's turret flash almost never. On note 11's yardstick (a stopped-short train flooded in 80% of runs or more) Jutland, the Dogger Bank and Tsushima pass; Coronel's fires are the Good Hope kind. So **a battleship's turret flash still nearly always floods**, as the record has it.
+- **Set-offs barely move:** nearly all come by a hit, where flooding has no time. At Jutland 14 of 16 a seed by a hit.
+- Coronel's British cruisers broken 0.5 a seed (1.0 before), Germany's capital ships 0.6 (0.25 before): counts of 4-5 in 8 seeds, not read as a change. Asama class still blowing (Japan's cruisers 0.8 a seed).
+
+**Not built from note 11:** sprinklers by navy and year (USN 1917, RN 1918; corrects note 10), periods' own fill times (900-1,800 s), a second or remote valve station as a design option, keys in harbour and dry dock, the countermand (Liberté's Garnier), `damage-history`'s flooding yardstick.
+
+**Open, for the user:** `FireDrownShare` 0.5 has a half-full magazine unable to go up by fire, but Leonardo da Vinci's "almost completed" flooding lost her to the dry top layer (11 §2.3). Bottom entry suggests something nearer full; a change there comes with more explosions.
 
 ## The steps
 

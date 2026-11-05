@@ -926,7 +926,11 @@ public sealed partial class MapScene
             int at = d.MagazineStart[di] + i;
             double share = d.MagazineShare[at];
             var room = cls.RoomId(d.MagazineRoom[at]);
-            Words(r, r.X + P(6), right, T.Water, share < 0 ? U8.W($"Magazine flooding ordered: {room}")
+            var valve = d.MagazineValve[at];
+            Words(r, r.X + P(6), right, share < 0 && valve == ValveStage.DrivenBack ? T.Amber : T.Water,
+                share < 0 ? (valve == ValveStage.DrivenBack ? U8.W($"Magazine valves cut off by smoke: {room}")
+                    : valve == ValveStage.Through ? U8.W($"Magazine valves, getting through smoke: {room}")
+                    : U8.W($"Magazine flooding ordered: {room}"))
                 : share < 0.995 ? U8.W($"Magazine flooding, {share * 100:0}%: {room}")
                 : U8.W($"Magazine flooded: {room}"));
         }

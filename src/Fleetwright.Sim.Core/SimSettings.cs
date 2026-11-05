@@ -1802,10 +1802,16 @@ public sealed record SimSettings
     /// <item>The steps: MagazineRaceMs [the first 5 s, after], up to MagazineRaceS.</item>
     /// </list></summary>
     /// <summary>The magazines' flooding (docs/battle/magazines.md V6; research 10 §4): a flash in a train orders its
-    /// magazine flooded MagazineOrderS later (the order and the walk to the valves, 1-5 min [INFERRED]); its valves fill it
-    /// in FireMagazineFloodS (10-30 min by their bore); sprinklers, where fitted, wet MagazineSprinkleShare of the stow in
-    /// MagazineSprinkleS [EST].</summary>
+    /// magazine flooded, the order and the walk to the valves the median MagazineOrderS later, lognormal of sigma
+    /// MagazineOrderSigma, within MagazineOrderRangeS [EST: research 11 §2.2]. With the space over the magazine in smoke the
+    /// men get through with MagazineThroughChance, in MagazineThroughS, or are driven back until it clears [EST: research 11
+    /// recommendation 3, Seydlitz through; Liberté, Imperatritsa Mariya partly not]. Its valves fill it in FireMagazineFloodS;
+    /// sprinklers, where fitted, wet MagazineSprinkleShare of the stow in MagazineSprinkleS [EST].</summary>
     public double MagazineOrderS { get; init; } = 120;
+    public double MagazineOrderSigma { get; init; } = 0.6;
+    public double[] MagazineOrderRangeS { get; init; } = [30, 360];
+    public double MagazineThroughChance { get; init; } = 0.4;
+    public double[] MagazineThroughS { get; init; } = [180, 900];
     public double MagazineSprinkleS { get; init; } = 60;
     public double MagazineSprinkleShare { get; init; } = 0.95;
     public double MagazineHeatKeep { get; init; } = 0.5;
@@ -2190,11 +2196,11 @@ public sealed record SimSettings
     /// <see cref="FireMagazineSigma"/> about 1; the dose cools away over <see cref="FireMagazineCoolS"/> without a fire. The
     /// doctrine floods one threatened for its time if the controls over it aren't in a burning or smoky space (Teresa,
     /// Astoria) and there's water (the sea's under the waterline, else the section's main), filling it in
-    /// <see cref="FireMagazineFloodS"/> [EST].</summary>
+    /// <see cref="FireMagazineFloodS"/> [SRC: the USN's 1917 rule, 20 min; Saint Louis 30, Leonardo da Vinci over 20; research 11 §2].</summary>
     public double[] FireMagazineS { get; init; } = [300, 1200, 1200, 2400, 10800];
     public double FireMagazineSigma { get; init; } = 0.5;
     public double FireMagazineCoolS { get; init; } = 3600;
-    public double FireMagazineFloodS { get; init; } = 600;
+    public double FireMagazineFloodS { get; init; } = 1200;
 
     /// <summary>A fire seen (B2; 17 §8.5): a developed or open-deck fire (or burning charges) shows, a starved one inside
     /// doesn't. At night its light is a lamp of <see cref="FireGlowCdPerMW"/> candela a MW of what shows [EST: a candle's

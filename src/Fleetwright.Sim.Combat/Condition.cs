@@ -226,6 +226,8 @@ public sealed class ShipCondition
     /// its stow its sprinklers have wetted.</summary>
     public long[] MagazineOrderMs = [];
     public double[] MagazineWet = [];
+    /// <summary>How the men are getting to each magazine's valves (research 11; by room).</summary>
+    public ValveStage[] MagazineValve = [];
     /// <summary>The machinery spaces (by room) abandoned to smoke (B2), until their outage runs out.</summary>
     public bool[] Smoked = [];
     /// <summary>The heat release of her fires that show (B2: developed, on the open deck, burning charges), MW.</summary>
@@ -532,7 +534,7 @@ public sealed class ShipCondition
             MainCutMs = new long[c.Sections.Length];
             (MagazineHeat, MagazineLimit, MagazineThreatS, MagazineFlood) =
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
-            (MagazineOrderMs, MagazineWet) = (new long[c.Rooms.Length], new double[c.Rooms.Length]);
+            (MagazineOrderMs, MagazineWet, MagazineValve) = (new long[c.Rooms.Length], new double[c.Rooms.Length], new ValveStage[c.Rooms.Length]);
             Smoked = new bool[c.Rooms.Length];
             (Stoke, StokeUntilMs) = (new double[c.Rooms.Length], new long[c.Rooms.Length]);
             (PartSpace, CellSpace) = (new int[c.Components.Length], new int[c.Cells.Length]);
@@ -636,6 +638,7 @@ public sealed class ShipCondition
             Array.Clear(MagazineFlood);
             Array.Clear(MagazineOrderMs);
             Array.Clear(MagazineWet);
+            Array.Clear(MagazineValve);
             Array.Clear(Smoked);
         }
         Array.Fill(HoleLeft, 1.0);
@@ -1327,6 +1330,7 @@ public sealed class ShipCondition
                 h.Add(MagazineFlood[i]);
                 h.Add(MagazineOrderMs[i]);
                 h.Add(MagazineWet[i]);
+                h.Add((int)MagazineValve[i]);
             }
         for (int i = 0; i < Fire.Length; i++)
             if (Fire[i].Phase != BurnPhase.None)

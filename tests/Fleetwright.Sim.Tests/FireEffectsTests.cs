@@ -200,7 +200,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         Burn(c, k, fire);
         for (int t = 10; t <= hours * 3600; t += 10)
         {
-            Magazines.Valves(c, f, k, 10, t * 1000L, Still);   // the magazines' valves, as the damage system steps them (magazines.md V6)
+            Magazines.Valves(c, f, k, 10, t * 1000L, Still, ref r);   // the magazines' valves, as the damage system steps them (magazines.md V6)
             if (Fires.Step(c, f, k, 10, Still, ref r, t * 1000L).Magazine)
                 return t / 60.0;
         }
@@ -243,7 +243,7 @@ public class FireEffectsTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Her_crew_flood_a_threatened_magazine_unless_smoke_over_it_cuts_the_controls_off()
+    public void Her_crew_flood_a_threatened_magazine_and_smoke_over_it_often_drives_them_back()
     {
         var c = Class("dreadnought");
         var f = new FloodModel(c);
@@ -267,9 +267,10 @@ public class FireEffectsTests(ITestOutputHelper output)
         Assert.True(up <= 1);
         Assert.True(water > 0.9);
 
-        // smoke over it: the controls are cut off, nobody floods it, and it goes up
+        // smoke over it: the men try once, and those driven back wait for it to clear (it doesn't, here): most go up
+        const int Runs = 40;
         int blocked = 0, gone = 0;
-        for (ulong seed = 0; seed < 20; seed++)
+        for (ulong seed = 0; seed < Runs; seed++)
         {
             var k = Fresh(c);
             k.DamageControl = doc;
@@ -279,9 +280,51 @@ public class FireEffectsTests(ITestOutputHelper output)
             blocked += k.MagazineFlood[room] ? 0 : 1;
             gone += blew ? 1 : 0;
         }
-        output.WriteLine($"smoke over it: not flooded in {blocked} of 20, gone up in {gone}");
-        Assert.Equal(20, blocked);
-        Assert.True(gone >= 15);
+        output.WriteLine($"smoke over it: not flooded in {blocked} of {Runs}, gone up in {gone}");
+        Assert.InRange(blocked, Runs * 0.4, Runs * 0.8);   // MagazineThroughChance 0.4 gets through
+        Assert.True(gone >= blocked / 2, $"{gone} gone up of {blocked} never flooded");
+    }
+
+    /// <summary>The valves in smoke (research 11 §3.3): some men get through it, slowly (Seydlitz), the rest are driven back
+    /// (Liberté) and go again once it clears.</summary>
+    [Fact]
+    public void Men_driven_back_from_the_valves_go_again_when_the_smoke_clears()
+    {
+        var c = Class("dreadnought");
+        var f = new FloodModel(c);
+        var (_, room, _, over) = Magazine(c);
+        const int Runs = 200;
+        int through = 0, back = 0;
+        for (ulong seed = 0; seed < Runs; seed++)
+        {
+            var k = Fresh(c);
+            Burn(c, k, over, BurnPhase.Starved, 0.05);
+            k.Fire[over].PhaseS = -1e9;
+            Assert.True(Fires.ValvesCut(c, k, room));
+            var r = RandomStream.FromSeed(seed);
+            Magazines.Order(k, room, 1);
+            Magazines.Valves(c, f, k, 10, 10_000, Still, ref r);
+            Assert.False(k.MagazineFlood[room]);   // in smoke, never at once
+            if (k.MagazineValve[room] == ValveStage.Through)
+            {
+                through++;
+                Assert.InRange(k.MagazineOrderMs[room], 10_000 + 180_000, 10_000 + 900_000);
+                Magazines.Valves(c, f, k, 10, k.MagazineOrderMs[room], Still, ref r);
+                Assert.True(k.MagazineFlood[room]);
+                continue;
+            }
+            back++;
+            Assert.Equal(ValveStage.DrivenBack, k.MagazineValve[room]);
+            Magazines.Valves(c, f, k, 10, 3_600_000, Still, ref r);
+            Assert.False(k.MagazineFlood[room]);   // an hour on, and the smoke still there
+            k.Fire[over] = default;
+            Magazines.Valves(c, f, k, 10, 3_610_000, Still, ref r);
+            Assert.Equal(ValveStage.Walking, k.MagazineValve[room]);
+            Magazines.Valves(c, f, k, 10, k.MagazineOrderMs[room], Still, ref r);
+            Assert.True(k.MagazineFlood[room]);
+        }
+        output.WriteLine($"valves in smoke: {through} got through, {back} driven back, of {Runs}");
+        Assert.InRange(through, Runs * 0.3, Runs * 0.5);
     }
 
     [Fact]

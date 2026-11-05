@@ -322,11 +322,10 @@ public static class Fires
                 continue;
             }
             double held = 0, cap = 0, rate = 0;
-            bool blocked = false;
             foreach (int cell in c.Links(rooms[m].Cells))
             {
                 (held, cap) = (held + k.WaterM3[cell], cap + f.Capacity[cell]);
-                rate += Exposure(c, k, cell, s, ref blocked);
+                rate += Exposure(c, k, cell, s);
             }
             for (int t = 0; t < c.Mounts.Length; t++)
                 if (c.Mounts[t].Magazine == m && c.Enclosed(t) && c.FireOfPart(c.Mounts[t].Component) is int g and >= 0 && Heats(k.Fire[g]))
@@ -350,25 +349,34 @@ public static class Fires
                 (res.Magazine, res.MagazineRoom) = (true, m);
                 return;
             }
-            if (!k.MagazineFlood[m] && k.MagazineOrderMs[m] == 0 && !blocked && doc.Name is not null && doc.FloodMagazineS >= 0 &&
+            if (!k.MagazineFlood[m] && k.MagazineOrderMs[m] == 0 && doc.Name is not null && doc.FloodMagazineS >= 0 &&
                 k.MagazineThreatS[m] >= doc.FloodMagazineS)
             {
-                Combat.Magazines.Order(k, m, now);   // the threat's own clock was the decision: the valves at once
+                Combat.Magazines.Order(k, m, now);   // the threat's own clock was the decision: to the valves at once, if they can be reached
                 res.Flooded++;
             }
         }
     }
 
+    /// <summary>Whether a magazine's flood controls are in smoke: a smoky space over it, where its valve station stands
+    /// (research 11 §1: on the deck over it; Teresa, Astoria, Liberté, Glatton).</summary>
+    public static bool ValvesCut(ShipClass c, ShipCondition k, int room)
+    {
+        foreach (int cell in c.Links(c.Rooms[room].Cells))
+            foreach (ref readonly var l in c.FireLinks(c.FireSpaces[cell].Links))
+                if (l.Way == FireWay.Up && Smoky(k.Fire[l.Space]))
+                    return true;
+        return false;
+    }
+
     /// <summary>The rate a magazine's cell is heated by the fires on it, per second: a fire in it, a handling room's or
-    /// burning charges beside it, an open path, under it, beside it, over it (<see cref="SimSettings.FireMagazineS"/>);
-    /// and whether a smoky space over it has its flood controls cut off.</summary>
-    static double Exposure(ShipClass c, ShipCondition k, int cell, SimSettings s, ref bool blocked)
+    /// burning charges beside it, an open path, under it, beside it, over it (<see cref="SimSettings.FireMagazineS"/>).</summary>
+    static double Exposure(ShipClass c, ShipCondition k, int cell, SimSettings s)
     {
         double rate = Heats(k.Fire[cell]) ? 1 / s.FireMagazineS[0] : 0;
         foreach (ref readonly var l in c.FireLinks(c.FireSpaces[cell].Links))
         {
             ref readonly var y = ref k.Fire[l.Space];
-            blocked |= l.Way == FireWay.Up && Smoky(y);
             if (!Heats(y))
                 continue;
             ref readonly var n = ref c.FireSpaces[l.Space];

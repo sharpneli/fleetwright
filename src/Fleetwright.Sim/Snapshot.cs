@@ -249,6 +249,7 @@ public sealed class ShipDetailView
     public int[] FloodCell = [], HoleCell = [], MagazineRoom = [];
     /// <summary>How full each listed magazine is, 0 to 1; -1 while its flooding is ordered and its valves aren't open yet.</summary>
     public double[] MagazineShare = [];
+    public Fleetwright.Sim.Combat.ValveStage[] MagazineValve = [];
     public double[] FloodShare = [], HoleM2 = [], HoleY = [], HoleZ = [];
     public bool[] FloodCounter = [];
 
@@ -317,6 +318,7 @@ public sealed class ShipDetailView
         n = Math.Max(n, Math.Max(8, MagazineRoom.Length * 2));
         Array.Resize(ref MagazineRoom, n);
         Array.Resize(ref MagazineShare, n);
+        Array.Resize(ref MagazineValve, n);
     }
 }
 

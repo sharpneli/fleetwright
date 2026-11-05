@@ -113,6 +113,7 @@ static class LossBench
         public readonly Dictionary<string, double> Minutes = [];
         public readonly Dictionary<int, List<float>> LineRange = [];
         public int HeavyHits, MagazineHits, TrainsLit;
+        public ValveStep Valves;
         public int[] RacesByHit = [], RacesByFire = [];
         /// <summary>Each magazine set off: side, her type, how she packs her charges, how it ended, and whose ship.</summary>
         public readonly List<(int Side, ShipType Type, Packaging Packing, MagazineTier Tier, int Entity)> Races = [];
@@ -267,6 +268,7 @@ static class LossBench
                 foreach (var t in traces.Values)
                     TraceText.Append(t);
         (tally.TrainsLit, tally.RacesByHit, tally.RacesByFire) = (w.Damage.TrainsLit, w.Damage.MagazineCounts.ByHit, w.Damage.MagazineCounts.ByFire);
+        tally.Valves = w.Damage.ValveCounts;
         foreach (var (entity, tier) in w.Damage.RaceLog)
             if (ships.TryGetValue(entity, out var raced))
                 tally.Races.Add((raced.Side, raced.Type, raced.Packing, tier, entity));
@@ -598,6 +600,8 @@ static class LossBench
         string Races(Func<Tally, int[]> by) => string.Join(", ", Enum.GetValues<MagazineTier>().Select(t => string.Format(Inv, "{0} {1:0.0}", t, runs.Average(r => by(r.Tally)[(int)t]))));
         Console.WriteLine(string.Format(Inv, "  magazines, a seed: {0:0} heavy hits, {1:0.0} hits lit charges in a train; set off by a hit: {2}; by a fire: {3}",
             runs.Average(r => r.Tally.HeavyHits), runs.Average(r => r.Tally.TrainsLit), Races(t => t.RacesByHit), Races(t => t.RacesByFire)));
+        Console.WriteLine(string.Format(Inv, "  magazines' valves, a seed: {0:0.0} opened; smoke there: {1:0.0} got through, {2:0.0} driven back",
+            runs.Average(r => r.Tally.Valves.Opened), runs.Average(r => r.Tally.Valves.Through), runs.Average(r => r.Tally.Valves.DrivenBack)));
         // whose: ships with a magazine set off, a seed, those it took, by side, type and packing
         var gone = runs.SelectMany(r => r.Losses.Select(l => (r.Seed, l.Ship.Entity))).ToHashSet();
         foreach (var g in runs.SelectMany(r => r.Tally.Races.Select(x => (Seed: r.Seed, x.Side, x.Type, x.Packing, x.Tier, x.Entity)))
