@@ -12,11 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-05 - Flooding a magazine: how long it took, and who gave the order
-- Question: (1) Period figures for flooding a magazine, 1890-1925: valve bores, fill times, any drill standard or trial, by type and period. Note 10 §4.2 found none and inferred 10-30 min from valve physics. (2) From a flash in a turret to water entering: who decided, how the order travelled, how far the valves were, and any timed cases (Lion's Q, Seydlitz at the Dogger Bank, Derfflinger, König, Kent). (3) How often no order came or the valves weren't reached, because the men who'd give or carry it were dead or the flat was on fire. Is a flash that stops short of the magazine reliably followed by flooding?
-- Context / relevant files: `docs/battle/magazines.md` "Flooding and sprinkling"; `MagazineOrderS` 120 s and `FireMagazineFloodS` 600 s, both [EST]; `Magazines.Light` orders flooding after every flash that stops short, without fail and regardless of who survived.
-- Wanted output: ranges by type and period with tags, and the failure cases counted against the successes.
-
 ### 2026-11-05 - Magazines alight: what actually happened, 1890-1925 first
 - Question: (1) Every case found of a ship's magazine alight, in battle or by accident (from memory, to check: Natal, Vanguard, Bulwark, Mikasa 1905, Tsukuba, Kawachi, Iéna, Liberté, Benedetto Brin, Leonardo da Vinci, Imperatritsa Mariya; Indefatigable, Queen Mary, Invincible, Defence, Black Prince, Good Hope, Borodino; Pommern, Pathfinder, Pallada, Goliath, Frauenlob; Petropavlovsk, Hatsuse): the propellant, the packing and whether lids were on, what lit it, and whether she blew up, burned out or was saved. Above all: is there any case of a dry cordite or early single-base magazine alight, before about 1920, that burned out with the ship afloat? (2) Per heavy hit: how many hits each navy's ships of each type took for each magazine lost, by type (dreadnought, armoured cruiser, pre-dreadnought), so "drill" has a rate to meet beside the BCF's ~5%. (3) How the flame reached the armoured cruisers' magazines: Defence's and Black Prince's passages, how much lay in them, and how common such passages were by type and period. (4) Did a shut flash door ever stop a flame before 1916, and how often did a flame run the whole train from a lit gunhouse?
 - Context / relevant files: `docs/battle/magazines.md` "Too safe" (on drill a Great War ship can't be lost to a magazine; `MagazinePackageR` Clarkson 4 is what decides it, and `10-magazine-flash-chain.md` §6.2 and §8 call it the most uncertain constant), `MagazineRace.cs`.
@@ -271,6 +266,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-05 - Flooding a magazine: how long it took, and who gave the order
+- Done 2026-11-05 (draft): [simulation/damage-research/11-magazine-flooding.md](simulation/damage-research/11-magazine-flooding.md)
+  with [magazine_flood_ref.py](simulation/damage-research/magazine_flood_ref.py). Period times found: the USN's 1917 rule
+  (flood pipes and magazine sprinklers sized to fill in 20 min), the French Saint Louis class 30 min, Leonardo da Vinci not
+  done in 20; no valve bores (physics: 100-250 mm for 50-300 m3). Valves locked, on the main or berth deck, keys in racks or
+  the captain's cabin; the RN had a second station below and drenching from 1918 (corrects 10's sprinklers). Deciders were
+  plural and mostly outside the train (Lion's Q: Harvey, the Chief Gunner, Chatfield; Seydlitz: the I.O.); engine-room men
+  often worked the valves. Battle flashes stopping short, 13 recorded: 7 flooded, 3 saved otherwise, 3 unrecorded, none an
+  order that failed; but Good Hope, Black Prince and Borodino burned 10-40 min and blew. Accidents with time: 3 saved, 5
+  failed, all at the valves (smoke, keys, one station, slow bottom fill). Proposes FireMagazineFloodS 1,200 s filling by
+  head, MagazineOrderS 120 s kept with the valve station as a place the fire can take, the order from any survivor or a
+  conned ship, sprinklers USN 1917 and RN 1918, and a yardstick. Not reached: bores, written order rules, Campbell's Jutland.
 
 ### 2026-11-04 - What a warship's electric plant fed, consumer by consumer, 1890-1945
 - Done 2026-11-04 (draft): [simulation/electric-plant.md](simulation/electric-plant.md), its nine strands as appendices in
