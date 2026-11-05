@@ -672,6 +672,65 @@ follows the dependencies: the fake turrets first, because the chain means nothin
    400 runs, against the 1.5% once wanted. Accepted: "it means the armouring is working". A ship with thinner
    casemates or open batteries can still lose one.
 
+## Too safe: why nothing blows up (2026-11-05; nothing tuned, the settings are as they were)
+
+The user, from play: no magazine detonation in ages, even under silly debug shooting. "I think the current rates are way too low." Measured, it's worse than low: **on drill, a ship of the Great War can't be lost to a magazine at all,** and drill is what every side of every scenario and every dev ship is on.
+
+**Four caps, in the order a flash meets them:**
+
+1. **Nobody has the other row.** "1916 BCF" is the only doctrine with rate first, and no scenario names it. Per-squadron doctrine was left as the scenarios' later step (V5). It's a side's `damage_control` today.
+2. **A shut door always holds.** The research's door ratings (10 §3.3, §7: pre-1916 flash doors fail at 20-40 kPa, "too weak to resist the pressure of a burning charge" [SRC: Brown]; a watertight magazine door about 100 kPa) were never built. `DoorOpen` is the only thing that passes a flame: 0.1 x 0.1 x 0.1 from a gunhouse.
+3. **A lids-on magazine can't reach the girder.** Severing needs the sides to give, at 1,000 kPa. `shipgen magazine --race` over the shipped designs on drill: 107 burned out, 45 contained, 16 breached (the deck only, about 700 kPa: the all-forward and fast battleships, Devastation) and 4 two groups (only the Coastal Battleship of Doom and the Duilio, at a seaway's worst the same). Lion, Queen Mary, Indefatigable, Invincible, Iron Duke and Tiger all burn out, 285-562 kPa. Clarkson's R 4 decides it, and 10 §6.2 and §8 call R "the most uncertain constant here" (4-8), fitted to a "Lion dry" case it marks as debated.
+4. **A small stow can't either.** Armoured cruisers (Minotaur, Warrior, Duke of Edinburgh) burn 8-30 t, so even with every lid off most of their magazines stop at 700 kPa or less. The record's Defence went along her passages from magazine to magazine (10 §5), and shipgen emits no passages. The boundary table (decision 6) is one set of pressures for every ship, a destroyer's side the same 1,000 kPa as a battleship's.
+
+**And one that hides what does happen:** a race she survives leaves no record and no look. `Blew` is only called from tier 3 up, so a burned-out magazine, tonnes of propellant in a column, shows as an ordinary fire (the look's tiers 1 and 4 are still to do).
+
+**What's right already.** Hits that light charges in a train: 2-4.4 per 100 heavy hits in `damage-history`, against the record's rough 4 (V8's 9 lit, in about 220 heavy hits at Jutland; rough). So the flash is about the right size; what comes after it isn't. The per-hit rate on rate first is also near its anchor: `hits lion --shooter derfflinger --range 14000 --n 2000`, 2.35% of hits set off a magazine and 1.7% lose her, against ~5% (1-14%).
+
+**A correction to `loss-stock-take.md`:** "a magazine reached 0 times" read the log's `HitEffect.Magazine`, which is set only when she's lost. In fact about 6 are set off a Jutland seed, and none takes the ship.
+
+**The ladder.** `damage-history` 40 runs a case and `hits`, 3,000 hits; `losses`, 4 seeds, whose new line counts the races by tier. "Whole train" is drill's `DoorOpen` at [1, 1, 0.02, 0.1]: only the magazine's own door, and a casemate's, stop a flame. R is Clarkson's `MagazinePackageR`. Both are settings, so each rung is a settings file. Only armour-side cases are listed.
+
+| A heavy hit, % lost to a magazine (set off) | Now | Whole train | Whole train + R 32 | Whole train + R 64 | Rate first, now |
+|---|---:|---:|---:|---:|---:|
+| Lion | 0 (0) | 0 (0.17) | 0.10 (0.17) | 0.10 (0.17) | 1.7 (2.35) |
+| Queen Mary | 0 (0.03) | 0 (0.17) | 0.10 (0.17) | 0.10 (0.17) | |
+| Indefatigable | 0 (0) | 0 (0.23) | 0.10 (0.23) | 0.20 (0.23) | 2.1 (2.75, V8) |
+| Iron Duke | 0 (0) | 0 (0.13) | 0.10 (0.13) | 0.10 (0.13) | |
+| Minotaur | 0 (0.23) | 0 (2.80) | 0 (2.80) | 0 (2.80) | |
+| Mikasa | 0 (0.10) | 0 (0.30) | 0.20 (0.30) | 0.30 (0.30) | |
+| Seydlitz, Derfflinger, Kaiser (brass) | 0 (0-0.10) | 0 (0.23-1.67) | 0 | 0 | |
+
+| A seed | Hits lighting a train | Set off: contained / burned out / breached / severed or two groups | Ships lost to a magazine | Lost, side by side |
+|---|---:|---|---:|---|
+| Jutland, now | 124 | 3.3 / 3.0 / 0 / 0 | **0** | Britain 24 / Germany 48 |
+| Jutland, whole train + R 32 | 92 | 4.5 / 23.3 / 2.3 / 0.3 | **0.25** (Tiger, once) | 24 / 53 |
+| Jutland, Britain's whole side on "1916 BCF", settings as now | 94 | 10.8 / 8.8 / 4.0 / 2.3 | **2.25**, all British capital ships | 33 / 48 |
+| Dogger Bank, now | 12.5 | 1.3 / 0 / 0 / 0 | **0** | 7 / 8 |
+| Dogger Bank, whole train + R 32 | 15.5 | 1.8 / 2.5 / 0.5 / 0 | **0** | 8 / 9 |
+| Dogger Bank, Britain on "1916 BCF" | 11.3 | 2.5 / 0 / 0.3 / 0.8 | **0.75** | 6 / 8 |
+| The record (Jutland; from memory, to source) | about 9 | | about 5-7 of 25 lost: Indefatigable, Queen Mary, Invincible, Defence, Black Prince; perhaps Pommern and Frauenlob by torpedo | 14 / 11 |
+
+Four seeds and the panel's spread: read direction only. Jutland's total losses don't move beyond the noise on any rung. Heavy hits run about 9x the record's (the gunnery gap, `error-sources.md`), so judge these by the rate a hit, never by matching a battle's count.
+
+**What the rungs do to the anchors** (`damage-history`, 40 runs):
+
+- Whole train moves **killed a flash** toward the record: Seydlitz 23 -> 45, Derfflinger 24 -> 40, Lion 32 -> 61, Warspite 32 -> 69, the record about 75-80 a turret (Seydlitz, Derfflinger: 10 §3.3-§4.3). The flames do run the train in the record.
+- The German cases burn out, none lost, as the record has it. Lion at both battles sets nothing off. Warspite loses 1 of 40 runs (record: none). The Yalu ironclad 2 of 40 (black powder, doors new to it). Kirishima, on the same rung, 3 of 40.
+- `fire-history` barely moves (no case's "lost" changes), nor `torpedo` (no loss to a magazine; 10.8% of hits on a light cruiser still set one off and none is lost, so V8's open item stands).
+
+**The evidence on R, from memory and to source (`research/REQUESTS.md`, 2026-11-05):** ships lost to a magazine alight with no enemy, presumably lids on: Natal, Vanguard, Mikasa 1905, Tsukuba, Kawachi; with single-base, Iéna and Liberté; Bulwark had charges lying out. Against that, no case is known here of a dry 1900-1918 cordite magazine alight that burned out with the ship afloat. Burned-out magazines in the notes are German brass (the train, in fact, not the magazine), Gneisenau 1942 and Boise 1942. If that holds, Clarkson's R is far above 4-8, and tanks of early single-base (Borodino at Tsushima, by our propellant "tank" R 1.2) may be too.
+
+**Recommended order, the user's call:**
+
+1. **Doctrine by squadron:** a unit's `damage_control` in a scenario, the BCF on rate first at Jutland. Small, and it's the record's biggest single part.
+2. **Doors:** whole train on drill's row, then door ratings as data if the row proves too blunt. Also closes a casualty gap.
+3. **R,** with the research. Without it, drill stays at zero whatever the doors do, and with it a dreadnought's rate is about 0.1% a heavy hit (1 hit in 1,000). What drill's rate should be is the open question: the record's Grand Fleet took about 50 heavy hits and lost none, and Lion's Q was one door from it.
+4. **Thin ships:** passages as stations and magazines joined along them (V2's "where the design has them"), and the boundary table scaled by the ship. A plan step of its own.
+5. **The look:** tier 1 (the column without the fireball) and tier 2. On the whole-train rung that's about 23-26 events a Jutland seed nobody sees today.
+
+The benches: `losses` prints the magazines line; `shipgen magazine --race` no longer stops at a magazine feeding no gun.
+
 ## Open items (from the other docs, folded in)
 
 - E8a item 1 (Chester's fake turrets): V1. E8a item 4 (German turrets burn out): V3.

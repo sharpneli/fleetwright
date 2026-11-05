@@ -139,6 +139,12 @@ public sealed class DamageSystem : IWorldSystem
     public RaceResult LastRace { get; private set; }
     public HitEffect LastEffect { get; private set; }
 
+    /// <summary>What the magazines have done in this world so far (benches: not world state): the hits that lit charges in
+    /// a train, and the races by tier (<see cref="MagazineTier"/>), set off by a hit and by a fire's heat.</summary>
+    public (int[] ByHit, int[] ByFire) MagazineCounts { get; } = (new int[5], new int[5]);
+    int trainsLit;
+    public int TrainsLit => trainsLit;
+
     /// <summary>The last hit's own path (tools: it's overwritten by the next hit).</summary>
     public HitPath LastPath => path;
 
@@ -726,7 +732,9 @@ public sealed class DamageSystem : IWorldSystem
         {
             race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
             (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
+            MagazineCounts.ByHit[(int)race.Tier]++;
         }
+        trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
@@ -1194,6 +1202,7 @@ public sealed class DamageSystem : IWorldSystem
         {
             // fire's heat set it off (fire B2): the venting race decides (docs/battle/magazines.md V3)
             var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
+            MagazineCounts.ByFire[(int)race.Tier]++;
             if (race.Lost)
             {
                 Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);

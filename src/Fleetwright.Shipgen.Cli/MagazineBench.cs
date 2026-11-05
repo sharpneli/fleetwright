@@ -130,7 +130,12 @@ static class MagazineBench
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), s, 0, ref rng, sea);
             double ms = sw.Elapsed.TotalMilliseconds;
-            var mr = Enumerable.Range(0, c.Mounts.Length).FirstOrDefault(m => c.Mounts[m].Magazine == room);
+            int mr = Enumerable.Range(0, c.Mounts.Length).FirstOrDefault(m => c.Mounts[m].Magazine == room, -1);
+            if (mr < 0)
+            {
+                Console.WriteLine($"    {c.RoomId(room)}: feeds no gun");   // a carrier's stores, say
+                continue;
+            }
             var ch = c.Charges[c.Mounts[mr].Type];
             Console.WriteLine(string.Format(Inv, "    {0}: {1} — {2:0} charges of {3:0} kg ({4}), peak {5:0} kPa, burned {6:0.0} t ({7:0.0} t by the girder's failure + 1 s), " +
                 "girder lost {8:0.00} at {19:0.00} of her length (load {20:0.00} of what's left{21}), gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
