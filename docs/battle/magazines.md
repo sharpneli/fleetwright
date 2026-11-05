@@ -775,7 +775,7 @@ The count looks right and isn't: it's 5 on about 8x the record's heavy hits. **A
 | Asama class at Tsushima (Azuma, Izumo, Tokiwa) | | 7 in 24 ship-battles | none |
 | Russia at Tsushima, broken by a magazine | | 0 (tanks: 6 of 9 breached) | Borodino |
 | Jutland, lost to a magazine a seed | 5.25 | 5.25 | 5-7 |
-| Battlecruisers, Jutland | 3.25 | 3.5 | 3 |
+| Battlecruisers, Jutland | 3.25 | 3.75 | 3 |
 | Armoured cruisers, Jutland | 0 | **0** (10 lost in 4 seeds, by water; 3 races, all breached) | 2 |
 | German capital ships, Jutland | 2.0 | 1.0 | 0 by gunfire |
 | Seydlitz's case, `damage-history`, lost to a magazine | 0 of 40 | 3 of 40 | none |
