@@ -735,9 +735,9 @@ A German capital ship set off burns out nearly 3 magazines and fights on, which 
 | German capital ships | 2.0 | 0 by gunfire |
 | Ships with a magazine set off, of them lost any way | 11.6, 10.2 (88%) | |
 
-The count looks right and isn't: it's 5 on about 8x the record's heavy hits. **At the record's 220 hits this would be about 0.7, so the rate a hit is about a seventh of the record's overall**: rate first about 2.5x under, armoured cruisers 10x or more, German capital ships about right.
+The count looks right and isn't: it's 5 on about 8x the record's heavy hits. **At the record's 220 hits this would be about 0.7, so the rate a hit is a seventh to a tenth of the record's overall**: rate first about 2.5x under, armoured cruisers 10x or more, German capital ships about right.
 
-**"Once it burns" now nearly holds:** 88% of the ships set off at Jutland are lost, by one way or another. 2.8 of 3.0 German capital ships, against 0 of 4 before. Those not broken go by the sea through what she opened.
+**"Once it burns" now nearly holds:** 88% of the ships set off at Jutland are lost, by one way or another. Of German capital ships set off, the race itself now breaks 2.0 of 3.0 a seed, against 0 of 4 on fixes 1-3, and 2.8 are lost any way. Those not broken go by the sea through what she opened.
 
 **Misses to look at, none fixed:**
 
