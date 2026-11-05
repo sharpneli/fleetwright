@@ -201,7 +201,7 @@ expects to move. The full output is in `docs/battle/explosions-baseline/` (`bala
 | Åland, 1921: Finland | 6.0 | - | Sweden | 4.1 | - | foundered 53%, capsized 44%, broke in two 3% |
 
 - **All together:** 5 of 14 sides within about twice the record; the record's loser lost more in 23 of 44 seeds; capsized 54%,
-  foundered 32%, broke in two 8%, magazine 6%. Every broken ship today is a torpedo's or a mine's work, so EX3 should raise that.
+  foundered 32%, broke in two 8%, magazine 6%. Every ship broken in two today is a torpedo's work (a magazine's break logs as magazine), so EX3 should raise that.
 - **Magazines at Jutland, a seed** (`losses`): 1,748 heavy hits, 82.8 of them lit charges in a train. Set off by a hit: contained 8.5,
   burned out 0.5, breached 2.0, severed 0.5, two groups 3.0. By a fire: contained 0.3, severed 0.3.
 - **Mind the noise:** Jutland's seeds ran 65-90 lost and the Dogger Bank's 9-26, so a small move in EX7 means nothing here.
