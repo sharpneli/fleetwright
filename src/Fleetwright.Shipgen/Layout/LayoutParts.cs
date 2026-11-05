@@ -435,7 +435,10 @@ public sealed partial class Layout
                 zones.Add(new Zone(groups[grp].X0, groups[grp].X1, ghw, rooms[grp]));
         var stowed = Ordnance.Stow(lay, mounts, zones);
         if (plan is not null)
+        {
             Ordnance.AddHandlingRooms(lay, own, stowed, innerHw);
+            Ordnance.AddPassages(lay, mounts, stowed);
+        }
     }
 
     /// <summary>The machinery space for the solved ship res, centred near x. Stores the plan in lay.geo.plant and

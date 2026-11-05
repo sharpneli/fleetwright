@@ -162,6 +162,7 @@ static class MagazineBench
         StationKind.Chamber => "working chamber",
         StationKind.Casemate => "casemate",
         StationKind.Handling => "handling room",
+        StationKind.Passage => "passage",
         _ => "magazine",
     };
 }

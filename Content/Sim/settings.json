@@ -609,11 +609,11 @@
   "KeyManShare": 0.1,
   "KeyManMin": [5, 30],
   "MagazineFlashChance": 0.25,
-  "StationLightChance": [0.5, 0.5, 0.5, 0.5],
+  "StationLightChance": [0.5, 0.5, 0.5, 0.5, 0.5],
   "FlashDisciplines": [
-    { "Name": "safe", "DoorOpen": [0, 0, 0, 0], "StationCharges": 0.5, "LidsOff": 0, "HoistShare": 1.7 },
-    { "Name": "drill", "DoorOpen": [1, 1, 0.02, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },
-    { "Name": "rate first", "DoorOpen": [1, 1, 0.5, 1], "StationCharges": 2, "LidsOff": 1, "HoistShare": 1.0 }
+    { "Name": "safe", "DoorOpen": [0, 0, 0, 0, 0], "StationCharges": 0.5, "LidsOff": 0, "HoistShare": 1.7 },
+    { "Name": "drill", "DoorOpen": [1, 1, 0.2, 0.1, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },
+    { "Name": "rate first", "DoorOpen": [1, 1, 0.5, 1, 1], "StationCharges": 2, "LidsOff": 1, "HoistShare": 1.0 }
   ],
   "MagazineOrderS": 120,
   "MagazineSprinkleS": 60,

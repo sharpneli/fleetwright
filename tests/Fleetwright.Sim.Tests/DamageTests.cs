@@ -472,23 +472,28 @@ public class DamageTests(ITestOutputHelper output)
     public void A_magazine_set_off_by_a_hit_records_its_room_once()
     {
         // every charge lighting the next at once (magazines.md V3): the race severs her, as the record's case wants
-        var w = World("dreadnought", out int c, Settings with
-        {
-            MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
-        });
         var cls = Class("dreadnought");
         // a WWII shell (proofed to 30° on a calibre of plate): a WWI British one shatters on her belt at this fall (P2)
         var (shell, _) = Shell(Class("kgv"), 0);
-        w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
-        w.AdvanceTo(w.Time + 1000);
-        var rng = RandomStream.Named(2, "test magazine hits");
+        // she may go down by what an end magazine opened instead: a fresh ship until one breaks her
+        World w = null!;
         int n = 0;
-        for (; n < 2000 && Ship(w, 1).Alive && w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1)).Status == ShipStatus.Afloat; n++)
-            w.Damage.Strike(w, new Hit
+        for (ulong seed = 2; seed < 22 && (w == null || Snap(w).Blasts.Count == 0); seed++)
+        {
+            w = World("dreadnought", out int c, Settings with
             {
-                Ship = 1, Ms = w.Time.Ms, Point = new P3(rng.NextDouble(-60, 60), cls.Beam / 2 + 1, rng.NextDouble(-2, 10)),
-                Direction = new P3(0, -0.8, -0.6), SpeedMs = 500, Shell = shell, ShellType = 0,
+                MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
             });
+            w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
+            w.AdvanceTo(w.Time + 1000);
+            var rng = RandomStream.Named(seed, "test magazine hits");
+            for (n = 0; n < 2000 && Ship(w, 1).Alive && w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1)).Status == ShipStatus.Afloat; n++)
+                w.Damage.Strike(w, new Hit
+                {
+                    Ship = 1, Ms = w.Time.Ms, Point = new P3(rng.NextDouble(-60, 60), cls.Beam / 2 + 1, rng.NextDouble(-2, 10)),
+                    Direction = new P3(0, -0.8, -0.6), SpeedMs = 500, Shell = shell, ShellType = 0,
+                });
+        }
         var b = Snap(w).Blasts;
         output.WriteLine($"blew after {n} hits: room {b.Room[0]}, {b.Cause[0]}");
         Assert.Equal(1, b.Count);

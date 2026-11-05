@@ -206,6 +206,9 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-11-05, the interwar single-base told from the early (docs/battle/magazines.md "Too safe"), on purpose: design
   format 20 gives Treaty and Second War blocks on single-base `"propellant": "stabilised single-base"`. Every case's
   version changes and nothing built: no SVG or sprite.json moves. ShipDesign.Version 56.
+- 2026-11-05, ammunition passages (docs/battle/magazines.md "Ammunition passages"), on purpose: a gun far from its magazine
+  gets a `passage` room, sharing the cells it runs through. 228 cases' rooms change; no weight, SVG or sprite.json moves.
+  ShipDesign.Version 57.
 
 ## Layout
 

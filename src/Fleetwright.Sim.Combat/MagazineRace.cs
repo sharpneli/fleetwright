@@ -394,6 +394,16 @@ public static partial class Magazines
                         if (c.Rooms[rm].Kind == RoomKind.Magazine && lits < lit.Length && lit[..lits].IndexOf(rm) < 0)
                             Light(c, k, rm, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
                 }
+        // and along the ammunition passages that join them (research 07 §1, §2.4: Defence), which give with the same bulkheads
+        for (int l = 0; l < lits; l++)
+        {
+            int group = c.PassageGroup(lit[l]);
+            if (group < 0)
+                continue;
+            for (int rm = 0; rm < c.Rooms.Length && lits < lit.Length; rm++)
+                if (c.Rooms[rm].Kind == RoomKind.Magazine && c.PassageGroup(rm) == group && lit[..lits].IndexOf(rm) < 0)
+                    Light(c, k, rm, mounts, fed, lit, ref lits, ref nOpen, ref nCased, ref massSum, flash, s, id, ref v, ref a);
+        }
     }
 
     /// <summary>The share of a magazine's stow under water: its water over its spaces' room for it.</summary>

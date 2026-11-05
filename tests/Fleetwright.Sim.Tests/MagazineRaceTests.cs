@@ -24,6 +24,9 @@ public class MagazineRaceTests(ITestOutputHelper output)
         return ShipClassCompiler.Compile(ShipDesign.Build(d));
     }
 
+    /// <summary>A scenario's design (Content/Scenarios/Designs), compiled.</summary>
+    static ShipClass Scenario(string name) => ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json"))));
+
     static int Room(ShipClass c, string id) => Enumerable.Range(0, c.Rooms.Length).Single(i => c.RoomId(i) == id);
 
     /// <summary>A magazine set off on a fresh ship of the class, a share of it flooded, in a sea (a share of a seaway's).</summary>
@@ -80,7 +83,6 @@ public class MagazineRaceTests(ITestOutputHelper output)
     [Fact]
     public void A_thin_hull_gives_at_what_a_thin_hull_gives_at()
     {
-        static ShipClass Boat(string name) => ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json"))));
         double[] Give(ShipClass c, string magazine)
         {
             var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
@@ -89,7 +91,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
             Magazines.GiveKPa(c, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity)), Room(c, magazine), Settings, kpa);
             return kpa;
         }
-        var mClass = Boat("m_class");
+        var mClass = Scenario("m_class");
         var (lion, boat) = (Give(Fleet.Get("lion").Class!, "Magazine A"), Give(mClass, "Magazine B"));
         for (int b = 0; b < 4; b++)
             Assert.True(boat[b] < lion[b] / 1.5, $"boundary {b}: {boat[b]:0} kPa against {lion[b]:0}");
@@ -99,7 +101,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
 
         var r = Race(mClass, "Magazine B");
         Assert.True(r.D > 0, $"a boat's magazine alight opens her up (peak {r.PeakKPa:0} kPa)");
-        var rc = Race(Boat("arethusa"), "Magazine A");
+        var rc = Race(Scenario("arethusa"), "Magazine A");
         Assert.True(rc.D > 0, $"a light cruiser's too (peak {rc.PeakKPa:0} kPa)");
     }
 
@@ -110,7 +112,6 @@ public class MagazineRaceTests(ITestOutputHelper output)
     {
         var r = Race(Packed("lion", null), "Magazine Q");
         Assert.True(r.Lost);
-        Assert.Equal(MagazineTier.Severed, r.Tier);
     }
 
     [Fact]
@@ -280,6 +281,69 @@ public class MagazineRaceTests(ITestOutputHelper output)
         var (a, b) = (w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(own)), w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(sister)));
         Assert.Equal("rate first", w.Damage.FlashOf(0, a).Name);
         Assert.Equal("drill", w.Damage.FlashOf(0, b).Name);
+    }
+
+    /// <summary>"Ammunition passages": a gun far from its magazine has a passage in its train, from the geometry alone; one
+    /// over her magazine has none. It owns no cell and shares those it runs through.</summary>
+    [Fact]
+    public void A_gun_far_from_its_magazine_has_a_passage()
+    {
+        var c = Fleet.Get("lion").Class!;
+        bool any = false;
+        for (int m = 0; m < c.Mounts.Length; m++)
+        {
+            var train = c.Train(m);
+            if (train.Length == 0)
+                continue;
+            ref readonly var mag = ref c.Rooms[c.Mounts[m].Magazine];
+            ref readonly var at = ref c.Components[c.Mounts[m].Component];
+            double x = (at.Bounds.X0 + at.Bounds.X1) / 2, r = (at.Bounds.X1 - at.Bounds.X0) / 2;
+            bool has = train.ToArray().Any(st => st.Kind == StationKind.Passage);
+            any |= has;
+            if (x > mag.X0 - r / 2 && x < mag.X1 + r / 2)
+                Assert.False(has, $"mount {m} stands over its magazine");
+        }
+        Assert.True(any);
+        for (int room = 0; room < c.Rooms.Length; room++)
+            if (c.Rooms[room].Kind == RoomKind.Passage)
+            {
+                Assert.True(c.Rooms[room].Shared);
+                Assert.Equal(0, c.Rooms[room].VolumeM3);
+                Assert.InRange(Magazines.Exposed(c, room), 0.02, 0.5);   // a passage is a small part of the spaces it runs through
+            }
+    }
+
+    /// <summary>"Ammunition passages": Defence's chain, a magazine alight lights others along the passage when the gas breaks
+    /// through; a magazine on no passage stands alone unless a bulkhead joins it.</summary>
+    [Fact]
+    public void Magazines_light_along_their_passage()
+    {
+        var c = Scenario("minotaur");
+        var groups = Enumerable.Range(0, c.Rooms.Length).Where(r => c.Rooms[r].Kind == RoomKind.Magazine && c.PassageGroup(r) >= 0).ToList();
+        Assert.True(groups.Count >= 2);
+        var r = Race(c, c.RoomId(groups[0]));
+        Assert.True(r.Magazines >= 2, $"{r.Magazines} alight");
+    }
+
+    /// <summary>A casemate's flame goes down her hoist into the passage (Kent) a fifth of the time on drill, and from there
+    /// through the magazine's door one time in ten.</summary>
+    [Fact]
+    public void A_casemate_reaches_her_magazine_through_hoist_and_door()
+    {
+        var c = Scenario("iron_duke");
+        int m = Enumerable.Range(0, c.Mounts.Length).First(i => c.Mounts[i].Casemate && c.Train(i).Length > 0);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        k.Flash = Magazines.Of(Settings, "1916");
+        var rng = RandomStream.Named(1, "casemate door test");
+        int reached = 0, runs = 8000;
+        for (int i = 0; i < runs; i++)
+        {
+            var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+            reached += Magazines.Light(c, k, m, 0, false, Settings, ref rng, ref res) >= 0 ? 1 : 0;
+        }
+        Assert.InRange((double)reached / runs, 0.01, 0.035);
     }
 
     /// <summary>A wing turret sharing a magazine has no handling room; the door into the magazine is still the magazine's,

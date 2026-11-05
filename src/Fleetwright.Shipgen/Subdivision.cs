@@ -21,6 +21,7 @@ public static class Subdivision
         RoomKind.CargoTank or RoomKind.Hold => 5,
         RoomKind.Stores or RoomKind.DoubleBottom or RoomKind.Tds or RoomKind.Hangar => 4,
         RoomKind.Accommodation => 2,
+        RoomKind.Passage => 1,   // owns no cell: it runs through those on its way
     };
 
     /// <summary>The share of a room's volume water can fill.</summary>
@@ -29,7 +30,7 @@ public static class Subdivision
         RoomKind.Magazine or RoomKind.Hold or RoomKind.Stores => 0.6,
         RoomKind.TorpedoRoom or RoomKind.Handling or RoomKind.Steering or RoomKind.BoilerRoom or RoomKind.EngineRoom
             or RoomKind.TransmittingStation => 0.85,
-        RoomKind.FuelTank or RoomKind.Bunker or RoomKind.CargoTank or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds => 0.95,
+        RoomKind.FuelTank or RoomKind.Bunker or RoomKind.CargoTank or RoomKind.Accommodation or RoomKind.DoubleBottom or RoomKind.Tds or RoomKind.Passage => 0.95,
         RoomKind.Hangar => 0.9,
     };
     const double CoalPermeability = 0.4;
@@ -295,7 +296,7 @@ public static class Subdivision
         double under = ag.RoofZ is double roofZ ? roofZ - D : 0.0;
         var adecks = ag.Decks.Select(d => (Z: Rz(d.Z), d.X0, d.X1, d.Mm, d.Material)).ToList();
 
-        var rooms = lay.Compartments.Where(c => c.Kind != RoomKind.Hangar).Select(c =>
+        var rooms = lay.Compartments.Where(c => c.Kind is not (RoomKind.Hangar or RoomKind.Passage)).Select(c =>
             new RoomBox(c, c.X0, c.X1, (c.Y ?? 0.0) - c.HalfWidth, (c.Y ?? 0.0) + c.HalfWidth, c.Base ?? ib, c.Top ?? under)).ToList();
         Platforms(dks, rooms);
         var tiers = new List<Tier>();
@@ -717,6 +718,23 @@ public static class Subdivision
             ro.Cells.Add(nearest.Id);
             ro.Shared = true;
         }
+        // an ammunition passage shares the spaces it runs through (Ordnance.AddPassages): those on the centreline at its
+        // height, all along it
+        var passages = lay.Compartments.Where(c => c.Kind == RoomKind.Passage).ToList();
+        foreach (var p in passages)
+        {
+            var through = cells.Where(c => Ov(p.X0, p.X1, c.X0, c.X1) > 1e-6 && c.Y0 <= 1e-6 && c.Y1 >= -1e-6 &&
+                                           Ov(p.Base ?? ib, p.Top ?? under, c.Base, c.Top) > 0.5 * ((p.Top ?? under) - (p.Base ?? ib))).ToList();
+            if (through.Count == 0)
+                continue;
+            roomOut[p.Id] = new Room { Id = p.Id, Kind = p.Kind, Mount = p.Mount, Mounts = p.Mounts, Shared = true, Cells = through.Select(c => c.Id).ToList() };
+            foreach (var c in through)
+            {
+                if (!also.TryGetValue(c.Id, out var al))
+                    also[c.Id] = al = [];
+                al.Add(p.Id);
+            }
+        }
 
         foreach (var c in cells)
         {
@@ -811,6 +829,9 @@ public static class Subdivision
             r.Base = Math.Round(own.Min(c => c.Base), 2);
             r.Top = Math.Round(own.Max(c => c.Top), 2);
         }
+        foreach (var p in passages)   // its own stretch, not the cells' it shares
+            if (roomOut.TryGetValue(p.Id, out var ro))
+                (ro.X0, ro.X1, ro.Base, ro.Top) = (Math.Round(p.X0, 3), Math.Round(p.X1, 3), Math.Round(p.Base ?? ib, 2), Math.Round(p.Top ?? under, 2));
 
         // ---------------- published precision ----------------
         foreach (var c in cells)

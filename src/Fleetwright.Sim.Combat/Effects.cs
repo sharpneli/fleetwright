@@ -643,7 +643,7 @@ public static class Effects
                 (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
         }
         else if (t.Burst != BurstKind.Outside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
-                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < Magazines.LightChance(c, k, hm, hs, s))
+                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < Magazines.Exposed(c, gasHandling) * Magazines.LightChance(c, k, hm, hs, s))
             (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, hit.Ms), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         if (reached >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
@@ -802,7 +802,7 @@ public static class Effects
                 bool hot = cell == burstCell || k.BlastBefore[cell] < hotM3;
                 if (kind == RoomKind.Magazine && cell != burstCell && hot && felt > best)
                     (magazine, best) = (room, felt);
-                else if (kind == RoomKind.Handling && hot && handling < 0 && c.Rooms[room].Mount >= 0)
+                else if (kind is RoomKind.Handling or RoomKind.Passage && hot && handling < 0 && c.Rooms[room].Mount >= 0)
                     (handling, inHandling) = (room, cell == burstCell);
             }
         }
@@ -922,7 +922,7 @@ public static class Effects
                 double into = counted * Vital(c, room, s) + (big < 0 && cloud.BigJ >= s.RoomFragilityJ ? Vital(c, room, s) : 0);
                 if (into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into))
                     Harm(ref res, k, node);
-                if (rr.Kind == RoomKind.Handling && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && c.StationOfRoom(m, room) is var st and >= 0)
+                if (rr.Kind is RoomKind.Handling or RoomKind.Passage && rr.Mount >= 0 && c.MountOf(rr.Mount) is int m and >= 0 && c.StationOfRoom(m, room) is var st and >= 0)
                     (open, openSt) = (m, st);   // a shield's handling room too: its train starts there (decision 4)
                 else if (rr.Kind == RoomKind.Magazine && magazine < 0)
                     magazine = room;
@@ -956,7 +956,7 @@ public static class Effects
         double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
         if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance)
             (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Stations) = (true, magazine, MagazineVia.Spall, res.Stations + 1);
-        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * Magazines.LightChance(c, k, open, openSt, s) &&
+        if (open >= 0 && !res.Magazine && r.NextDouble() < lights * Magazines.Exposed(c, c.Train(open)[openSt].Room) * Magazines.LightChance(c, k, open, openSt, s) &&
             Magazines.Light(c, k, open, openSt, burning: false, s, ref r, ref res) is int reached and >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, MagazineVia.Spall);
     }

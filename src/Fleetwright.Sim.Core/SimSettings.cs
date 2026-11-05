@@ -1766,7 +1766,7 @@ public sealed record SimSettings
     /// <item>the doors and the charges lying at the stations are the side's flash discipline's
     /// (<see cref="FlashDisciplines"/>, V5).</item>
     /// </list></summary>
-    public double[] StationLightChance { get; init; } = [0.5, 0.5, 0.5, 0.5];
+    public double[] StationLightChance { get; init; } = [0.5, 0.5, 0.5, 0.5, 0.5];
 
     /// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6,
     /// magazine_race_ref.py): a magazine alight is one gas volume, its spaces' gas, made by the lit charges' surface and
@@ -1836,21 +1836,23 @@ public sealed record SimSettings
     /// <item><b>drill:</b> the flash doors in the turret's train don't stop a burning charge (10 §3.1, §3.3: "too weak to
     /// resist the pressure" [SRC: Brown]; the record's flames ran the train, Seydlitz, Derfflinger, Lion's Q), so the flame
     /// goes down to the handling room; the magazine's own door opens as the charge passes, about 10% of the time, and holds
-    /// when shut (Lion's buckled and held). A casemate's hoist and its passage's magazine door in series, well under 5%
-    /// (Kent, §5). About a charge a gun at each station [SRC: Brown, 8 in a twin turret's train in action].</item>
+    /// when shut (Lion's buckled and held). A casemate's hoist 20% [EST], in series with the magazine's door, 2% (Kent, §5:
+    /// the flash into the passage, stopped at the shut door). About a charge a gun at each station [SRC: Brown, 8 in a twin
+    /// turret's train in action].</item>
     /// <item><b>rate first:</b> doors propped or removed (the BCF, Seydlitz's connecting door), charges stacked at the
     /// stations, the Clarkson cases' lids off in the magazine (10 §6.2's BCF anchor; whether the lids came off in the
     /// magazine or only in the handing room is 10 §8's open question, Friedman against Brown) [EST]; the hoists hardly
     /// wait.</item>
     /// </list>
-    /// DoorOpen by the station above the door [gunhouse, working chamber, casemate, handling room]; StationCharges a gun;
+    /// DoorOpen by the station above the door [gunhouse, working chamber, casemate, handling room, passage], the door into a
+    /// magazine always the magazine's own (a handling room's) and a casemate's hoist before it; StationCharges a gun;
     /// LidsOff the share of a magazine's stow lying open; HoistShare the hoists' sustained reload over the drill's
     /// (fire-control F6d's <c>DesignerPlaceholders.HoistShare</c>, 1.5, is drill's).</summary>
     public FlashDiscipline[] FlashDisciplines { get; init; } =
     [
-        new() { Name = "safe", DoorOpen = [0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7 },
-        new() { Name = "drill", DoorOpen = [1, 1, 0.02, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
-        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0 },
+        new() { Name = "safe", DoorOpen = [0, 0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7 },
+        new() { Name = "drill", DoorOpen = [1, 1, 0.2, 0.1, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
+        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0 },
     ];
     public int MagazineLossMs { get; init; } = 60_000;
 

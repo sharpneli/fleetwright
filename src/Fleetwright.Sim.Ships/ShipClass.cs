@@ -54,6 +54,11 @@ public sealed class ShipClass
     internal int[] functionNodes = [], mountOfComponent = [];
     internal StationRow[] stations = [];
     internal Slice[] trains = [];
+    internal int[] passageGroup = [];
+
+    /// <summary>The magazines joined by ammunition passages (docs/battle/magazines.md "Ammunition passages"): a magazine room's
+    /// group, -1 for one on no passage. Those of one group light one from the next when the gas breaks through.</summary>
+    public int PassageGroup(int room) => room < passageGroup.Length ? passageGroup[room] : -1;
     internal double[] liftKPa = [], boreM2 = [];
     internal double[] powerKn = [], powerShp = [], fuelShares = [], fuelKgS = [];
     internal string[] componentIds = [], turretTypeIds = [], cellIds = [], roomIds = [], bulkheadIds = [], deckIds = [], tierIds = [],

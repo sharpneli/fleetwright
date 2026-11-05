@@ -480,6 +480,39 @@ public static class Ordnance
         }
     }
 
+    /// <summary>An ammunition passage from each magazine to the mounts it feeds that don't stand over it (docs/battle/magazines.md
+    /// "Ammunition passages"; research 07 §1, 10 §5): charges on their way along the ship, from the magazine's crown to the
+    /// deck over it, as far as the farthest of them. Nothing asks for one: a gun far from its magazine needs a way for its
+    /// charges. It runs through the spaces on its way, sharing their cells (<see cref="Subdivision"/>).</summary>
+    public static void AddPassages(Layout lay, IReadOnlyList<Mount> mounts, Dictionary<string, (double X0, double X1, double Base, double Top)> stowed)
+    {
+        var plan = lay.Geo.Plant!;
+        double D = plan.Decks[0];
+        foreach (var g in mounts.Where(m => m.Magazine != null).GroupBy(m => m.Magazine!))
+        {
+            if (!stowed.TryGetValue(g.Key, out var mg))
+                continue;
+            var far = g.Where(m => m.X < mg.X0 - m.T.R || m.X > mg.X1 + m.T.R).ToList();
+            if (far.Count == 0)
+                continue;
+            double over = double.NaN;
+            foreach (double z in plan.Decks)
+                if (z - D > mg.Top + 0.05 && z <= plan.Top + 1e-6 && !(z - D >= over))
+                    over = z - D;
+            if (double.IsNaN(over))
+                continue;
+            lay.Compartments.Add(new Compartment
+            {
+                Id = $"Passage {(g.Key.StartsWith("Magazine ", StringComparison.Ordinal) ? g.Key["Magazine ".Length..] : g.Key)}", Kind = RoomKind.Passage,
+                X0 = Math.Min(mg.X0, far.Min(m => m.X)), X1 = Math.Max(mg.X1, far.Max(m => m.X)), HalfWidth = PassageHalfWidthM, Base = mg.Top, Top = over,
+                Mount = far[0].Id, Mounts = far.Select(m => m.Id).ToList(),
+            });
+        }
+    }
+
+    /// <summary>An ammunition passage's half width, m: room for a man and a trolley, each way [EST].</summary>
+    public const double PassageHalfWidthM = 1.0;
+
     /// <summary>A handling room over each mount's own magazine (protection-plan.md H1): from its crown to the deck over
     /// it, as long as the magazine. The flash path's first space; nothing stowed in it.</summary>
     public static void AddHandlingRooms(Layout lay, IReadOnlyList<Mount> mounts, Dictionary<string, (double X0, double X1, double Base, double Top)> stowed,

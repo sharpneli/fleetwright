@@ -70,7 +70,7 @@ public sealed class ProtectionSection
     static (string Name, string Short) KindNames(RoomKind? k) => k switch
     {
         null => ("void", ""),
-        RoomKind.Magazine => ("magazine", "mag"), RoomKind.Handling => ("handling room", "handling"), RoomKind.Stores => ("stores", "stores"),
+        RoomKind.Magazine => ("magazine", "mag"), RoomKind.Handling => ("handling room", "handling"), RoomKind.Passage => ("ammunition passage", "passage"), RoomKind.Stores => ("stores", "stores"),
         RoomKind.Tds => ("torpedo protection", "TDS"), RoomKind.Bunker => ("coal", "coal"), RoomKind.EngineRoom => ("engine room", "engines"),
         RoomKind.BoilerRoom => ("boiler room", "boilers"), RoomKind.DoubleBottom => ("double bottom", ""), RoomKind.Accommodation => ("quarters", ""),
         RoomKind.Steering => ("steering gear", "steering"), RoomKind.TorpedoRoom => ("torpedo room", "torpedoes"), RoomKind.FuelTank => ("oil", "oil"),
@@ -395,7 +395,7 @@ public sealed class ProtectionSection
         [RoomKind.Tds] = Rgb(0x4FA3B8, 0.30f), [RoomKind.Bunker] = Rgb(0x05070A, 0.62f), [RoomKind.EngineRoom] = Rgb(0x928E85, 0.34f),
         [RoomKind.BoilerRoom] = Rgb(0x928E85, 0.34f), [RoomKind.DoubleBottom] = Rgb(0x2E4A66, 0), [RoomKind.Accommodation] = Rgb(0xC1BDB5, 0.04f),
         [RoomKind.Steering] = Rgb(0x8E8A82, 0.2f), [RoomKind.TorpedoRoom] = Rgb(0x9D9991, 0.22f), [RoomKind.FuelTank] = Rgb(0x5B4A2A, 0.4f),
-        [RoomKind.TransmittingStation] = Rgb(0x9D9991, 0.3f),
+        [RoomKind.TransmittingStation] = Rgb(0x9D9991, 0.3f), [RoomKind.Passage] = Rgb(0xCC6F43, 0.24f),
     };
 
     /// <summary>The legend's swatches: (kind, label).</summary>

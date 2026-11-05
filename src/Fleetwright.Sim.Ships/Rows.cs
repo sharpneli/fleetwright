@@ -154,6 +154,8 @@ public enum StationKind : byte
     Chamber,
     Casemate,
     Handling,
+    /// <summary>An ammunition passage: charges on their way along the ship (docs/battle/magazines.md "Ammunition passages").</summary>
+    Passage,
     Magazine,
 }
 

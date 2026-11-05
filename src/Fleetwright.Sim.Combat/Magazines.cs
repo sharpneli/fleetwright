@@ -1,3 +1,4 @@
+using Fleetwright.Shipgen;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
 
@@ -77,8 +78,26 @@ public static partial class Magazines
     /// <summary>How often the door below a station stands open to the flame. The door into a magazine is the magazine's own,
     /// whatever's above it: a wing turret sharing a magazine has no handling room, and her working chamber's flash doors
     /// aren't what stands between the flame and her charges (a casemate's hoist and passage have theirs in series).</summary>
-    static double DoorOpen(in FlashDiscipline flash, StationKind above, StationKind below) =>
-        flash.DoorOpen[(int)(below == StationKind.Magazine && above != StationKind.Casemate ? StationKind.Handling : above)];
+    static double DoorOpen(in FlashDiscipline flash, StationKind above, StationKind below)
+    {
+        if (below != StationKind.Magazine)
+            return flash.DoorOpen[(int)above];
+        double own = flash.DoorOpen[(int)StationKind.Handling];
+        return above == StationKind.Casemate ? flash.DoorOpen[(int)StationKind.Casemate] * own : own;   // her hoist, then the door
+    }
+
+    /// <summary>The share of a burst in a space that finds the charges of a station there: all of a handling room's; of a
+    /// space a passage runs through, the passage's width in its (Ordnance.PassageHalfWidthM). Other stations: 1.</summary>
+    public static double Exposed(ShipClass c, int room)
+    {
+        if (room < 0 || c.Rooms[room].Kind != RoomKind.Passage)
+            return 1;
+        double width = 0;
+        var cells = c.Links(c.Rooms[room].Cells);
+        foreach (int cell in cells)
+            width += c.Cells[cell].Box.Y1 - c.Cells[cell].Box.Y0;
+        return cells.Length == 0 ? 0 : Math.Min(1, 2 * Fleetwright.Shipgen.Ordnance.PassageHalfWidthM * cells.Length / width);
+    }
 
     /// <summary>A magazine's flooding ordered, its valves to open at <paramref name="atMs"/> (the earlier order stands).</summary>
     public static void Order(ShipCondition k, int room, long atMs)
@@ -154,6 +173,17 @@ public static partial class Magazines
             return;
         }
         var cells = c.Links(c.Rooms[st.Room].Cells);
+        if (st.Kind == StationKind.Passage)
+        {
+            // it runs through other spaces: the charges burn where they lie, somewhere along it, not all along it [EST]
+            if (cells.Length > 0)
+            {
+                int at = cells[cells.Length / 2];
+                Casualties.Flash(k, Casualties.Cell(c, at), false, s);
+                res.Fire |= Fires.Ignite(c, k, at, s.ReadyAmmoSeatMW, s, mj);
+            }
+            return;
+        }
         foreach (int cell in cells)
             Casualties.Flash(k, Casualties.Cell(c, cell), turret, s);
         if (cells.Length > 0)

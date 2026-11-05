@@ -31,6 +31,8 @@ public enum RoomKind : byte
     Hangar,
     /// <summary>A battery's fire-control computer and its crew, under the armour (fire-control.md F4c).</summary>
     TransmittingStation,
+    /// <summary>Charges on their way along the ship to guns far from their magazine: it owns no cell, it runs through those on its way (docs/battle/magazines.md "Ammunition passages").</summary>
+    Passage,
 }
 
 /// <summary>A hitbox component's kind. Main, Secondary and Torpedo are the mounts by battery (the mount table); AA mounts
