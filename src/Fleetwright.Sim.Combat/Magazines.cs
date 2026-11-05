@@ -56,16 +56,52 @@ public static partial class Magazines
         throw new ArgumentException($"no flash discipline \"{flash}\"");
     }
 
+    /// <summary>A flash discipline read between the rows (<see cref="SimSettings.FlashDisciplines"/>, safest first): at a
+    /// share of the way from the first (0) to the last (1) (a side's <see cref="SimSettings.Stupidity"/>).</summary>
+    public static FlashDiscipline At(SimSettings s, double share)
+    {
+        var rows = s.FlashDisciplines;
+        double at = Math.Clamp(share, 0, 1) * (rows.Length - 1);
+        int i = Math.Min((int)at, rows.Length - 2);
+        double t = at - i;
+        ref readonly var a = ref rows[i];
+        ref readonly var b = ref rows[i + 1];
+        double Mix(double x, double y) => x + (y - x) * t;
+        var doors = new double[a.DoorOpen.Length];
+        for (int d = 0; d < doors.Length; d++)
+            doors[d] = Mix(a.DoorOpen[d], b.DoorOpen[d]);
+        return new FlashDiscipline
+        {
+            Name = "stupidity", DoorOpen = doors, StationCharges = Mix(a.StationCharges, b.StationCharges), LidsOff = Mix(a.LidsOff, b.LidsOff),
+            HoistShare = Mix(a.HoistShare, b.HoistShare), StackShare = Mix(a.StackShare, b.StackShare),
+        };
+    }
+
+    /// <summary>The rounds a discipline stacks at a station of a mount's train, out of the magazine: its share of her rounds,
+    /// shared over the places in her train there's room for them (the working chamber, the handling room, a passage; research
+    /// 10 §3.2: the BCF's "direct train of cordite", Bulwark's passages).</summary>
+    public static double Stacked(ShipClass c, int mount, StationKind at, in FlashDiscipline flash)
+    {
+        if (!(flash.StackShare > 0) || at is not (StationKind.Chamber or StationKind.Handling or StationKind.Passage))
+            return 0;
+        int places = 0;
+        foreach (ref readonly var st in c.Train(mount))
+            if (st.Kind is StationKind.Chamber or StationKind.Handling or StationKind.Passage)
+                places++;
+        return flash.StackShare * Math.Max(c.Mounts[mount].Rounds, 0) / places;
+    }
+
     /// <summary>How likely a burst, its spall or its gas at a station of a mount's train lights the charges lying there
     /// (docs/battle/magazines.md V8): each lights with <see cref="SimSettings.StationLightChance"/> by the station's kind,
-    /// and there are the discipline's charges a gun times the mount's guns, so 1 - (1 - q)^n: a twin on drill 0.75, on
-    /// safe 0.5, on rate first 0.94.</summary>
+    /// and there are the discipline's charges a gun times the mount's guns and any stack there, so 1 - (1 - q)^n: a twin on
+    /// drill 0.75, on safe 0.5, on rate first 0.94 before its stack.</summary>
     public static double LightChance(ShipClass c, ShipCondition k, int mount, int station, SimSettings s)
     {
         var kind = c.Train(mount)[station].Kind;
         if (kind == StationKind.Magazine)
             return s.MagazineFlashChance;
-        double n = Discipline(k, s).StationCharges * c.TurretTypes[c.Mounts[mount].Type].Barrels;
+        var flash = Discipline(k, s);
+        double n = flash.StationCharges * c.TurretTypes[c.Mounts[mount].Type].Barrels + Stacked(c, mount, kind, flash);
         return 1 - Math.Pow(1 - s.StationLightChance[(int)kind], n);
     }
 
@@ -256,7 +292,7 @@ public static partial class Magazines
         if (st.Kind == StationKind.Magazine)
             return;
         ref readonly var mr = ref c.Mounts[mount];
-        double mj = flash.StationCharges * c.TurretTypes[mr.Type].Barrels * c.Charges[mr.Type].MassKg * s.FirePropellantMJkg;
+        double mj = (flash.StationCharges * c.TurretTypes[mr.Type].Barrels + Stacked(c, mount, st.Kind, flash)) * c.Charges[mr.Type].MassKg * s.FirePropellantMJkg;
         bool turret = st.Kind != StationKind.Casemate;
         if (st.Part >= 0)
         {

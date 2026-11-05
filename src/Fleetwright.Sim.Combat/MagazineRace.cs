@@ -347,8 +347,8 @@ public static partial class Magazines
     }
 
     /// <summary>A magazine alight: its spaces' gas and vents join the race's, and the charges of the mounts it feeds join
-    /// the stow (their rounds left; those lying open: in the scuttles, the discipline's charges a station a gun, and the
-    /// share with their lids off; all of them in bags alone).</summary>
+    /// the stow (their rounds left; those lying open: in the scuttles, the discipline's charges a station a gun, its stack,
+    /// and the share with their lids off; all of them in bags alone).</summary>
     static void Light(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, Span<bool> fed, Span<int> lit, ref int lits,
         ref double nOpen, ref double nCased, ref double massSum, in FlashDiscipline flash, SimSettings s, int id, ref double v, ref double a)
     {
@@ -365,7 +365,7 @@ public static partial class Magazines
             int left = m < mounts.Length ? mounts[m].Rounds : mr.Rounds;
             double rounds = left == int.MaxValue ? Math.Max(mr.Rounds, 0) : Math.Max(left, 0);
             double open = ch.Packaging == Packaging.Bag ? rounds
-                : Math.Min(rounds, flash.StationCharges * c.TurretTypes[mr.Type].Barrels + flash.LidsOff * rounds);
+                : Math.Min(rounds, flash.StationCharges * c.TurretTypes[mr.Type].Barrels + flash.StackShare * Math.Max(mr.Rounds, 0) + flash.LidsOff * rounds);
             (nOpen, nCased, massSum) = (nOpen + open, nCased + rounds - open, massSum + rounds * ch.MassKg);
         }
     }

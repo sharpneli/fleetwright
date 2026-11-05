@@ -126,6 +126,42 @@ public class FireDisciplineTests(ITestOutputHelper output)
         Assert.Equal(row.SupplyS, gaps[^1], 1);
     }
 
+    /// <summary>The stack (docs/battle/magazines.md; research 10 §3.2): rounds out of the magazine are ready rounds, so the
+    /// guns don't wait on the hoists. Between drill and rate first it holds them at the reload far longer than the hoists
+    /// alone; on rate first the hoists keep up already, and on drill there's none.</summary>
+    [Fact]
+    public void The_stack_keeps_the_guns_at_the_reload_past_the_hoists()
+    {
+        var qe = Fleet.Get("super_dreadnought").Class!;
+        (int AtReload, double Total) Fire(double share)
+        {
+            var w = new World(Start, 1, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(qe), Lat, Lon, 0, 0, side: 0));
+            var store = w.Ships.Store;
+            int slot = store.SlotOf(1), m = qe.Links(qe.Batteries[0].Mounts)[0];
+            var row = qe.Mounts[m];
+            int guns = qe.TurretTypes[row.Type].Barrels;
+            var flash = Magazines.At(Settings, share);
+            long t = Start.Ms + 3_600_000;   // an hour's quiet: the hoists have built up what the discipline lets lie out
+            long t0 = t;
+            var gaps = new List<double>();
+            for (int k = 0; k < 40; k++)
+            {
+                store.Combat.Fired(slot, qe, m, 0, guns, t, 1, flash.HoistShare / DesignerPlaceholders.HoistShare, flash.StackShare);
+                long next = store.Combat.Mount(slot, m).LoadedMs;
+                gaps.Add((next - t) / 1000.0);
+                t = next;
+            }
+            int atReload = gaps.TakeWhile(g => Math.Abs(g - row.ReloadS) < 0.01).Count();
+            output.WriteLine($"stupidity {share:0.00}: hoists x{flash.HoistShare:0.00}, stack {flash.StackShare:P0}: {atReload} of 40 salvos at the reload, {(t - t0) / 1000.0:0} s");
+            return (atReload, (t - t0) / 1000.0);
+        }
+        var (safe, drill, hurried, rate) = (Fire(0), Fire(0.5), Fire(0.75), Fire(1));
+        Assert.True(hurried.AtReload > drill.AtReload + 5, "the stack holds them at the reload");
+        Assert.True(safe.Total > drill.Total && drill.Total > hurried.Total && hurried.Total >= rate.Total);
+        Assert.Equal(40, rate.AtReload);   // no faster than the gun crew: the stack can't beat the reload
+    }
+
     [Fact]
     public void Close_in_the_layers_lay_by_sight_and_walk_their_fall_onto_her()
     {

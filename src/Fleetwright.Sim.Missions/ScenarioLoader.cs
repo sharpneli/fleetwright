@@ -95,6 +95,13 @@ public static class ScenarioLoader
                 throw new ScenarioException($"readiness of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.Readiness.Select(d => d.Name))})");
             w.Apply(DamageSystem.SetReadiness(side, k));
         }
+        foreach (var (side, name) in s.Stupidity)
+        {
+            int k = Array.FindIndex(w.Settings.Stupidity, d => d.Name == name);
+            if (k < 0)
+                throw new ScenarioException($"stupidity of {s.Sides[side]}: no \"{name}\" (have {string.Join(", ", w.Settings.Stupidity.Select(d => d.Name))})");
+            w.Apply(DamageSystem.SetStupidity(side, w.Settings.Stupidity[k].Share));
+        }
         foreach (var (side, name) in s.DamageControl)
         {
             int k = Array.FindIndex(w.Settings.DamageControl, d => d.Name == name);

@@ -28,7 +28,8 @@ static class LossBench
 
     /// <param name="Spare">A counterfactual: hits that do nothing (<see cref="Sparing"/>).</param>
     /// <param name="Trace">Ships to follow cell by cell after their first hit (<c>seed:name</c>, comma separated), into DIR/trace.txt.</param>
-    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null, string? Trace = null);
+    /// <param name="Stupidity">A side's stupidity over the scenario's (<c>SIDE:name</c>; a scenario without the side as written).</param>
+    public sealed record Options(int Seeds, int Threads, string LandPath, string? Out, string? Spare = null, string? Trace = null, string? Stupidity = null);
 
     /// <summary>The counterfactuals: <c>home</c> shells on a ship going home; <c>boat-guns</c> a destroyer's or smaller craft's
     /// shells on anything larger; <c>screen</c> shells on a torpedo craft while her unit screens; <c>gap:X</c> all but one
@@ -119,10 +120,19 @@ static class LossBench
         public readonly List<(int Side, ShipType Type, Packaging Packing, MagazineTier Tier, int Entity)> Races = [];
     }
 
+    static Scenario Stupid(Scenario s, string? stupidity)
+    {
+        if (stupidity == null)
+            return s;
+        var p = stupidity.Split(':', 2);
+        int side = Array.IndexOf(s.Sides, p[0]);
+        return side < 0 ? s : s with { Stupidity = [.. s.Stupidity.Where(x => x.Side != side), (side, p[1])] };
+    }
+
     public static int Run(SimSettings settings, string root, IReadOnlyList<string> names, Options o)
     {
         string dir = Path.Combine(root, "..", "Content", "Scenarios");
-        var scenarios = names.ToDictionary(n => n, n => Scenario.Load(Path.Combine(dir, n + ".json"), [dir]));
+        var scenarios = names.ToDictionary(n => n, n => Stupid(Scenario.Load(Path.Combine(dir, n + ".json"), [dir]), o.Stupidity));
         var shoreTask = Task.Run(() => Shore.Build(Land.Load(o.LandPath)));
         using var registry = new ShipClassRegistry(0);
         var classes = scenarios.ToDictionary(kv => kv.Key, kv => ScenarioLoader.RequestClasses(kv.Value, registry, [Path.Combine(root, "designs")]));
@@ -130,7 +140,7 @@ static class LossBench
         var shore = shoreTask.Result;
         var jobs = (from n in names from i in Enumerable.Range(0, o.Seeds) select (Name: n, Seed: scenarios[n].Seed + (ulong)i)).ToList();
         int threads = o.Threads > 0 ? o.Threads : Environment.ProcessorCount;
-        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Spare != null ? $"; spared: {o.Spare}" : ""));
+        Console.WriteLine($"how ships are lost: {string.Join(", ", names)}, {o.Seeds} seeds each, on {threads} threads" + (o.Stupidity != null ? $"; stupidity: {o.Stupidity}" : "") + (o.Spare != null ? $"; spared: {o.Spare}" : ""));
         var trace = o.Trace?.Split(',').Select(x => x.Split(':', 2)).Select(x => (ulong.Parse(x[0], Inv), x[1])).ToList();
         var runs = new Played[jobs.Count];
         Parallel.ForEach(Enumerable.Range(0, jobs.Count), new ParallelOptions { MaxDegreeOfParallelism = threads }, i =>

@@ -383,6 +383,7 @@ public sealed partial class MapScene : ISceneMenu
         Order("Readiness", sc.Readiness);
         Order("Damage control", sc.DamageControl);
         Order("Fire discipline", sc.FireDisciplines);
+        Order("Stupidity", sc.Stupidity);
         briefOwn.Clear();
         briefEnemy.Clear();
         foreach (var unit in sc.Units)

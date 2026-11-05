@@ -109,6 +109,8 @@ sealed record FcCase
     /// <summary>The shooter's side's fire discipline (fire-control.md F6), a name of the settings' FireDisciplines; null
     /// the first.</summary>
     public string? Discipline { get; init; }
+    /// <summary>The shooter's side's stupidity (docs/battle/magazines.md), a share of the way along the flash disciplines; null: its doctrine's.</summary>
+    public double? Stupidity { get; init; }
     public bool Damage { get; init; }
     /// <summary>The asked speed: it picks the clock tier (docs/battle/coarse.md J0), 1 the fine tier,
     /// <see cref="CoarseParity.CoarseSpeed"/> the coarse one. The bench runs at full tilt either way.</summary>
@@ -178,6 +180,8 @@ static class FcBench
             w.Apply(GunnerySystem.SetExperience(0, c.Experience));
         if (c.WorkUp != 1)
             w.Apply(ShipSystem.WorkUp(Shooter, c.WorkUp));
+        if (c.Stupidity is { } stupid)
+            w.Apply(DamageSystem.SetStupidity(0, stupid));
         if (c.Discipline is { } dis)
             w.Apply(GunnerySystem.SetDiscipline(0, DisciplineOf(s, dis)));
         w.Apply(GunnerySystem.Engage(Shooter, c.Battery, TargetShip, c.Fit));

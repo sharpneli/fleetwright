@@ -196,7 +196,7 @@ public sealed record ScenarioSetup
     internal static bool IsSetup(JsonElement r) =>
         r.TryGetProperty("from", out _) && !r.TryGetProperty("units", out _) && !r.TryGetProperty("only", out _) && !r.TryGetProperty("sides", out _);
 
-    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "tempers", "doctrine", "crews", "readiness", "damage_control", "fire_discipline", "fuel", "weather", "start", "until", "seed"];
+    static readonly string[] Keys = ["scenario", "name", "from", "player", "rename", "add", "designs", "counts", "remove", "tempers", "doctrine", "crews", "readiness", "damage_control", "fire_discipline", "stupidity", "fuel", "weather", "start", "until", "seed"];
 
     /// <summary>A setup file's changes, read against the scenario it's of.</summary>
     internal static ScenarioSetup Parse(JsonElement r, Scenario written)
@@ -320,6 +320,7 @@ public sealed record ScenarioSetup
         ("readiness", SideKind.Readiness, "a readiness's name"),
         ("damage_control", SideKind.DamageControl, "a doctrine's name"),
         ("fire_discipline", SideKind.FireDiscipline, "a discipline's name"),
+        ("stupidity", SideKind.Stupidity, "a stupidity's name"),
     ];
 
     static string Str(JsonElement e, string key) => e.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()! : "";
@@ -565,12 +566,16 @@ public enum SideKind
     DamageControl,
     FireDiscipline,
     Fuel,
+    Stupidity,
 }
 
-/// <summary>A side's setting: its gun crews, its readiness, its damage control, its fire discipline (names of the
-/// settings'), or its fuel (a share of a full load), replacing the written one for that side.</summary>
+/// <summary>A side's setting: its gun crews, its readiness, its damage control, its fire discipline, its stupidity (names of
+/// the settings'), or its fuel (a share of a full load), replacing the written one for that side.</summary>
 public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupChange
 {
+    /// <summary>Stupidity left to each ship's doctrine: the side given none.</summary>
+    public const string ByDoctrine = "by doctrine";
+
     public override string Key => $"{Kind}|{Side}";
     internal override int Order => 6;
 
@@ -580,6 +585,7 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
         SideKind.Readiness => "readiness",
         SideKind.DamageControl => "damage_control",
         SideKind.FireDiscipline => "fire_discipline",
+        SideKind.Stupidity => "stupidity",
         _ => "fuel",
     };
 
@@ -589,6 +595,7 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
         SideKind.Readiness => "readiness",
         SideKind.DamageControl => "damage control",
         SideKind.FireDiscipline => "fire discipline",
+        SideKind.Stupidity => "stupidity",
         _ => "fuel",
     };
 
@@ -606,6 +613,7 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
             SideKind.Readiness => s with { Readiness = Over(s.Readiness, Value) },
             SideKind.DamageControl => s with { DamageControl = Over(s.DamageControl, Value) },
             SideKind.FireDiscipline => s with { FireDisciplines = Over(s.FireDisciplines, Value) },
+            SideKind.Stupidity => s with { Stupidity = Value == ByDoctrine ? [.. s.Stupidity.Where(x => x.Side != Side)] : Over(s.Stupidity, Value) },
             _ => s with { Fuel = Over(s.Fuel, double.Parse(Value, CultureInfo.InvariantCulture)) },
         };
     }
@@ -621,6 +629,7 @@ public sealed record SideSetting(SideKind Kind, int Side, string Value) : SetupC
             SideKind.Readiness => written.Readiness.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",
             SideKind.DamageControl => written.DamageControl.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",
             SideKind.FireDiscipline => written.FireDisciplines.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? "the default",
+            SideKind.Stupidity => written.Stupidity.Where(x => x.Side == Side).Select(x => x.Name).FirstOrDefault() ?? ByDoctrine,
             _ => written.Fuel.Where(x => x.Side == Side).Select(x => x.Share.ToString("0.###", CultureInfo.InvariantCulture)).FirstOrDefault() ?? "full",
         };
         return $"{written.Sides[Side]}'s {Label(Kind)}: {Value} (written: {was})";

@@ -138,6 +138,10 @@ public sealed record Scenario
     /// settings' Readiness (the loader checks it).</summary>
     public List<(int Side, string Name)> Readiness { get; init; } = [];
 
+    /// <summary>The sides' stupidity where it's given (docs/battle/magazines.md), by side index: a name of the settings'
+    /// Stupidity (the loader checks it). A side not given goes by each ship's doctrine.</summary>
+    public List<(int Side, string Name)> Stupidity { get; init; } = [];
+
     /// <summary>The sides' firefighting doctrines where they're given (docs/battle/fire.md B4), by side index: a name of the
     /// settings' DamageControl (the loader checks it).</summary>
     public List<(int Side, string Name)> DamageControl { get; init; } = [];
@@ -300,6 +304,8 @@ public sealed record Scenario
             // "readiness": { "Russia": "prepared" }, the same way
             var readiness = r.TryGetProperty("readiness", out var rd) ? ParseNames("readiness", "a readiness's name", rd, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.Readiness : [];
+            var stupidity = r.TryGetProperty("stupidity", out var st) ? ParseNames("stupidity", "a stupidity's name", st, sides)
+                : from != null && !r.TryGetProperty("sides", out _) ? from.Stupidity : [];
             var firefighting = r.TryGetProperty("damage_control", out var ff) ? ParseNames("damage_control", "a doctrine's name", ff, sides)
                 : from != null && !r.TryGetProperty("sides", out _) ? from.DamageControl : [];
             if (r.TryGetProperty("fight", out _))
@@ -349,6 +355,7 @@ public sealed record Scenario
                 Fuel = fuelShares,
                 FireDisciplines = disciplines,
                 Readiness = readiness,
+                Stupidity = stupidity,
                 DamageControl = firefighting,
                 Doctrine = doctrine,
                 Homes = homes,

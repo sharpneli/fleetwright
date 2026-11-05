@@ -28,6 +28,8 @@ public enum DamageCommand : ushort
     Scuttle,
     SetShipDamageControl,
     Blackout,
+    SetStupidity,
+
 }
 
 /// <summary>What set a magazine off (<see cref="DamageSystem.Blast"/>).</summary>
@@ -101,8 +103,12 @@ public sealed class DamageSystem : IWorldSystem
     readonly double[] fuel = new double[256];
     readonly int[] readiness = new int[256], firefighting = new int[256];
     readonly int readinessDefault, firefightingDefault;
-    /// <summary>Each doctrine's flash discipline (docs/battle/magazines.md V5), by the doctrine's index.</summary>
+    /// <summary>Each doctrine's flash discipline (docs/battle/magazines.md V5), by the doctrine's index; a side's stupidity
+    /// (a share, -1: none) and what it reads as, over every doctrine of the side's.</summary>
     readonly FlashDiscipline[] flashOf;
+    readonly double[] stupidity = new double[256];
+    readonly FlashDiscipline[] stupidFlash = new FlashDiscipline[256];
+    bool stupiditySet;
     double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
@@ -124,6 +130,7 @@ public sealed class DamageSystem : IWorldSystem
         firefightingDefault = Math.Max(0, Array.FindIndex(settings.DamageControl, x => x.Name == settings.DamageControlDefault));
         flashOf = [.. settings.DamageControl.Select(d => Magazines.Of(settings, d.Name))];
         Array.Fill(firefighting, firefightingDefault);
+        Array.Fill(stupidity, -1);
         blasts = new Blast[Math.Max(settings.BlastCapacity, 4)];
         struck = new Struck[Math.Max(settings.SplashCapacity / 4, 16)];
     }
@@ -187,7 +194,11 @@ public sealed class DamageSystem : IWorldSystem
     public DamageControlDoctrine DamageControlOf(int side) => settings.DamageControl[firefighting[side & 255]];
 
     /// <summary>A side's flash discipline, by its doctrine (docs/battle/magazines.md V5): the gunnery reads its hoists'.</summary>
-    public FlashDiscipline FlashOf(int side, ShipCondition k) => flashOf[DoctrineOf(side, k)];
+    public FlashDiscipline FlashOf(int side, ShipCondition k) => stupidity[side & 255] >= 0 ? stupidFlash[side & 255] : flashOf[DoctrineOf(side, k)];
+
+    /// <summary>A side's stupidity: how far its men go for the rate of fire, a share from the safest flash discipline to the
+    /// last (<see cref="SimSettings.Stupidity"/>), over every ship's doctrine; negative: as each ship's doctrine says.</summary>
+    public static Command SetStupidity(int side, double share) => new(Id, (ushort)DamageCommand.SetStupidity, side, X: share);
 
     /// <summary>A ship's own damage-control doctrine over her side's (a scenario's unit or ship: docs/battle/magazines.md
     /// "Too safe"): an index of the settings' DamageControl.</summary>
@@ -226,7 +237,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         int side = ships.Store[slot].Side & 255;
         int doctrine = DoctrineOf(side, k);
-        (k.Readiness, k.DamageControl, k.Flash) = (settings.Readiness[readiness[side]], settings.DamageControl[doctrine], flashOf[doctrine]);
+        (k.Readiness, k.DamageControl, k.Flash) = (settings.Readiness[readiness[side]], settings.DamageControl[doctrine], FlashOf(side, k));
         if (!k.DoorsDrawn)
         {
             // her watertight doors left open, by her orders (docs/battle/damage-control.md DC1)
@@ -351,6 +362,13 @@ public sealed class DamageSystem : IWorldSystem
                 Hold(world, hs, hk, force: true);
                 break;
             }
+            case DamageCommand.SetStupidity:
+                if (c.Entity is < 0 or > 255)
+                    throw new ArgumentException($"no side {c.Entity}");
+                stupidity[c.Entity] = c.X;
+                stupidFlash[c.Entity] = c.X >= 0 ? Magazines.At(settings, c.X) : default;
+                stupiditySet = true;
+                break;
             case DamageCommand.SetDamageControl:
                 if (c.Entity is < 0 or > 255 || c.A < 0 || c.A >= settings.DamageControl.Length)
                     throw new ArgumentException($"no firefighting {c.A} for side {c.Entity}");
@@ -1399,6 +1417,13 @@ public sealed class DamageSystem : IWorldSystem
                 {
                     h.Add(s + 1024);
                     h.Add(fuel[s]);
+                }
+        if (stupiditySet)
+            for (int s = 0; s < stupidity.Length; s++)
+                if (stupidity[s] >= 0)
+                {
+                    h.Add(s + 2048);
+                    h.Add(stupidity[s]);
                 }
         if (firefightingSet)
             for (int s = 0; s < firefighting.Length; s++)

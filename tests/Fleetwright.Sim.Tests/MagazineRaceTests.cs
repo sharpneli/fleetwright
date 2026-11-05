@@ -233,6 +233,43 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(r.BurnedKg < 3000);
     }
 
+    /// <summary>A side's stupidity (docs/battle/magazines.md): reads between the flash disciplines, over every ship's doctrine;
+    /// its stack lies where her train has room and makes a hit likelier to light it and a bigger fire when it does.</summary>
+    [Fact]
+    public void Stupidity_reads_between_the_disciplines_and_a_stack_makes_a_bigger_fire()
+    {
+        var mid = Magazines.At(Settings, 0.75);
+        Assert.Equal(1.25, mid.HoistShare, 6);
+        Assert.Equal(0.15, mid.StackShare, 6);
+        Assert.Equal(0.55, mid.DoorOpen[(int)StationKind.Handling], 6);
+        Assert.Equal(Magazines.Of(Settings, "1916").HoistShare, Magazines.At(Settings, 0.5).HoistShare, 6);
+        Assert.Equal(Magazines.Of(Settings, "1916 BCF").StackShare, Magazines.At(Settings, 1).StackShare, 6);
+
+        var c = Packed("lion", "bag");
+        int q = Enumerable.Range(0, c.Mounts.Length).First(m => c.ComponentId(c.Mounts[m].Component) == "Q");
+        var rate = Magazines.At(Settings, 1);
+        Assert.Equal(0, Magazines.Stacked(c, q, StationKind.Handling, Magazines.At(Settings, 0.5)));   // drill stacks none
+        Assert.Equal(0, Magazines.Stacked(c, q, StationKind.Gunhouse, rate));   // nor in the gunhouse
+        double each = Magazines.Stacked(c, q, StationKind.Handling, rate);
+        Assert.True(each > 0);
+        var train = c.Train(q);
+        int places = 0;
+        foreach (ref readonly var st in train)
+            places += st.Kind is StationKind.Chamber or StationKind.Handling or StationKind.Passage ? 1 : 0;
+        Assert.Equal(0.3 * c.Mounts[q].Rounds, each * places, 6);   // the share of her rounds, all told
+
+        // a side's stupidity over a ship's own doctrine, and back
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0, side: 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        Assert.Equal(1.5, w.Damage.FlashOf(0, k).HoistShare, 6);
+        w.Apply(DamageSystem.SetStupidity(0, 1));
+        Assert.Equal(1.0, w.Damage.FlashOf(0, k).HoistShare, 6);
+        Assert.Equal(1.5, w.Damage.FlashOf(1, k).HoistShare, 6);   // the other side's unchanged
+        w.Apply(DamageSystem.SetStupidity(0, -1));
+        Assert.Equal(1.5, w.Damage.FlashOf(0, k).HoistShare, 6);
+    }
+
     /// <summary>What the player is told follows the water: a flash in the turret gives the order, the valves open a walk
     /// later, and the magazine fills over minutes. An order is never reported as a flooded magazine.</summary>
     [Fact]

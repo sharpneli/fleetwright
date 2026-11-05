@@ -1813,6 +1813,13 @@ public sealed record SimSettings
     public double MagazineFullShare { get; init; } = 0.995;
     public double MagazineOrderSigma { get; init; } = 0.6;
     public double[] MagazineOrderRangeS { get; init; } = [30, 360];
+    /// <summary>How far a side's men will go for the rate of fire (docs/battle/magazines.md; the user, 2026-11-05), a doctrine
+    /// of its own: the settings on the launch screen, each a share from the safest <see cref="FlashDisciplines"/> row (0) to
+    /// the last (1), read between the rows. Not given, a ship's doctrine says.</summary>
+    public StupidityStep[] Stupidity { get; init; } =
+    [
+        new("safe", 0), new("careful", 0.25), new("drill", 0.5), new("hurried", 0.75), new("rate first", 1),
+    ];
     public double MagazineThroughChance { get; init; } = 0.4;
     public double[] MagazineThroughS { get; init; } = [180, 900];
     public double MagazineSprinkleS { get; init; } = 60;
@@ -1856,12 +1863,15 @@ public sealed record SimSettings
     /// DoorOpen by the station above the door [gunhouse, working chamber, casemate, handling room, passage], the door into a
     /// magazine always the magazine's own (a handling room's) and a casemate's hoist before it; StationCharges a gun;
     /// LidsOff the share of a magazine's stow lying open; HoistShare the hoists' sustained reload over the drill's
-    /// (fire-control F6d's <c>DesignerPlaceholders.HoistShare</c>, 1.5, is drill's).</summary>
+    /// (fire-control F6d's <c>DesignerPlaceholders.HoistShare</c>, 1.5, is drill's); StackShare the share of a mount's
+    /// rounds stacked out of the magazine, in her working chamber, handling room and passage (research 10 §3.2, §7: 20-40%
+    /// on rate first [EST]; the 1913 outfit's surplus, Bulwark's passages). Rows from the safest up: a side's
+    /// <see cref="Stupidity"/> reads between them.</summary>
     public FlashDiscipline[] FlashDisciplines { get; init; } =
     [
-        new() { Name = "safe", DoorOpen = [0, 0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7 },
-        new() { Name = "drill", DoorOpen = [1, 1, 0.2, 0.1, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
-        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0 },
+        new() { Name = "safe", DoorOpen = [0, 0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7, StackShare = 0 },
+        new() { Name = "drill", DoorOpen = [1, 1, 0.2, 0.1, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5, StackShare = 0 },
+        new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0, StackShare = 0.3 },
     ];
     public int MagazineLossMs { get; init; } = 60_000;
 
@@ -3031,4 +3041,8 @@ public readonly record struct FlashDiscipline
     public double StationCharges { get; init; }
     public double LidsOff { get; init; }
     public double HoistShare { get; init; }
+    public double StackShare { get; init; }
 }
+
+/// <summary>A setting of a side's <see cref="SimSettings.Stupidity"/>.</summary>
+public readonly record struct StupidityStep(string Name, double Share);

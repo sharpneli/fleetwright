@@ -42,6 +42,7 @@ public static unsafe class Program
         var challenges = new List<string>();
         var damages = new List<string>();
         var firefightings = new List<string>();
+        var stupidities = new List<string>();
         var readinesses = new List<string>();
         var devGroups = new List<string>();
         var devForces = new List<string>();
@@ -298,6 +299,10 @@ public static unsafe class Program
             else if (arg.StartsWith("-damage-control="))   // a side's firefighting doctrine: -damage-control=side:name (docs/battle/fire.md B4; settings.json's DamageControl, 1890 the weakest)
             {
                 firefightings.Add(arg.Substring("-damage-control=".Length));
+            }
+            else if (arg.StartsWith("-stupidity="))   // how far a side goes for the rate of fire: -stupidity=side:name (docs/battle/magazines.md; settings.json's Stupidity)
+            {
+                stupidities.Add(arg.Substring("-stupidity=".Length));
             }
             else if (arg.StartsWith("-readiness="))   // a side's orders before action for fire: -readiness=side:name (docs/battle/fire.md B1; settings.json's Readiness)
             {
@@ -564,6 +569,16 @@ public static unsafe class Program
                     world.Send(Sim.SmokeSystem.MakeSmoke(ship, p.Length == 1 || p[1] == "on"));
                 else
                     Console.Error.WriteLine($"Bad smoke: -smoke={screen} (want ship[:on|off])");
+            }
+            foreach (var st in stupidities)
+            {
+                var p = st.Split(':', 2);
+                var stupid = world.Settings.Stupidity;
+                int index = p.Length == 2 ? Array.FindIndex(stupid, d => d.Name == p[1]) : -1;
+                if (p.Length == 2 && int.TryParse(p[0], out int side) && index >= 0)
+                    world.Send(Sim.DamageSystem.SetStupidity(side, stupid[index].Share));
+                else
+                    Console.Error.WriteLine($"Bad stupidity: -stupidity={st} (want side:{string.Join("|", stupid.Select(d => d.Name))})");
             }
             foreach (var ff in firefightings)
             {

@@ -229,6 +229,42 @@ fire-control F6d). It also gives more open charges and doors open more of the ti
 as it does damage control's; per-ship orders can come later. Felt both ways: the rate in `duel`, the risk in
 `damage-history`.
 
+**The stack and Stupidity (the user, 2026-11-05: "Beatty didn't cause the fleet to leave them open for no gain, the ships
+indeed did fire faster. So we can have a 'Stupidity' slider in doctrine for maximum boom, for own ships mostly").**
+
+- **The stack** (`StackShare`: rate first 30% of a mount's rounds [EST 10 §7, 20-40%]; `Magazines.Stacked`): shared over the
+  places in her train with room, her working chamber, handling room and passage (Bulwark's). They're ready rounds
+  (`CombatStore.Fired`), and the hoists build them up in a lull. They also add charges for a hit to light
+  (`LightChance`), a bigger fire at the station (`Burn`) and open charges in the race.
+- **Stupidity** (`SimSettings.Stupidity`, `Magazines.At`, `DamageSystem.SetStupidity`): a side's setting read between the
+  flash disciplines, over every ship's doctrine: safe 0, careful 0.25, drill 0.5, hurried 0.75, rate first 1; not given, each
+  ship's doctrine says. On the launch screen's conditions; a scenario's or setup's `"stupidity"`; `-stupidity=side:name`;
+  `shipgen losses --stupidity SIDE:name`; `shipgen duel --stupidity SHARE`.
+
+**What it costs** (`losses jutland --seeds 4`, Britain's setting; a seed):
+
+| Britain | Capital ships set off | Broken by it | Capital ships lost | British tonnes lost | German tonnes lost |
+|---|---|---|---|---|---|
+| safe | 0.3 | 0 | 4.5 | 182,000 | 354,000 |
+| drill | 1.0 | 0.8 | 2.8 | 162,000 | 380,000 |
+| hurried | 5.3 | 3.8 | 5.0 | 222,000 | 352,000 |
+| rate first | 9.0 | 5.3 | 7.0 | 275,000 | 368,000 |
+| as written (the BCF on rate first) | 4.8 | 3.0 | 5.3 | 235,000 | 337,000 |
+
+The boom is real and ordered; the German column is noise, with no gain to read. The stack itself hardly moves rate first:
+as written, 3.0 broken before and after, and `hits lion --shooter derfflinger` 2.45% of hits set off against 2.35%, since
+rate first's lids are all off and a station's chance was already near certain.
+
+**What it buys: nothing yet, in a fight.** Alone at the reload the setting does what it should (40 salvos of Queen Elizabeth's
+turret: safe 2,424 s, drill 2,138, hurried and rate first 1,584, the gun crew's own limit). In a duel (`duel lion derfflinger
+--range 14000 --runs 8 --minutes 30`) every setting fires 1.05-1.06 rounds a gun a minute, 70% of the drill's, and on `rn-1917`
+and `german` too: a trained crew's reload is 39.6 x 1.2 (`GunneryCrew.Load`) and the layers' 7 s after a correction make about
+54 s, against the drill hoists' 59.4 s, and the ready rounds cover that gap for the half hour. **So the hoists hardly ever bind,
+and the discipline doesn't touch the crew's factor.** As it stands safe costs about 1% of the rate and rate first gains
+nothing, where the record (and the user) has the BCF firing faster. No source read so far gives a figure for what open doors do
+to the loading cycle (02 says "historians debate"), so none is set: research requested 2026-11-05, "Did rate first raise the
+rate of fire". **Awaits the user.**
+
 ### Flooding and sprinkling (one set of valves)
 
 The magazine's flooding moves out of `Fires.Magazines` into the magazines module, on damage control's valves. It's
@@ -896,9 +932,8 @@ The benches: `losses` prints the magazines line; `shipgen magazine --race` no lo
     filler going sympathetically, would be what took them. Research first.
   - A burst among a magazine's own charges still rolls the flat `MagazineFlashChance` 0.25 [EST]; the stow's charges
     in their packages could light by count as a station's do.
-  - Rate first's stack: the research has 20-40% of a magazine's rounds in the handing room and working chamber, lids
-    off; ours is 2 charges a station a gun. And whether the BCF's lids came off in the magazine or only in the handing
-    room (Friedman against Brown, 10 §8).
+  - Rate first's stack: built 2026-11-05 ("The stack and Stupidity"). Whether the BCF's lids came off in the magazine or
+    only in the handing room (Friedman against Brown, 10 §8) is still open.
   - Jutland's British side is on 1916's drill, so its battlecruisers rarely blow up in the scenario. Per-squadron
     doctrine (the BCF on rate first) is the scenarios' later step.
   - `shipgen magazine` prints shipgen's room volumes, which are 0 m³ for a secondary magazine sharing a main one's

@@ -20,8 +20,9 @@ public sealed unsafe partial class LaunchScene
     // the men's experience (docs/battle/crew.md decision 6): the names on the whole numbers, the halves between
     static readonly string[] CrewNames = ["green", "0.5", "average", "1.5", "trained", "2.5", "elite"];
     static readonly (double Share, string Word)[] FuelSteps = [(1, "full"), (0.75, "75%"), (0.5, "50%"), (0.25, "25%")];
-    static readonly SideKind[] Kinds = [SideKind.Crews, SideKind.Readiness, SideKind.DamageControl, SideKind.FireDiscipline, SideKind.Fuel];
-    static readonly string[] KindLabels = ["Gun crews", "Readiness", "Damage control", "Fire discipline", "Fuel"];
+    static readonly SideKind[] Kinds = [SideKind.Crews, SideKind.Readiness, SideKind.DamageControl, SideKind.FireDiscipline, SideKind.Stupidity, SideKind.Fuel];
+    static readonly string[] KindLabels = ["Gun crews", "Readiness", "Damage control", "Fire discipline", "Stupidity", "Fuel"];
+    const string StupidityTip = "How far the men go for the rate of fire. Toward rate first the doors stand open, the lids come off and cordite is stacked by the guns: in a long fight the hoists stop holding the guns back, and a flash has a train to run down. By doctrine: as each ship's damage control says.";
     static readonly string[] PresetNames = ["As history", "Even crews", "Easier", "Harder"];
     static readonly string[] PresetTips =
     [
@@ -40,8 +41,8 @@ public sealed unsafe partial class LaunchScene
         public Scenario? Of;
         public int Own, Other;
         public string OwnHead = "", OtherHead = "", OwnEnsign = "", OtherEnsign = "";
-        public readonly string[,] Now = new string[5, 2];
-        public readonly bool[,] Changed = new bool[5, 2];
+        public readonly string[,] Now = new string[Kinds.Length, 2];
+        public readonly bool[,] Changed = new bool[Kinds.Length, 2];
         public WeatherHere Weather, WrittenWeather;
         public string Vis = "", VisWord = "", WindKn = "", Cloud = "", SwellM = "", SwellS = "", Starts = "", StartWord = "", Ends = "", SeedNote = "";
         public bool WeatherChanged, StartChanged, EndChanged, NewSeed;
@@ -60,6 +61,7 @@ public sealed unsafe partial class LaunchScene
             [.. world.Settings.Readiness.Select(r => r.Name)],
             [.. world.Settings.DamageControl.Select(d => d.Name)],
             [.. world.Settings.FireDisciplines.Select(d => d.Name)],
+            [SideSetting.ByDoctrine, .. world.Settings.Stupidity.Select(d => d.Name)],
             FuelWords,
         ];
         return kindOptions[Array.IndexOf(Kinds, k)];
@@ -72,6 +74,7 @@ public sealed unsafe partial class LaunchScene
         SideKind.Readiness => s.Readiness.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.ReadinessDefault,
         SideKind.DamageControl => s.DamageControl.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.DamageControlDefault,
         SideKind.FireDiscipline => s.FireDisciplines.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? world.Settings.FireDisciplines[0].Name,
+        SideKind.Stupidity => s.Stupidity.Where(x => x.Side == sd).Select(x => x.Name).FirstOrDefault() ?? SideSetting.ByDoctrine,
         _ => FuelWord(s.Fuel.Where(x => x.Side == sd).Select(x => x.Share).DefaultIfEmpty(1).First()),
     };
 
@@ -94,7 +97,7 @@ public sealed unsafe partial class LaunchScene
     /// <summary>The setup with the conditions of a preset (decision 5: first guesses, to be settled by playtesting).</summary>
     ScenarioSetup Preset(int k, int own, int other)
     {
-        var st = setup with { Changes = [.. setup.Changes.Where(c => c is not SideSetting)] };
+        var st = setup with { Changes = [.. setup.Changes.Where(c => !IsPresets(c))] };
         const string Cluttered = "prepared, cluttered";
         bool cluttered = Array.IndexOf(OptionsOf(SideKind.Readiness), Cluttered) >= 0;
         switch (k)
@@ -115,6 +118,9 @@ public sealed unsafe partial class LaunchScene
         }
         return st;
     }
+
+    /// <summary>Whether a change is one the presets set: not stupidity, the player's own to keep.</summary>
+    static bool IsPresets(SetupChange c) => c is SideSetting { Kind: not SideKind.Stupidity };
 
     WeatherHere WeatherOf(Scenario s) =>
         s.Weather ?? new WeatherHere(world.Settings.DefaultVisibilityM, world.Settings.DefaultWindFromDeg, world.Settings.DefaultWindMs);
@@ -180,9 +186,9 @@ public sealed unsafe partial class LaunchScene
                 v.Changed[k, c] = v.Now[k, c] != SettingOf(written!, Kinds[k], sd);
             }
         // the preset the side settings match, if one does
-        var mine = setup.Changes.OfType<SideSetting>().Select(c => c.Key + "=" + c.Value).Order().ToList();
+        var mine = setup.Changes.Where(IsPresets).OfType<SideSetting>().Select(c => c.Key + "=" + c.Value).Order().ToList();
         for (int k = 0; k < PresetNames.Length && v.Preset < 0; k++)
-            if (Preset(k, v.Own, v.Other).Changes.OfType<SideSetting>().Select(c => c.Key + "=" + c.Value).Order().SequenceEqual(mine))
+            if (Preset(k, v.Own, v.Other).Changes.Where(IsPresets).OfType<SideSetting>().Select(c => c.Key + "=" + c.Value).Order().SequenceEqual(mine))
                 v.Preset = k;
         v.Weather = WeatherOf(s);
         v.WrittenWeather = WeatherOf(written!);
@@ -256,6 +262,8 @@ public sealed unsafe partial class LaunchScene
             var ra = new Vector2(a.X, y);
             dl.RowBg(ra, w, RowH, k);
             dl.Text(UiFonts.Sans, new Vector2(ra.X + P(6), Mid(UiFonts.Sans, ra.Y, RowH)), T.Text, KindLabels[k]);
+            if (Kinds[k] == SideKind.Stupidity && ImGui.IsMouseHoveringRect(ra, new Vector2(c0, ra.Y + RowH)))
+                ImGui.SetTooltip(StupidityTip);
             var opts = OptionsOf(Kinds[k]);
             for (int c = 0; c < 2; c++)
             {
