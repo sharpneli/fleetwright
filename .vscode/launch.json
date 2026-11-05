@@ -1,0 +1,31 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // DevRelease: optimized like Release (the sim ~8x faster than Debug), still with the console and Tracy, and
+            // still debuggable (breakpoints work; some locals are optimized away). Add flags to "args", e.g.
+            // ["-scenario=jutland"] or ["-scenario=ladder-5-world-2000", "-speed=1000"].
+            "name": "Fleetwright (DevRelease)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Fleetwright (DevRelease)",
+            "program": "${workspaceFolder}/src/Fleetwright/bin/DevRelease/net10.0/Fleetwright.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "justMyCode": false,
+            "stopAtEntry": false
+        },
+        {
+            "name": "Fleetwright (Debug)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Fleetwright (Debug)",
+            "program": "${workspaceFolder}/src/Fleetwright/bin/Debug/net10.0/Fleetwright.exe",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "console": "internalConsole",
+            "stopAtEntry": false
+        }
+    ]
+}

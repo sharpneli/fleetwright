@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            // the game optimized like Release, with its console and Tracy (Directory.Build.props): what to run day to day
+            "label": "build Fleetwright (DevRelease)",
+            "type": "process",
+            "command": "dotnet",
+            "args": ["build", "${workspaceFolder}/src/Fleetwright/Fleetwright.csproj", "-c", "DevRelease"],
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        },
+        {
+            "label": "build Fleetwright (Debug)",
+            "type": "process",
+            "command": "dotnet",
+            "args": ["build", "${workspaceFolder}/src/Fleetwright/Fleetwright.csproj", "-c", "Debug"],
+            "problemMatcher": "$msCompile",
+            "group": "build"
+        }
+    ]
+}

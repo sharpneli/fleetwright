@@ -1,0 +1,5 @@
+{
+    // C# Dev Kit: load the repo's solution, not one generated for this folder (the generated one broke when a project
+    // was added, 2026-10-13: duplicate projects, and the startup project couldn't be found)
+    "dotnet.defaultSolution": "Fleetwright.slnx"
+}
