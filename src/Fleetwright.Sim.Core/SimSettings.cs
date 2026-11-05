@@ -1808,6 +1808,9 @@ public sealed record SimSettings
     /// recommendation 3, Seydlitz through; Liberté, Imperatritsa Mariya partly not]. Its valves fill it in FireMagazineFloodS;
     /// sprinklers, where fitted, wet MagazineSprinkleShare of the stow in MagazineSprinkleS [EST].</summary>
     public double MagazineOrderS { get; init; } = 120;
+    /// <summary>A magazine this full has no dry layer left. Under it, what's dry over the water can still go up (the user,
+    /// 2026-11-05; Leonardo da Vinci, flooding "almost completed", lost to her unflooded top layer; research 11 §2.3).</summary>
+    public double MagazineFullShare { get; init; } = 0.995;
     public double MagazineOrderSigma { get; init; } = 0.6;
     public double[] MagazineOrderRangeS { get; init; } = [30, 360];
     public double MagazineThroughChance { get; init; } = 0.4;
@@ -2161,7 +2164,8 @@ public sealed record SimSettings
     public double ClosureTubeM2 { get; init; } = 5;
     public double ClosureTubeOtherM2 { get; init; } = 20;
 
-    /// <summary>A space this share flooded doesn't burn (nor its magazine go up).</summary>
+    /// <summary>A space this share flooded doesn't burn. A magazine's charges are another matter: see
+    /// <see cref="MagazineFullShare"/>.</summary>
     public double FireDrownShare { get; init; } = 0.5;
 
     /// <summary>What a fire does (docs/battle/fire.md B2). Heat: a space's rooms (a part itself) are harmed once more each

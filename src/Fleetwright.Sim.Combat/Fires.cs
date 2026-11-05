@@ -330,9 +330,9 @@ public static class Fires
             for (int t = 0; t < c.Mounts.Length; t++)
                 if (c.Mounts[t].Magazine == m && c.Enclosed(t) && c.FireOfPart(c.Mounts[t].Component) is int g and >= 0 && Heats(k.Fire[g]))
                     rate += 1 / s.FireMagazineS[k.Fire[g].Charges > 0 ? 0 : 1];   // down its turret's trunk
-            if (cap > 0 && held >= s.FireDrownShare * cap || k.MagazineWet[m] >= s.MagazineSprinkleShare)
+            if (cap > 0 && held >= s.MagazineFullShare * cap || k.MagazineWet[m] >= s.MagazineSprinkleShare)
             {
-                k.MagazineThreatS[m] = 0;   // drowned or sprinkled through: it can't go up
+                k.MagazineThreatS[m] = 0;   // full or sprinkled through: no dry charges left to go up (Leonardo da Vinci's top layer)
                 continue;
             }
             if (rate <= 0)

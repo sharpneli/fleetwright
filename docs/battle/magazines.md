@@ -263,7 +263,18 @@ The mounts lose their rounds, as today.
 
 **Not built from note 11:** sprinklers by navy and year (USN 1917, RN 1918; corrects note 10), periods' own fill times (900-1,800 s), a second or remote valve station as a design option, keys in harbour and dry dock, the countermand (Liberté's Garnier), `damage-history`'s flooding yardstick.
 
-**Open, for the user:** `FireDrownShare` 0.5 has a half-full magazine unable to go up by fire, but Leonardo da Vinci's "almost completed" flooding lost her to the dry top layer (11 §2.3). Bottom entry suggests something nearer full; a change there comes with more explosions.
+**A dry layer can go up (the user, 2026-11-05: "as long as there is a dry layer it should go boom"; and, on a bare chance of no order: "let's not add artificial things").** A fire's heat now sets off any magazine short of full (`MagazineFullShare` 0.995), where it used to stop at half (`FireDrownShare`, which still says when a space itself stops burning). Hits and flashes needed no change: the race already burns the dry share of the charges (`MagazineRace`). So what water buys, until it's full, is a smaller fire. Leonardo da Vinci's case: flooding "almost completed", her top layer went.
+
+What it did (`losses`, same seeds as above; set off by a fire, a seed):
+
+| | Before | Dry layer | Broken by a magazine, a seed: before, now |
+|---|---|---|---|
+| Jutland | 2.4 | 2.4 | 5.4, 6.7 |
+| Dogger Bank | 0 | 0 | 0.3, 0.3 |
+| Coronel | 1.0 | 1.4 | 1.1, 1.1 |
+| Tsushima | 2.1 | 3.4 | 0.9, 0.9 |
+
+The extra set-offs are small fires: Tsushima's by a fire went Contained 0.1, BurnedOut 0.8 to 0.8, 1.5, with those that break a ship unchanged. So it shows where fires meet part-flooded magazines, and the dry layer is often too small to take her. Jutland's rise isn't this rule: its fire set-offs didn't move and the rise is all hits, which the rule doesn't touch (`heavy hits` 1,835 to 1,995 a seed: the run diverged, four seeds).
 
 ## The steps
 

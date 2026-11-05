@@ -264,7 +264,7 @@ public class FireEffectsTests(ITestOutputHelper output)
         output.WriteLine($"flooded {doc.FloodMagazineS / 60:0} min after the fire beside it: flooded in {flooded} of 20, gone up in {up}, " +
                          $"{water:P0} full after the hour ({(c.Cells[cell].BelowWaterline ? "sea valves" : "the main")})");
         Assert.Equal(20, flooded);
-        Assert.True(up <= 1);
+        Assert.InRange(up, 1, 8);   // the water can lose the race: a dry layer goes up before it's full (Leonardo da Vinci)
         Assert.True(water > 0.9);
 
         // smoke over it: the men try once, and those driven back wait for it to clear (it doesn't, here): most go up
@@ -283,6 +283,31 @@ public class FireEffectsTests(ITestOutputHelper output)
         output.WriteLine($"smoke over it: not flooded in {blocked} of {Runs}, gone up in {gone}");
         Assert.InRange(blocked, Runs * 0.4, Runs * 0.8);   // MagazineThroughChance 0.4 gets through
         Assert.True(gone >= blocked / 2, $"{gone} gone up of {blocked} never flooded");
+    }
+
+    /// <summary>While there's a dry layer it can go up (Leonardo da Vinci's "almost completed" flooding lost to her top
+    /// layer; research 11 §2.3): a fire beside a magazine three-quarters full sets it off, and one that's full it can't.</summary>
+    [Fact]
+    public void A_dry_layer_over_the_water_can_go_up_and_a_full_magazine_cant()
+    {
+        var c = Class("dreadnought");
+        var f = new FloodModel(c);
+        var (_, room, beside, _) = Magazine(c);
+        int Up(double share)
+        {
+            int up = 0;
+            for (ulong seed = 0; seed < 20; seed++)
+            {
+                var k = Fresh(c);
+                foreach (int cell in c.Links(c.Rooms[room].Cells))
+                    k.WaterM3[cell] = share * f.Capacity[cell];
+                up += double.IsNaN(CookOff(c, f, k, beside, 3, seed)) ? 0 : 1;
+            }
+            output.WriteLine($"{share:P0} full: gone up in {up} of 20");
+            return up;
+        }
+        Assert.True(Up(0.75) >= 15);
+        Assert.Equal(0, Up(1));
     }
 
     /// <summary>The valves in smoke (research 11 §3.3): some men get through it, slowly (Seydlitz), the rest are driven back

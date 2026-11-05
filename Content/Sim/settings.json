@@ -616,6 +616,7 @@
     { "Name": "rate first", "DoorOpen": [1, 1, 0.5, 1, 1], "StationCharges": 2, "LidsOff": 1, "HoistShare": 1.0 }
   ],
   "MagazineOrderS": 120,
+  "MagazineFullShare": 0.995,
   "MagazineOrderSigma": 0.6,
   "MagazineOrderRangeS": [30, 360],
   "MagazineThroughChance": 0.4,
