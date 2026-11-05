@@ -282,6 +282,27 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal("drill", w.Damage.FlashOf(0, b).Name);
     }
 
+    /// <summary>A wing turret sharing a magazine has no handling room; the door into the magazine is still the magazine's,
+    /// open about one time in ten on drill, not her working chamber's.</summary>
+    [Fact]
+    public void A_wing_turret_still_has_the_magazines_door()
+    {
+        var c = Fleet.Get("nassau").Class!;
+        int wing = Enumerable.Range(0, c.Mounts.Length).First(m => c.Train(m).Length == 3 && c.Train(m)[1].Kind == StationKind.Chamber && c.Train(m)[2].Kind == StationKind.Magazine);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        k.Flash = Magazines.Of(Settings, "1916");
+        var rng = RandomStream.Named(1, "wing door test");
+        int reached = 0, runs = 4000;
+        for (int i = 0; i < runs; i++)
+        {
+            var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+            reached += Magazines.Light(c, k, wing, 0, false, Settings, ref rng, ref res) >= 0 ? 1 : 0;
+        }
+        Assert.InRange((double)reached / runs, 0.07, 0.13);
+    }
+
     /// <summary>"Too safe": on drill the flash doors in the train don't stop a flame (the record's ran the train), and the
     /// magazine's own door does when it's shut, about 9 in 10.</summary>
     [Fact]

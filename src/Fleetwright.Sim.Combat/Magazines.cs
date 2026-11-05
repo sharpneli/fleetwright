@@ -61,9 +61,9 @@ public static partial class Magazines
         if (!burning)
             Burn(c, k, mount, train[station], flash, s, ref res);
         int lo = station, hi = station;
-        while (hi + 1 < train.Length && r.NextDouble() < flash.DoorOpen[(int)train[hi].Kind])
+        while (hi + 1 < train.Length && r.NextDouble() < DoorOpen(flash, train[hi].Kind, train[hi + 1].Kind))
             Burn(c, k, mount, train[++hi], flash, s, ref res);
-        while (lo > 0 && r.NextDouble() < flash.DoorOpen[(int)train[lo - 1].Kind])
+        while (lo > 0 && r.NextDouble() < DoorOpen(flash, train[lo - 1].Kind, train[lo].Kind))
             Burn(c, k, mount, train[--lo], flash, s, ref res);
         res.Stations += hi - lo + 1;
         res.Flash = true;
@@ -73,6 +73,12 @@ public static partial class Magazines
             Order(k, c.Mounts[mount].Magazine, now + (long)(s.MagazineOrderS * 1000));
         return -1;
     }
+
+    /// <summary>How often the door below a station stands open to the flame. The door into a magazine is the magazine's own,
+    /// whatever's above it: a wing turret sharing a magazine has no handling room, and her working chamber's flash doors
+    /// aren't what stands between the flame and her charges (a casemate's hoist and passage have theirs in series).</summary>
+    static double DoorOpen(in FlashDiscipline flash, StationKind above, StationKind below) =>
+        flash.DoorOpen[(int)(below == StationKind.Magazine && above != StationKind.Casemate ? StationKind.Handling : above)];
 
     /// <summary>A magazine's flooding ordered, its valves to open at <paramref name="atMs"/> (the earlier order stands).</summary>
     public static void Order(ShipCondition k, int room, long atMs)
