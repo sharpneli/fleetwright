@@ -719,7 +719,7 @@ Four seeds and the panel's spread: read direction only. Jutland's total losses d
 All on whole train + R 32:
 
 - The German cases burn out, none lost, as the record has it. Lion at both battles sets nothing off. Warspite loses 1 of 40 runs (record: none). The Yalu ironclad 2 of 40 (black powder, doors new to it).
-- **The rung's worst miss: Kirishima,** 20 x 16" at 8 km on a design with no drill row of her own: lost 20% -> 40% of runs, 4 of 40 to a magazine (record: she foundered, no explosion).
+- **The rung's worst miss: Kirishima,** 20 x 16" at 8 km: lost 20% -> 40% of runs, 4 of 40 to a magazine (record, from memory: no magazine explosion).
 - `fire-history`: one of its nine cases goes from none lost to 1 of 20, to a magazine by a hit; the fires themselves still don't set off a ship. `torpedo` doesn't move (no loss to a magazine on lion, dreadnought, light_cruiser or m_class; 10.8% of hits on a light cruiser still set one off, so V8's open item stands).
 
 **The evidence on R, from memory and to source (`research/REQUESTS.md`, 2026-11-05):** ships lost to a magazine alight with no enemy, presumably lids on: Natal, Vanguard, Mikasa 1905, Tsukuba, Kawachi; with single-base, Iéna and Liberté; Bulwark had charges lying out. Against that, no case is known here of a dry 1900-1918 cordite magazine alight that burned out with the ship afloat. Burned-out magazines in the notes are German brass (the train, in fact, not the magazine), Gneisenau 1942 and Boise 1942. If that holds, Clarkson's R is far above 4-8, and tanks of early single-base (Borodino at Tsushima, by our propellant "tank" R 1.2) may be too.
