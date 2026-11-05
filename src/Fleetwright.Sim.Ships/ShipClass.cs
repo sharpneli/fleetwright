@@ -112,6 +112,8 @@ public sealed class ShipClass
     /// blast's boundaries (riveted ×0.85), the belt's seep and the seams' leak read them.</summary>
     public Joint ShellJoint { get; internal init; }
     public Joint InternalsJoint { get; internal init; }
+    /// <summary>The hull girder's allowable stress, MPa (the design's construction; shipgen's mild steel of 1900 for a hull with no plate model).</summary>
+    public double GirderStressMpa { get; internal init; }
     /// <summary>How the fittings stand shock (E0): the armour shock, the near misses and the service networks read it.</summary>
     public ShockGrade ShockGrade { get; internal init; }
     /// <summary>What works her gunhouses, and her steering and pumps (docs/battle/electrics.md EL4).</summary>

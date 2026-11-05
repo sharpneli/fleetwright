@@ -378,7 +378,7 @@ public static class Program
                 "explode" => ExplodeBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new ExplodeBench.Options(a.Get("room"), D(a, "kg", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152), a.Get("magazine"), a.Get("packaging"),
-                        D(a, "flooded", 0), a.Get("doctrine"), D(a, "belt", -1), D(a, "keep", -1), D(a, "tear", -1), D(a, "panel", -1), D(a, "rupture", -1), D(a, "step", -1), a.Has("trace"), a.Has("cells"), a.Int("salvo", 0))),
+                        D(a, "flooded", 0), a.Get("doctrine"), D(a, "belt", -1), D(a, "keep", -1), D(a, "tear", -1), D(a, "panel", -1), D(a, "rupture", -1), D(a, "step", -1), a.Has("trace"), a.Has("cells"), a.Int("salvo", 0), a.Has("girder"), D(a, "whip", -1))),
                 "magazine" => MagazineBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 0), a.Has("race"),
                     D(a, "flooded", 0), a.Get("packaging"), a.Has("trace"), D(a, "sea", 0), a.Get("doctrine")),
@@ -451,7 +451,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

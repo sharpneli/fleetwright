@@ -363,7 +363,7 @@ public static class Blast
     /// <summary>A space's outside face (port side, starboard side, the weather deck over it, the bottom under it): its
     /// area (0: not outside), the plate there (mm of steel: the shell plating and a belt over it, the strength deck, the
     /// bottom) and its middle.</summary>
-    static double Outside(ShipClass c, int cell, int face, out double mm, out P3 point)
+    internal static double Outside(ShipClass c, int cell, int face, out double mm, out P3 point)
     {
         ref readonly var x = ref c.Cells[cell];
         var b = x.Box;

@@ -1,7 +1,7 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). EX0 and EX1 run on the bench, the game untouched; EX1's results await
-the user ("EX1: what it showed").
+Status: **decided 2026-11-05** ("Decided" at the end). EX0, EX1 and EX3 run on the bench, EX3 first at the user's word; the game
+is untouched. Their results await the user ("EX3: what it showed"); EX2 wires them in next.
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -265,6 +265,86 @@ of her sides. It lands in 07's band (d 0.5-0.8 breaks in a seaway). It's read th
 1, ¼, 1/20 of the step, and the burst 837 at all three. My first limiter wasn't converged (324 to 559 kPa from the step alone).
 
 **The game is untouched:** `magazine --race` and the `hits` bench come out byte-identical to the frozen build.
+
+## EX3: what it showed (2026-11-05)
+
+Built on the bench before EX2 (the user: "It's easier to have EX3 before"). `HullGirder.cs`; `shipgen explode` reads it on every
+case, `--girder` the sections intact. Tests: `HullGirderTests`. This supersedes the section shares EX1's numbers were read through.
+
+**What it is, none of it set by hand but `k`:**
+
+- **The section is the boundaries the gas tears:** weather deck, bottom, sides, decks and longitudinal bulkheads, cell by cell.
+  What ruptures comes out of the section, with no shares kept apart (`MagazineD` isn't read). A belt carries nothing and an armour
+  deck counts in its deck, as shipgen's sizing has it; a deck's slopes count and can't yet be lost.
+- **Capacity is steel on what's left:** yield (2.1 × the design's allowable stress) × the section modulus to its extreme fibre.
+- **The moment is shipgen's design moment,** Δ·g·L/40, as still water and waves in `MagazineGirder`'s shares, plus the flooding's
+  own moment, integrated section by section. All go as sin²(πx/L): a free beam has no shear at its ends. (07's sin had the tip
+  of the hull carrying a third of its moment, and broke Lion intact at 0.10 of her length.)
+- **The whip follows the impulse.** E joules driving m kg give J = √(2Em); her bending takes J²/2 over her own mass. So it goes as E·m/Δ,
+  times `k` 0.2 [EST] for what's vertical and in phase. A shell's whip is small and tonnes of cordite's large, on one law, and at EX5
+  a bubble driving hundreds of tonnes of water gets its large one from the same law. An energy share (my first try) had one shell
+  whip a destroyer 0.46 of a design moment.
+- **A crack cuts by its length,** which goes as the root of its opening, so a boundary's strength falls with `r(D)`'s one curve, not
+  at a step.
+- **An end is read apart.** Within `MagazineEndShare` of an end, what breaks takes the end off and she may live (07 §3.2).
+
+**The section against shipgen's independent sizing, intact:**
+
+| Design | I, m⁴ | Shipgen's | Capacity, design moments | Load calm | In a seaway | Ends in a seaway |
+|---|---:|---:|---:|---:|---:|---:|
+| Destroyer | 3.3 | 3.0 | 4.09 | 0.10 | 0.27 | 0.11 |
+| V25 | 1.9 | 2.2 | 3.67 | 0.11 | 0.30 | 0.11 |
+| Lion | 210 | 195 | 2.62 | 0.16 | 0.44 | 0.83 |
+| Iron Duke | 68 | 77 | 2.19 | 0.22 | 0.59 | 0.31 |
+| Seydlitz | 168 | 137 | 2.99 | 0.14 | 0.39 | 0.30 |
+| Dreadnought | 71 | 75 | 2.16 | 0.19 | 0.52 | 0.14 |
+| Super-dreadnought | 101 | 90 | 2.73 | 0.16 | 0.42 | 0.39 |
+| Fast Battleship | 178 | 236 | 2.80 | 0.34 | 0.92 | 0.73 |
+| Bismarck | 97 | 188 | 1.66 | 0.31 | 0.85 | 0.76 |
+| **Yamato** | **216** | **356** | 2.56 | 0.43 | **1.16** | **1.02** |
+
+Capacity lands in 07's "2-3 × design", with small ships above it (minimum gauge is more than they need). **Yamato breaks intact in a
+seaway, and that has to be fixed before EX2** (below).
+
+**The load on the girder after each explosion (1 is broken; nothing is fitted to these):**
+
+| Case | Calm | Seaway | Reading |
+|---|---:|---:|---|
+| Lion's Q, bags | 0.89 | **1.47** | breaks in a seaway, at 0.88 of her length |
+| Lion's Q, Clarkson | 0.53 | **1.01** | on the edge in a seaway |
+| Lion's Q, brass | 0.64 | **1.25** | no better than Clarkson: the known R 28 catch |
+| Lion's Q, bags, 95% flooded | 0.16 | 0.44 | nothing happens |
+| Iron Duke, each magazine (Clarkson) | 0.66-**1.00** | **1.10-1.52** | B amidships on the edge in calm water |
+| Seydlitz, each magazine (brass) | 0.31-0.43 | 0.56-0.67 | **holds: burns out and fights on, as the record has her** |
+| Destroyer, V25, a magazine | 0.11-0.14 | 0.28-0.33 | stows of 0.3-0.9 t don't reach the hull; **check against the record** |
+| 5″, 8″ in a destroyer's compartment | 0.10 | 0.27 | no different from intact |
+| 250 kg SAP in her accommodation | 0.32 | 0.76 | section lost 0.75 aft of amidships |
+| One 46 cm HE in her engine room | 0.68 | **1.61** | section lost 0.83 |
+| Nine 46 cm HE along a destroyer | 0.92 | **1.89** | her bow off too |
+| Eighteen 12″ or 6″ HE along a destroyer | 0.13 | 0.29 | no side plate ruptured; only the bow's tip goes |
+| Nine 46 cm HE on Iron Duke, a Queen Elizabeth | 0.17-0.23 | 0.44-0.61 | the belt holds |
+| A Tallboy's charge in a destroyer | **5.77** | **7.15** | gone, whip 2.16 |
+| The same in Yamato | 0.60 | **1.44** | section lost 0.62 |
+| The same in Lion, Iron Duke | 0.21-0.32 | 0.48-0.69 | too little: the near field (EX4) |
+
+**The destroyer from the question that began this:** one 46 cm burst inside already cuts the upper part of her section (deck and sides,
+0.83 lost), and she holds only in calm water. More shells add sections, hardly more load, because each section's loss is its own.
+Whether she goes then depends on the sea, the flooding's moment (built, not yet run: the bench has no water in it) and what the shells
+do near the waterline. The contact holes are vents only on this bench and aren't in the section yet (EX4).
+
+**Not there yet:**
+
+1. **Yamato's intact hull (before EX2).** Her I is 216 against shipgen's 356, and the worst is at 0.17. My reading, not yet checked: past
+   the citadel her plating's only minimum gauge, because `HullWeight` credits the armour deck with her whole girder (`strength_t` 0 on
+   WWII battleships) and nothing carries that strength on along her. The same, milder, on the Fast Battleship and Bismarck. If so, the
+   plate model must size what's outside the armour, which moves weights and goldens. It could also be how the section reads her armour deck.
+2. **Lion's thin ends** read 0.83 intact in a seaway at 0.10, where her capacity falls from 1.13 to 0.10 in one section; look at it with (1).
+3. **12″ and 6″ HE never rupture a destroyer's side.** Near a 62 kg burst the plate goes and below about 20 kg it holds outright: a steep
+   edge, though from the physics. Friedrich Eckoldt (6″ broadsides, broke in two in under two minutes) isn't met; the research is
+   asked what broke her.
+4. **`k` 0.2 is an estimate** (0.2 of a design moment on Lion from 20 t of cordite in a second), to be tested by EX5's bubble and the research.
+5. **Lion's break lands at 0.88,** by her forward magazines, not at Q, wherever she's lit: the thin section there, and fire carried
+   to A and B along the passages. Their cells can't hold their stow (EX1's item 4), so this reading may move once they can.
 
 ## What stays out
 

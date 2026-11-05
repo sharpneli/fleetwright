@@ -53,6 +53,7 @@ public static class ShipClassCompiler
                 Motion = Motion(),
                 ShellJoint = r.Hull.Shell,
                 InternalsJoint = r.Hull.Internals,
+                GirderStressMpa = r.Hull.Girder?.AllowableStressMpa ?? 111.9,
                 ShockGrade = r.Fittings.ShockGrade,
                 TurretDrive = Fittings.TurretDriveOf(ship.Design),
                 Auxiliaries = Fittings.AuxiliariesOf(ship.Design),

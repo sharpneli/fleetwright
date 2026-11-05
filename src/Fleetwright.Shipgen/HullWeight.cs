@@ -92,6 +92,12 @@ public static class HullWeight
 
     public static double AllowableStress(Construction c) => Math.Min(c.YieldMpa / SF, SigCap);
 
+    /// <summary>The design's hogging moment, kN·m: what the plate model sizes the girder to, and the damage model's yardstick.</summary>
+    public static double DesignMomentKnM(double full, double L) => full * 9.81 * L / CM * Math.Pow(Math.Min(1.0, Long / L), 2);
+
+    /// <summary>The steel's yield over its allowable stress.</summary>
+    public static double SafetyFactor => SF;
+
     /// <summary>The strength deck's area, as the model takes it.</summary>
     public static double DeckArea(double L, double B, double cb) => B * L * (0.66 + 0.33 * cb);
 
@@ -123,7 +129,7 @@ public static class HullWeight
         double aDb = doubleBottom * B * L * cb * DbArea;
         double tMin = TMinMm(L, c);
         double sig = AllowableStress(c);
-        double m = full * 9.81 * L / CM * Math.Pow(Math.Min(1.0, Long / L), 2);
+        double m = DesignMomentKnM(full, L);
         double G = girderDepth ?? D;
         double iReq = m / (sig * 1000) * (G / 2);
         double iArm = armourDecks.Sum(a => ArmDeckWidth * Breadth(a.Z) * a.Mm / 1000 * Math.Pow(a.Z - NeutralAxis * G, 2));

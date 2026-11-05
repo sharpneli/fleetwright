@@ -15,7 +15,7 @@ static class ExplodeBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Room, double Kg, string Explosive, double CalibreMm, string? Magazine, string? Packaging, double Flooded, string? Doctrine,
-        double Belt, double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0);
+        double Belt, double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1);
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -33,9 +33,16 @@ static class ExplodeBench
             g.RuptureMPaMm = o.Rupture;
         if (o.Step > 0)
             g.StepK = o.Step;
+        if (o.Whip >= 0)
+            g.WhipShare = o.Whip;
         if (o.Trace)
             GasNetwork.Trace = Console.WriteLine;
         Console.WriteLine(string.Format(Inv, "the network's rungs: belt {0:0.##}, heat kept {1:0.##}, tear {2:0.##} of a boundary, panel {3:0.#} ms, rupture {4:0.###} MPa/mm, step x{5:0.##}", g.BeltShare, g.HeatKeep, g.TearShare, g.PanelMs, g.RuptureMPaMm, g.StepK));
+        if (o.Girder)
+        {
+            Intact(designs, load, s);
+            return 0;
+        }
         if (o.Salvo > 0)
         {
             foreach (var d in designs.Count > 0 ? designs : ["destroyer"])
@@ -137,6 +144,7 @@ static class ExplodeBench
         _ = Ship(c, s, out var k, out _);
         var net = new GasNetwork(c);
         net.Detonate(k, cell, at, kg, shell, 0, rw, s.NearHoleK * size, g, s);   // a first one: the timing below is a burst's own
+        net.Forget();
         _ = Ship(c, s, out k, out _);
         var sw = Stopwatch.StartNew();
         var r = net.Detonate(k, cell, at, kg, shell, 0, rw, s.NearHoleK * size, g, s);
@@ -148,6 +156,7 @@ static class ExplodeBench
             old.FirstMPa * 1000, old.FeltMPa * 1000, old.Spaces, old.Ruptured, old.Doors, old.HoleM2));
         Console.WriteLine(string.Format(Inv, "      network: peak {0:0} kPa; {1} spaces, holed " + r.Holed + ", gave: {2} bulkheads, {3} decks, {4} doors, {5} sides, {6} weather deck, {7} bottom; {8:0.00} s in {9} steps ({10:0} µs)",
             r.PeakKPa, r.Spaces, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.EndS, r.Steps, us));
+        Hull(c, new HullGirder(c), net, r.WhipEM, g, s);
         if (cells)
             Cells(c, net);
     }
@@ -165,6 +174,8 @@ static class ExplodeBench
         double size = Math.Cbrt(kg * shell.FillerRe), rw = s.WreckRadiusK * size;
         _ = Ship(c, s, out var k, out _);
         var net = new GasNetwork(c);
+        var girder = new HullGirder(c);
+        double salvoJ = 0;
         double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity;
         foreach (ref readonly var cell in c.Cells)
             (x0, x1) = (Math.Min(x0, cell.Box.X0), Math.Max(x1, cell.Box.X1));
@@ -188,9 +199,12 @@ static class ExplodeBench
             }
             var r = net.Detonate(k, at, new P3(xs, y, z), kg, shell, contact, rw, s.NearHoleK * size, g, s);
             net.Commit();
-            Console.WriteLine(string.Format(Inv, "    shell {0} at x {1,6:0.0} in {2,-12}: peak {3,5:0} kPa, {4,3} spaces, holed {5}, gave {6} bulkheads, {7} decks, {8} doors, {9} sides, {10} weather deck, {11} bottom | so far at {12:0.00}: deck {13:0%}, sides {14:0%}, bottom {15:0%}, d {16:0.00}, load {17:0.00}",
-                i + 1, xs, c.CellId(at), r.PeakKPa, r.Spaces, r.Holed, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.Station, r.DeckShare, r.SideShare, r.BottomShare, r.D, r.GirderLoad));
+            salvoJ += r.WhipEM;
+            var h = girder.Read(net.EdgesLost, net.FacesLost, null, 0, girder.Whip(salvoJ, g.WhipShare), s);
+            Console.WriteLine(string.Format(Inv, "    shell {0} at x {1,6:0.0} in {2,-12}: peak {3,5:0} kPa, {4,3} spaces, holed {5}, gave {6} bulkheads, {7} decks, {8} doors, {9} sides, {10} weather deck, {11} bottom | worst at {12:0.00}: deck {13:0%}, sides {14:0%}, bottom {15:0%}, d {16:0.00}, load {17:0.00}",
+                i + 1, xs, c.CellId(at), r.PeakKPa, r.Spaces, r.Holed, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, h.Station, h.Deck, h.Side, h.Bottom, h.D, h.Load));
         }
+        Hull(c, girder, net, salvoJ, g, s);
         Console.WriteLine(string.Format(Inv, "    the sea's way in: {0:0.0} m² of holes, of which under the waterline {1:0.0}", Sum(k.BreachM2), SumUnder(c, k)));
     }
 
@@ -205,8 +219,40 @@ static class ExplodeBench
         return sum;
     }
 
-    static void Magazine(ShipClass c, SimSettings s, in GasKnobs g, string which, double flooded, string? doctrine, bool cells)    {
+    /// <summary>What the explosion left of the girder: calm water and a seaway.</summary>
+    static void Hull(ShipClass c, HullGirder girder, GasNetwork net, double energyMass, in GasKnobs g, SimSettings s)
+    {
+        double whip = girder.Whip(energyMass, g.WhipShare);
+        var calm = girder.Read(net.EdgesLost, net.FacesLost, null, 0, whip, s);
+        var sea = girder.Read(net.EdgesLost, net.FacesLost, null, 1, whip, s);
+        Console.WriteLine(string.Format(Inv, "      the girder: worst at {0:0.00} of her length, section lost {1:0.00} (decks {2:0%}, sides {3:0%}, bottom {4:0%}, longitudinals {5:0%}), left {6:0.00} design moments; whip {7:0.00}; load {8:0.00} calm{9}, {10:0.00} in a seaway{11}{12}",
+            calm.Station, calm.D, calm.Deck, calm.Side, calm.Bottom, calm.Longitudinal, calm.Capacity, whip, calm.Load, calm.Load >= 1 ? " BROKEN" : "", sea.Load, sea.Load >= 1 ? " BROKEN" : "", calm.EndLoad >= 1 ? string.Format(Inv, "; her end off at {0:0.00}", calm.EndStation) : sea.EndLoad >= 1 ? string.Format(Inv, "; in a seaway her end off at {0:0.00}", sea.EndStation) : ""));
+    }
+
+    /// <summary>The girder intact: is the section right? Its second moment against shipgen's, capacity over the design moment, and the worst load in a seaway.</summary>
+    static void Intact(IReadOnlyList<string> designs, Func<string, Design> load, SimSettings s)
+    {
+        Console.WriteLine("design                         I, m4  shipgen's  cap/design   calm   seaway  worst at  ends, seaway");
+        foreach (var d in designs.Count > 0 ? designs : ["destroyer", "v25", "lion", "iron_duke", "seydlitz", "battleship", "super_dreadnought", "yamato", "bismarck", "dreadnought"])
+        {
+            var shipped = ShipDesign.Build(load(d));
+            var c = ShipClassCompiler.Compile(shipped);
+            var h = new HullGirder(c);
+            var gr = shipped.Report.Hull.Girder;
+            var calm = h.Read(default, default, null, 0, 0, s);
+            var sea = h.Read(default, default, null, 1, 0, s);
+            double mid = h.YieldPa * (h.MidIM4 / (c.Vertical.Depth / 2)) / h.DesignNm;
+            Console.WriteLine(string.Format(Inv, "{0,-28} {1,8:0.0} {2,10:0.0} {3,11:0.00} {4,6:0.00} {5,8:0.00} {6,9:0.00} {7,8:0.00} at {8:0.00}", d, h.MidIM4, gr is null ? double.NaN : gr.PlatingM4 + gr.ArmourDecksM4, mid, calm.Load, sea.Load, sea.Station, sea.EndLoad, sea.EndStation));
+            if (designs.Count > 0)
+                foreach (var p in h.Profile())
+                    Console.WriteLine(string.Format(Inv, "   at {0:0.00}: {1,3} elements, {2,6:0.00} m², z {3,6:0.0} to {4,6:0.0}, Z {5,7:0.00} m³, capacity {6,5:0.00} design moments", p.Station, p.Elements, p.AreaM2, p.Bottom, p.Top, p.ZM3, h.YieldPa * p.ZM3 / h.DesignNm));
+        }
+    }
+
+    static void Magazine(ShipClass c, SimSettings s, in GasKnobs g, string which, double flooded, string? doctrine, bool cells)
+    {
         var net = new GasNetwork(c);
+        var girder = new HullGirder(c);
         for (int room = 0; room < c.Rooms.Length; room++)
         {
             if (c.Rooms[room].Kind != RoomKind.Magazine || !(which == "all" || c.RoomId(room).Equals(which, StringComparison.OrdinalIgnoreCase)))
@@ -220,6 +266,7 @@ static class ExplodeBench
             var old = Magazines.SetOff(c, k0, room, w0.Ships.Store.Combat.Mounts(slot0), s, 0, ref rng);
 
             var w = Ship(c, s, out var k, out int slot);
+            net.Forget();
             k.Flash = k0.Flash;
             Flood(c, k, room, flooded);
             var mounts = w.Ships.Store.Combat.Mounts(slot).ToArray();
@@ -234,8 +281,7 @@ static class ExplodeBench
                 old.Tier, old.PeakKPa, old.BurnedKg / 1000, old.D, old.GirderLoad, old.Vented, old.Magazines));
             Console.WriteLine(string.Format(Inv, "      network: peak {0:0} kPa, burned {1:0.0} t, {2} spaces ({3:0} m³), gave: {4} bulkheads, {5} decks, {6} doors, {7} sides, {8} weather deck, {9} bottom; vented {10}, lifted {11}, magazines {12}; first {13:0.00} s, the hull's {14:0.00} s, ran {15:0.0} s in {16} steps ({17:0.0} ms)",
                 r.PeakKPa, r.BurnedKg / 1000, r.Spaces, r.VolumeM3, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.Vented, r.Lifted, r.Magazines, r.FirstS, r.HullS, r.EndS, r.Steps, ms));
-            if (r.WorstSection >= 0)
-                Console.WriteLine(string.Format(Inv, "      the worst station: {0:0.00} of her length, deck {1:0%}, sides {2:0%}, bottom {3:0%} gone: girder lost {4:0.00}, load {5:0.00} of what's left", r.Station, r.DeckShare, r.SideShare, r.BottomShare, r.D, r.GirderLoad));
+            Hull(c, girder, net, r.WhipEM, g, s);
             if (cells)
                 Cells(c, net);
         }

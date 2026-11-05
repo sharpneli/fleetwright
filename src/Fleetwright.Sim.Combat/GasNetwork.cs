@@ -18,6 +18,8 @@ public struct GasKnobs
     public double PanelMs;
     /// <summary>A plate's rupture, MPa a mm.</summary>
     public double RuptureMPaMm;
+    /// <summary>What's vertical and in phase of an explosion's impulse on her hull (<see cref="HullGirder.Whip"/>) [EST: 0.2 gives Lion 0.2 of a design moment from 20 t of cordite in a second and about 0.6 from her bags' whole rush; to the research, EX5's bubble will test it].</summary>
+    public double WhipShare;
     /// <summary>The gas's temperature that lights charges, K [EST: nitrocellulose ignites near 450-470 K].</summary>
     public double IgniteK;
     /// <summary>The solver's step, a scale on its longest and on how far pressures may move in one: for the convergence check.</summary>
@@ -25,7 +27,7 @@ public struct GasKnobs
 
     public static GasKnobs Of(SimSettings s) => new()
     {
-        BeltShare = 1, HeatKeep = s.MagazineHeatKeep, TearShare = s.RupturedShare, PanelMs = s.PanelMs, RuptureMPaMm = s.RuptureMPaMm, StepK = 1, IgniteK = 470,
+        BeltShare = 1, HeatKeep = s.MagazineHeatKeep, TearShare = s.RupturedShare, PanelMs = s.PanelMs, RuptureMPaMm = s.RuptureMPaMm, StepK = 1, IgniteK = 470, WhipShare = 0.2,
     };
 }
 
@@ -33,14 +35,13 @@ public struct GasKnobs
 /// highest anywhere after the source's own space gave, the propellant burned (kg), the spaces it reached and their gas (m³),
 /// what gave: bulkheads, decks, watertight doors, the side, weather deck and bottom plates; the magazines alight, the
 /// gunhouses vented and lifted; the first boundary to give and the first of the hull's own plates (s); how long it ran (s)
-/// and in how many steps; and the hull's worst station: the section, its place along her (0 stern, 1 bow), the shares of its
-/// deck, sides and bottom gone, the girder's share lost and the load on what's left (1 or more: broken).</summary>
+/// and in how many steps. What it did to the girder is <see cref="HullGirder"/>'s to read.</summary>
 public struct GasResult
 {
     public double PeakKPa, BurnedKg, VolumeM3, FirstS, HullS, EndS;
     public int Spaces, Holed, Bulkheads, Decks, Doors, Sides, WeatherDecks, Bottoms, Magazines, Vented, Lifted, Steps;
-    public int WorstSection;
-    public double Station, DeckShare, SideShare, BottomShare, D, GirderLoad;
+    /// <summary>The most it drove within the hull's period, its energy × its mass, J·kg: what can whip her.</summary>
+    public double WhipEM;
     public double OpenM2, HoleM2;
 }
 
@@ -71,7 +72,7 @@ public sealed class GasNetwork
     readonly int[] faceStamp;
     readonly double[] faceFelt, faceTorn;
     readonly byte[] faceFate;
-    readonly bool[] everFace, everEdge;
+    readonly double[] everFace, everEdge;
     // the links a magazine's train adds: from a cell to another or the air (-1), opening at a gauge pressure there
     readonly int[] linkFrom, linkTo, linkMount;
     readonly double[] linkAt, linkArea;
@@ -85,7 +86,7 @@ public sealed class GasNetwork
     ShipCondition k = null!;
     ReadOnlyMemory<MountState> mounts;
     FlashDiscipline flash;
-    double time, chokeK;
+    double time, chokeK, whipKg, whipJ, whipPeak;
     GasResult res;
 
     sealed class Stow
@@ -105,7 +106,7 @@ public sealed class GasNetwork
         (v, m, u, p, rt, pStart, vent, peak) = (new double[nc], new double[nc], new double[nc], new double[nc], new double[nc], new double[nc], new double[nc], new double[nc]);
         (canon, area, mm, edgeStamp, open, opened, felt, tornEdge, fate) = (new int[ne], new double[ne], new double[ne], new int[ne], new double[ne], new double[ne], new double[ne], new double[ne], new byte[ne]);
         (faceStamp, faceFelt, faceTorn, faceFate) = (new int[nc * Faces], new double[nc * Faces], new double[nc * Faces], new byte[nc * Faces]);
-        (everFace, everEdge) = (new bool[nc * Faces], new bool[ne]);
+        (everFace, everEdge) = (new double[nc * Faces], new double[ne]);
         int lm = 2 * nm + 8;
         (linkFrom, linkTo, linkMount, linkAt, linkArea, linkOpen) = (new int[lm], new int[lm], new int[lm], new double[lm], new double[lm], new bool[lm]);
         (ventedMount, liftedMount) = (new bool[nm], new bool[nm]);
@@ -149,6 +150,7 @@ public sealed class GasNetwork
         m[cell] += w;
         u[cell] += joules;
         Refresh(cell);
+        (whipKg, whipJ, whipPeak) = (w, joules, joules * w);
         Near(cell, at, nearM, nearHoleM);
         Run(cell, 2e-4);
         return Finish(cell);
@@ -176,7 +178,8 @@ public sealed class GasNetwork
         id++;
         (n, links, nStows, burned, time, peakSource) = (0, 0, 0, 0, 0, 0);
         mounts = default;
-        res = new GasResult { FirstS = double.NaN, HullS = double.NaN, WorstSection = -1 };
+        res = new GasResult { FirstS = double.NaN, HullS = double.NaN };
+        (whipKg, whipJ, whipPeak) = (0, 0, 0);
         Array.Clear(ventedMount);
         Array.Clear(liftedMount);
         Blast.Prepare(c, k);
@@ -370,6 +373,7 @@ public sealed class GasNetwork
     /// <summary>The stows' gas: the same burn as the race's (r = β·P^α, cohorts of lit charges, the flame through the stow).</summary>
     void Sources(double dt)
     {
+        double released = 0, madeKg = 0;
         for (int t = 0; t < nStows; t++)
         {
             var st = stows[t];
@@ -395,6 +399,8 @@ public sealed class GasNetwork
             u[st.Cell] += made * st.EnergyJKg;
             Refresh(st.Cell);
             burned += made;
+            released += made * st.EnergyJKg;
+            madeKg += made;
 
             double openDry = st.Open * (1 - st.Flooded), casedDry = st.Cased * (1 - st.Flooded), d = 0;
             if (openDry - st.LitOpen > 0)
@@ -419,6 +425,10 @@ public sealed class GasNetwork
                     (st.Cnt[st.Cohort], st.Z[st.Cohort], st.Cohort, st.CohortT0) = (d, 0, st.Cohort + 1, time);
             }
         }
+        // the energy within about the hull's period (07 §3.1: a spike of about a second): what comes slower doesn't whip her
+        double fade = Math.Exp(-dt);
+        (whipKg, whipJ) = (whipKg * fade + madeKg, whipJ * fade + released);
+        whipPeak = Math.Max(whipPeak, whipKg * whipJ);
     }
 
     /// <summary>Every edge and outside face of the cells the gas is in: its load as its panel takes it up, what gives, the
@@ -657,82 +667,46 @@ public sealed class GasNetwork
         for (int a = 0; a < n; a++)
             vol += v[region[a]];
         res.VolumeM3 = vol;
-        Sections();
+        res.WhipEM = whipPeak;
+        Gone();
         return res;
     }
 
-    /// <summary>The hull's worst station as far as this run tore it: each section's shares of its weather deck and its
-    /// strongest deck under it, its sides and its bottom, weighted as the race's (bench only until EX3's one girder).</summary>
-    void Sections()
+    /// <summary>The share of each boundary's tension gone on this ship so far, across its runs: by edge and by cell x 4 + face (<see cref="HullGirder"/>'s).</summary>
+    public ReadOnlySpan<double> EdgesLost => everEdge;
+    public ReadOnlySpan<double> FacesLost => everFace;
+
+    /// <summary>A fresh ship: nothing gone.</summary>
+    public void Forget()
     {
-        int sections = 0;
-        foreach (ref readonly var x in c.Cells)
-            sections = Math.Max(sections, x.Section + 1);
-        double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity;
-        foreach (ref readonly var x in c.Cells)
-            (x0, x1) = (Math.Min(x0, x.Box.X0), Math.Max(x1, x.Box.X1));
-        var gi = s.MagazineGirder;
-        double worst = -1;
-        for (int sec = 0; sec < sections; sec++)
+        Array.Clear(everEdge);
+        Array.Clear(everFace);
+    }
+
+    /// <summary>What this run took out of the boundaries, added to the ship's. Past rupture a boundary's opening is a crack, its
+    /// area going as its length squared, so the share of the plate it has cut goes as the root of how far open it is;
+    /// short of rupture its seams leak but it carries its load. No step: one curve from the first crack to torn out.</summary>
+    void Gone()
+    {
+        for (int a = 0; a < n; a++)
         {
-            double top = 0, topTorn = 0, side = 0, sideTorn = 0, bot = 0, botTorn = 0, thick = 0, thickArea = 0, thickTorn = 0, sx0 = double.PositiveInfinity, sx1 = double.NegativeInfinity;
-            for (int i = 0; i < c.Cells.Length; i++)
+            int i = region[a];
+            var nb = c.Cells[i].Neighbours;
+            for (int j = nb.Start; j < nb.End; j++)
             {
-                ref readonly var cell = ref c.Cells[i];
-                if (cell.Section != sec)
-                    continue;
-                (sx0, sx1) = (Math.Min(sx0, cell.Box.X0), Math.Max(sx1, cell.Box.X1));
-                for (int f = 0; f < Faces; f++)
-                {
-                    double fa = Blast.Outside(c, k, i, f, out _, out _);
-                    if (!(fa > 0))
-                        continue;
-                    int x = i * Faces + f;
-                    double torn = everFace[x] || faceStamp[x] == id && faceFate[x] == Blast.Fate.Ruptured ? 1 : 0;   // past rupture it carries no tension, however wide the gap
-                    if (f == 2)
-                        (top, topTorn) = (top + fa, topTorn + torn * fa);
-                    else if (f == 3)
-                        (bot, botTorn) = (bot + fa, botTorn + torn * fa);
-                    else
-                        (side, sideTorn) = (side + fa, sideTorn + torn * fa);
-                }
+                int q = canon[j];
+                if (edgeStamp[q] == id && fate[q] == Blast.Fate.Ruptured && area[j] > 0)
+                    everEdge[q] = Math.Max(everEdge[q], Math.Sqrt(Math.Min(tornEdge[q] / (g.TearShare * area[j]), 1)));
+                else if (edgeStamp[q] == id && fate[q] == Blast.Fate.Holed && area[j] > 0)
+                    everEdge[q] = Math.Max(everEdge[q], Math.Sqrt(Math.Min(open[q] / area[j], 1)));   // the near zone's hole
             }
-            for (int i = 0; i < c.Cells.Length; i++)
+            for (int f = 0; f < Faces; f++)
             {
-                if (c.Cells[i].Section != sec)
-                    continue;
-                var nb = c.Cells[i].Neighbours;
-                for (int j = nb.Start; j < nb.End; j++)
-                {
-                    ref readonly var e = ref c.Neighbour(j);
-                    if (e.Join == JoinKind.Deck && e.Cell > i && mm[j] > thick)
-                        thick = mm[j];
-                }
+                int x = i * Faces + f;
+                double fa = Blast.Outside(c, k, i, f, out _, out _);
+                if (fa > 0 && faceStamp[x] == id && faceFate[x] == Blast.Fate.Ruptured)
+                    everFace[x] = Math.Max(everFace[x], Math.Sqrt(Math.Min(faceTorn[x] / (g.TearShare * fa), 1)));
             }
-            for (int i = 0; i < c.Cells.Length; i++)
-            {
-                if (c.Cells[i].Section != sec)
-                    continue;
-                var nb = c.Cells[i].Neighbours;
-                for (int j = nb.Start; j < nb.End; j++)
-                {
-                    ref readonly var e = ref c.Neighbour(j);
-                    if (e.Join != JoinKind.Deck || e.Cell < i || mm[j] < 0.9 * thick)
-                        continue;
-                    thickArea += area[j];
-                    if (everEdge[canon[j]] || edgeStamp[canon[j]] == id && fate[canon[j]] == Blast.Fate.Ruptured)
-                        thickTorn += area[j];
-                }
-            }
-            double deck = Math.Max(top > 0 ? topTorn / top : 0, thickArea > 0 ? thickTorn / thickArea : 0);
-            double sides = side > 0 ? sideTorn / side : 0, bottom = bot > 0 ? botTorn / bot : 0;
-            double d = s.MagazineD[0] * deck + s.MagazineD[1] * sides + s.MagazineD[2] * bottom;
-            double station = x1 > x0 ? Math.Clamp(((sx0 + sx1) / 2 - x0) / (x1 - x0), 0, 1) : 0.5;
-            double load = d >= 1 ? double.PositiveInfinity : Math.Sin(Math.PI * station) * (gi[1] + gi[3]) / (gi[0] * (1 - d));
-            if (d <= 0 || load <= worst)
-                continue;
-            worst = load;
-            (res.WorstSection, res.Station, res.DeckShare, res.SideShare, res.BottomShare, res.D, res.GirderLoad) = (sec, station, deck, sides, bottom, d, load);
         }
     }
 
@@ -753,8 +727,6 @@ public sealed class GasNetwork
             for (int j = nb.Start; j < nb.End; j++)
             {
                 int q = canon[j];
-                if (edgeStamp[q] == id && fate[q] == Blast.Fate.Ruptured)
-                    everEdge[q] = true;
                 if (edgeStamp[q] != id || !(opened[q] > 0))
                     continue;
                 k.JoinOpenM2[q] = Math.Min(k.JoinOpenM2[q] + opened[q], area[j]);
@@ -764,8 +736,6 @@ public sealed class GasNetwork
             for (int f = 0; f < Faces; f++)
             {
                 int x = i * Faces + f;
-                if (faceStamp[x] == id && faceFate[x] == Blast.Fate.Ruptured)
-                    everFace[x] = true;
                 if (faceStamp[x] != id || !(faceTorn[x] > 0))
                     continue;
                 Blast.Outside(c, k, i, f, out _, out var point);
