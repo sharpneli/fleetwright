@@ -182,6 +182,30 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
 - **EX8. The acceptance bench.** A Tallboy, a mine, an aircraft torpedo, a depth charge, a 250 kg SAP in a destroyer (11's
   test 3), by data alone. The bombs themselves stay out of this plan.
 
+## EX0: the baseline (2026-11-05)
+
+Today's game at commit `e04f2d05`, before any of this, to compare EX7 against. **Not a target:** these are the numbers the plan
+expects to move. The full output is in `docs/battle/explosions-baseline/` (`balance`, 8 seeds, Jutland 4; `losses`, 4 seeds;
+`damage-history`, `dc-history`, `fire-history`, 20 runs a case). Rerun the post-mortems from that commit if they're wanted.
+
+| `balance`: lost a seed | | Record | | | Record | How they went |
+|---|---:|---:|---|---:|---:|---|
+| Dover Strait: Britain | 0.5 | 0 | Germany | 1.6 | 2 | broke in two 60%, magazine 20%, capsized 13%, foundered 7% |
+| Coronel: Britain | 1.4 | 2 | Germany | 1.1 | 0 | magazine 50%, capsized 33%, foundered 17% |
+| Cape Sarych: Russia | 2.8 | 0 | Ottoman Empire | 0.9 | 0 | foundered 48%, capsized 33%, magazine 19% |
+| Heligoland Bight: Britain | 2.0 | 0 | Germany | 14.3 | 4 | capsized 63%, foundered 23%, broke in two 12%, magazine 2% |
+| Dogger Bank: Britain | 7.3 | 0 | Germany | 8.4 | 1 | capsized 64%, foundered 28%, magazine 5%, broke in two 3% |
+| Tsushima: Russia | 4.9 | 7 | Japan | 4.8 | 0 | foundered 49%, capsized 39%, magazine 10%, broke in two 1% |
+| Jutland: Britain | 28.5 | 14 | Germany | 49.8 | 11 | capsized 55%, foundered 31%, broke in two 9%, magazine 5% |
+| The prizes' war, 1920: France | 1.5 | - | Italy | 2.6 | - | capsized 72%, foundered 19%, broke in two 6%, magazine 3% |
+| Åland, 1921: Finland | 6.0 | - | Sweden | 4.1 | - | foundered 53%, capsized 44%, broke in two 3% |
+
+- **All together:** 5 of 14 sides within about twice the record; the record's loser lost more in 23 of 44 seeds; capsized 54%,
+  foundered 32%, broke in two 8%, magazine 6%. Every broken ship today is a torpedo's or a mine's work, so EX3 should raise that.
+- **Magazines at Jutland, a seed** (`losses`): 1,748 heavy hits, 82.8 of them lit charges in a train. Set off by a hit: contained 8.5,
+  burned out 0.5, breached 2.0, severed 0.5, two groups 3.0. By a fire: contained 0.3, severed 0.3.
+- **Mind the noise:** Jutland's seeds ran 65-90 lost and the Dogger Bank's 9-26, so a small move in EX7 means nothing here.
+
 ## EX1: what it showed (2026-11-05)
 
 `shipgen explode` (`GasNetwork.cs`, the bench only): the anchors with no arguments; `DESIGN --magazine ROOM|all`, `--kg K

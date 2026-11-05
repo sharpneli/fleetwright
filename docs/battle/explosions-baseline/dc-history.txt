@@ -1,0 +1,177 @@
+﻿damage control's yardstick (docs/battle/damage-control.md DC0): 20 runs a case, the case's damage and speeds through the world's damage system; (?) marks a case from general knowledge, read but not tuned to
+
+1890-1925
+  Seydlitz, Jutland 1916: a torpedo forward and heavy shells in the bow
+    Seydlitz-like (echelon, cross-deck fire, 1913), 24 kn; closed up, 1916; v25's torpedo at 10 min, 0.78 from the stern, 4 m down; a 1.2 m² hole at 30 min, 0.90 from the stern, +0.2 m, its boundaries sprung at D 2; a 0.6 m² hole at 60 min, 0.88 from the stern, -0.5 m, port, its boundaries sprung at D 2; 12 hits 0-120 min at 13000 m (100% lion 0); 7 kn at 240 min
+    water afloat (median): 0.5 h 1829 t, 1 h 2712 t, 2 h 3666 t, 4 h 4883 t, 8 h 7102 t; worst list 4.2° (median, all runs)
+    at 10 h afloat: list 2.8°, trim +2.2° (+ by the head), speed 3.5 kn, power 61%; the lowest safe speed asked 3.0 kn (in 100% of runs)
+    boundaries sprung 104, gave way 0 (in 5% of runs), watertight doors open 2, counterflooded 598 t (medians)
+    holes open (medians, count and m²): seam 3 (0.00), plug 0 (0.00), patch 8 (0.93), mat 9 (19.33), beyond 3 (75.13)
+    lost 0%
+    record: 5,308 t; slowed, steamed stern first to ease the forward bulkheads, reached harbour
+    wanted: survives in most runs when she slows; loses her forward bulkheads if she holds speed
+    basis: 17 §1.3, 09 §2.2  (13.6 s)
+  Seydlitz's damage, holding 24 kn throughout (against the record's slowing)
+    Seydlitz-like (echelon, cross-deck fire, 1913), 24 kn; closed up, 1916; v25's torpedo at 10 min, 0.78 from the stern, 4 m down; a 1.2 m² hole at 30 min, 0.90 from the stern, +0.2 m, its boundaries sprung at D 2; a 0.6 m² hole at 60 min, 0.88 from the stern, -0.5 m, port, its boundaries sprung at D 2; 12 hits 0-120 min at 13000 m (100% lion 0)
+    water afloat (median): 0.5 h 1829 t, 1 h 2744 t, 2 h 3935 t, 4 h 5361 t, 8 h 7368 t; worst list 3.8° (median, all runs)
+    at 10 h afloat: list 3.4°, trim +2.6° (+ by the head), speed 22.6 kn, power 55%; the lowest safe speed asked 3.0 kn (in 90% of runs)
+    boundaries sprung 100, gave way 0 (in 20% of runs), watertight doors open 2, counterflooded 578 t (medians)
+    holes open (medians, count and m²): seam 3 (0.00), plug 0 (0.00), patch 7 (0.82), mat 10 (19.51), beyond 3 (75.13)
+    lost 0%
+    record: (Bismarck kept her speed and gave up her repair)
+    wanted: more water than slowing; her forward bulkheads may give way
+    basis: 09 §2.2  (11.5 s)
+  Lützow, Jutland 1916: the torpedo flat holed by two heavy shells
+    Derfflinger-like (1914), 22 kn; closed up, 1916, tightness ×10; a 1 m² hole at 0 min, 0.86 from the stern, -2 m, its boundaries sprung at D 2.5; a 1 m² hole at 1 min, 0.84 from the stern, -2.5 m, its boundaries sprung at D 2.5; 16 hits 0-60 min at 9000 m (100% lion 0); 15 kn at 60 min; 7 kn at 180 min; 3 kn at 300 min
+    water afloat (median): 0.5 h 1162 t, 1 h 1660 t, 2 h 3058 t, 4 h 6527 t, 8 h 10857 t; worst list 14.9° (median, all runs)
+    at 8 h afloat: list 4.2°, trim +1.6° (+ by the head), speed 3.0 kn, power 85%; the lowest safe speed asked 3.0 kn (in 70% of runs)
+    boundaries sprung 52, gave way 0 (in 45% of runs), watertight doors open 1, counterflooded 2648 t (medians)
+    holes open (medians, count and m²): seam 5 (0.00), plug 0 (0.00), patch 11 (1.72), mat 6 (10.60), beyond 0 (0.00)
+    lost 45% (Magazine 2, median 41 min, Foundered 4, median 372 min, Capsized 3, median 285 min); runs 1:M@12 3:F@217 4:F@222 5:C@285 6:F@372 7:F@398 16:C@446 18:C@266 19:M@41
+    record: 1,038 t at 3 h, 2,395 t at 3¾ h, 8,351 t by ~7½ h (4,209 below the armour deck); scuttled
+    wanted: thousands of tonnes walking aft over hours; lost or close to it in many runs
+    basis: 17 §1.3, §6.2 (her bulkheads 'not completely watertight')  (6.7 s)
+  Audacious 1914: a mine under the port engine room, not at action stations
+    King George V-like (1912), 15 kn; unprepared, 1916; v25's torpedo at 0 min, 0.38 from the stern, 7.5 m down, port; 0 kn at 30 min
+    water afloat (median): 0.5 h 4681 t, 1 h 4790 t, 2 h 4935 t, 4 h 5169 t, 8 h 5603 t, 12 h 5993 t; worst list 0.3° (median, all runs)
+    at 13 h afloat: list 0.0°, trim -0.8° (+ by the head), speed 0.0 kn, power 43%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 8, gave way 0 (in 0% of runs), watertight doors open 20, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 3 (11.34), beyond 3 (77.58)
+    lost 0%
+    record: engine rooms abandoned ~2 h, power lost, capsized ~12 h after the mine
+    wanted: unprepared closures: lost over hours; closed up and drilled: survives
+    basis: 17 §1.3  (4.0 s)
+  Oslyabya, Tsushima 1905: waterline holes forward, kept her place (?)
+    Oslyabya-like (Peresvet class, the old second division's stand-in), 9 kn; prepared, cluttered, 1905; a 2 m² hole at 0 min, 0.88 from the stern, +0.1 m, port, its boundaries sprung at D 2.5; a 1 m² hole at 5 min, 0.85 from the stern, -0.3 m, port, its boundaries sprung at D 2.5; 20 hits 0-40 min at 4600 m (40% mikasa 0 ap + 60% mikasa 1 common)
+    water afloat (median): 0.5 h 429 t, 1 h 591 t, 2 h 664 t; worst list 0.6° (median, all runs)
+    at 3 h afloat: list 0.0°, trim +0.8° (+ by the head), speed 5.0 kn, power 88%; the lowest safe speed asked 5.0 kn (in 100% of runs)
+    boundaries sprung 7, gave way 0 (in 0% of runs), watertight doors open 6, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 2 (0.02), patch 4 (0.20), mat 9 (19.26), beyond 0 (0.00)
+    lost 5% (Capsized 1, median 124 min); runs 4:C@124
+    record: listed to port and capsized within about an hour of the first hits (?)
+    wanted: at speed with holes forward at the waterline: lost within about an hour in most runs
+    basis: general knowledge (?)  (1.7 s)
+  Marlborough, Jutland 1916: one torpedo abreast the forward boiler room (?)
+    Iron Duke-like (1914), 17 kn; closed up, 1916; v25's torpedo at 0 min, 0.62 from the stern, 4 m down; 12 kn at 360 min
+    water afloat (median): 0.5 h 4198 t, 1 h 4346 t, 2 h 4580 t, 4 h 5064 t, 8 h 5726 t; worst list 1.3° (median, all runs)
+    at 10 h afloat: list 1.3°, trim +1.4° (+ by the head), speed 12.0 kn, power 33%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 19, gave way 1 (in 90% of runs), watertight doors open 0, counterflooded 103 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 3 (10.09), beyond 4 (80.56)
+    lost 0%
+    record: listed ~7°, kept her place for hours, then slowed and went home (?)
+    wanted: survives; a few degrees of list after counterflooding
+    basis: general knowledge (?)  (4.0 s)
+  A pre-dreadnought at anchor, 1915: one torpedo amidships (?)
+    Lord Nelson-like (British semi-dreadnought), 0 kn; closed up, 1916; v25's torpedo at 0 min, 0.50 from the stern, 4 m down
+    water afloat (median): 0.5 h 3859 t, 1 h 4004 t, 2 h 4388 t; worst list 4.8° (median, all runs)
+    at 3 h afloat: list 3.0°, trim +0.1° (+ by the head), speed 0.0 kn, power 53%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 34, gave way 1 (in 90% of runs), watertight doors open 0, counterflooded 170 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 5 (13.20), beyond 9 (143.28)
+    lost 0%
+    record: Majestic and Triumph capsized minutes after one torpedo (?)
+    wanted: capsizes or founders after one or two torpedoes, within minutes to hours
+    basis: general knowledge (?)  (1.7 s)
+  A pre-dreadnought under way at night, 1915: two torpedoes (?)
+    Lord Nelson-like (British semi-dreadnought), 10 kn; unprepared, 1916; v25's torpedo at 0 min, 0.55 from the stern, 4 m down; v25's torpedo at 20 min, 0.35 from the stern, 4 m down
+    water afloat (median): 0.5 h 9010 t, 1 h 10766 t, 2 h 12673 t, 4 h 6103 t; worst list 14.8° (median, all runs)
+    at 4 h afloat: list 2.1°, trim +0.0° (+ by the head), speed 10.0 kn, power 50%; the lowest safe speed asked 3.0 kn (in 80% of runs)
+    boundaries sprung 62, gave way 3 (in 85% of runs), watertight doors open 10, counterflooded 451 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 10 (21.87), beyond 15 (224.58)
+    lost 85% (Foundered 16, median 136 min, Magazine 1, median 1 min); runs 0:F@136 1:F@212 2:F@38 3:F@171 5:M@1 6:F@116 7:F@113 9:F@127 10:F@84 12:F@93 13:F@176 14:F@111 15:F@152 16:F@116 17:F@170 18:F@170 19:F@136
+    record: Formidable sank ~2¾ h after the first torpedo (?)
+    wanted: capsizes or founders after one or two torpedoes, within minutes to hours
+    basis: general knowledge (?)  (2.4 s)
+  RN battleship, Jutland 1916: 15 heavy hits in 30 min
+    Iron Duke-like (1914), 18 kn; closed up, 1916; 15 hits 0-30 min at 11000 m (80% seydlitz 0 + 20% seydlitz 3)
+    water afloat (median): 0.5 h 0 t, 1 h 0 t, 2 h 0 t, 4 h 0 t; worst list 0.0° (median, all runs)
+    at 4 h afloat: list 0.0°, trim +0.0° (+ by the head), speed 18.0 kn, power 77%; the lowest safe speed asked 5.0 kn (in 10% of runs)
+    boundaries sprung 12, gave way 0 (in 0% of runs), watertight doors open 1, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 3 (0.00), plug 0 (0.00), patch 12 (1.35), mat 2 (1.39), beyond 0 (0.00)
+    lost 10% (Magazine 2, median 28 min); runs 12:M@13 13:M@28
+    record: the battleships hit at Jutland all came home
+    wanted: survives; tens to a few hundred tonnes
+    basis: 08, fighting.md 4.5  (0.9 s)
+  Destroyer under shellfire: 6 light-cruiser HE hits in 10 min
+    Fleet Destroyer, 25 kn; closed up, 1916; 6 hits 0-10 min at 5000 m (100% arethusa 0 he)
+    water afloat (median): 0.5 h 21 t, 1 h 19 t, 2 h 20 t; worst list 0.0° (median, all runs)
+    at 3 h afloat: list 0.0°, trim +0.0° (+ by the head), speed 25.0 kn, power 52%; the lowest safe speed asked 5.0 kn (in 45% of runs)
+    boundaries sprung 14, gave way 0 (in 5% of runs), watertight doors open 0, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 10 (0.01), plug 0 (0.00), patch 0 (0.00), mat 3 (4.44), beyond 0 (0.00)
+    lost 0%
+    record: shell hits rarely flooded beyond the hit space where the crew lived and the pumps had power (WDR 51)
+    wanted: most survive unless the boilers or a magazine go
+    basis: 17 §6.5  (1.4 s)
+
+mechanism checks
+  30 splinter holes along one side, at 18 kn (09 §8)
+    Super-dreadnought (Queen Elizabeth-like, 1913), 18 kn; closed up, 1916; 30 holes of 3-12 cm at 0 min, 0.15-0.85 from the stern, -1 to +2.5 m
+    water afloat (median): 0.5 h 0 t, 1 h 0 t, 2 h 0 t, 4 h 0 t, 8 h 0 t; worst list 0.0° (median, all runs)
+    at 8 h afloat: list 0.0°, trim +0.0° (+ by the head), speed 18.0 kn, power 100%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 0, gave way 0 (in 0% of runs), watertight doors open 1, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 13 (0.06), patch 0 (0.00), mat 0 (0.00), beyond 0 (0.00)
+    lost 0%
+    record: (the research's model) drilled ~120 t; no damage control ~2,950 t and 18° at 8 h
+    wanted: drilled: ~120 t; nobody: thousands of tonnes and a heavy list
+    basis: 09 §8  (3.1 s)
+  A heavy shell through the bow near the waterline, holds 28 kn (09 §8)
+    Lion-like (1912), 28 kn; closed up, 1916; a 1.2 m² hole at 0 min, 0.88 from the stern, +0.8 m, its boundaries sprung at D 2; a 0.4 m² hole at 0 min, 0.88 from the stern, -0.4 m
+    water afloat (median): 0.5 h 833 t, 1 h 951 t, 2 h 1163 t, 4 h 1555 t; worst list 0.2° (median, all runs)
+    at 4 h afloat: list 0.2°, trim +0.4° (+ by the head), speed 28.0 kn, power 100%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 18, gave way 0 (in 0% of runs), watertight doors open 3, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 2 (1.60), beyond 0 (0.00)
+    lost 0%
+    record: (the research's model) forward bulkheads collapse at 8 min, ~10,400 t
+    wanted: forward bulkheads give way; thousands of tonnes
+    basis: 09 §8, §2.2  (3.7 s)
+  The same, slowed to 12 kn at 4 min (09 §8)
+    Lion-like (1912), 28 kn; closed up, 1916; a 1.2 m² hole at 0 min, 0.88 from the stern, +0.8 m, its boundaries sprung at D 2; a 0.4 m² hole at 0 min, 0.88 from the stern, -0.4 m; 12 kn at 4 min
+    water afloat (median): 0.5 h 811 t, 1 h 916 t, 2 h 1103 t, 4 h 1434 t; worst list 0.2° (median, all runs)
+    at 4 h afloat: list 0.2°, trim +0.4° (+ by the head), speed 5.0 kn, power 100%; the lowest safe speed asked 5.0 kn (in 100% of runs)
+    boundaries sprung 18, gave way 0 (in 0% of runs), watertight doors open 3, counterflooded 0 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 2 (1.60), beyond 0 (0.00)
+    lost 0%
+    record: (the research's model) ~1,900 t
+    wanted: a fifth of holding 28 kn
+    basis: 09 §8, §2.2  (3.0 s)
+  A coast defence ship's bow quarters burst open by four heavy HE, holding 13 kn (the Åland card, 2026-10-26)
+    Väinämöinen-like (1921), 13 kn; closed up, 1916; a 20 m² hole at 0 min, 0.92 from the stern, +0.3 m, its boundaries sprung at D 2; a 20 m² hole at 1 min, 0.86 from the stern, +0 m, its boundaries sprung at D 2; a 20 m² hole at 2 min, 0.80 from the stern, +0.5 m, port, its boundaries sprung at D 2; a 20 m² hole at 3 min, 0.74 from the stern, -0.2 m, its boundaries sprung at D 2
+    water afloat (median): 0.5 h 497 t, 1 h 1046 t; worst list 14.6° (median, all runs)
+    at 1 h afloat: list 12.4°, trim +3.8° (+ by the head), speed 13.0 kn, power 100%; the lowest safe speed asked 11.1 kn (in 60% of runs)
+    boundaries sprung 23, gave way 2 (in 95% of runs), watertight doors open 1, counterflooded 16 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 0 (0.00), beyond 4 (80.00)
+    lost 0%
+    record: (none: a ship down by the head with her screws out of the water can't drive ahead)
+    wanted: she slows as her stern lifts and her bow ploughs under
+    basis: the user, 2026-10-26  (0.5 s)
+  A coast defence ship's bow quarters burst open by four heavy HE, her captain saving her (the Åland card, 2026-10-26)
+    Väinämöinen-like (1921), 13 kn; closed up, 1916; a 20 m² hole at 0 min, 0.92 from the stern, +0.3 m, its boundaries sprung at D 2; a 20 m² hole at 1 min, 0.86 from the stern, +0 m, its boundaries sprung at D 2; a 20 m² hole at 2 min, 0.80 from the stern, +0.5 m, port, its boundaries sprung at D 2; a 20 m² hole at 3 min, 0.74 from the stern, -0.2 m, its boundaries sprung at D 2
+    water afloat (median): 0.5 h 497 t, 1 h 1046 t; worst list 14.6° (median, all runs)
+    at 1 h afloat: list 12.4°, trim +3.8° (+ by the head), speed 13.0 kn, power 100%; the lowest safe speed asked 11.1 kn (in 60% of runs)
+    boundaries sprung 23, gave way 2 (in 95% of runs), watertight doors open 1, counterflooded 16 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 0 (0.00), beyond 4 (80.00)
+    lost 0%
+    record: (none: a ship down by the head with her screws out of the water can't drive ahead)
+    wanted: damage control asks for steerage way once her forecastle is under; she takes less water than holding speed
+    basis: the user, 2026-10-26  (0.5 s)
+
+later cuts
+  North Carolina 1942: one torpedo abreast turret A, at 19 kn (on a treaty battleship with torpedo protection)
+    King George V-like (1940), 19 kn; closed up, 1942; v25's torpedo at 0 min, 0.78 from the stern, 5 m down, port
+    water afloat (median): 0.5 h 3718 t, 1 h 3597 t, 2 h 3844 t, 4 h 4487 t; worst list 4.6° (median, all runs)
+    at 4 h afloat: list 0.5°, trim +0.8° (+ by the head), speed 19.0 kn, power 100%; the lowest safe speed asked - kn (in 0% of runs)
+    boundaries sprung 24, gave way 0 (in 0% of runs), watertight doors open 2, counterflooded 1787 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 4 (11.12), beyond 5 (93.71)
+    lost 0%
+    record: 970 t; 5.5° list off in 6 min with ~480 t counterflooded; slow flooding negligible
+    wanted: ~1,000 t; the list off within ~10 min
+    basis: 09 §8, WDR 61  (2.9 s)
+  Shinano-like: 4 torpedoes on one side at 18 kn, unprepared, unsealed
+    Super-dreadnought (Queen Elizabeth-like, 1913), 18 kn; unprepared, 1942, tightness ×25; v25's torpedo at 0 min, 0.60 from the stern, 5 m down; v25's torpedo at 0 min, 0.45 from the stern, 5 m down; v25's torpedo at 0 min, 0.35 from the stern, 5 m down; v25's torpedo at 0 min, 0.25 from the stern, 5 m down
+    water afloat (median): 0.5 h 25127 t, 1 h 20184 t, 2 h 21857 t, 4 h 23971 t, 8 h 22644 t; worst list 12.2° (median, all runs)
+    at 8 h afloat: list 0.2°, trim -4.0° (+ by the head), speed 0.4 kn, power 0%; the lowest safe speed asked 3.0 kn (in 5% of runs)
+    boundaries sprung 76, gave way 22 (in 100% of runs), watertight doors open 12, counterflooded 90 t (medians)
+    holes open (medians, count and m²): seam 0 (0.00), plug 0 (0.00), patch 0 (0.00), mat 7 (8.73), beyond 21 (432.58)
+    lost 95% (Foundered 19, median 51 min); runs 0:F@53 1:F@351 2:F@381 3:F@50 4:F@46 5:F@52 6:F@364 7:F@71 8:F@51 9:F@47 10:F@49 11:F@49 12:F@51 13:F@50 14:F@384 15:F@129 16:F@51 17:F@50 18:F@48
+    record: Shinano: list 10-13°, 20° at 2¾ h, lost at 7¾ h, run at speed throughout
+    wanted: unsealed and weak crew: lost after 4-8 h; tight and drilled: lives
+    basis: 09 §8, 17 §1.3  (2.4 s)
