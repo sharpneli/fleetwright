@@ -356,11 +356,22 @@ public static partial class Magazines
         foreach (int cell in c.Links(c.Rooms[room].Cells))
             Add(c, k, cell, id, ref v, ref a, s);
         for (int m = 0; m < c.Mounts.Length; m++)
+            if (c.Mounts[m].Magazine == room && c.Mounts[m].Battery >= 0)
+                fed[m] = true;
+        Stow(c, room, mounts, flash, out double o, out double p, out double kg);
+        (nOpen, nCased, massSum) = (nOpen + o, nCased + p, massSum + kg);
+    }
+
+    /// <summary>A magazine's stow: the charges lying open (in the scuttles, the discipline's charges a station a gun, its
+    /// stack, and the share with their lids off; all of them in bags alone), those still in their packages, and their kg.</summary>
+    internal static void Stow(ShipClass c, int room, ReadOnlySpan<MountState> mounts, in FlashDiscipline flash, out double nOpen, out double nCased, out double massSum)
+    {
+        (nOpen, nCased, massSum) = (0, 0, 0);
+        for (int m = 0; m < c.Mounts.Length; m++)
         {
             ref readonly var mr = ref c.Mounts[m];
             if (mr.Magazine != room || mr.Battery < 0)
                 continue;
-            fed[m] = true;
             var ch = c.Charges[mr.Type];
             int left = m < mounts.Length ? mounts[m].Rounds : mr.Rounds;
             double rounds = left == int.MaxValue ? Math.Max(mr.Rounds, 0) : Math.Max(left, 0);
@@ -407,7 +418,7 @@ public static partial class Magazines
     }
 
     /// <summary>The share of a magazine's stow under water: its water over its spaces' room for it.</summary>
-    static double Flooded(ShipClass c, ShipCondition k, int room)
+    internal static double Flooded(ShipClass c, ShipCondition k, int room)
     {
         double water = 0, space = 0;
         foreach (int cell in c.Links(c.Rooms[room].Cells))
@@ -420,7 +431,7 @@ public static partial class Magazines
     }
 
     /// <summary>The linear burning rate, m/s, at absolute pressure p (Pa): two branches meeting at the knee.</summary>
-    static double Rate(double p, in PropellantRow pr)
+    internal static double Rate(double p, in PropellantRow pr)
     {
         double pm = Math.Max(p, 0.02e6) / 1e6;
         if (pm >= pr.KneeMPa)

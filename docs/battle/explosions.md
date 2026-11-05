@@ -1,6 +1,7 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **draft 2026-11-05, for the user's decisions** (the questions at the end). Nothing built.
+Status: **decided 2026-11-05** ("Decided" at the end). EX0 and EX1 run on the bench, the game untouched; EX1's results await
+the user ("EX1: what it showed").
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -181,6 +182,66 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
 - **EX8. The acceptance bench.** A Tallboy, a mine, an aircraft torpedo, a depth charge, a 250 kg SAP in a destroyer (11's
   test 3), by data alone. The bombs themselves stay out of this plan.
 
+## EX1: what it showed (2026-11-05)
+
+`shipgen explode` (`GasNetwork.cs`, the bench only): the anchors with no arguments; `DESIGN --magazine ROOM|all`, `--kg K
+--explosive E --room KIND`, `--salvo N`; the rungs `--belt --keep --tear --panel --rupture`, `--step` the convergence check,
+`--trace`, `--cells`. Water and points in the open wait for EX4-EX5. Nothing here is tuned; every number is what came out.
+
+**Rung 0 failed exactly as the five attempts before it.** Lion's Q with bags plateaued near 300 kPa, blew 34 doors and 8
+decks and never touched the hull. Belt, panel period and plate strength hardly moved it. A smaller tear did, by a lot:
+25% to 5% took it from no hull damage to 95 bulkheads, 47 decks and 28 sides.
+
+**The missing physics was a hard switch.** A boundary went from about 1% open just short of rupture to 25% at it
+(17 §3.2 notes the jump: `r(D)` up to D 5, then 11's ¼). A plate only just past its limit has cracked; one far past it has gone.
+**Running the same `r(D)` line on past D 5 adds no number** and reaches 25% at about D 7.2. So a slow burn cracks plates and
+goes on building, and a detonation tears them out, by one rule. That's why the old model suited shells and failed magazines.
+
+| Lion's Q, bags, the ship's own plating, no table | Peak | Burned | Gave | Hull first gave |
+|---|---:|---:|---|---:|
+| Today's race, on the research's table | 709 kPa | 42 t | decks, sides by table | |
+| The research (10 §6) | ~1,000 kPa | | tier 3 | |
+| The network, flat ¼ tear | ~300 kPa | 41 t | 8 decks, 34 doors, no hull | never |
+| **The network, one curve** | **666 kPa** | 99 t | 74 bulkheads, 23 decks, 64 doors, 13 sides, 3 bottom | 1.27 s |
+
+**The anchors, one curve:**
+
+| Anchor (11 §5.5 and others) | Wanted | The network |
+|---|---|---|
+| 5″ in a destroyer's compartment | no bulkhead, no door | 60 kPa; nothing gave |
+| 8″, the same | its doors blown | 169 kPa; 2 doors |
+| 250 kg SAP in a destroyer | next bulkheads and decks, little past ~6 m | 969 kPa; 3 holed, 4 doors, 2 sides, the deck: **a little short** |
+| 46 cm HE in her engine room | the compartment, often the next | 837 kPa; 2 bulkheads, 3 doors, 2 sides, the deck |
+| 16″ AP in a battleship's spaces | little past its near zone | 56-107 kPa; nothing gave |
+| Black powder against TNT | a sixth to an eighth | 27 against 239 kPa, a ninth |
+| Lion's Q, 95% flooded | contained | 148 kPa, 1 t, nothing gave |
+| Lion's Q by stow | bags over Clarkson over brass | **peak 666, 487, 526; the hull at 1.3, ~8, ~9 s, all ending much alike: not separated** |
+| A battleship's belt under nine 46 cm HE | holds | no side plate gave |
+| Nine 46 cm HE along a destroyer, one ship | she breaks or founders | **d 0.51: load 0.57 in calm water, 1.06 in a moderate gale** |
+
+**The destroyer is the plan's first case met,** and with nothing fitted to it: nine bursts took the weather deck amidships and 35%
+of her sides. It lands in 07's band (d 0.5-0.8 breaks in a seaway). It's read through the old section shares, so EX3 will move it.
+
+**Not there yet:**
+
+1. **Lion's Q doesn't break: the worst load is 0.21** (0.40 with no belt and all the heat kept), where 1 is broken. The plates
+   give but too few at one station, and the weather deck never does. Today's shares (deck, sides, bottom) are too crude to
+   judge by, so this is really EX3's question. The heat kept helps some; the belt helps at the sides only.
+2. **Packing doesn't separate outcomes,** only timing. Brass at R 28 is the catch already in `magazines.md` (to the research).
+   Fire spreads along passages and hot gas to 4 of Lion's magazines and all 8 of Seydlitz's.
+3. **Large charges stop at the cell's walls.** 2.4 t in a destroyer's engine room reaches 26 spaces: the near field only holes
+   its own cell's boundaries. EX4's. Bursters going up in a magazine (candidate 3) can't be judged until then.
+4. **A magazine's space can't hold its stow** (found here, not fixed): Lion's Magazine A is 203.8 t in 52 m³ and S aft 63.5 t
+   in 0 m³, cells carved thin by the hull's ends and what shares them. It's why A and Y peak near 2,700 kPa. A Shipgen
+   question: does the magazine get the volume its load needs? Belongs in `bugs.md` unless EX2 needs it.
+5. **The cost is over budget:** 190-1,000 µs a shell (about 200 wanted), 20-180 ms a magazine (about 20 wanted), measured with
+   the baseline benches running beside it. Threads remain an option (the user).
+
+**The solver:** each edge relaxes its pair exactly and in turn, so it's stable at any step; Lion's Q gave 666, 682, 684 kPa at
+1, ¼, 1/20 of the step, and the burst 837 at all three. My first limiter wasn't converged (324 to 559 kPa from the step alone).
+
+**The game is untouched:** `magazine --race` and the `hits` bench come out byte-identical to the frozen build.
+
 ## What stays out
 
 - Aircraft, bomb sights, a bomb's flight.
@@ -195,14 +256,14 @@ Physics first, history checks and never sets (`derive-not-set`, `physics-is-the-
 stop it. The other answer's "almost certainly breaks her back" was its own inference. Its case is Friedrich Eckoldt: 6″
 broadsides at 4 km, broke in two in under two minutes, cause unknown.
 
-## Questions for the user
+## Decided (the user, 2026-11-05)
 
-1. **Scope of the first cut.** Recommendation: EX0-EX3 first, which gives the unified gas and breaks ships with shells,
-   then EX4-EX6 in turn, with the plan as the end goal. EX5 can't wait for bombs (they near-miss), but it can wait for this.
-2. **The gate.** EX1 can fail as the five before it did. Recommendation: if so, we look for the missing physics (the
-   candidates above) and neither fall back to a table nor ship an unfinished model. Today's model stays in the game until
-   the new one meets the anchors.
-3. **Balance and magazine rates.** Everything from `Too safe` onwards was measured on the model this replaces. Recommendation:
-   leave those numbers alone and don't start a balancing pass until EX3 has landed; the comparison you were waiting to
-   read will be redone on the new physics.
-4. **The cost budget above:** about 200 µs a shell, about 20 ms a magazine. Is that about right?
+The risk of EX1 is accepted: "Let's see where unified system gets us."
+
+1. **The first cut is EX0-EX3,** then EX4-EX6 in turn, with the whole plan as the end goal.
+2. **If EX1 fails, we look at it together.** "Retrospective of Ex1 fail can give us important info." Looking for the
+   missing physics is the first idea, not a fixed rule. Today's model stays in the game until the new one meets the anchors.
+3. **No balancing pass until EX3 has landed.** "That's why I took this up now as it will invalidate rates which are built
+   on top." The `Too safe` comparison is redone on the new physics.
+4. **The cost budget stands** as a first figure: about 200 µs a shell, about 20 ms a magazine. "We can also thread them"
+   (`workers.md`), if it comes to that.

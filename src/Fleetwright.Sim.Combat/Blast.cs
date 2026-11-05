@@ -331,7 +331,7 @@ public static class Blast
     }
 
     /// <summary>How far a point is from the face two spaces share.</summary>
-    static double FaceDistance(in Box a, in Box b, JoinKind join, P3 p)
+    internal static double FaceDistance(in Box a, in Box b, JoinKind join, P3 p)
     {
         if (join == JoinKind.Deck)
             return Math.Abs(p.Z - (b.Base >= a.Top - 0.05 ? a.Top : a.Base));
