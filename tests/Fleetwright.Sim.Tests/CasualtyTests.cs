@@ -223,11 +223,12 @@ public class CasualtyTests(ITestOutputHelper output)
         return r;
     }
 
-    /// <summary>16 §5.4 test 4: the killed share over a destroyer's hits is 0.25-0.4 (G7's 0.32).</summary>
+    /// <summary>16 §5.4 test 4: the killed share over a destroyer's hits is 0.25-0.4 (G7's 0.32). A 1928 destroyer on her
+    /// own period's flash discipline: on 1916's drill her gunhouses' trains burn whole (magazines.md "Too safe").</summary>
     [Fact]
     public void A_destroyers_killed_share_is_a_third()
     {
-        var r = Hits("fubuki", "fubuki", 0, 6000, 600, 10, ShellKind.He);
+        var r = Hits("fubuki", "fubuki", 0, 6000, 600, 10, ShellKind.He, Settings with { DamageControlDefault = "1942" });
         Assert.InRange(r.Killed / (r.Killed + r.Wounded), 0.25, 0.4);
     }
 

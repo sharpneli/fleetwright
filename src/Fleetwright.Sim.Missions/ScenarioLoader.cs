@@ -155,6 +155,13 @@ public static class ScenarioLoader
                 double temper = spec.TemperOf(nth) + (!top.IsForce && top.ShipCount == 1 ? top.Temper ?? 0 : 0);
                 if (temper != 0)
                     w.Apply(ai.Orders.Doctrine(Unit.Ship(e), DoctrineField.Temper, temper));
+                if (spec.DamageControl is { } own)
+                {
+                    int k = Array.FindIndex(w.Settings.DamageControl, d => d.Name == own);
+                    if (k < 0)
+                        throw new ScenarioException($"damage control of {sq.Name}: no \"{own}\" (have {string.Join(", ", w.Settings.DamageControl.Select(d => d.Name))})");
+                    w.Apply(DamageSystem.SetShipDamageControl(e, k));
+                }
                 if (spec.Loadout is { } ls)
                 {
                     if (!loadouts.TryGetValue((cls, ls), out int lo))

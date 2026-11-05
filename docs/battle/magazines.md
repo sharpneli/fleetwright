@@ -672,7 +672,9 @@ follows the dependencies: the fake turrets first, because the chain means nothin
    400 runs, against the 1.5% once wanted. Accepted: "it means the armouring is working". A ship with thinner
    casemates or open batteries can still lose one.
 
-## Too safe: why nothing blows up (2026-11-05; nothing tuned, the settings are as they were)
+## Too safe: why nothing blows up (2026-11-05)
+
+**Built at the user's word, 2026-11-05: recommendations 1-3 below.** A unit or ship entry's own `"damage_control"` (Jutland's three battlecruiser squadrons on "1916 BCF", Lion on "1916": her gunner kept the rules, 10 §3.1), drill's `DoorOpen` [1, 1, 0.02, 0.1], and Clarkson's `MagazinePackageR` 32 [EST, until the research answers]. The ladder below was measured before them, each rung by a settings file.
 
 The user, from play: no magazine detonation in ages, even under silly debug shooting. "I think the current rates are way too low." Measured, it's worse than low: **on drill, a ship of the Great War can't be lost to a magazine at all,** and drill is what every side of every scenario and every dev ship is on.
 

@@ -612,7 +612,7 @@
   "StationLightChance": [0.5, 0.5, 0.5, 0.5],
   "FlashDisciplines": [
     { "Name": "safe", "DoorOpen": [0, 0, 0, 0], "StationCharges": 0.5, "LidsOff": 0, "HoistShare": 1.7 },
-    { "Name": "drill", "DoorOpen": [0.1, 0.1, 0.02, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },
+    { "Name": "drill", "DoorOpen": [1, 1, 0.02, 0.1], "StationCharges": 1, "LidsOff": 0, "HoistShare": 1.5 },
     { "Name": "rate first", "DoorOpen": [1, 1, 0.5, 1], "StationCharges": 2, "LidsOff": 1, "HoistShare": 1.0 }
   ],
   "MagazineOrderS": 120,
@@ -621,7 +621,7 @@
   "MagazineHeatKeep": 0.5,
   "MagazineVentCd": 0.7,
   "MagazineGasGamma": 1.25,
-  "MagazinePackageR": [0, 4, 1.4, 1.2],
+  "MagazinePackageR": [0, 32, 1.4, 1.2],
   "MagazineBagSpreadS": 0.5,
   "MagazineScuttleKPa": 40,
   "MagazineRoofShare": 0.4,

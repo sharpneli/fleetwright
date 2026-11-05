@@ -1775,8 +1775,10 @@ public sealed record SimSettings
     /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing];
     /// MagazineVentCd a ragged opening's discharge coefficient [EST]; MagazineGasGamma the hot gas's [EST: 1.2-1.25].</item>
     /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
-    /// package before it burns out, a branching process (10 §1.3 [EST, fitted]: Clarkson ~4, brass ~1.4, tank ~1.2); bags
-    /// alone light together, within MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
+    /// package before it burns out, a branching process (10 §1.3 [EST, fitted]: brass ~1.4, tank ~1.2; Clarkson 32
+    /// [EST, the user's 2026-11-05, docs/battle/magazines.md "Too safe"]: 10's 4-8 can't lose a ship, against the record's
+    /// lids-on magazines that blew, until research/REQUESTS.md's 2026-11-05 answers); bags alone light together, within
+    /// MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
     /// <item>The way out: the magazine's door or scuttle to its handling room gives at MagazineScuttleKPa [EST, 10 §6:
     /// 40 kPa]; a gunhouse's roof at MagazineRoofShare of its lift [EST, 10 §2.3: 0.3-0.5], the gunhouse itself at its
     /// lift (<see cref="Fleetwright.Sim.Ships.ShipClass.LiftKPa"/>); either opens its trunk, MagazineTrunkShare of the
@@ -1806,7 +1808,7 @@ public sealed record SimSettings
     public double MagazineHeatKeep { get; init; } = 0.5;
     public double MagazineVentCd { get; init; } = 0.7;
     public double MagazineGasGamma { get; init; } = 1.25;
-    public double[] MagazinePackageR { get; init; } = [0, 4, 1.4, 1.2];
+    public double[] MagazinePackageR { get; init; } = [0, 32, 1.4, 1.2];
     public double MagazineBagSpreadS { get; init; } = 0.5;
     public double MagazineScuttleKPa { get; init; } = 40;
     public double MagazineRoofShare { get; init; } = 0.4;
@@ -1826,9 +1828,11 @@ public sealed record SimSettings
     /// <list type="bullet">
     /// <item><b>safe:</b> interlocked doors and revolving scuttles, never open through (the RN from 1917, KGV's, the USN's
     /// later); half a charge a gun at a station; the hoists slower for their interlocks (KGV, Prince of Wales).</item>
-    /// <item><b>drill:</b> each door opens as the cage passes, 5-15% of the time (a casemate's hoist and its passage's
-    /// magazine door in series, well under 5%: Kent, §5); about a charge a gun at each station [SRC: Brown, 8 in a twin
-    /// turret's train in action].</item>
+    /// <item><b>drill:</b> the flash doors in the turret's train don't stop a burning charge (10 §3.1, §3.3: "too weak to
+    /// resist the pressure" [SRC: Brown]; the record's flames ran the train, Seydlitz, Derfflinger, Lion's Q), so the flame
+    /// goes down to the handling room; the magazine's own door opens as the charge passes, about 10% of the time, and holds
+    /// when shut (Lion's buckled and held). A casemate's hoist and its passage's magazine door in series, well under 5%
+    /// (Kent, §5). About a charge a gun at each station [SRC: Brown, 8 in a twin turret's train in action].</item>
     /// <item><b>rate first:</b> doors propped or removed (the BCF, Seydlitz's connecting door), charges stacked at the
     /// stations, the Clarkson cases' lids off in the magazine (10 §6.2's BCF anchor; whether the lids came off in the
     /// magazine or only in the handing room is 10 §8's open question, Friedman against Brown) [EST]; the hoists hardly
@@ -1840,7 +1844,7 @@ public sealed record SimSettings
     public FlashDiscipline[] FlashDisciplines { get; init; } =
     [
         new() { Name = "safe", DoorOpen = [0, 0, 0, 0], StationCharges = 0.5, LidsOff = 0, HoistShare = 1.7 },
-        new() { Name = "drill", DoorOpen = [0.1, 0.1, 0.02, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
+        new() { Name = "drill", DoorOpen = [1, 1, 0.02, 0.1], StationCharges = 1, LidsOff = 0, HoistShare = 1.5 },
         new() { Name = "rate first", DoorOpen = [1, 1, 0.5, 1], StationCharges = 2, LidsOff = 1, HoistShare = 1.0 },
     ];
     public int MagazineLossMs { get; init; } = 60_000;

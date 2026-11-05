@@ -209,6 +209,9 @@ public sealed class ShipCondition
     /// <summary>Her side's flash discipline (docs/battle/magazines.md V5), by its doctrine; unset until her side's orders
     /// are read (<see cref="Magazines.Discipline"/> falls back to the default doctrine's).</summary>
     public FlashDiscipline Flash;
+    /// <summary>Her own damage-control doctrine over her side's, an index of the settings' rows; -1: her side's (a
+    /// scenario's unit or ship, docs/battle/magazines.md "Too safe": the BCF on rate first).</summary>
+    public int OwnDamageControl = -1;
     public const int MaxParties = 16;
     public readonly RepairParty[] Parties = new RepairParty[MaxParties];
     public int PartyCount;
@@ -510,6 +513,7 @@ public sealed class ShipCondition
 
     internal void Reset(ShipClass c)
     {
+        OwnDamageControl = -1;
         if (Class != c)
         {
             Class = c;

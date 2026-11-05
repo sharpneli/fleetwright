@@ -43,7 +43,9 @@ namespace Fleetwright.Sim.Missions;
 /// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
 /// for fire (docs/battle/fire.md B1: a name of the settings' <c>Readiness</c>: stripped, doors, decks wetted), and its
 /// firefighting (<c>"damage_control": { "Russia": "1905" }</c>; B4: a name of the settings' <c>DamageControl</c>) how
-/// its crews fight her fires.</para>
+/// its crews fight her fires. A unit or a ship entry may give its ships their own, over the side's and for every ship
+/// below it that doesn't give one (<c>"damage_control": "1916 BCF"</c>; docs/battle/magazines.md "Too safe": a squadron's
+/// flash discipline).</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
 /// <c>"doctrine": { "Germany": "default" }</c>, with values over it, <c>{ "Germany": { "preset": "default",
 /// "RangeShare": 0.5 } }</c>; a side not listed takes "default" (Engage: fight). A unit sets values of its own,
@@ -624,7 +626,7 @@ public sealed record Scenario
         return pairs;
     }
 
-    internal static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null)
+    internal static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null, string? parentDamageControl = null)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{path}: not an object");
@@ -640,6 +642,7 @@ public sealed record Scenario
             throw new ScenarioException($"{path}: a unit has \"units\" (a force) or \"ships\" (a squadron), one of them");
         var formation = ParseFormation(Str(e, "formation", "column"), path);
         var loadout = ParseLoadout(e, path) ?? parentLoadout;
+        string? damageControl = e.TryGetProperty("damage_control", out var ownDc) ? ownDc.GetString() : parentDamageControl;
         double spacing = e.TryGetProperty("spacing", out var sp) ? sp.GetDouble() : hasUnits ? 3000 : 600;
         if (spacing is <= 0 or > 100_000)
             throw new ScenarioException($"{path}: spacing {spacing} m (want 0 to 100 km)");
@@ -680,12 +683,13 @@ public sealed record Scenario
             Doctrine = e.TryGetProperty("doctrine", out var dc) ? DoctrineValues(dc, $"{path} doctrine", unit: true) : [],
             Tasks = ParseTasks(e, path, top),
             Loadout = loadout,
+            DamageControl = damageControl,
         };
         if (hasUnits)
         {
             int i = 0;
             foreach (var u in us.EnumerateArray())
-                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides, loadout));
+                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides, loadout, damageControl));
             if (unit.Units.Count == 0)
                 throw new ScenarioException($"{path}: a force of no units");
         }
@@ -693,7 +697,7 @@ public sealed record Scenario
         {
             int i = 0;
             foreach (var x in ss.EnumerateArray())
-                unit.Ships.Add(ParseShips(x, $"{path} ships[{i++}]", loadout));
+                unit.Ships.Add(ParseShips(x, $"{path} ships[{i++}]", loadout, damageControl));
             if (unit.ShipCount == 0)
                 throw new ScenarioException($"{path}: a squadron of no ships");
         }
@@ -785,7 +789,7 @@ public sealed record Scenario
         }
     }
 
-    static ScenarioShips ParseShips(JsonElement e, string path, LoadoutSpec? unitLoadout = null)
+    static ScenarioShips ParseShips(JsonElement e, string path, LoadoutSpec? unitLoadout = null, string? unitDamageControl = null)
     {
         string design = Str(e, "design", "");
         if (design.Length == 0)
@@ -839,6 +843,7 @@ public sealed record Scenario
         {
             Design = design, Count = count, Names = names, Dyes = dyes, Tempers = tempers, WorkUps = workUps,
             Loadout = ParseLoadout(e, path) ?? unitLoadout,
+            DamageControl = e.TryGetProperty("damage_control", out var dc) ? dc.GetString() : unitDamageControl,
         };
     }
 
@@ -945,6 +950,10 @@ public sealed class ScenarioUnit
     /// <summary>The loadout its ships carry (its own <c>"loadout"</c>, else its parent's), unless a ship entry gives one.</summary>
     public LoadoutSpec? Loadout { get; init; }
 
+    /// <summary>Its ships' own damage-control doctrine over their side's (its <c>"damage_control"</c>, else its parent's),
+    /// unless a ship entry gives one: a name of the settings' DamageControl, or null.</summary>
+    public string? DamageControl { get; init; }
+
     /// <summary>Taken off by a setup (docs/map-ui/launch.md L3b): every ship under it struck, so none is placed; kept in
     /// the tree for the launch screen to show it struck, with its undo.</summary>
     public bool Removed { get; init; }
@@ -958,7 +967,7 @@ public sealed class ScenarioUnit
         var u = new ScenarioUnit
         {
             Name = Name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
-            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, Removed = removed ?? Removed,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, DamageControl = DamageControl, Removed = removed ?? Removed,
             Admiral = Admiral, Temper = Temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(units);
@@ -983,7 +992,7 @@ public sealed class ScenarioUnit
         var u = new ScenarioUnit
         {
             Name = name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
-            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, Removed = Removed,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, DamageControl = DamageControl, Removed = Removed,
             Admiral = admiral, Temper = temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(Units);
@@ -1021,6 +1030,9 @@ public sealed class ScenarioShips
     /// their design's own.</summary>
     public LoadoutSpec? Loadout { get; init; }
 
+    /// <summary>Their own damage-control doctrine over their side's: the entry's, else its unit's; null for the side's.</summary>
+    public string? DamageControl { get; init; }
+
     /// <summary>The ships a setup took off the end of the entry (docs/map-ui/launch.md L3b), their names in order ("" for
     /// one unnamed): not in <see cref="Count"/>, never placed; the launch screen shows them struck.</summary>
     public string[] Struck { get; init; } = [];
@@ -1029,7 +1041,7 @@ public sealed class ScenarioShips
     /// design: their names and dyes go with them, and the struck with the slice that ends the entry.</summary>
     internal ScenarioShips Slice(int from, int count, string design) => new()
     {
-        Design = design, Count = count, Loadout = Loadout,
+        Design = design, Count = count, Loadout = Loadout, DamageControl = DamageControl,
         Names = from < Names.Length ? Names[from..Math.Min(from + count, Names.Length)] : [],
         Dyes = from < Dyes.Length ? Dyes[from..Math.Min(from + count, Dyes.Length)] : [],
         Tempers = from < Tempers.Length ? Tempers[from..Math.Min(from + count, Tempers.Length)] : [],
@@ -1040,7 +1052,7 @@ public sealed class ScenarioShips
     /// <summary>The entry with <paramref name="n"/> more ships at its end, unnamed.</summary>
     internal ScenarioShips Grown(int n) => new()
     {
-        Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Tempers = Tempers, WorkUps = WorkUps, Loadout = Loadout, Struck = Struck,
+        Design = Design, Count = Count + n, Names = Names, Dyes = Dyes, Tempers = Tempers, WorkUps = WorkUps, Loadout = Loadout, DamageControl = DamageControl, Struck = Struck,
     };
 
     /// <summary>The entry with the <paramref name="i"/>-th ship's captain's temper set.</summary>
@@ -1049,7 +1061,7 @@ public sealed class ScenarioShips
         var t = new double[Math.Max(Tempers.Length, i + 1)];
         Tempers.CopyTo(t, 0);
         t[i] = temper;
-        return new() { Design = Design, Count = Count, Names = Names, Dyes = Dyes, Tempers = t, WorkUps = WorkUps, Loadout = Loadout, Struck = Struck };
+        return new() { Design = Design, Count = Count, Names = Names, Dyes = Dyes, Tempers = t, WorkUps = WorkUps, Loadout = Loadout, DamageControl = DamageControl, Struck = Struck };
     }
 
     /// <summary>The entry with its last <paramref name="n"/> ships taken off: struck (kept by name for the screen), or
@@ -1060,7 +1072,7 @@ public sealed class ScenarioShips
         var off = Enumerable.Range(keep, n).Select(i => i < Names.Length ? Names[i] : "");
         return new()
         {
-            Design = Design, Count = keep, Loadout = Loadout,
+            Design = Design, Count = keep, Loadout = Loadout, DamageControl = DamageControl,
             Names = Names[..Math.Min(keep, Names.Length)], Dyes = Dyes[..Math.Min(keep, Dyes.Length)],
             Tempers = Tempers[..Math.Min(keep, Tempers.Length)], WorkUps = WorkUps[..Math.Min(keep, WorkUps.Length)],
             Struck = strike ? [.. off, .. Struck] : Struck,

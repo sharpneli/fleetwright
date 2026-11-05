@@ -9,7 +9,8 @@ namespace Fleetwright.Sim.Tests;
 
 /// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6): the research's
 /// anchors on our own ships. Charges in bags alone sever a battlecruiser at her magazine (the BCF at Jutland, lids off);
-/// in Clarkson cases her turret burns out (Lion's Q); brass burns out lower still (Seydlitz); a flooded magazine holds.</summary>
+/// in Clarkson cases, lids on, a magazine alight takes her deck at least (magazines.md "Too safe"); brass burns out far
+/// lower (Seydlitz); a flooded magazine holds.</summary>
 public class MagazineRaceTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
@@ -57,12 +58,12 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Clarkson_cases_burn_her_turret_out()
+    public void Clarkson_cases_alight_beat_her_trunk()
     {
         var r = Race(Packed("lion", null), "Magazine Q");
-        Assert.Equal(MagazineTier.BurnedOut, r.Tier);   // Lion's Q: the charges light one from the next, the trunk keeps up
+        Assert.True(r.Tier >= MagazineTier.Breached, "lids on, the record's dry cordite magazines still blew: the trunk doesn't keep up");
         Assert.True(r.Vented >= 1);
-        Assert.InRange(r.PeakKPa, 100, 700);
+        Assert.InRange(r.PeakKPa, 700, 1500);
     }
 
     [Fact]
@@ -120,13 +121,13 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(aft > 5, $"the stern beyond the magazine open to the sea ({aft} spaces)");
     }
 
-    /// <summary>V5: the BCF's rate first (doors propped, lids off) severs Lion where her drill burns her turret out; and
+    /// <summary>V5: the BCF's rate first (doors propped, lids off) severs Lion where her drill leaves her breached; and
     /// the flame from her gunhouse always reaches the magazine.</summary>
     [Fact]
     public void Rate_first_props_the_doors_and_takes_the_lids_off()
     {
         var c = Fleet.Get("lion").Class!;
-        Assert.Equal(MagazineTier.BurnedOut, Race(c, "Magazine Q", doctrine: "1916").Tier);
+        Assert.False(Race(c, "Magazine Q", doctrine: "1916").Lost);
         Assert.True(Race(c, "Magazine Q", doctrine: "1916 BCF").Lost);
 
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
@@ -223,5 +224,46 @@ public class MagazineRaceTests(ITestOutputHelper output)
         long before = GC.GetAllocatedBytesForCurrentThread();
         Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), Settings, 0, ref rng);
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
+
+    /// <summary>A ship's own doctrine over her side's (magazines.md "Too safe": the BCF's squadrons at Jutland): her flash
+    /// discipline goes by it, and her sister's stays her side's.</summary>
+    [Fact]
+    public void A_ships_own_doctrine_stands_over_her_sides()
+    {
+        var c = Fleet.Get("lion").Class!;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        int cls = w.Ships.AddClass(c);
+        w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 0));
+        int own = w.Ships.NewestEntity;
+        w.Apply(ShipSystem.Spawn(cls, 56, 4.2, 0, 0));
+        int sister = w.Ships.NewestEntity;
+        w.Apply(DamageSystem.SetShipDamageControl(own, Array.FindIndex(Settings.DamageControl, d => d.Name == "1916 BCF")));
+        var (a, b) = (w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(own)), w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(sister)));
+        Assert.Equal("rate first", w.Damage.FlashOf(0, a).Name);
+        Assert.Equal("drill", w.Damage.FlashOf(0, b).Name);
+    }
+
+    /// <summary>"Too safe": on drill the flash doors in the train don't stop a flame (the record's ran the train), and the
+    /// magazine's own door does when it's shut, about 9 in 10.</summary>
+    [Fact]
+    public void On_drill_a_flame_runs_the_train_to_the_magazines_door()
+    {
+        var c = Fleet.Get("lion").Class!;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+        k.Flash = Magazines.Of(Settings, "1916");
+        int q = Enumerable.Range(0, c.Mounts.Length).First(m => c.ComponentId(c.Mounts[m].Component) == "Q");
+        var rng = RandomStream.Named(1, "drill train test");
+        int reached = 0, runs = 4000, stations = 0;
+        for (int i = 0; i < runs; i++)
+        {
+            var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+            reached += Magazines.Light(c, k, q, 0, false, Settings, ref rng, ref res) >= 0 ? 1 : 0;
+            stations += res.Stations;
+        }
+        Assert.InRange((double)reached / runs, 0.07, 0.13);
+        Assert.InRange((double)stations / runs, 3, 4.2);   // gunhouse, chamber, handling room, and the magazine one time in ten
     }
 }

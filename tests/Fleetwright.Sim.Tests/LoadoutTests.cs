@@ -168,4 +168,42 @@ public class LoadoutTests(ITestOutputHelper output)
         Assert.True(store.Combat.Loadout(store.SlotOf(4)).IsDefault);
         Assert.Contains(start.Warnings, x => x.Contains("main[3]"));
     }
+
+    /// <summary>A unit's or ship entry's own damage control over its side's (docs/battle/magazines.md "Too safe"): the
+    /// unit's for every ship below it, a ship entry's over the unit's, the rest the side's; and Jutland's battlecruisers
+    /// on rate first, all but Lion.</summary>
+    [Fact]
+    public void A_scenario_gives_a_squadron_its_own_damage_control()
+    {
+        var s = Scenario.Parse("""
+            { "scenario": 1, "name": "doctrines", "start": "1916-05-31T14:00", "sides": ["A", "B"], "damage_control": { "A": "1916" },
+              "units": [
+                { "name": "line", "side": 0, "at": [56.5, 4.0], "course": 0, "kn": 10, "damage_control": "1916 BCF",
+                  "ships": [ { "design": "dreadnought" }, { "design": "dreadnought", "damage_control": "1916" } ] },
+                { "name": "other", "side": 0, "at": [56.6, 4.0], "course": 0, "kn": 10, "ships": [ { "design": "dreadnought" } ] } ] }
+            """, null);
+        using var reg = new ShipClassRegistry(1);
+        var w = new World(s.Start, s.Seed, Settings, reg);
+        ScenarioLoader.Apply(s, w, new AiSystem(w), new Dictionary<string, int> { ["dreadnought"] = reg.Add(Dreadnought) });
+        string Flash(int e) => w.Damage.FlashOf(0, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(e))).Name;
+        Assert.Equal(["rate first", "drill", "drill"], [Flash(1), Flash(2), Flash(3)]);
+
+        var bad = Scenario.Parse("""
+            { "scenario": 1, "name": "bad", "start": "1916-05-31T14:00", "sides": ["A", "B"],
+              "units": [ { "name": "line", "side": 0, "at": [56.5, 4.0], "course": 0, "kn": 10, "damage_control": "no such", "ships": [ { "design": "dreadnought" } ] } ] }
+            """, null);
+        using var reg2 = new ShipClassRegistry(1);
+        var w2 = new World(bad.Start, bad.Seed, Settings, reg2);
+        Assert.Throws<ScenarioException>(() => ScenarioLoader.Apply(bad, w2, new AiSystem(w2), new Dictionary<string, int> { ["dreadnought"] = reg2.Add(Dreadnought) }));
+
+        var jutland = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "jutland.json"));
+        var ships = jutland.Units.SelectMany(Entries).ToList();
+        string? Of(string name) => ships.Single(x => x.Names.Contains(name)).DamageControl;
+        Assert.Equal("1916 BCF", Of("Queen Mary"));
+        Assert.Equal("1916 BCF", Of("Indefatigable"));
+        Assert.Equal("1916 BCF", Of("Invincible"));
+        Assert.Equal("1916", Of("Lion"));
+        Assert.Null(Of("Warspite"));
+        static IEnumerable<ScenarioShips> Entries(ScenarioUnit u) => u.Ships.Concat(u.Units.SelectMany(Entries));
+    }
 }

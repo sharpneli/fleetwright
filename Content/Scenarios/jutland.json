@@ -54,9 +54,10 @@
     // Lion's squadron in line ahead with the 2nd BCS three miles on its starboard beam, each screened by its destroyers
     { "name": "Battlecruiser Fleet", "admiral": { "name": "V-Adm Beatty (in Lion)", "temper": 0.4, "why": "pressed the action whatever it cost" }, "tasks": [ { "do": "go to", "at": [57.75, 4.25] }, { "do": "join", "of": "Grand Fleet" } ], "side": 0, "at": [56.767, 4.667], "course": 11, "kn": 19.5, "formation": "abreast", "spacing": 5560,
       "units": [
-        { "name": "1st Battlecruiser Squadron", "admiral": "R-Adm Brock (in Princess Royal)", "spacing": 550, "ships": [
-          { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
-        { "name": "2nd Battlecruiser Squadron", "admiral": "R-Adm Pakenham (in New Zealand)", "spacing": 550, "ships": [ { "design": "indefatigable", "names": ["New Zealand", "Indefatigable"] } ] } ] },
+        // the BCF's cordite handling (docs/battle/magazines.md V5, "Too safe"): rate first, all but Lion's, where her gunner kept the rules
+        { "name": "1st Battlecruiser Squadron", "admiral": "R-Adm Brock (in Princess Royal)", "spacing": 550, "damage_control": "1916 BCF", "ships": [
+          { "design": "lion", "names": ["Lion"], "damage_control": "1916" }, { "design": "lion", "names": ["Princess Royal"] }, { "design": "queen_mary", "name": "Queen Mary" }, { "design": "tiger_1914", "name": "Tiger" } ] },
+        { "name": "2nd Battlecruiser Squadron", "admiral": "R-Adm Pakenham (in New Zealand)", "spacing": 550, "damage_control": "1916 BCF", "ships": [ { "design": "indefatigable", "names": ["New Zealand", "Indefatigable"] } ] } ] },
     { "name": "5th Battle Squadron", "admiral": "R-Adm Evan-Thomas (in Barham)", "task": { "do": "cover", "of": "Battlecruiser Fleet", "distance_km": 9 }, "side": 0, "at": [56.844, 4.608], "course": 11, "kn": 19.5, "spacing": 550,
       "ships": [ { "design": "super_dreadnought", "names": ["Barham", "Valiant", "Warspite", "Malaya"] } ] },
     // the screen astern, from its eastern end: the 1st LCS, Engadine (between Cordelia and Gloucester), the 3rd LCS,
@@ -127,7 +128,7 @@
     // Hood's battlecruisers about 20 miles ahead, Canterbury 5 miles ahead of them and Chester out on her starboard beam
     { "name": "3rd Battlecruiser Squadron", "admiral": { "name": "R-Adm Hood (in Invincible)", "temper": 0.3, "why": "brought his battlecruisers into action at full speed" }, "task": { "do": "scout", "of": "Grand Fleet", "distance_km": 37 }, "side": 0, "at": [57.730, 4.221], "course": 130, "kn": 14, "formation": "column", "spacing": 2500,
       "units": [
-        { "name": "3rd Battlecruisers", "spacing": 550, "ships": [ { "design": "invincible", "names": ["Invincible", "Inflexible", "Indomitable"] } ] },
+        { "name": "3rd Battlecruisers", "spacing": 550, "damage_control": "1916 BCF", "ships": [ { "design": "invincible", "names": ["Invincible", "Inflexible", "Indomitable"] } ] },
         { "name": "3rd BCS destroyers", "formation": "abreast", "spacing": 500, "ships": [ { "design": "k_acasta", "names": ["Shark", "Acasta", "Ophelia", "Christopher"], "captains": { "Shark": 0.5 } } ] } ] },
     { "name": "3rd BCS light cruisers", "task": { "do": "scout", "of": "3rd Battlecruiser Squadron", "distance_km": 10 }, "side": 0, "at": [57.676, 4.341], "course": 130, "kn": 14, "formation": "abreast", "spacing": 9260,
       "ships": [ { "design": "cambrian", "name": "Canterbury" }, { "design": "town_birmingham", "name": "Chester" } ] },

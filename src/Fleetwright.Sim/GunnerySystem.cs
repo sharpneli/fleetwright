@@ -1935,7 +1935,7 @@ public sealed class GunnerySystem : IWorldSystem
             var mc = store.Combat.Condition(slot);
             double hand = mc.ByHand(mounts[j], now) ? settings.HandReload : 1;
             store.Combat.Fired(slot, cls, mounts[j], fireLoad[j], barrels, now, hand * crew.Load / mc.MountCrew[mounts[j]],
-                hand * world.Damage.FlashOf(ship.Side).HoistShare / DesignerPlaceholders.HoistShare / mc.MountSupply[mounts[j]]);
+                hand * world.Damage.FlashOf(ship.Side, mc).HoistShare / DesignerPlaceholders.HoistShare / mc.MountSupply[mounts[j]]);
         }
         sv.Left = sv.Shells;
         if (sv.Shells == 0)

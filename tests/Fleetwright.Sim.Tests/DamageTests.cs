@@ -658,10 +658,18 @@ public class DamageTests(ITestOutputHelper output)
         };
         for (int i = 0; i < 20; i++)
             w.Damage.Strike(w, Next());
-        long before = GC.GetAllocatedBytesForCurrentThread();
+        // a hit that loses her may allocate (a drop may; a magazine can take her in these 100, magazines.md "Too safe")
+        long allocated = 0;
         for (int i = 0; i < 100; i++)
-            w.Damage.Strike(w, Next());
-        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+        {
+            var hit = Next();
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            bool afloat = w.Ships.Store.Combat.Condition(0).Status == ShipStatus.Afloat;
+            w.Damage.Strike(w, hit);
+            if (afloat && w.Ships.Store.Combat.Condition(0).Status == ShipStatus.Afloat)
+                allocated += GC.GetAllocatedBytesForCurrentThread() - before;
+        }
+        Assert.Equal(0, allocated);
 
         // the same hits on a second world: the same condition
         var w2 = World("dreadnought", out int c2);

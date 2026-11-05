@@ -26,6 +26,7 @@ public enum DamageCommand : ushort
     StrikeColours,
     Abandon,
     Scuttle,
+    SetShipDamageControl,
     Blackout,
 }
 
@@ -108,7 +109,7 @@ public sealed class DamageSystem : IWorldSystem
     readonly Struck[] struck;
     int struckNext, struckCount;
     long hits;
-    bool readinessSet, firefightingSet, fuelSet, touched;
+    bool readinessSet, firefightingSet, ownDamageControl, fuelSet, touched;
 
     readonly Sightings sightings;
 
@@ -174,7 +175,13 @@ public sealed class DamageSystem : IWorldSystem
     public DamageControlDoctrine DamageControlOf(int side) => settings.DamageControl[firefighting[side & 255]];
 
     /// <summary>A side's flash discipline, by its doctrine (docs/battle/magazines.md V5): the gunnery reads its hoists'.</summary>
-    public FlashDiscipline FlashOf(int side) => flashOf[firefighting[side & 255]];
+    public FlashDiscipline FlashOf(int side, ShipCondition k) => flashOf[DoctrineOf(side, k)];
+
+    /// <summary>A ship's own damage-control doctrine over her side's (a scenario's unit or ship: docs/battle/magazines.md
+    /// "Too safe"): an index of the settings' DamageControl.</summary>
+    public static Command SetShipDamageControl(int entity, int index) => new(Id, (ushort)DamageCommand.SetShipDamageControl, entity, A: index);
+
+    int DoctrineOf(int side, ShipCondition k) => k.OwnDamageControl >= 0 ? k.OwnDamageControl : firefighting[side & 255];
 
     /// <summary>A ship's orders to hold her speed whatever damage control asks (docs/battle/damage-control.md DC6, decision
     /// 2: the player's override, the benches').</summary>
@@ -206,7 +213,8 @@ public sealed class DamageSystem : IWorldSystem
     void Ready(int slot, ShipCondition k)
     {
         int side = ships.Store[slot].Side & 255;
-        (k.Readiness, k.DamageControl, k.Flash) = (settings.Readiness[readiness[side]], settings.DamageControl[firefighting[side]], flashOf[firefighting[side]]);
+        int doctrine = DoctrineOf(side, k);
+        (k.Readiness, k.DamageControl, k.Flash) = (settings.Readiness[readiness[side]], settings.DamageControl[doctrine], flashOf[doctrine]);
         if (!k.DoorsDrawn)
         {
             // her watertight doors left open, by her orders (docs/battle/damage-control.md DC1)
@@ -336,6 +344,15 @@ public sealed class DamageSystem : IWorldSystem
                     throw new ArgumentException($"no firefighting {c.A} for side {c.Entity}");
                 firefighting[c.Entity] = (int)c.A;
                 firefightingSet = true;
+                break;
+            case DamageCommand.SetShipDamageControl:
+                if (c.A < 0 || c.A >= settings.DamageControl.Length)
+                    throw new ArgumentException($"no damage control {c.A} for ship {c.Entity}");
+                if (ships.Store.SlotOf(c.Entity) is var own and >= 0)
+                {
+                    ships.Store.Combat.Condition(own).OwnDamageControl = (int)c.A;
+                    ownDamageControl = true;
+                }
                 break;
             case DamageCommand.Wreck:
                 int slot = ships.Store.SlotOf(c.Entity);
@@ -1367,6 +1384,13 @@ public sealed class DamageSystem : IWorldSystem
                 {
                     h.Add(s + 768);
                     h.Add(firefighting[s]);
+                }
+        if (ownDamageControl)
+            for (int slot = 0; slot < ships.Store.Slots; slot++)
+                if (ships.Store.IsAlive(slot) && ships.Store.Combat.Condition(slot).OwnDamageControl is var own and >= 0)
+                {
+                    h.Add(slot + 1280);
+                    h.Add(own);
                 }
         if (readinessSet)
             for (int s = 0; s < readiness.Length; s++)
