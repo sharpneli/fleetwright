@@ -389,7 +389,7 @@ public sealed class GasNetwork
             if (lift > 0)
                 Link(top, -1, s.MagazineRoofShare * lift * 1e3, s.MagazineTrunkShare * c.BoreM2(mt), mt);
             else
-                Link(top, -1, s.MagazineScuttleKPa * 1e3, s.MagazineHoistM2, mt);
+                Link(top, -1, s.MagazineScuttleKPa * 1e3, s.MagazineHoistM2, -1);   // a shield's or casemate's hoist: a way out, but no gunhouse vented
         }
         res.Magazines = nStows;
         Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} alight ({2:0} open, {3:0} packed, {4:0} kg each, {5:0} m³ of gas)", time, c.RoomId(room), nOpen, nCased, st.Ck, v[cell]));

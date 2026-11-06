@@ -160,6 +160,32 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal(MagazineTier.TwoGroups, r.Tier);   // forward of amidships: broken in a seaway (V4), breached in calm water
     }
 
+    /// <summary>A shield's or casemate's hoist lets the gas out but vents no gunhouse: there's none to burn out, and a fire whose only
+    /// way up was a hoist is still contained.</summary>
+    [Fact]
+    public void A_hoist_vents_no_gunhouse()
+    {
+        var c = Fleet.Get("pennsylvania").Class!;
+        int tested = 0;
+        for (int room = 0; room < c.Rooms.Length; room++)
+        {
+            if (c.Rooms[room].Kind != RoomKind.Magazine || !Enumerable.Range(0, c.Mounts.Length).Any(m => c.Mounts[m].Magazine == room && c.Mounts[m].Battery >= 0 && c.LiftKPa(m) <= 0))
+                continue;
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+            var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+            var rng = RandomStream.Named(1, "hoist");
+            var net = GasNetwork.For(c);
+            var gas = net.Burn(k, room, [], Settings, ref rng);
+            output.WriteLine($"{c.RoomId(room)}: peak {gas.PeakKPa:0} kPa, {gas.Magazines} magazines, {gas.Vented} vented");
+            for (int m = 0; m < c.Mounts.Length; m++)
+                if (c.LiftKPa(m) <= 0)
+                    Assert.False(net.VentedMount(m), $"mount {m}, with no gunhouse to lift, counted as vented");
+            tested++;
+        }
+        Assert.True(tested > 0);
+    }
+
     /// <summary>07 §3.1, on her own section: forward, where the gas takes the thin plate and the ship is narrow, she breaks in a
     /// seaway; aft her charges are fewer and the section holds, breached and open to the sea.</summary>
     [Fact]
