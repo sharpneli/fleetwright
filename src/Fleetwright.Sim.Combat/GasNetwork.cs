@@ -31,7 +31,7 @@ public struct GasResult
 /// a run allocates nothing.</summary>
 public sealed class GasNetwork
 {
-    const int Faces = 4, MaxStows = 8, Cohorts = 32;
+    const int Faces = 4, Cohorts = 32;
     const double DtMin = 1e-4, DtMax = 0.02, GaugeFloor = 40e3, RtAir = 84_000, AirR = 287, SeaRhoG = 1025 * 9.81, StepCellM3 = 10;
     /// <summary>The step's control, checked by <c>explode --step</c> (explosions.md EX2): the most a pressure that matters may
     /// move in one, or a burning stow put in, as a share of itself or of this share of the highest pressure anywhere. Halved it
@@ -119,7 +119,8 @@ public sealed class GasNetwork
     double[] linkAt = [], linkArea = [];
     bool[] linkOpen = [], ventedMount = [], liftedMount = [];
     int links;
-    readonly Stow[] stows = new Stow[MaxStows];
+    /// <summary>The stows alight: a pool, grown to the most this thread has met at once and kept.</summary>
+    Stow[] stows = [];
     int nStows;
     double burned, fastKg, peakSource;
     SimSettings s = null!;
@@ -136,12 +137,6 @@ public sealed class GasNetwork
         public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, More, EnergyJKg;
         public readonly double[] Cnt = new double[Cohorts], Z = new double[Cohorts];
         public double Burning, Pending, MadePa;
-    }
-
-    GasNetwork()
-    {
-        for (int i = 0; i < MaxStows; i++)
-            stows[i] = new Stow();
     }
 
     void Bind(ShipClass cls)
@@ -328,7 +323,7 @@ public sealed class GasNetwork
     /// <summary>The ship's own magazine lit: its stow, and the links of the mounts it feeds. Its largest cell, or -1.</summary>
     int Light(int room)
     {
-        if (nStows >= MaxStows || k.MagazineSpent[room])
+        if (k.MagazineSpent[room])
             return -1;
         for (int i = 0; i < nStows; i++)
             if (stows[i].Room == room)
@@ -345,6 +340,12 @@ public sealed class GasNetwork
         int cell = Largest(room);
         if (cell < 0)
             return -1;
+        if (nStows == stows.Length)
+        {
+            Array.Resize(ref stows, Math.Max(8, 2 * nStows));
+            for (int i = nStows; i < stows.Length; i++)
+                stows[i] = new Stow();
+        }
         var st = stows[nStows++];
         Magazines.Stow(c, room, rounds, flash, out double nOpen, out double nCased, out double mass);
         st.Room = room;
@@ -357,7 +358,7 @@ public sealed class GasNetwork
         st.Pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)] * st.Pr.Sensitivity;
         st.TBurn = st.Pr.WebM / Magazines.Rate(101_325, st.Pr);
         st.EnergyJKg = s.MagazineHeatKeep * st.Pr.ImpetusJkg / GammaK;
-        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.More, st.Burning, st.Pending) = (0, 0, 0, -1, 0, 0, 0);
+        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.More, st.Burning, st.Pending, st.MadePa) = (0, 0, 0, -1, 0, 0, 0, 0);
         if (nOpen * (1 - st.Flooded) < 1 && nCased * (1 - st.Flooded) >= 1)
         {
             st.LitCased = 1;

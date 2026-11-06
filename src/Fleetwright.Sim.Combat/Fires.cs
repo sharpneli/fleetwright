@@ -316,7 +316,7 @@ public static class Fires
         {
             if (rooms[m].Kind != RoomKind.Magazine)
                 continue;
-            if (k.State[c.RoomNode(m)] == PartState.Destroyed)
+            if (k.MagazineSpent[m] || k.State[c.RoomNode(m)] == PartState.Destroyed)
             {
                 k.MagazineThreatS[m] = 0;   // spent: lit in a race she lived through, nothing left in it to go up
                 continue;

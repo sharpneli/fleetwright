@@ -160,6 +160,74 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal(MagazineTier.TwoGroups, r.Tier);   // forward of amidships: broken in a seaway (V4), breached in calm water
     }
 
+    /// <summary>A magazine room with no charge in it (a carrier's bombs aren't in the model yet) has nothing to go up: she's not lost
+    /// by it, nothing in her is touched, and it doesn't come up again.</summary>
+    [Fact]
+    public void A_magazine_with_nothing_to_burn_does_nothing()
+    {
+        var c = Fleet.Get("fleet_carrier").Class!;
+        int room = Enumerable.Range(0, c.Rooms.Length).First(i => c.Rooms[i].Kind == RoomKind.Magazine &&
+            !Enumerable.Range(0, c.Mounts.Length).Any(m => c.Mounts[m].Magazine == i && c.Mounts[m].Battery >= 0));
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        int slot = w.Ships.Store.SlotOf(w.Ships.NewestEntity);
+        var k = w.Ships.Store.Combat.Condition(slot);
+        var rng = RandomStream.Named(1, "empty");
+        var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), Settings, 0, ref rng, 1);
+        Assert.False(r.Lost, $"{r.Tier}");
+        Assert.Equal(0, r.Magazines);
+        Assert.True(k.MagazineSpent[room]);
+        Assert.Equal(PartState.Ok, k.State[c.RoomNode(room)]);
+    }
+
+    /// <summary>A flame running through a ship's magazines doesn't stop at a number: Seydlitz has nine.</summary>
+    [Fact]
+    public void Every_magazine_a_ship_has_can_light()
+    {
+        var c = Fleet.Get("seydlitz").Class!;
+        int rooms = Enumerable.Range(0, c.Rooms.Length).Count(i => c.Rooms[i].Kind == RoomKind.Magazine), most = 0;
+        for (int room = 0; room < c.Rooms.Length; room++)
+            if (c.Rooms[room].Kind == RoomKind.Magazine)
+                most = Math.Max(most, Race(c, c.RoomId(room)).Magazines);
+        Assert.Equal(9, rooms);
+        Assert.True(most > 8, $"at most {most} of her {rooms} lit");
+    }
+
+    /// <summary>What a run did on this thread before says nothing of the next: a stow lit part way through a step has put nothing in
+    /// yet, whatever the last run's stow in that slot was making.</summary>
+    [Fact]
+    public void A_run_doesnt_hang_on_the_ones_before_it()
+    {
+        var c = Fleet.Get("seydlitz").Class!;
+        var rooms = Enumerable.Range(0, c.Rooms.Length).Where(i => c.Rooms[i].Kind == RoomKind.Magazine).ToArray();
+        GasResult Run(int room)
+        {
+            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+            var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
+            var rng = RandomStream.Named(7, "history");
+            return GasNetwork.For(c).Burn(k, room, [], Settings, ref rng);
+        }
+        foreach (int room in rooms)
+        {
+            GasResult fresh = default, after = default;
+            var first = new Thread(() => fresh = Run(room));
+            first.Start();
+            first.Join();
+            var second = new Thread(() =>
+            {
+                foreach (int other in rooms)
+                    Run(other);
+                after = Run(room);
+            });
+            second.Start();
+            second.Join();
+            Assert.Equal(fresh.Steps, after.Steps);
+            Assert.Equal(fresh.PeakKPa, after.PeakKPa);
+            Assert.Equal(fresh.BurnedKg, after.BurnedKg);
+        }
+    }
+
     /// <summary>A shield's or casemate's hoist lets the gas out but vents no gunhouse: there's none to burn out, and a fire whose only
     /// way up was a hoist is still contained.</summary>
     [Fact]

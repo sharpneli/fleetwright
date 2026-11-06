@@ -47,14 +47,15 @@ public static partial class Magazines
         ref RandomStream r, double sea = 0)
     {
         var res = new RaceResult { VentS = double.NaN, StructureS = double.NaN };
-        if (room < 0)
-            return res with { Tier = MagazineTier.Severed };
-        if (k.MagazineSpent[room])
+        if (room < 0 || k.MagazineSpent[room])
             return res;   // it has gone up already: nothing there to burn
         var net = GasNetwork.For(c);
         var gas = net.Burn(k, room, mounts, s, ref r);
         if (gas.Magazines == 0)
-            return res with { Tier = MagazineTier.Severed };   // nothing known to burn: as before
+        {
+            k.MagazineSpent[room] = true;   // a room with no charge in it (a carrier's bombs, not in the model yet): nothing to go up, now or later
+            return res;
+        }
         var girder = HullGirder.Of(c).Bear(k, gas.WhipEM, now, sea, s);
         res.Gas = gas;
         (res.PeakKPa, res.BurnedKg, res.FastKg, res.Charges, res.VentM2, res.VentS, res.StructureS) = (gas.PeakKPa, gas.BurnedKg, gas.FastKg, gas.Charges, gas.VentM2, gas.VentS, gas.HullS);

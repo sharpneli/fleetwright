@@ -785,9 +785,12 @@ public sealed class DamageSystem : IWorldSystem
         if (e.Magazine && k.Status == ShipStatus.Afloat && !(e.MagazineRoom >= 0 && k.MagazineSpent[e.MagazineRoom]))
         {
             race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
-            (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
-            MagazineCounts.ByHit[(int)race.Tier]++;
-            LogRace(slot, race.Tier);
+            if (race.Magazines > 0)
+            {
+                (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
+                MagazineCounts.ByHit[(int)race.Tier]++;
+                LogRace(slot, race.Tier);
+            }
         }
         trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
@@ -1264,14 +1267,17 @@ public sealed class DamageSystem : IWorldSystem
         {
             // fire's heat set it off (fire B2): its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
             var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
-            MagazineCounts.ByFire[(int)race.Tier]++;
-            LogRace(slot, race.Tier);
-            if (race.Lost)
+            if (race.Magazines > 0)
             {
-                Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);
-                return -1;
+                MagazineCounts.ByFire[(int)race.Tier]++;
+                LogRace(slot, race.Tier);
+                if (race.Lost)
+                {
+                    Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);
+                    return -1;
+                }
+                Recompute(world, slot, k, ref rng);
             }
-            Recompute(world, slot, k, ref rng);
         }
         // her girder as the water goes in: she can break later, and in a seaway (docs/battle/explosions.md: Bristol, Strong, Beatty)
         var girder = default(GirderReading);
