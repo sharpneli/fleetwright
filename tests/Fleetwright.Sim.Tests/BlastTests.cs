@@ -227,4 +227,34 @@ public class BlastTests(ITestOutputHelper output)
         var open = GasNetwork.For(c2).Detonate(k2, cell, at, 3.3, f, 0, 0, 0, Settings, ref r);
         Assert.True(open.Spaces > shut.Spaces, $"{open.Spaces} against {shut.Spaces}");
     }
+
+    /// <summary>What a boundary that held keeps is what the worst of it did (17 §3.2): its seams go by the most it felt, not by what's
+    /// left on it once the gas has gone through. The bulkheads round a burst feel about what its space does, so the worst of them
+    /// reads about that.</summary>
+    [Fact]
+    public void A_boundary_that_held_keeps_the_worst_it_felt()
+    {
+        var (c, k) = Ship("destroyer");
+        int cell = Cell(c, k, RoomKind.Accommodation);
+        var b = c.Cells[cell].Box;
+        var r = RandomStream.Named(1, "held");
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 10, Charge(10, "TNT"), 0, 0, 0, Settings, ref r);   // no near zone: every boundary takes its load
+        Assert.Equal(0, res.Ruptured);
+        double felt = GasNetwork.For(c).FeltMPa(cell), worst = 0, expected = 0;
+        var nb = c.Cells[cell].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
+        {
+            ref readonly var e = ref c.Neighbour(j);
+            if (e.Join == JoinKind.Open)
+                continue;
+            double d = 5 * felt / (Settings.RuptureMPaMm * Blast.JoinMm(c, e, c.Cells[cell].Box, c.Cells[e.Cell].Box) * (c.InternalsJoint == Joint.Riveted ? Settings.RivetedK : 1));
+            int q = Leaks.Entry(c, cell, j);
+            output.WriteLine($"  to {c.CellId(e.Cell)}: {e.Join}, D on the space's felt {d:0.00}, kept {k.JoinD[q]:0.00}, opened {k.JoinOpenM2[q]:0.00}, seams {k.JoinSeamM2[q]:0.0000}, closures {k.JoinClosureM2[q]:0.0000}");
+            if (k.JoinD[q] > worst)
+                (worst, expected) = (k.JoinD[q], d);
+        }
+        output.WriteLine($"  the space felt {felt:0.000} MPa; the worst boundary kept D {worst:0.00}, the space's felt on its plate D {expected:0.00}");
+        Assert.True(worst >= 0.5 * expected, $"D {worst:0.00} kept against {expected:0.00}");
+        Assert.True(expected >= 1, $"D {expected:0.00}");
+    }
 }
