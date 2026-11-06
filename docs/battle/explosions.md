@@ -1,6 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). EX0-EX3 are built and EX2 wires the network and girder into the game (2026-11-06). **Pick up at "Where to pick up", next.**
+Status: **decided 2026-11-05** ("Decided" at the end). EX0-EX3 are built and EX2 wires the network and girder into the game (2026-11-06); reviewed the same day, its bugs fixed ("The review"), its unification still to do. **Pick up at "Where to pick up", next.**
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -13,7 +13,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**EX2 is built; the user's call is next: no magazine broke a ship in any of the 68 games of the panel.** See "EX2: what it showed". The destroyer the plan began with now comes out on the research's figures, with nothing fitted.
+**EX2 is built and reviewed. Next is the review's second step, the unification left ("The review", at the end of EX2's results); then the user's call: no magazine broke a ship in any of the 68 games of the panel, still.** See "EX2: what it showed". **The destroyer the plan began with no longer sits on the research's figures:** part of that match was a bug (the review's first finding), and she now reads worse than the research at 5 and 9 hits, nothing fitted.
 
 **Open, in order of what they decide:**
 
@@ -446,6 +446,66 @@ Down to 1/16 of the chosen step the loads settle (bags 0.80/1.29, Clarkson 0.51/
 **Anchors moved in the tests, on the user to check:** Lion's Q on bags is lost in a seaway and not in calm water (open 1); a Clarkson or brass Lion holds, in `The_propellant_and_its_packing_decide...`; a 16″ AP in a battleship's engine room felt 0.124 MPa against 11's under 0.1, with nothing ruptured.
 
 **Cost,** steady-state (DevRelease, `DOTNET_TieredCompilation=0`): a shell 10-230 µs, a big magazine 70-165 ms, a destroyer's a few ms. The panel took 655 s against 675 s: the whole game is no slower to play.
+
+## The review (2026-11-06)
+
+A fresh read of EX0-EX3 at the user's asking: one path, one place for each thing, no long methods. **This corrects "EX2: what it showed" above, which is left as it was measured.** Fixed, each with its test, nothing tuned:
+
+1. **A boundary that held kept what was left on it, not the most it felt.** Seams and closures were drawn from the load at the run's end, once the gas had gone (`Cascade` kept the peak). This one moves the numbers.
+2. **A door blew out in every explosion:** six 10 kg bursts left 7.2 m² open at a 1.2 m² door. And a blown door then counted as torn plate when its bulkhead ruptured (`JoinMark.DoorBlown`).
+3. **A boundary in the near zone never took load again,** so it couldn't rupture, and the plate nearest a charge could end up better off than the plate beside it. What the near zone cuts now counts as torn, and only that.
+4. **A shield's or casemate's hoist counted as a gunhouse vented,** which `Trunks` never did: a contained fire read as burned out, which changes who it kills. On 37 of 72 designs. Lion's Q read 11 vented, now 3.
+5. **A magazine room with no charge in it lost the ship,** with no gas and no girder read (four carriers; their bombs aren't in the model). It now does nothing and is spent. A fire's heat there would also have hidden her other magazines from the fire step.
+6. **The chain stopped silently at eight stows,** on six designs that have more (Seydlitz 9, Gangut 24). "All 8 of Seydlitz's" under EX1 was this cap.
+7. **Whether a magazine's bulkhead lit the passages hung on how her cells are numbered,** an edge being worked from its lower cell. Seydlitz's X lit 4 of her magazines one way.
+
+Also a pooled stow's stale `MadePa` in the step control (latent: not reproduced in 35 magazines; a test guards it).
+
+**The destroyer from "Why now" again (`hits destroyer --shooter yamato --kind he --range 1000`, 2 h on), nothing fitted. Lost is by the hits plus in the flooding after:**
+
+| Hits (ships) | Crippled: EX2, now, research | Lost: EX2, now, research | Mean water: EX2, now, research |
+|---:|---:|---:|---:|
+| 1 (240) | 48%, 57%, 36% | 0%, 0%, 7% | 145, 187, 114 t |
+| 5 (48) | 92%, 98%, 89% | 43%, 57%, 44% | 781, 909, 580 t |
+| 9 (200) | 99%, 99%, 99% | 75%, 94%, 79% | 725, 815, 1,050 t |
+
+Finding 1 does nearly all of it; finding 3 takes some back (5 hits: water 995 to 909 t, lost 61% to 57%). **So EX2's match on the 5 and 9 hit losses leaned on the bug.** Not tuned; the reading is left to the user. The 5-hit row is 48 ships, so about ±7 points on its own.
+
+**The panel (`explosions-review/`, beside `explosions-ex2/`; 8 seeds, Jutland 4):**
+
+| Lost a seed | EX2 | Now | Record | | EX2 | Now | Record |
+|---|---:|---:|---:|---|---:|---:|---:|
+| Dover Strait: Britain | 0.4 | 0.1 | 0 | Germany | 1.8 | 1.4 | 2 |
+| Coronel: Britain | 0.5 | **1.3** | 2 | Germany | 0.8 | 1.0 | 0 |
+| Cape Sarych: Russia | 3.3 | 3.9 | 0 | Ottoman Empire | 1.0 | 0.5 | 0 |
+| Heligoland Bight: Britain | 2.0 | 0.8 | 0 | Germany | 11.4 | 7.8 | 4 |
+| Dogger Bank: Britain | 5.9 | 5.8 | 0 | Germany | 12.0 | 8.4 | 1 |
+| Tsushima: Russia | 3.1 | 3.0 | 7 | Japan | 4.8 | 3.9 | 0 |
+| Jutland: Britain | 20.8 | **30.5** | 14 | Germany | 46.8 | 45.5 | 11 |
+| The prizes' war: France | 2.0 | 1.6 | - | Italy | 2.4 | 2.5 | - |
+| Åland: Finland | 6.0 | 7.6 | - | Sweden | 2.3 | 2.8 | - |
+
+- **All together:** 7 of 14 sides within about twice the record (5); the record's loser lost more in 25 of 44 seeds (22). Capsized 51% (59), foundered 27% (22), broke in two 22% (19), **magazine 0% (0)**. EX0's warning on noise stands, the more so for Jutland's Britain: 4 seeds.
+- **Magazines at Jutland, a seed:** 2,320 heavy hits (1,548, not looked into), 116.5 lit charges in a train. Set off by a hit: contained 3.0, burned out 0.3, breached 9.0, broken 0. By a fire: contained 1.0, burned out 0, breached 1.8, broken 0.
+- **`damage-history`, lost after the case:** Tiger 10% to 20%, Bismarck 25% to 50%, Seydlitz and Derfflinger 0% to 5%, Mikasa 5% to 10%; Indefatigable's case still 20%, all four by her magazine. **`fire-history`:** Santiago 10% to 35% lost, toward the record's "beyond help in most runs". **`dc-history`:** Lützow 25% to 40%.
+- **The magazines' own loads hardly moved** (Lion, Iron Duke, the destroyer and V25 within 0.01): open item 1 stands as it was. Seydlitz now lights all 9, 128 t against 111 t, and four of her sides give at about 10 s: 0.32 / 0.54 as before, so she still burns out.
+
+**Left from the review, in the order to do them.** Step 2, the unification, with the game's own output (`explode`, `magazine --race`, `hits`) byte-identical before and after; `snapshot` only covers shipgen:
+
+1. **One rule for a boundary.** Edge, face and part wall are one rule written three times in `Boundaries` (110 lines) and `PartWalls`: `D` five times with a magic 5 (`DeformMPaMm` read by nothing), `d >= 5` three times, the share of a section lost in three forms. `Opening` repeats `Blast.LeakRatio`'s curve. `HullGirder.Add` repeats `HullFaces`' belt.
+2. **One "after an explosion".** `Burst`, `PartGas` and `SetOff` each do men and gear their own way, `Bear` is called from `SetOff`, `Strike` and `Step`, and their follow-ups have drifted: a fire-set magazine doesn't wake the flooding, `Aftermath` drops what the gas did to gear, `Strike` never reads `race.EndLost`, `Crew` fetches the thread's network again and trusts it still holds the run. The plan's `Explosion` and `Explosions.Apply` don't exist yet.
+3. **Two rules still keyed on the source.** `Ignite` only runs while a stow burns, so a magazine's hot gas lights the next for certain and a shell's rolls `MagazineFlashChance` after (EX6 touches it). A magazine's scuttles and trunks exist only when it's alight, so a shell in a handling room can't vent through the same scuttle, and a burst in a barbette never reaches her cells.
+4. **The tier isn't only a report:** `RaceResult.Lost` and `Aftermath` read it, against what's written above and in `MagazineTier`'s summary. And `PartGas` is listed as gone: its physics is, the method isn't.
+5. **Long methods:** `Effects.Burst` 221 lines, `Strike` 127, `Boundaries` 110, `Step` 85, `Commit` 75, `Light` 69, `Sources` 66, `Run` 62.
+
+**Smaller, physics or bookkeeping, not fixed:**
+
+- **The girder:** side plate counted twice where two cells stand at one height (6 of Lion's 20 sections by 12-14%, 22 of 72 designs; cause not traced), which flatters capacity and bears on open item 1. A slope can't be lost. A cut end freezes the whole end zone, including sections still on her. Intact, Littorio, Yamato and the supercarrier read broken at sea 1.5 (44 kn; a hit is all it takes, nothing torn; the scenarios blow at most about 30 kn). `BucklingK` and the 1 s whip period aren't in settings; `?? 111.9`; `YieldPa` under-reads steels past the stress cap.
+- **The gas:** a hole under water vents the next explosion, against what `Boundaries` says of a new one. `FaceTornM2` only grows, so a repaired face can't tear again up to its old size. A welded plate's opening jumps 2.5× at D 5 (the user's call under `no-hard-switches`; rupture itself is a physical step). A source under 10 m³ has no pressure control on its step, untested for convergence.
+- **Housekeeping:** the state hash misses `WhipEM`, `WhipMs`, the cuts and `FaceTornM2`. `res.Gave` has no weather deck. `st.More` is dead, and a clause of the burning test. `HotProductsM3Kg`'s orphaned summary sits on `LeakWeepD`. `Blast.Pressure` is only the tests'. `Modulus` works out the elastic moment on every read. The thread's network keeps its last ship alive.
+- **Tests:** the raider test went from seed 3 to 4 in EX2 unremarked (`AimsTests`). `A_thin_hull_gives...` went with no replacement; nothing tests an end coming off through `SetOff`.
+- **Not measured:** the cost findings, `Math.Pow` per edge per step and `Felt` over components × cells.
+- **Found since:** the flotilla's no-garbage test now has a magazine go up inside its window; the smoke field's lists grow by a first entry there (2 kB, once). A loss counts as a one-off from the moment she's lost.
 
 ## What stays out
 

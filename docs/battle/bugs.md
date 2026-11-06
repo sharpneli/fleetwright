@@ -5,6 +5,10 @@ for a bug-hunting round. A bug found mid-task is fixed on the spot when that's a
 a bigger one, it goes here and the task goes on. One item each, with what's known; tick off or delete what's fixed,
 add what's found.
 
+## Build
+
+- **A fresh restore of the CLI fails on `NU1903`** (2026-11-06): a high-severity advisory on `Microsoft.DotNet.ILCompiler` 10.0.12, with warnings as errors. A tree with its restore cached doesn't show it, so the next clean checkout will. The package wants updating; a throwaway build can pass `-p:WarningsNotAsErrors=NU1903`.
+
 ## Flaky tests
 
 Hunted 2026-10-24: every flaky entry below is closed. The check was seven full DevRelease runs of all three test projects
