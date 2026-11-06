@@ -228,6 +228,73 @@ public class BlastTests(ITestOutputHelper output)
         Assert.True(open.Spaces > shut.Spaces, $"{open.Spaces} against {shut.Spaces}");
     }
 
+    /// <summary>A door blows out once: there's none left for the next burst to blow, however many there are.</summary>
+    [Fact]
+    public void A_door_blows_out_once()
+    {
+        var (c, k) = Ship("destroyer");
+        int cell = Cell(c, k, RoomKind.Accommodation);
+        var b = c.Cells[cell].Box;
+        var at = new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
+        var f = Charge(10, "TNT");
+        var doors = new List<int>();
+        for (int i = 0; i < 6; i++)
+        {
+            var r = RandomStream.Named(11, "door " + i);
+            doors.Add(GasNetwork.For(c).Detonate(k, cell, at, 10, f, 0, 0, 0, Settings, ref r).Doors);
+        }
+        int blown = k.JoinMarks.Count(m => (m & JoinMark.DoorBlown) != 0);
+        output.WriteLine($"  doors blown by each burst: {string.Join(", ", doors)}; marked {blown}");
+        Assert.True(blown > 0);
+        Assert.Equal(blown, doors.Sum());
+        for (int i = 0; i < k.JoinOpenM2.Length; i++)
+            if ((k.JoinMarks[i] & JoinMark.DoorBlown) != 0)
+                Assert.True(k.JoinOpenM2[i] < 2 * Settings.DoorM2, $"{k.JoinOpenM2[i]:0.00} m² open at a {Settings.DoorM2} m² door");
+    }
+
+    /// <summary>A door blown before isn't plate torn: a bulkhead that then ruptures has lost what the same bulkhead does with its door shut.</summary>
+    [Fact]
+    public void A_blown_door_isnt_torn_plate()
+    {
+        var (c, _) = Ship("destroyer");
+        int best = -1, cell = -1;
+        double bestGap = 0, alone = 0, kg = 0;
+        P3 at = default;
+        // a burst that only just ruptures a bulkhead: less gone than a door's area would read as torn plate
+        for (double w = 10; w <= 60 && best < 0; w += 2)
+        {
+            var (_, k) = Ship("destroyer");
+            cell = Cell(c, k, RoomKind.Accommodation);
+            var b = c.Cells[cell].Box;
+            at = new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
+            var r = RandomStream.Named(11, "torn");
+            GasNetwork.For(c).Detonate(k, cell, at, w, Charge(w, "TNT"), 0, 0, 0, Settings, ref r);
+            for (int i = 0; i < c.Cells.Length; i++)
+            {
+                var nb = c.Cells[i].Neighbours;
+                for (int j = nb.Start; j < nb.End; j++)
+                {
+                    ref readonly var e = ref c.Neighbour(j);
+                    int q = Leaks.Entry(c, i, j);
+                    if (e.Join == JoinKind.Open || !(k.EdgeLost[q] > 0))
+                        continue;
+                    double read = Math.Sqrt(Math.Min(Settings.DoorM2 / (Settings.RupturedShare * Blast.Area(c.Cells[i].Box, c.Cells[e.Cell].Box, e.Join)), 1));
+                    if (read - k.EdgeLost[q] > bestGap)
+                        (best, bestGap, alone, kg) = (q, read - k.EdgeLost[q], k.EdgeLost[q], w);
+                }
+            }
+        }
+        Assert.True(best >= 0, "no burst ruptures a bulkhead with less gone than a door's area would read");
+
+        var (c2, k2) = Ship("destroyer");
+        k2.JoinOpenM2[best] = Settings.DoorM2;
+        k2.JoinMarks[best] |= JoinMark.DoorBlown;
+        var r2 = RandomStream.Named(11, "torn");
+        GasNetwork.For(c2).Detonate(k2, cell, at, kg, Charge(kg, "TNT"), 0, 0, 0, Settings, ref r2);
+        output.WriteLine($"  {kg} kg: lost {alone:0.00} with its door shut, {k2.EdgeLost[best]:0.00} with it blown before; read as torn plate it would be {alone + bestGap:0.00}");
+        Assert.True(k2.EdgeLost[best] < alone + bestGap - 1e-6, $"{k2.EdgeLost[best]:0.00}");
+    }
+
     /// <summary>What a boundary that held keeps is what the worst of it did (17 §3.2): its seams go by the most it felt, not by what's
     /// left on it once the gas has gone through. The bulkheads round a burst feel about what its space does, so the worst of them
     /// reads about that.</summary>

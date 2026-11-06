@@ -279,7 +279,7 @@ public sealed class GasNetwork
     }
 
     /// <summary>An edge, the first time this run: what's open already stays open, a door left open and a seam already sprung with
-    /// it; what's torn from before needs no tearing again.</summary>
+    /// it; what's torn from before needs no tearing again, and a door blown before isn't plate torn.</summary>
     double EdgeOpen(int j)
     {
         int q = canon[j];
@@ -293,7 +293,7 @@ public sealed class GasNetwork
             else
             {
                 double was = Math.Min(k.JoinOpenM2[q], area[j]);
-                tornEdge[q] = was;
+                tornEdge[q] = (k.JoinMarks[q] & JoinMark.DoorBlown) != 0 ? Math.Max(was - s.DoorM2, 0) : was;
                 double doors = 0;
                 if ((k.JoinMarks[q] & JoinMark.DoorOpen) != 0)
                 {
@@ -618,9 +618,10 @@ public sealed class GasNetwork
                             Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(o), mm[j], edgeFelt[q] * 1000));
                         changed = true;
                     }
-                    else if (fate[q] == Blast.Fate.None && edgeFelt[q] >= Math.Max(s.DoorMinMPa, s.DoorShare * rupture) && Leaks.HasDoor(c, e, i))
+                    else if (fate[q] == Blast.Fate.None && edgeFelt[q] >= Math.Max(s.DoorMinMPa, s.DoorShare * rupture) && Leaks.HasDoor(c, e, i) && (k.JoinMarks[q] & JoinMark.DoorBlown) == 0)
                     {
                         fate[q] = Blast.Fate.Door;
+                        k.JoinMarks[q] |= JoinMark.DoorBlown;
                         (open[q], opened[q]) = (Math.Min(open[q] + s.DoorM2, area[j]), opened[q] + s.DoorM2);
                         a1 = open[q];
                         res.Doors++;

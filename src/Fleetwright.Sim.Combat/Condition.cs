@@ -97,7 +97,7 @@ public enum HoleClass : byte
 /// <summary>An edge's marks for the flooding and damage control (docs/battle/damage-control.md DC1): a watertight door
 /// in it left open, its door jammed by a load, it gave way under the head; and damage control's work on it (DC3).</summary>
 [Flags]
-public enum JoinMark : byte
+public enum JoinMark : ushort
 {
     None = 0,
     DoorOpen = 1,
@@ -109,6 +109,8 @@ public enum JoinMark : byte
     ShoredTwice = 64,
     /// <summary>A deck gone under the sea with its hatches battened down (DC9: the Lützow rule's opening, closed).</summary>
     Battened = 128,
+    /// <summary>Its door blown out by an explosion: its opening is in <see cref="ShipCondition.JoinOpenM2"/>, and there's no door left to blow.</summary>
+    DoorBlown = 256,
 }
 
 /// <summary>What hits that held left a mount (docs/battle/shells-armour-damage.md E4; damage/13 §1): jammed in train (its
