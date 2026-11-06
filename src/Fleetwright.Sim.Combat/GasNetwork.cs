@@ -105,15 +105,15 @@ public sealed class GasNetwork
     int n, id;
     // the edges', by canon
     int[] edgeStamp = [];
-    double[] open = [], opened = [], edgeFelt = [], edgePeak = [], tornEdge = [];
-    byte[] fate = [];
+    double[] open = [], opened = [];
+    Boundary[] edges = [];
     // the outside faces', cell x 4
     int[] faceStamp = [];
-    double[] faceFelt = [], facePeak = [], faceTorn = [], faceBack = [], faceDry = [];
-    byte[] faceFate = [];
+    double[] faceBack = [], faceDry = [];
+    Boundary[] faces = [];
     // a part's walls
-    double partM2, partMm, partFelt, partTorn;
-    bool partGave;
+    double partM2, partMm;
+    Boundary partWalls;
     // the links a magazine's train adds: from a cell to another or the air (-1), opening at a gauge pressure there
     int[] linkFrom = [], linkTo = [], linkMount = [], rounds = [];
     double[] linkAt = [], linkArea = [];
@@ -129,6 +129,33 @@ public sealed class GasNetwork
     FlashDiscipline flash;
     double time, chokeK, whipKg, whipJ, whipPeak, lag;
     GasResult res;
+
+    /// <summary>A boundary in a run, whichever it is (a plate between two spaces, one to the outside, a part's walls): by one rule
+    /// its load takes up as its panel responds, what it opens goes up <see cref="Blast.Opening"/>'s curve, and it gives at
+    /// <see cref="Blast.RuptureD"/>. What that opening is to (a neighbour, the air, the sea) is the caller's.</summary>
+    struct Boundary
+    {
+        public double Felt, Peak, Torn;
+        public byte Fate;
+
+        /// <summary>A load of MPa on it for a step (lag: its panel's response), its plate's rupture pressure, joint and area: what it
+        /// opened more this step, m², and the load as a D.</summary>
+        public double Take(double load, double lag, double rupture, Joint joint, double areaM2, SimSettings s, out double d)
+        {
+            Felt += (load - Felt) * lag;
+            Peak = Math.Max(Peak, Felt);
+            d = Blast.RuptureD * Felt / rupture;
+            double wants = Blast.Opening(d, joint, s) * areaM2;
+            if (wants <= Torn)
+                return 0;
+            double more = wants - Torn;
+            Torn = wants;
+            return more;
+        }
+
+        /// <summary>The most it felt as a D: what a boundary that held is left with.</summary>
+        public readonly double PeakD(double rupture) => Blast.RuptureD * Peak / rupture;
+    }
 
     sealed class Stow
     {
@@ -156,11 +183,10 @@ public sealed class GasNetwork
             (stamp, region) = (new int[size], new int[size]);
             (v, m, u, p, rt, pStart) = (new double[size], new double[size], new double[size], new double[size], new double[size], new double[size]);
             (vent, lagged, felt, hottest) = (new double[size], new double[size], new double[size], new double[size]);
-            (faceStamp, faceFelt, faceTorn) = (new int[size * Faces], new double[size * Faces], new double[size * Faces]);
-            (faceBack, faceDry, faceFate, facePeak) = (new double[size * Faces], new double[size * Faces], new byte[size * Faces], new double[size * Faces]);
+            (faceStamp, faces, faceBack, faceDry) = (new int[size * Faces], new Boundary[size * Faces], new double[size * Faces], new double[size * Faces]);
         }
         if (edgeStamp.Length < ne)
-            (edgeStamp, open, opened, edgeFelt, edgePeak, tornEdge, fate) = (new int[ne], new double[ne], new double[ne], new double[ne], new double[ne], new double[ne], new byte[ne]);
+            (edgeStamp, open, opened, edges) = (new int[ne], new double[ne], new double[ne], new Boundary[ne]);
         if (ventedMount.Length < nm)
         {
             (ventedMount, liftedMount, rounds) = (new bool[nm], new bool[nm], new int[nm]);
@@ -220,7 +246,7 @@ public sealed class GasNetwork
     {
         Begin(cond, settings);
         Node(partNode, gasM3, ventM2);
-        (partM2, partMm, partFelt, partTorn, partGave) = (wallM2, wallMm, 0, 0, false);
+        (partM2, partMm, partWalls) = (wallM2, wallMm, default);
         if (Blast.Open(gasM3, ventM2, s))
         {
             res.Open = true;
@@ -294,19 +320,21 @@ public sealed class GasNetwork
         if (edgeStamp[q] != id)
         {
             edgeStamp[q] = id;
-            (fate[q], edgeFelt[q], edgePeak[q], opened[q]) = (0, 0, 0, 0);
+            opened[q] = 0;
+            ref var b = ref edges[q];
+            b = default;
             ref readonly var e = ref c.Neighbour(j);
             if (e.Join == JoinKind.Open)
-                (open[q], tornEdge[q]) = (area[j], area[j]);
+                (open[q], b.Torn) = (area[j], area[j]);
             else
             {
                 double was = Math.Min(k.JoinOpenM2[q], area[j]);
-                tornEdge[q] = (k.JoinMarks[q] & JoinMark.DoorBlown) != 0 ? Math.Max(was - s.DoorM2, 0) : was;
+                b.Torn = (k.JoinMarks[q] & JoinMark.DoorBlown) != 0 ? Math.Max(was - s.DoorM2, 0) : was;
                 double doors = 0;
                 if ((k.JoinMarks[q] & JoinMark.DoorOpen) != 0)
                 {
                     doors = s.DoorM2;
-                    fate[q] = Blast.Fate.Door;   // a door already open can't be blown
+                    b.Fate = Blast.Fate.Door;   // a door already open can't be blown
                 }
                 open[q] = Math.Min(was + k.JoinSeamM2[q] + doors, area[j]);
             }
@@ -327,8 +355,8 @@ public sealed class GasNetwork
             EdgeOpen(j);
             int q = canon[j];
             double hole = Math.Min(Math.PI * nearHoleM * nearHoleM, area[j]);
-            (open[q], opened[q], fate[q]) = (Math.Min(open[q] + hole, area[j]), opened[q] + hole, Blast.Fate.Holed);
-            tornEdge[q] = Math.Min(tornEdge[q] + hole, area[j]);   // what the gas tears from here on starts from this
+            (open[q], opened[q], edges[q].Fate) = (Math.Min(open[q] + hole, area[j]), opened[q] + hole, Blast.Fate.Holed);
+            edges[q].Torn = Math.Min(edges[q].Torn + hole, area[j]);   // what the gas tears from here on starts from this
             res.Holed++;
         }
     }
@@ -575,8 +603,8 @@ public sealed class GasNetwork
         }
     }
 
-    /// <summary>Every edge and outside face of the cells the gas is in: its load as its panel takes it up, what gives, the
-    /// flow through what's open. True when something gave.</summary>
+    /// <summary>Every boundary of the cells the gas is in: its load, what gives, the flow through what's open. True when
+    /// something gave.</summary>
     bool Boundaries(double dt)
     {
         double keep = s.BlastLoadFactor;
@@ -585,105 +613,11 @@ public sealed class GasNetwork
         {
             int i = region[a];
             if (i == partNode)
+                changed |= LoadPartWalls(keep);
+            else
             {
-                changed |= PartWalls(keep);
-                if (vent[i] > 0)
-                    Flow(i, -1, vent[i], dt);
-                continue;
-            }
-            var nb = c.Cells[i].Neighbours;
-            for (int j = nb.Start; j < nb.End; j++)
-            {
-                ref readonly var e = ref c.Neighbour(j);
-                int o = e.Cell;
-                bool inside = stamp[o] == id;
-                if (inside && o < i)
-                    continue;   // from the lower cell
-                double a1 = EdgeOpen(j), po = inside ? p[o] : P0, diff = p[i] - po;
-                int q = canon[j];
-                if (e.Join != JoinKind.Open)
-                {
-                    edgeFelt[q] += (keep * Math.Abs(diff) / 1e6 - edgeFelt[q]) * lag;
-                    edgePeak[q] = Math.Max(edgePeak[q], edgeFelt[q]);
-                    double rupture = s.RuptureMPaMm * mm[j] * Rivets(c.InternalsJoint), d = 5 * edgeFelt[q] / rupture;
-                    // what it opens goes up one curve: sprung seams, a crack just past rupture, torn out well past it
-                    double wants = Opening(d, c.InternalsJoint) * area[j];
-                    if (wants > tornEdge[q])
-                    {
-                        double more = wants - tornEdge[q];
-                        tornEdge[q] = wants;
-                        (open[q], opened[q]) = (Math.Min(open[q] + more, area[j]), opened[q] + more);
-                        a1 = open[q];
-                    }
-                    if (d >= 5 && fate[q] != Blast.Fate.Ruptured)
-                    {
-                        fate[q] = Blast.Fate.Ruptured;
-                        if (e.Join == JoinKind.Deck)
-                            res.Decks++;
-                        else
-                            res.Bulkheads++;
-                        Gave(false, i, e.Join == JoinKind.Bulkhead, o);
-                        if (Trace != null)
-                            Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(o), mm[j], edgeFelt[q] * 1000));
-                        changed = true;
-                    }
-                    else if (fate[q] == Blast.Fate.None && edgeFelt[q] >= Math.Max(s.DoorMinMPa, s.DoorShare * rupture) && Leaks.HasDoor(c, e, i) && (k.JoinMarks[q] & JoinMark.DoorBlown) == 0)
-                    {
-                        fate[q] = Blast.Fate.Door;
-                        k.JoinMarks[q] |= JoinMark.DoorBlown;
-                        (open[q], opened[q]) = (Math.Min(open[q] + s.DoorM2, area[j]), opened[q] + s.DoorM2);
-                        a1 = open[q];
-                        res.Doors++;
-                        res.FirstS = double.IsNaN(res.FirstS) ? time : res.FirstS;   // a way for the gas, not the flame's: Ignite has that
-                        if (Trace != null)
-                            Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "door {0} to {1} at {2:0} kPa felt", c.CellId(i), c.CellId(o), edgeFelt[q] * 1000));
-                        changed = true;
-                    }
-                }
-                if (a1 <= 0)
-                    continue;
-                if (!inside)
-                    Join(o);   // it steps from the next step on
-                Flow(i, o, a1, dt);
-            }
-            for (int f = 0; f < Faces; f++)
-            {
-                int x = i * Faces + f;
-                double fa = hull.Area[x];
-                if (!(fa > 0))
-                    continue;
-                if (faceStamp[x] != id)
-                {
-                    faceStamp[x] = id;
-                    (faceFate[x], faceFelt[x], facePeak[x], faceTorn[x]) = (0, 0, 0, k.FaceTornM2[x]);
-                    // the sea behind what's under it presses back; a tear under the sea lets the sea in, not the gas out (07 §2.4)
-                    var point = hull.Point[x];
-                    var box = c.Cells[i].Box;
-                    double wl = water.At(point.X, point.Y);
-                    faceBack[x] = f == 2 ? 0 : Math.Max(wl - point.Z, 0) * SeaRhoG;
-                    faceDry[x] = f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((box.Top - wl) / Math.Max(box.Top - box.Base, 0.1), 0, 1);
-                }
-                faceFelt[x] += (keep * Math.Max(p[i] - P0 - faceBack[x], 0) / 1e6 - faceFelt[x]) * lag;
-                facePeak[x] = Math.Max(facePeak[x], faceFelt[x]);
-                double dFace = 5 * faceFelt[x] / (s.RuptureMPaMm * Math.Max(hull.HeldMm[x], 1) * Rivets(c.ShellJoint));
-                double hole = Opening(dFace, c.ShellJoint) * fa;
-                if (hole <= faceTorn[x])
-                    continue;
-                vent[i] += (hole - faceTorn[x]) * faceDry[x];
-                faceTorn[x] = hole;
-                if (dFace < 5 || faceFate[x] == Blast.Fate.Ruptured)
-                    continue;
-                faceFate[x] = Blast.Fate.Ruptured;
-                if (f == 2)
-                    res.WeatherDecks++;
-                else if (f == 3)
-                    res.Bottoms++;
-                else
-                    res.Sides++;
-                Gave(true, i, false, -1);
-                if (Trace != null)
-                    Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} of {1} ({2:0} mm held) at {3:0} kPa felt, {4:0.0} m² so far, {5:0%} dry", f == 2 ? "weather deck" : f == 3 ? "bottom" : "side", c.CellId(i), hull.HeldMm[x], faceFelt[x] * 1000, hole, faceDry[x]));
-                changed = true;
+                changed |= LoadEdges(i, keep, dt);
+                changed |= LoadFaces(i, keep);
             }
             if (vent[i] > 0)
                 Flow(i, -1, vent[i], dt);
@@ -691,19 +625,122 @@ public sealed class GasNetwork
         return changed;
     }
 
-    /// <summary>A part's walls, the same rule as any boundary: what it opens is a vent.</summary>
-    bool PartWalls(double keep)
+    /// <summary>A cell's boundaries with her other cells, each from its lower cell when both have gas; the gas through what's
+    /// open.</summary>
+    bool LoadEdges(int i, double keep, double dt)
     {
-        partFelt += (keep * Math.Max(p[partNode] - P0, 0) / 1e6 - partFelt) * lag;
-        double d = 5 * partFelt / (s.RuptureMPaMm * Math.Max(partMm, 1) * Rivets(c.ShellJoint)), hole = Opening(d, c.ShellJoint) * partM2;
-        if (hole > partTorn)
+        bool changed = false;
+        var nb = c.Cells[i].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
         {
-            vent[partNode] += hole - partTorn;
-            partTorn = hole;
+            ref readonly var e = ref c.Neighbour(j);
+            int o = e.Cell;
+            bool inside = stamp[o] == id;
+            if (inside && o < i)
+                continue;   // from the lower cell
+            double a1 = EdgeOpen(j);
+            if (e.Join != JoinKind.Open)
+                changed |= LoadEdge(i, j, e, keep * Math.Abs(p[i] - (inside ? p[o] : P0)) / 1e6, ref a1);
+            if (a1 <= 0)
+                continue;
+            if (!inside)
+                Join(o);   // it steps from the next step on
+            Flow(i, o, a1, dt);
         }
-        if (d < 5 || partGave)
+        return changed;
+    }
+
+    /// <summary>A plate between two spaces under a load: what it tears, then whether it gives or its door blows.</summary>
+    bool LoadEdge(int i, int j, in Neighbour e, double load, ref double a1)
+    {
+        int q = canon[j];
+        ref var b = ref edges[q];
+        double rupture = Blast.RuptureMPa(mm[j], c.InternalsJoint, s);
+        double more = b.Take(load, lag, rupture, c.InternalsJoint, area[j], s, out double d);
+        if (more > 0)
+        {
+            (open[q], opened[q]) = (Math.Min(open[q] + more, area[j]), opened[q] + more);
+            a1 = open[q];
+        }
+        if (d >= Blast.RuptureD && b.Fate != Blast.Fate.Ruptured)
+        {
+            b.Fate = Blast.Fate.Ruptured;
+            if (e.Join == JoinKind.Deck)
+                res.Decks++;
+            else
+                res.Bulkheads++;
+            Gave(false, i, e.Join == JoinKind.Bulkhead, e.Cell);
+            if (Trace != null)
+                Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(e.Cell), mm[j], b.Felt * 1000));
+            return true;
+        }
+        if (b.Fate != Blast.Fate.None || b.Felt < Math.Max(s.DoorMinMPa, s.DoorShare * rupture) || !Leaks.HasDoor(c, e, i) || (k.JoinMarks[q] & JoinMark.DoorBlown) != 0)
             return false;
-        partGave = true;
+        b.Fate = Blast.Fate.Door;
+        k.JoinMarks[q] |= JoinMark.DoorBlown;
+        (open[q], opened[q]) = (Math.Min(open[q] + s.DoorM2, area[j]), opened[q] + s.DoorM2);
+        a1 = open[q];
+        res.Doors++;
+        res.FirstS = double.IsNaN(res.FirstS) ? time : res.FirstS;   // a way for the gas, not the flame's: Ignite has that
+        if (Trace != null)
+            Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "door {0} to {1} at {2:0} kPa felt", c.CellId(i), c.CellId(e.Cell), b.Felt * 1000));
+        return true;
+    }
+
+    /// <summary>A cell's outside faces: what they tear above the sea is a vent; under it the sea's in, and the gas stays.</summary>
+    bool LoadFaces(int i, double keep)
+    {
+        bool changed = false;
+        for (int f = 0; f < Faces; f++)
+        {
+            int x = i * Faces + f;
+            double fa = hull.Area[x];
+            if (!(fa > 0))
+                continue;
+            if (faceStamp[x] != id)
+                FirstOnFace(x, i, f);
+            ref var b = ref faces[x];
+            double more = b.Take(keep * Math.Max(p[i] - P0 - faceBack[x], 0) / 1e6, lag, Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s), c.ShellJoint, fa, s, out double d);
+            if (!(more > 0))
+                continue;
+            vent[i] += more * faceDry[x];
+            if (d < Blast.RuptureD || b.Fate == Blast.Fate.Ruptured)
+                continue;
+            b.Fate = Blast.Fate.Ruptured;
+            if (f == 2)
+                res.WeatherDecks++;
+            else if (f == 3)
+                res.Bottoms++;
+            else
+                res.Sides++;
+            Gave(true, i, false, -1);
+            if (Trace != null)
+                Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} of {1} ({2:0} mm held) at {3:0} kPa felt, {4:0.0} m² so far, {5:0%} dry", f == 2 ? "weather deck" : f == 3 ? "bottom" : "side", c.CellId(i), hull.HeldMm[x], b.Felt * 1000, b.Torn, faceDry[x]));
+            changed = true;
+        }
+        return changed;
+    }
+
+    /// <summary>A face, the first time this run: what's torn from before, and the sea behind what's under it, which presses back;
+    /// a tear under the sea lets the sea in, not the gas out (07 §2.4).</summary>
+    void FirstOnFace(int x, int i, int f)
+    {
+        faceStamp[x] = id;
+        faces[x] = new Boundary { Torn = k.FaceTornM2[x] };
+        var point = hull.Point[x];
+        var box = c.Cells[i].Box;
+        double wl = water.At(point.X, point.Y);
+        faceBack[x] = f == 2 ? 0 : Math.Max(wl - point.Z, 0) * SeaRhoG;
+        faceDry[x] = f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((box.Top - wl) / Math.Max(box.Top - box.Base, 0.1), 0, 1);
+    }
+
+    /// <summary>A part's walls: what they open is a vent.</summary>
+    bool LoadPartWalls(double keep)
+    {
+        vent[partNode] += partWalls.Take(keep * Math.Max(p[partNode] - P0, 0) / 1e6, lag, Blast.RuptureMPa(Math.Max(partMm, 1), c.ShellJoint, s), c.ShellJoint, partM2, s, out double d);
+        if (d < Blast.RuptureD || partWalls.Fate == Blast.Fate.Ruptured)
+            return false;
+        partWalls.Fate = Blast.Fate.Ruptured;
         res.PartWalls++;
         Gave(false, partNode, false, -1);
         return true;
@@ -748,19 +785,6 @@ public sealed class GasNetwork
     }
 
     void Say(string what) => Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1}", time, what));
-
-    double Rivets(Joint j) => j == Joint.Riveted ? s.RivetedK : 1;
-
-    /// <summary>The share of a boundary a load of D has opened: damage/17's r(D), log-linear from D 1 on, run on past rupture
-    /// (D 5, about 1% open) to what a torn-out boundary leaves, rather than jumping there: a plate just past its limit
-    /// has cracked, and one far past it has gone. Under D 1 its seams only weep, for the flooding afterwards.</summary>
-    double Opening(double d, Joint joint)
-    {
-        if (!(d >= 1))
-            return 0;
-        double ratio = s.LeakR1 * Math.Pow(s.LeakR5 / s.LeakR1, (d - 1) / 4) * 1e-4;
-        return Math.Min(joint == Joint.Welded && d < 5 ? ratio * s.LeakWeldedK : ratio, s.RupturedShare);
-    }
 
     void Links(double dt)
     {
@@ -867,10 +891,9 @@ public sealed class GasNetwork
 
     /// <summary>What this run left on the ship's condition: what it tore and blew open between spaces (never past a boundary's
     /// own area) and to the sea or air; a boundary that held, its seams sprung and closures loosened by the most it felt (not what's
-    /// left on it once the gas has gone), drawn about the curve; and what the girder has lost of each boundary so far (<see cref="ShipCondition.EdgeLost"/>). Past rupture a
-    /// boundary's opening is a crack, its area going as its length squared, so the share of the plate it has cut goes as the root
-    /// of how far open it is; short of rupture its seams leak but it carries its load. No step: one curve from the first crack to
-    /// torn out.</summary>
+    /// left on it once the gas has gone), drawn about the curve; and what the girder has lost of each boundary so far (<see cref="ShipCondition.EdgeLost"/>). Short of
+    /// rupture its seams leak but it carries its load; past it, <see cref="Blast.LostShare"/>. No step: one curve from the first
+    /// crack to torn out.</summary>
     void Commit(ref RandomStream r)
     {
         bool lost = false;
@@ -879,72 +902,85 @@ public sealed class GasNetwork
             int i = region[a];
             if (i == partNode)
                 continue;
-            var nb = c.Cells[i].Neighbours;
-            for (int j = nb.Start; j < nb.End; j++)
-            {
-                int q = canon[j];
-                if (edgeStamp[q] != id || !(area[j] > 0))
-                    continue;
-                byte was = fate[q];
-                if (was is Blast.Fate.Holed or Blast.Fate.Ruptured or Blast.Fate.Door)
-                {
-                    if (opened[q] > 0)
-                    {
-                        k.JoinOpenM2[q] = Math.Min(k.JoinOpenM2[q] + opened[q], area[j]);
-                        res.OpenM2 += opened[q];
-                        opened[q] = 0;
-                    }
-                    double share = was == Blast.Fate.Ruptured ? Math.Sqrt(Math.Min(tornEdge[q] / (s.RupturedShare * area[j]), 1))
-                        : was == Blast.Fate.Holed ? Math.Sqrt(Math.Min(tornEdge[q] / area[j], 1)) : 0;
-                    if (share > k.EdgeLost[q])
-                        (k.EdgeLost[q], lost) = (share, true);
-                }
-                else if (was == Blast.Fate.None && edgePeak[q] > 0)
-                {
-                    ref readonly var e = ref c.Neighbour(j);
-                    fate[q] = Blast.Fate.Deformed;   // once, from whichever side
-                    double d = 5 * edgePeak[q] / (s.RuptureMPaMm * mm[j] * Rivets(c.InternalsJoint));
-                    double leak = Blast.Leak(d, area[j], c.InternalsJoint, s, ref r);
-                    leak += Leaks.Sprung(c, k, i, j, leak, d, area[j], s, ref r);   // its seams sprung and its closures loosened (DC1)
-                    if (leak > 0)
-                        (res.LeakM2, res.Deformed) = (res.LeakM2 + leak, res.Deformed + 1);
-                }
-            }
-            for (int f = 0; f < Faces; f++)
-            {
-                int x = i * Faces + f;
-                if (faceStamp[x] != id)
-                    continue;
-                double fa = hull.Area[x];
-                if (faceFate[x] == Blast.Fate.Ruptured)
-                {
-                    double more = faceTorn[x] - k.FaceTornM2[x];
-                    if (more > 0)
-                    {
-                        k.Hole(i, more, hull.Point[x]);
-                        k.FaceTornM2[x] = faceTorn[x];
-                        res.HoleM2 += more;
-                    }
-                    double share = Math.Sqrt(Math.Min(faceTorn[x] / (s.RupturedShare * fa), 1));
-                    if (share > k.FaceLost[x])
-                        (k.FaceLost[x], lost) = (share, true);
-                }
-                else if (faceFate[x] == Blast.Fate.None && facePeak[x] > 0)
-                {
-                    faceFate[x] = Blast.Fate.Deformed;
-                    double d = 5 * facePeak[x] / (s.RuptureMPaMm * Math.Max(hull.HeldMm[x], 1) * Rivets(c.ShellJoint));
-                    double leak = Blast.Leak(d, fa, c.ShellJoint, s, ref r);
-                    if (leak > 0)
-                    {
-                        k.Hole(i, leak, hull.Point[x], seam: true);
-                        (res.HoleM2, res.Deformed) = (res.HoleM2 + leak, res.Deformed + 1);
-                    }
-                }
-            }
+            lost |= CommitEdges(i, ref r);
+            lost |= CommitFaces(i, ref r);
         }
         k.GirderStale |= lost;
         for (int t = 0; t < nStows; t++)
             k.MagazineSpent[stows[t].Room] = true;
+    }
+
+    bool CommitEdges(int i, ref RandomStream r)
+    {
+        bool lost = false;
+        var nb = c.Cells[i].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
+        {
+            int q = canon[j];
+            if (edgeStamp[q] != id || !(area[j] > 0))
+                continue;
+            ref var b = ref edges[q];
+            if (b.Fate is Blast.Fate.Holed or Blast.Fate.Ruptured or Blast.Fate.Door)
+            {
+                if (opened[q] > 0)
+                {
+                    k.JoinOpenM2[q] = Math.Min(k.JoinOpenM2[q] + opened[q], area[j]);
+                    res.OpenM2 += opened[q];
+                    opened[q] = 0;
+                }
+                double share = b.Fate == Blast.Fate.Ruptured ? Blast.LostShare(b.Torn, area[j], s)
+                    : b.Fate == Blast.Fate.Holed ? Math.Sqrt(Math.Min(b.Torn / area[j], 1)) : 0;
+                if (share > k.EdgeLost[q])
+                    (k.EdgeLost[q], lost) = (share, true);
+            }
+            else if (b.Fate == Blast.Fate.None && b.Peak > 0)
+            {
+                b.Fate = Blast.Fate.Deformed;   // once, from whichever side
+                double d = b.PeakD(Blast.RuptureMPa(mm[j], c.InternalsJoint, s));
+                double leak = Blast.Leak(d, area[j], c.InternalsJoint, s, ref r);
+                leak += Leaks.Sprung(c, k, i, j, leak, d, area[j], s, ref r);   // its seams sprung and its closures loosened (DC1)
+                if (leak > 0)
+                    (res.LeakM2, res.Deformed) = (res.LeakM2 + leak, res.Deformed + 1);
+            }
+        }
+        return lost;
+    }
+
+    bool CommitFaces(int i, ref RandomStream r)
+    {
+        bool lost = false;
+        for (int f = 0; f < Faces; f++)
+        {
+            int x = i * Faces + f;
+            if (faceStamp[x] != id)
+                continue;
+            double fa = hull.Area[x];
+            ref var b = ref faces[x];
+            if (b.Fate == Blast.Fate.Ruptured)
+            {
+                double more = b.Torn - k.FaceTornM2[x];
+                if (more > 0)
+                {
+                    k.Hole(i, more, hull.Point[x]);
+                    k.FaceTornM2[x] = b.Torn;
+                    res.HoleM2 += more;
+                }
+                double share = Blast.LostShare(b.Torn, fa, s);
+                if (share > k.FaceLost[x])
+                    (k.FaceLost[x], lost) = (share, true);
+            }
+            else if (b.Fate == Blast.Fate.None && b.Peak > 0)
+            {
+                b.Fate = Blast.Fate.Deformed;
+                double leak = Blast.Leak(b.PeakD(Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s)), fa, c.ShellJoint, s, ref r);
+                if (leak > 0)
+                {
+                    k.Hole(i, leak, hull.Point[x], seam: true);
+                    (res.HoleM2, res.Deformed) = (res.HoleM2 + leak, res.Deformed + 1);
+                }
+            }
+        }
+        return lost;
     }
 
     /// <summary>What a cell's boundaries felt, MPa; its peak (0: the gas never got there).</summary>

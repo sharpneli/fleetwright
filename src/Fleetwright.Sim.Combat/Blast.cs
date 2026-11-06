@@ -104,6 +104,32 @@ public static class Blast
         public const byte None = 0, Holed = 1, Ruptured = 2, Door = 3, Deformed = 4;
     }
 
+    /// <summary>The load a boundary gives at, as a D: a load's D is 5 at its plate's rupture pressure and 1 where it starts to
+    /// deform (damage/17 §3.2).</summary>
+    public const double RuptureD = 5;
+
+    /// <summary>A plate's rupture pressure, MPa: its thickness and joint.</summary>
+    public static double RuptureMPa(double mm, Joint joint, SimSettings s) => s.RuptureMPaMm * mm * (joint == Joint.Riveted ? s.RivetedK : 1);
+
+    /// <summary>r(D), cm² a m² of the boundary, from D 1 on: damage/17's curve, log-linear to <see cref="SimSettings.LeakR5"/> at
+    /// rupture and running on past it.</summary>
+    static double Curve(double d, SimSettings s) => s.LeakR1 * Math.Pow(s.LeakR5 / s.LeakR1, (d - 1) / 4);
+
+    /// <summary>The share of a boundary a load of D has opened: <see cref="Curve"/> run on past rupture (about 1% open) to what a
+    /// torn-out boundary leaves, rather than jumping there: a plate just past its limit has cracked, and one far past it has gone.
+    /// Under D 1 its seams only weep, for the flooding afterwards.</summary>
+    public static double Opening(double d, Joint joint, SimSettings s)
+    {
+        if (!(d >= 1))
+            return 0;
+        double ratio = Curve(d, s) * 1e-4;
+        return Math.Min(joint == Joint.Welded && d < RuptureD ? ratio * s.LeakWeldedK : ratio, s.RupturedShare);
+    }
+
+    /// <summary>The share of a boundary's plate cut, for the girder, by what it has torn: past rupture its opening is a crack,
+    /// the area going as the length squared, and all of it is gone when it's torn out.</summary>
+    public static double LostShare(double tornM2, double areaM2, SimSettings s) => Math.Sqrt(Math.Min(tornM2 / (s.RupturedShare * areaM2), 1));
+
     /// <summary>A deformed boundary's seam leak, m² (damage/17 leakage §3.2): r(D) cm² per m² of it, lognormal about the
     /// curve, welded less.</summary>
     public static double Leak(double d, double areaM2, Joint joint, SimSettings s, ref RandomStream r)
@@ -113,13 +139,13 @@ public static class Blast
         return Math.Min(LeakRatio(d, joint, s) * Spread(s, ref r) * 1e-4, s.RupturedShare) * areaM2;
     }
 
-    /// <summary>r(D), cm² a m² of the boundary: 0 below the weep, welded less; the curve itself, without its spread
-    /// (<see cref="Spread"/>).</summary>
+    /// <summary>What a load leaves in seams that held, cm² a m²: 0 below the weep, D² to D 1, then <see cref="Curve"/> to rupture
+    /// and no further, welded less; without its spread (<see cref="Spread"/>).</summary>
     public static double LeakRatio(double d, Joint joint, SimSettings s)
     {
         if (!(d >= s.LeakWeepD))
             return 0;
-        double ratio = d < 1 ? s.LeakR1 * d * d : s.LeakR1 * Math.Pow(s.LeakR5 / s.LeakR1, (Math.Min(d, 5) - 1) / 4);
+        double ratio = d < 1 ? s.LeakR1 * d * d : Curve(Math.Min(d, RuptureD), s);
         return joint == Joint.Welded ? ratio * s.LeakWeldedK : ratio;
     }
 

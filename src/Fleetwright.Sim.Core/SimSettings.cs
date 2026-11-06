@@ -1352,8 +1352,8 @@ public sealed record SimSettings
     /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
     /// φ·(Q_c − Q_d)]·W/V MPa (W the filler's kg, V the space's gas, φ = 1/(1 + W·air/V) the afterburn its air allows);
     /// a panel takes it up over <see cref="PanelMs"/> to <see cref="BlastLoadFactor"/> of it as it flows on (the gas network, docs/battle/explosions.md),
-    /// none at all once α·A ≥ <see cref="OpenVentRatio"/>·V^⅔ (open). A boundary deforms from <see cref="DeformMPaMm"/> per
-    /// mm of plate and ruptures at <see cref="RuptureMPaMm"/> (riveted × <see cref="RivetedK"/>); a door goes at
+    /// none at all once α·A ≥ <see cref="OpenVentRatio"/>·V^⅔ (open). A boundary deforms from a fifth of what it ruptures at, <see cref="RuptureMPaMm"/> per
+    /// mm of plate (riveted × <see cref="RivetedK"/>); a door goes at
     /// <see cref="DoorShare"/> of its bulkhead's, at least <see cref="DoorMinMPa"/>, opening <see cref="DoorM2"/>; a
     /// ruptured boundary opens <see cref="RupturedShare"/> of its area to the flooding (all of it to the gas). In the near
     /// zone (WreckRadiusK·W^⅓) a boundary is holed <see cref="NearHoleK"/>·W^⅓ across.</summary>
@@ -1364,18 +1364,12 @@ public sealed record SimSettings
     public double BlastLoadFactor { get; init; } = 1.3;
     public double OpenVentRatio { get; init; } = 0.6;
     public double RuptureMPaMm { get; init; } = 0.06;
-    public double DeformMPaMm { get; init; } = 0.012;
     public double RivetedK { get; init; } = 0.85;
     public double DoorShare { get; init; } = 0.5;
     public double DoorMinMPa { get; init; } = 0.08;
     public double DoorM2 { get; init; } = 1.2;
     public double RupturedShare { get; init; } = 0.25;
     public double NearHoleK { get; init; } = 0.5;
-
-    /// <summary>The flame a burst's gas carries (E5; the user's choice, 2026-10-17): its own hot products, m³ a kg of
-    /// filler at flame temperature [EST: TNT's ~0.75 m³/kg of gas at STP, ×7 at ~2,000 K]. A magazine or handling room
-    /// the gas reaches is a flash source only if the burst was in it, or the products fill the spaces reached before it
-    /// (a 4" HE's don't get past its own space, a bomb's do).</summary>
 
     /// <summary>A deformed boundary's seam leak (E5; damage/17 leakage §3.2, <c>leak_ratio</c>): D = felt/deform; none below
     /// <see cref="LeakWeepD"/>, <see cref="LeakR1"/>·D² cm²/m² to D 1, then log-linear to <see cref="LeakR5"/> at D 5;

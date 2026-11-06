@@ -93,22 +93,19 @@ public sealed class HullGirder
     {
         ref readonly var cell = ref c.Cells[i];
         var b = cell.Box;
+        var hull = HullFaces.Of(c);
         for (int f = 0; f < 4; f++)
         {
-            double fa = Blast.Outside(c, i, f, out double mm, out var point);
+            int x = i * 4 + f;
+            double fa = hull.Area[x];
             if (!(fa > 0))
                 continue;
-            int x = i * 4 + f;
             if (f < 2)
-            {
-                if (cell.BeltMm > 0)
-                    mm -= c.MaterialOf(cell.BeltMaterial).SteelMm(cell.BeltMm);
-                list.Add(new Element((b.Top - b.Base) * Math.Max(mm, 0) / 1000, (b.Top + b.Base) / 2, -1, x, Kind.Side));
-            }
+                list.Add(new Element((b.Top - b.Base) * Math.Max(hull.HeldMm[x], 0) / 1000, (b.Top + b.Base) / 2, -1, x, Kind.Side));
             else if (f == 2)
-                list.Add(new Element((b.Y1 - b.Y0) * mm / 1000, b.Top, -1, x, Kind.Deck));
+                list.Add(new Element((b.Y1 - b.Y0) * hull.Mm[x] / 1000, b.Top, -1, x, Kind.Deck));
             else
-                list.Add(new Element(fa / Math.Max(b.X1 - b.X0, 1e-6) * mm / 1000, point.Z, -1, x, Kind.Bottom));   // where her bottom is, as wide as it's there
+                list.Add(new Element(fa / Math.Max(b.X1 - b.X0, 1e-6) * hull.Mm[x] / 1000, hull.Point[x].Z, -1, x, Kind.Bottom));   // where her bottom is, as wide as it's there
         }
         var nb = cell.Neighbours;
         for (int j = nb.Start; j < nb.End; j++)
