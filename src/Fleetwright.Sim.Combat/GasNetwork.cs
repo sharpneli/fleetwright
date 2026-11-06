@@ -119,7 +119,7 @@ public sealed class GasNetwork
     double[] linkAt = [], linkArea = [];
     bool[] linkOpen = [], ventedMount = [], liftedMount = [];
     int links;
-    /// <summary>The stows alight: a pool, grown to the most this thread has met at once and kept.</summary>
+    /// <summary>The stows alight: a pool, one for every magazine of the largest class this thread has met.</summary>
     Stow[] stows = [];
     int nStows;
     double burned, fastKg, peakSource;
@@ -166,6 +166,19 @@ public sealed class GasNetwork
             (ventedMount, liftedMount, rounds) = (new bool[nm], new bool[nm], new int[nm]);
             int lm = 2 * nm + 8;
             (linkFrom, linkTo, linkMount, linkAt, linkArea, linkOpen) = (new int[lm], new int[lm], new int[lm], new double[lm], new double[lm], new bool[lm]);
+        }
+        // the rooms that can burn: her magazines, and any other a mount draws from
+        int burnable = 0;
+        foreach (ref readonly var room in cls.Rooms)
+            burnable += room.Kind == RoomKind.Magazine ? 1 : 0;
+        foreach (ref readonly var mr in cls.Mounts)
+            burnable += mr.Magazine >= 0 && cls.Rooms[mr.Magazine].Kind != RoomKind.Magazine ? 1 : 0;
+        if (stows.Length < burnable)
+        {
+            int had = stows.Length;
+            Array.Resize(ref stows, burnable);
+            for (int i = had; i < burnable; i++)
+                stows[i] = new Stow();
         }
     }
 
@@ -340,12 +353,6 @@ public sealed class GasNetwork
         int cell = Largest(room);
         if (cell < 0)
             return -1;
-        if (nStows == stows.Length)
-        {
-            Array.Resize(ref stows, Math.Max(8, 2 * nStows));
-            for (int i = nStows; i < stows.Length; i++)
-                stows[i] = new Stow();
-        }
         var st = stows[nStows++];
         Magazines.Stow(c, room, rounds, flash, out double nOpen, out double nCased, out double mass);
         st.Room = room;

@@ -289,13 +289,21 @@ public class TorpedoTests(ITestOutputHelper output)
                 n += w.Groups[k].Members.Count;
             return n;
         }
+        int Afloat()
+        {
+            int n = 0;
+            for (int slot = 0; slot < w.Ships.Store.Count; slot++)
+                n += w.Ships.Store.Combat.Condition(slot).Status == ShipStatus.Afloat ? 1 : 0;
+            return n;
+        }
         for (long t = warm; t < warm + 34 * 60; t++)
         {
-            int ships = w.Ships.Store.Count, grouped = Grouped();
+            int ships = w.Ships.Store.Count, grouped = Grouped(), afloat = Afloat();
             long before = GC.GetAllocatedBytesForCurrentThread();
             w.AdvanceTo(s.Start + (t + 1) * 1000);
-            if (w.Ships.Store.Count == ships && Grouped() == grouped)
-                allocated += GC.GetAllocatedBytesForCurrentThread() - before;
+            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (w.Ships.Store.Count == ships && Grouped() == grouped && Afloat() == afloat)   // a ship lost is one going, from the moment she's lost
+                allocated += bytes;
         }
         output.WriteLine($"first torpedoes at {(warm - 60) / 60.0:F1} min; torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
         Assert.Equal(0, allocated);
