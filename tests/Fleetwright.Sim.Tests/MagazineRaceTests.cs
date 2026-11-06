@@ -180,6 +180,16 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal(PartState.Ok, k.State[c.RoomNode(room)]);
     }
 
+    /// <summary>A magazine's bulkhead giving lights its passages from whichever side it's worked: an edge goes from its lower cell, so
+    /// otherwise it hung on how her cells happen to be numbered. Seydlitz's X has such a bulkhead: 4 magazines lit when it was read from
+    /// one side only, all of them now.</summary>
+    [Fact]
+    public void A_bulkhead_giving_lights_the_passages_however_her_cells_are_numbered()
+    {
+        var r = Race(Fleet.Get("seydlitz").Class!, "Magazine X");
+        Assert.True(r.Magazines > 4, $"{r.Magazines} magazines lit");
+    }
+
     /// <summary>A flame running through a ship's magazines doesn't stop at a number: Seydlitz has nine.</summary>
     [Fact]
     public void Every_magazine_a_ship_has_can_light()

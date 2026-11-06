@@ -615,7 +615,7 @@ public sealed class GasNetwork
                             res.Decks++;
                         else
                             res.Bulkheads++;
-                        Gave(false, i, e.Join == JoinKind.Bulkhead);
+                        Gave(false, i, e.Join == JoinKind.Bulkhead, o);
                         if (Trace != null)
                             Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(o), mm[j], edgeFelt[q] * 1000));
                         changed = true;
@@ -673,7 +673,7 @@ public sealed class GasNetwork
                     res.Bottoms++;
                 else
                     res.Sides++;
-                Gave(true, i, false);
+                Gave(true, i, false, -1);
                 if (Trace != null)
                     Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} of {1} ({2:0} mm held) at {3:0} kPa felt, {4:0.0} m² so far, {5:0%} dry", f == 2 ? "weather deck" : f == 3 ? "bottom" : "side", c.CellId(i), hull.HeldMm[x], faceFelt[x] * 1000, hole, faceDry[x]));
                 changed = true;
@@ -698,7 +698,7 @@ public sealed class GasNetwork
             return false;
         partGave = true;
         res.PartWalls++;
-        Gave(false, partNode, false);
+        Gave(false, partNode, false, -1);
         return true;
     }
 
@@ -713,23 +713,31 @@ public sealed class GasNetwork
                 Light(room);
     }
 
-    void Gave(bool hullPlate, int cell, bool bulkhead)
+    void Gave(bool hullPlate, int cell, bool bulkhead, int other)
     {
         if (double.IsNaN(res.FirstS))
             res.FirstS = time;
         if (hullPlate && double.IsNaN(res.HullS))
             res.HullS = time;
         // along the passages: the group's magazines light when a bulkhead of one alight gives, the passages running through
-        // them (07 §2.4)
+        // them (07 §2.4). Either side of it may be hers: an edge is worked from its lower cell
         for (int t = 0; bulkhead && t < nStows; t++)
         {
             int group = c.PassageGroup(stows[t].Room);
-            if (group < 0 || stows[t].Cell != cell)
+            if (group < 0 || !InRoom(cell, stows[t].Room) && !InRoom(other, stows[t].Room))
                 continue;
             for (int rm = 0; rm < c.Rooms.Length; rm++)
                 if (c.Rooms[rm].Kind == RoomKind.Magazine && c.PassageGroup(rm) == group)
                     Light(rm);
         }
+    }
+
+    bool InRoom(int cell, int room)
+    {
+        foreach (int r in c.RoomsIn(cell))
+            if (r == room)
+                return true;
+        return false;
     }
 
     void Say(string what) => Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1}", time, what));
