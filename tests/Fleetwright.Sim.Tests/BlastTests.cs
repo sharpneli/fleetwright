@@ -336,6 +336,23 @@ public class BlastTests(ITestOutputHelper output)
     /// left on it once the gas has gone through. The bulkheads round a burst feel about what its space does, so the worst of them
     /// reads about that.</summary>
     [Fact]
+    public void A_torn_side_loaded_past_rupture_gives_again_and_springs_no_seams()
+    {
+        var (c, k) = Ship("destroyer");
+        var hull = HullFaces.Of(c);
+        int cell = Enumerable.Range(0, c.Cells.Length).Where(i => Enumerable.Range(0, 2).Any(f => hull.Area[i * 4 + f] > 0) && c.Cells[i].Room >= 0 && c.Rooms[c.Cells[i].Room].Kind is RoomKind.Stores or RoomKind.Accommodation)
+            .OrderByDescending(i => c.Cells[i].VolumeM3).First();
+        for (int f = 0; f < 4; f++)
+            k.FaceTornM2[cell * 4 + f] = Settings.RupturedShare * hull.Area[cell * 4 + f];   // as torn as a plate gets, from before
+        var b = c.Cells[cell].Box;
+        var r = RandomStream.Named(11, "blast tests");
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 400, Charge(400, "TNT"), 0, 0, 0, Settings, ref r);
+        output.WriteLine($"{res.Sides} sides, {res.WeatherDecks} weather decks, {res.Bottoms} bottoms, {k.BreachM2[cell]:0.000} m² in her, peak {res.PeakKPa:0} kPa");
+        Assert.True(res.Sides >= 1, "one rule with any boundary: past rupture it has given, however much was torn before");
+        Assert.Equal(0, k.BreachM2[cell]);
+    }
+
+    [Fact]
     public void A_boundary_that_held_keeps_the_worst_it_felt()
     {
         var (c, k) = Ship("destroyer");

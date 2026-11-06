@@ -742,8 +742,6 @@ public sealed class GasNetwork
                 FirstOnFace(x, i, f);
             ref var b = ref faces[x];
             double more = b.Take(keep * Math.Max(p[i] - P0 - faceBack[x], 0) / 1e6, lag, Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s), c.ShellJoint, fa, s, out double d);
-            if (!(more > 0))
-                continue;
             vent[i] += more * faceDry[x];
             if (d < Blast.RuptureD || b.Fate == Blast.Fate.Ruptured)
                 continue;
