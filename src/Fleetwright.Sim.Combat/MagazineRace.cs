@@ -23,17 +23,21 @@ public enum MagazineTier : byte
 public struct RaceResult
 {
     public MagazineTier Tier;
-    public double PeakKPa, BurnedKg, FastKg, Charges, D, VentM2, VentS, StructureS;
+    public double PeakKPa, BurnedKg, FastKg, Charges, VentM2, VentS, StructureS;
     public int Magazines, Vented, Lifted, Killed, Wounded;
     /// <summary>What gave, as flags: 1 a bulkhead, 2 a deck, 4 the sides, 8 the bottom.</summary>
     public int Gave;
-    /// <summary>The worst section's place along her, 0 the stern to 1 the bow; the moment there over what's left of its capacity
-    /// (1 or more: broken); whether it took an end off her (forward or aft of the cut flooding).</summary>
-    public double Station, GirderLoad;
-    public bool EndLost;
     /// <summary>Spaces the gas reached, and what it did there: what the flooding has from it.</summary>
     public GasResult Gas;
-    public readonly bool Lost => Tier >= MagazineTier.Severed;
+    /// <summary>What it left of her girder: broken, she's lost.</summary>
+    public GirderReading Girder;
+    public readonly bool Lost => Girder.Broken;
+    /// <summary>The share of the worst section lost; its place along her, 0 the stern to 1 the bow; the moment there over what's left
+    /// of its capacity (1 or more: broken); whether it took an end off her (forward or aft of the cut flooding).</summary>
+    public readonly double D => Girder.D;
+    public readonly double Station => Girder.Station;
+    public readonly double GirderLoad => Girder.Load;
+    public readonly bool EndLost => Girder.EndOff;
 }
 
 public static partial class Magazines
@@ -61,11 +65,12 @@ public static partial class Magazines
         (res.PeakKPa, res.BurnedKg, res.FastKg, res.Charges, res.VentM2, res.VentS, res.StructureS) = (gas.PeakKPa, gas.BurnedKg, gas.FastKg, gas.Charges, gas.VentM2, gas.VentS, gas.HullS);
         (res.Magazines, res.Vented, res.Lifted) = (gas.Magazines, gas.Vented, gas.Lifted);
         res.Gave = (gas.Bulkheads > 0 ? 1 : 0) | (gas.Decks > 0 ? 2 : 0) | (gas.Sides > 0 ? 4 : 0) | (gas.Bottoms > 0 ? 8 : 0);
-        (res.D, res.Station, res.GirderLoad, res.EndLost) = (girder.D, girder.Station, girder.Load, girder.EndOff);
-        bool hullGave = gas.Sides + gas.WeatherDecks + gas.Bottoms + gas.Decks > 0;
+        res.Girder = girder;
+        bool breached = girder.EndOff || gas.Sides + gas.WeatherDecks + gas.Bottoms + gas.Decks > 0;
+        bool contained = !girder.Broken && !breached && gas.Vented == 0;
         res.Tier = girder.Broken ? (gas.Magazines > 1 ? MagazineTier.TwoGroups : MagazineTier.Severed)
-            : hullGave || girder.EndOff ? MagazineTier.Breached : gas.Vented > 0 ? MagazineTier.BurnedOut : MagazineTier.Contained;
-        Aftermath(c, k, net, ref res, s, now, ref r);
+            : breached ? MagazineTier.Breached : contained ? MagazineTier.Contained : MagazineTier.BurnedOut;
+        Aftermath(c, k, net, contained, ref res, s, now, ref r);
         return res;
     }
 
@@ -114,14 +119,14 @@ public static partial class Magazines
     /// <summary>What the fire left (a lost ship's too: her men in the trains): the magazines alight spent, the gunhouses it threw and
     /// those it vented destroyed and burning with their barbettes, the trains' men flashed (a contained fire, the magazine's own), and
     /// the men and gear in the spaces the gas reached.</summary>
-    static void Aftermath(ShipClass c, ShipCondition k, GasNetwork net, ref RaceResult res, SimSettings s, long now, ref RandomStream r)
+    static void Aftermath(ShipClass c, ShipCondition k, GasNetwork net, bool contained, ref RaceResult res, SimSettings s, long now, ref RandomStream r)
     {
         Casualties.Begin(k, now);
         for (int i = 0; i < net.LitCount; i++)
         {
             int rm = net.LitRoom(i);
             k.Worsen(c.RoomNode(rm), PartState.Destroyed);
-            if (res.Tier == MagazineTier.Contained)
+            if (contained)
                 foreach (int cell in c.Links(c.Rooms[rm].Cells))
                     Casualties.Flash(k, Casualties.Cell(c, cell), true, s);
             else
@@ -140,9 +145,7 @@ public static partial class Magazines
             Fires.Ignite(c, k, c.FireOfPart(mr.Component), s.ReadyAmmoSeatMW, s);
         }
         var fx = new EffectsResult { Part = -1, MagazineRoom = -1 };
-        foreach (int cell in net.Reached())
-            Casualties.Gas(k, Casualties.Cell(c, cell), net.FeltMPa(cell), s);
-        Effects.Felt(c, k, net, s, ref fx);
+        Effects.GasFelt(c, k, net, -1, s, ref fx);
         Casualties.Draw(c, k, now, s, ref fx, ref r);
         (res.Killed, res.Wounded) = (fx.Killed, fx.Wounded);
         k.Version++;

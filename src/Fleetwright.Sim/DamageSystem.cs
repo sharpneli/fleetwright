@@ -747,50 +747,14 @@ public sealed class DamageSystem : IWorldSystem
 
         Prepare(cls);
         var rng = stream.Derive((ulong)hits++);
-        TerminalResult t;
-        EffectsResult e;
-        if (hit.Source == HitSource.Torpedo)
-        {
-            // an underwater explosion against the hull (4.6): no path of its own
-            e = Underwater.Apply(cls, k, hit, settings, ref rng, out var outcome);
-            t = new TerminalResult { Outcome = outcome, Plate = -1 };
-        }
-        else if (near)
-        {
-            // a burst in the water outside the hull (E7): no path either
-            e = NearMiss.Apply(cls, k, hit, settings, ref rng);
-            t = new TerminalResult { Outcome = hit.Force < 1 ? Outcome.LowOrder : Outcome.BurstOutside, Burst = BurstKind.Outside, Plate = -1, Glance = -1,
-                Spall = double.NaN, PlateU = double.NaN, BurstMs = hit.SpeedMs };
-        }
-        else
-        {
-            // its own path: from just outside the point along the flight, through the whole ship
-            int n = cls.Mounts.Length;
-            for (int m = 0; m < n; m++)
-                bearings[m] = CombatStore.BearingAt(store.Combat.Mount(slot, m), cls.Mounts[m], now);
-            var d = hit.Direction;
-            double far = 2 * cls.Solids.Radius + 10;
-            var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
-            var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
-            var water = HitQuery.WaterOf(cls, k.Attitude);
-            ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), water, path);
-
-            bender.Set(bearings, n, water);
-            var lots = lotStream.Derive((ulong)hit.Ship);
-            t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
-            e = Effects.Apply(cls, k, hit, path, t, settings, ref rng);
-        }
+        var e = WhatItDoes(hit, slot, cls, k, now, out var t, ref rng);
         // a magazine set off: its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
         var race = default(RaceResult);
-        if (e.Magazine && k.Status == ShipStatus.Afloat && !(e.MagazineRoom >= 0 && k.MagazineSpent[e.MagazineRoom]))
+        if (e.Magazine && k.Status == ShipStatus.Afloat)
         {
-            race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
+            race = SetOff(world, slot, k, e.MagazineRoom, MagazineCounts.ByHit, ref rng);
             if (race.Magazines > 0)
-            {
                 (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
-                MagazineCounts.ByHit[(int)race.Tier]++;
-                LogRace(slot, race.Tier);
-            }
         }
         trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
@@ -802,37 +766,7 @@ public sealed class DamageSystem : IWorldSystem
         if (!near && k.Status == ShipStatus.Afloat)
             Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
 
-        var fx = HitEffect.None;
-        if (e.Destroyed > 0)
-            fx |= HitEffect.Destroyed;
-        if (e.Disabled > 0)
-            fx |= HitEffect.Disabled;
-        if (e.Damaged > 0)
-            fx |= HitEffect.Damaged;
-        if (e.BreachM2 > 0)
-            fx |= HitEffect.Holed;
-        if (e.Fire)
-            fx |= HitEffect.Fire;
-        fx |= e.Turret.Blow switch
-        {
-            TurretBlow.Jam => HitEffect.Jammed,
-            TurretBlow.Stiff => HitEffect.Stiff,
-            TurretBlow.GunOut => HitEffect.GunOut,
-            TurretBlow.Sights => HitEffect.Sights,
-            _ => HitEffect.None,
-        };
-        if (e.Jammed)
-            fx |= HitEffect.Jammed;
-        if (e.Stunned)
-            fx |= HitEffect.Stunned;
-        if (e.Leak != LeakRegime.None)
-            fx |= HitEffect.Leak;
-        if (e.Feed)
-            fx |= HitEffect.Feed;
-        if (e.Shock)
-            fx |= HitEffect.Shock;
-        if (e.Blackout)
-            fx |= HitEffect.Blackout;
+        var fx = Flags(e);
         // men hit or shaken change what her stations can do (docs/battle/crew.md N2, N3b)
         if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred || girder.EndOff) && k.Status == ShipStatus.Afloat)
         {
@@ -856,6 +790,75 @@ public sealed class DamageSystem : IWorldSystem
             Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || race.Gas.HoleM2 > 0 || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
+    }
+
+    /// <summary>What a hit does, by what it is: a shell's walk through her and its burst, or an explosion in the water beside her.</summary>
+    EffectsResult WhatItDoes(in Hit hit, int slot, ShipClass cls, ShipCondition k, long now, out TerminalResult t, ref RandomStream rng)
+    {
+        if (hit.Source == HitSource.Torpedo)
+        {
+            // an underwater explosion against the hull (4.6): no path of its own
+            var e = Underwater.Apply(cls, k, hit, settings, ref rng, out var outcome);
+            t = new TerminalResult { Outcome = outcome, Plate = -1 };
+            return e;
+        }
+        if (hit.Source == HitSource.NearMiss)
+        {
+            // a burst in the water outside the hull (E7): no path either
+            t = new TerminalResult { Outcome = hit.Force < 1 ? Outcome.LowOrder : Outcome.BurstOutside, Burst = BurstKind.Outside, Plate = -1, Glance = -1,
+                Spall = double.NaN, PlateU = double.NaN, BurstMs = hit.SpeedMs };
+            return NearMiss.Apply(cls, k, hit, settings, ref rng);
+        }
+        // its own path: from just outside the point along the flight, through the whole ship
+        var store = ships.Store;
+        int n = cls.Mounts.Length;
+        for (int m = 0; m < n; m++)
+            bearings[m] = CombatStore.BearingAt(store.Combat.Mount(slot, m), cls.Mounts[m], now);
+        var d = hit.Direction;
+        double far = 2 * cls.Solids.Radius + 10;
+        var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
+        var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
+        var water = HitQuery.WaterOf(cls, k.Attitude);
+        ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), water, path);
+        bender.Set(bearings, n, water);
+        t = Terminal.Resolve(cls, hit, path, bender, lotStream.Derive((ulong)hit.Ship), settings, ref rng, k, Trace);
+        return Effects.Apply(cls, k, hit, path, t, settings, ref rng);
+    }
+
+    /// <summary>What a hit did, for the log and the screens.</summary>
+    static HitEffect Flags(in EffectsResult e)
+    {
+        var fx = e.Turret.Blow switch
+        {
+            TurretBlow.Jam => HitEffect.Jammed,
+            TurretBlow.Stiff => HitEffect.Stiff,
+            TurretBlow.GunOut => HitEffect.GunOut,
+            TurretBlow.Sights => HitEffect.Sights,
+            _ => HitEffect.None,
+        };
+        if (e.Destroyed > 0)
+            fx |= HitEffect.Destroyed;
+        if (e.Disabled > 0)
+            fx |= HitEffect.Disabled;
+        if (e.Damaged > 0)
+            fx |= HitEffect.Damaged;
+        if (e.BreachM2 > 0)
+            fx |= HitEffect.Holed;
+        if (e.Fire)
+            fx |= HitEffect.Fire;
+        if (e.Jammed)
+            fx |= HitEffect.Jammed;
+        if (e.Stunned)
+            fx |= HitEffect.Stunned;
+        if (e.Leak != LeakRegime.None)
+            fx |= HitEffect.Leak;
+        if (e.Feed)
+            fx |= HitEffect.Feed;
+        if (e.Shock)
+            fx |= HitEffect.Shock;
+        if (e.Blackout)
+            fx |= HitEffect.Blackout;
+        return fx;
     }
 
     /// <summary>What the ship can still do, worked out again; the steering lost at the gear or the rudders jams or
@@ -1085,6 +1088,19 @@ public sealed class DamageSystem : IWorldSystem
     /// (<see cref="SimSettings.GirderSeawayMs"/>).</summary>
     double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.GirderSeawayMs;
 
+    /// <summary>A magazine set off, by a hit or a fire: its gas through her and what it leaves of her girder decide
+    /// (docs/battle/explosions.md); how it ended counted.</summary>
+    RaceResult SetOff(World world, int slot, ShipCondition k, int room, int[] counts, ref RandomStream rng)
+    {
+        var race = Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, world.Time.Ms, ref rng, Sea(world, slot));
+        if (race.Magazines > 0)
+        {
+            counts[(int)race.Tier]++;
+            LogRace(slot, race.Tier);
+        }
+        return race;
+    }
+
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
     /// (<see cref="Blast"/>: the tier and the propellant burned by the girder's failure, the fireball's), and the ship
     /// lost.</summary>
@@ -1092,7 +1108,7 @@ public sealed class DamageSystem : IWorldSystem
     {
         var ship = ships.Store[slot];
         blasts[blastNext] = new Blast(world.Time.Ms, ship.Entity, ship.ClassIndex, room, cause, ship.Position, ship.Forward, point,
-            race.Tier >= MagazineTier.Severed ? race.Tier : MagazineTier.Severed, race.Tier >= MagazineTier.Severed ? race.FastKg : double.NaN);
+            race.Lost ? race.Tier : MagazineTier.Severed, race.Lost ? race.FastKg : double.NaN);
         world.Smoke.Magazine(world, blasts[blastNext], ship.Handling.Class);   // its smoke (docs/battle/smoke.md Z4)
         blastNext = (blastNext + 1) % blasts.Length;
         blastCount = Math.Min(blastCount + 1, blasts.Length);
@@ -1237,40 +1253,19 @@ public sealed class DamageSystem : IWorldSystem
         var fl = default(FloodStep);
         var how = LossKind.None;
         if (flooding)
-        {
-            double fdt = (now - k.FloodStepMs) / 1000.0;
-            (k.FloodStepMs, k.FireWaterM3) = (now, 0);
-            var fix = stream.Derive(0xF1C5u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-            repaired = Repairs.Step(cls, f, k, fdt, now, ships.Store[slot].Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
-            var wet = stream.Derive(0xF1000Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-            var valve = stream.Derive(0x7A1Eu).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
-            var valves = Magazines.Valves(cls, f, k, fdt, now, settings, ref valve);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
-            (ValveCounts.Opened, ValveCounts.Through, ValveCounts.DrivenBack) =
-                (ValveCounts.Opened + valves.Opened, ValveCounts.Through + valves.Through, ValveCounts.DrivenBack + valves.DrivenBack);
-            fl = Flooding.Step(cls, f, k, fdt, k.PowerCap, ships.Store[slot].Speed, settings, ref wet);
-            if (fl.Collapsed > 0)
-                log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ships.Store[slot].Entity, (int)DcEvent.Gave));
-            for (int i = 0; i < k.NoteCount; i++)
-                log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ships.Store[slot].Entity, (int)k.Notes[i].What, k.Notes[i].Part));
-            k.NoteCount = 0;
-            how = Flooding.Settle(cls, f, k, settings, fdt, ships.Store[slot].Speed);
-            k.FloodEveryMs = FloodEvery(cls, Math.Abs(k.WaterT - was), (fl.InM3 + fl.OutM3 + fl.PumpedM3 + fl.MovedM3) * FloodModel.SeaT, fdt);
-            k.FloodDueMs = (now / k.FloodEveryMs + 1) * k.FloodEveryMs;
-        }
+            how = WaterStep(slot, k, f, now, was, out repaired, out fl);
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, ref rng, now) : default;
         k.FireWaterM3 += fs.WaterM3;
         if (fs.Flooded > 0)
             k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // a magazine's valves opened: its water from the next second
         touched = true;
-        if (fs.Magazine && !(fs.MagazineRoom >= 0 && k.MagazineSpent[fs.MagazineRoom]))
+        if (fs.Magazine)
         {
-            // fire's heat set it off (fire B2): its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
-            var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
+            // fire's heat set it off (fire B2)
+            var race = SetOff(world, slot, k, fs.MagazineRoom, MagazineCounts.ByFire, ref rng);
             if (race.Magazines > 0)
             {
-                MagazineCounts.ByFire[(int)race.Tier]++;
-                LogRace(slot, race.Tier);
                 if (race.Lost)
                 {
                     Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);
@@ -1306,6 +1301,33 @@ public sealed class DamageSystem : IWorldSystem
         if (k.ScuttleMs != 0)
             return k.ScuttleMs - now <= k.FloodEveryMs ? settings.FloodMs : k.FloodEveryMs;   // her charges set: stepping till they go
         return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? k.FloodEveryMs : -1;
+    }
+
+    /// <summary>The water's step: her repair parties, the magazines' valves, the sea in and across her, and how she settles (a way
+    /// of being lost, or none); when its next is due.</summary>
+    LossKind WaterStep(int slot, ShipCondition k, FloodModel f, long now, double was, out RepairChange repaired, out FloodStep fl)
+    {
+        var cls = k.Class;
+        var ship = ships.Store[slot];
+        double fdt = (now - k.FloodStepMs) / 1000.0;
+        (k.FloodStepMs, k.FireWaterM3) = (now, 0);
+        var fix = stream.Derive(0xF1C5u).Derive((ulong)ship.Entity).Derive((ulong)now);
+        repaired = Repairs.Step(cls, f, k, fdt, now, ship.Speed, settings, ref fix);   // her repair parties and DC Central (DC3-DC7)
+        var wet = stream.Derive(0xF1000Du).Derive((ulong)ship.Entity).Derive((ulong)now);
+        var valve = stream.Derive(0x7A1Eu).Derive((ulong)ship.Entity).Derive((ulong)now);
+        var valves = Magazines.Valves(cls, f, k, fdt, now, settings, ref valve);   // the magazines' flooding and sprinklers (docs/battle/magazines.md V6)
+        (ValveCounts.Opened, ValveCounts.Through, ValveCounts.DrivenBack) =
+            (ValveCounts.Opened + valves.Opened, ValveCounts.Through + valves.Through, ValveCounts.DrivenBack + valves.DrivenBack);
+        fl = Flooding.Step(cls, f, k, fdt, k.PowerCap, ship.Speed, settings, ref wet);
+        if (fl.Collapsed > 0)
+            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, fl.Collapsed, ship.Entity, (int)DcEvent.Gave));
+        for (int i = 0; i < k.NoteCount; i++)
+            log.Add(new CombatEntry(now, CombatEvent.DamageControl, 0, k.Notes[i].Value, ship.Entity, (int)k.Notes[i].What, k.Notes[i].Part));
+        k.NoteCount = 0;
+        var how = Flooding.Settle(cls, f, k, settings, fdt, ship.Speed);
+        k.FloodEveryMs = FloodEvery(cls, Math.Abs(k.WaterT - was), (fl.InM3 + fl.OutM3 + fl.PumpedM3 + fl.MovedM3) * FloodModel.SeaT, fdt);
+        k.FloodDueMs = (now / k.FloodEveryMs + 1) * k.FloodEveryMs;
+        return how;
     }
 
     /// <summary>The water's next step, ms (docs/battle/coarse.md J6): settled (its total under

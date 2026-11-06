@@ -432,12 +432,69 @@ public static class Effects
         double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
     {
         var shell = hit.Shell;
-        var xs = path.Crossings;
-        var p = path.At(t.BurstT);
-        double force = t.Force, rw = broken ? 0 : WreckRadiusM(shell, force, s);
-        double share = broken ? force : 1;   // the fragments' share of a full burst's
+        var b = Locate(c, k, shell, path, t, s, broken);
+        if (b.Part >= 0)
+            PartBurstIn(ref b, ref res, ref r);
+        PartsAround(ref b, ref res, ref r);
+        if (b.Cell >= 0 && b.Inside)
+        {
+            SpaceBurstIn(ref b, ref res, ref r);
+            SpacesNextDoor(ref b, ref res, ref r);
+        }
+        // the gas (E5): in a closed space it stays until it vents or the walls give way; on deck, in an open mount or
+        // vented as fast as it forms there's only the shock and the fragments above
+        GasNetwork? net = null;
+        int gasMagazine = -1, gasHandling = -1;
+        bool inHandling = false;
+        if (!broken && b.Inside && shell.FillerKg > 0 && (b.Part >= 0 || b.Cell >= 0))
+        {
+            net = GasNetwork.For(c);
+            double fill = shell.FillerKg * b.Force, vent = NearWall(c, path.Crossings, t.BurstT, size, s);
+            if (b.Part >= 0)
+                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, vent, s, ref r);
+            else
+            {
+                res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, vent, b.WreckM, s.NearHoleK * size, s, ref r);
+                res.BreachM2 += res.Blast.HoleM2;
+                Flashed(c, net, b.Cell, ref gasMagazine, ref gasHandling, ref inHandling);
+            }
+        }
+        // the people its pieces reach (E6), and what its gas does to them and the gear wherever it went
+        Crew(c, k, path, t, b.Part, b.Cell, b.At, b.Dir, b.Frag, b.Share, b.Around, broken ? 0 : w * b.Force, broken, res.Blast, s);
+        if (net is not null)
+            GasFelt(c, k, net, b.Part, s, ref res);
+        if (!broken)
+            StartFires(ref b, shell, w, ref res, ref r);
+        MagazineLit(ref b, hit.Ms, gasMagazine, gasHandling, inHandling, ref res, ref r);
+    }
+
+    /// <summary>A burst where it is, as <see cref="Burst"/>'s steps read it, and what its fragments lit on the way to the
+    /// magazine's step: the magazine room it burst in or beside, the mount it burst in and its station, a mount whose ready charges
+    /// it lit at a station of its train.</summary>
+    ref struct BurstSite
+    {
+        public ShipClass C;
+        public ShipCondition K;
+        public SimSettings S;
+        public P3 At, Dir;
+        /// <summary>Its fragments' speed, its force, its wreck radius (m), the fragments' share of a full burst's, and the armour and
+        /// plating of the part it's in round it.</summary>
+        public double V, Force, WreckM, Share, Around;
+        public int Cell, Part;
+        public Box CellBox;
+        public FragmentBurst? Frag;
+        /// <summary>Holed in pieces (E2): a weak burst of its fragments. Inside: not outside the ship's plates.</summary>
+        public bool Broken, Inside;
+        public int Magazine, Turret, TurretSt, ReadyMount, ReadySt;
+        public MagazineVia Via;
+    }
+
+    /// <summary>Where along its path a burst is: the space and part it's in, its fragments (a low-order burst's are fewer, slower
+    /// and larger; they fly with the shell's motion).</summary>
+    static BurstSite Locate(ShipClass c, ShipCondition k, in ShellTypeRow shell, HitPath path, in TerminalResult t, SimSettings s, bool broken)
+    {
         int cell = -1, part = -1;
-        foreach (ref readonly var x in xs)
+        foreach (ref readonly var x in path.Crossings)
         {
             if (x.T > t.BurstT)
                 break;
@@ -450,58 +507,76 @@ public static class Effects
             else if (x.Kind == CrossingKind.PartOut && x.Index == part)
                 part = -1;
         }
-        bool inHull = cell >= 0;
-        double cellTop = inHull ? c.Cells[cell].Box.Top : double.PositiveInfinity;
-        // the burst's fragments (E1): a low-order burst's are fewer, slower and larger; they fly with the shell's motion
-        var frag = shell.Fragments?.Of(t.Outcome == Outcome.LowOrder);
-        var fdir = path.LegOf(path.Leg(t.BurstT)).Direction;
-        var comps = c.Components;
-        int magazine = -1, turret = -1, turretSt = -1;   // the magazine room it burst in or beside; the mount it burst in, its station
-        int readyMount = -1, readySt = -1;   // a mount whose ready charges it lit at a station of its train
-        var via = MagazineVia.None;
-
-        // the part it burst in: wrecked; or the part its pieces got into, struck by them from inside its plates
-        if (part >= 0)
+        return new BurstSite
         {
-            res.Part = part;
-            if (!broken)
-                Count(ref res, k, part, k.Worsen(part, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
-            else if (frag is not null)
-            {
-                double inside = share * frag.Hits(p, fdir, t.BurstMs, comps[part].Bounds, 0);
-                if (inside > 1e-4 && r.NextDouble() < 1 - Math.Exp(-inside * s.PartVital[Math.Min((int)comps[part].Kind, s.PartVital.Length - 1)]))
-                    Count(ref res, k, part, k.Harm(part) ? k.State[part] : PartState.Ok);
-            }
-            if (c.MountOf(part) is int m and >= 0 && c.StationOfPart(m, part) is var st and >= 0)
-                (turret, turretSt) = (m, st);   // a gunhouse, its working chamber, a casemate (docs/battle/magazines.md V2)
-        }
+            C = c, K = k, S = s,
+            At = path.At(t.BurstT),
+            Dir = path.LegOf(path.Leg(t.BurstT)).Direction,
+            V = t.BurstMs,
+            Force = t.Force,
+            WreckM = broken ? 0 : WreckRadiusM(shell, t.Force, s),
+            Share = broken ? t.Force : 1,
+            // burst inside a part (a gunhouse, a barbette, a superstructure block), its fragments leave through its own walls
+            Around = part >= 0 ? PartMild(c, part, Armour(c, part)) : 0,
+            Cell = cell,
+            Part = part,
+            CellBox = cell >= 0 ? c.Cells[cell].Box : default,
+            Frag = shell.Fragments?.Of(t.Outcome == Outcome.LowOrder),
+            Broken = broken,
+            Inside = t.Burst != BurstKind.Outside,
+            Magazine = -1, Turret = -1, TurretSt = -1, ReadyMount = -1, ReadySt = -1,
+            Via = MagazineVia.None,
+        };
+    }
 
-        // parts: within the wreck radius wrecked or out of action, unless armour its fragments don't get through boxes
-        // them; beyond it, damaged by the fragments that get into them: in the hull those in the burst's own space (a
-        // space's next door, through its join, below), outside it those on deck
-        var cellBox = inHull ? c.Cells[cell].Box : default;
-        // burst inside a part (a gunhouse, a barbette, a superstructure block), its fragments leave through its own walls
-        double around = part >= 0 ? PartMild(c, part, Armour(c, part)) : 0;
+    /// <summary>The part it burst in: wrecked; or the part its pieces got into, struck by them from inside its plates. A gunhouse,
+    /// its working chamber, a casemate: a station of a train (docs/battle/magazines.md V2).</summary>
+    static void PartBurstIn(ref BurstSite b, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s, part) = (b.C, b.K, b.S, b.Part);
+        var comps = c.Components;
+        res.Part = part;
+        if (!b.Broken)
+            Count(ref res, k, part, k.Worsen(part, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
+        else if (b.Frag is not null)
+        {
+            double inside = b.Share * b.Frag.Hits(b.At, b.Dir, b.V, comps[part].Bounds, 0);
+            if (inside > 1e-4 && r.NextDouble() < 1 - Math.Exp(-inside * s.PartVital[Math.Min((int)comps[part].Kind, s.PartVital.Length - 1)]))
+                Count(ref res, k, part, k.Harm(part) ? k.State[part] : PartState.Ok);
+        }
+        if (c.MountOf(part) is int m and >= 0 && c.StationOfPart(m, part) is var st and >= 0)
+            (b.Turret, b.TurretSt) = (m, st);
+    }
+
+    /// <summary>Parts: within the wreck radius wrecked or out of action, unless armour its fragments don't get through boxes
+    /// them; beyond it, damaged by the fragments that get into them: in the hull those in the burst's own space (a space's next
+    /// door, through its join, below), outside it those on deck.</summary>
+    static void PartsAround(ref BurstSite b, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
+        var comps = c.Components;
+        bool inHull = b.Cell >= 0;
+        double cellTop = inHull ? b.CellBox.Top : double.PositiveInfinity;
         for (int i = 0; i < comps.Length; i++)
         {
-            if (i == part)
+            if (i == b.Part)
                 continue;
             ref readonly var comp = ref comps[i];
             if (inHull ? comp.Bounds.Base >= cellTop - 0.05 : comp.Bounds.Top <= 0)
                 continue;   // in the hull: only what reaches down into this space or below; outside it: only what stands above the deck
-            double d = Distance(c, i, p);
-            if (d > rw && inHull && !Overlaps(comp.Bounds, cellBox))
+            double d = Distance(c, i, b.At);
+            if (d > b.WreckM && inHull && !Overlaps(comp.Bounds, b.CellBox))
                 continue;
             double raw = Armour(c, i);
             // the fragments into it, through its armour and its own plating: any at all and its armour doesn't box it; its
             // vitals' share of them damage it (one draw for both, the second a subset of the first)
-            double into = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, around + PartMild(c, i, raw), default,
-                inHull ? MediumDragM(c, k, cell, p, Nearest(comp.Bounds, p), s) : 0) ?? 0);
+            double into = b.Share * (b.Frag?.Hits(b.At, b.Dir, b.V, comp.Bounds, b.Around + PartMild(c, i, raw), default,
+                inHull ? MediumDragM(c, k, b.Cell, b.At, Nearest(comp.Bounds, b.At), s) : 0) ?? 0);
             double u = into > 1e-4 ? r.NextDouble() : 1;
             bool pierced = u < 1 - Math.Exp(-into), struck = u < 1 - Math.Exp(-into * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]);
             if (raw > 0 && !pierced)
                 continue;
-            var state = d <= s.DestroyedShare * rw ? PartState.Destroyed : d <= rw ? PartState.Disabled : struck ? PartState.Damaged : PartState.Ok;
+            var state = d <= s.DestroyedShare * b.WreckM ? PartState.Destroyed : d <= b.WreckM ? PartState.Disabled : struck ? PartState.Damaged : PartState.Ok;
             if (state == PartState.Ok)
                 continue;
             bool worse = state == PartState.Damaged ? k.Harm(i) : k.Worsen(i, state);
@@ -510,143 +585,145 @@ public static class Effects
                 res.Part = i;
             int m = c.MountOf(i);
             if (worse && m >= 0 && c.Mounts[m].Component == i && c.Mounts[m].ReadyRounds > 0 && state >= PartState.Disabled &&
-                r.NextDouble() < s.ReadyAmmoFireChance * force)
-            {
-                // its ready charges burn as a propellant seat (fire.md B1): every one, by its own oxygen, in seconds
-                double charges = c.Mounts[m].ReadyRounds * c.Charges[c.Mounts[m].Type].MassKg * s.FirePropellantMJkg;
-                res.Fire |= Fires.Ignite(c, k, c.FireOfPart(i), s.ReadyAmmoSeatMW, s, charges);
-                // its ready charges flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's
-                Casualties.Flash(k, Casualties.Part(i), Casualties.Enclosed(c, m), s);
-                res.Flash = true;
-                // charges burning at a station of its train: the flame's way down it (a shield's are on deck: none)
-                if (readyMount < 0 && c.StationOfPart(m, i) is var st and >= 0)
-                    (readyMount, readySt) = (m, st);
-            }
+                r.NextDouble() < s.ReadyAmmoFireChance * b.Force)
+                ReadyChargesLit(ref b, i, m, ref res);
         }
+    }
 
-        // the space it burst in, and those its fragments get into through the bulkheads and decks
-        if (inHull && t.Burst != BurstKind.Outside)
+    /// <summary>A mount's ready charges burn as a propellant seat (fire.md B1): every one, by its own oxygen, in seconds, and
+    /// flash through its crew (16 §4.6): a gunhouse's as a turret's train, else as a battery's. Charges burning at a station of
+    /// its train: the flame's way down it (a shield's are on deck: none).</summary>
+    static void ReadyChargesLit(ref BurstSite b, int part, int m, ref EffectsResult res)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
+        double charges = c.Mounts[m].ReadyRounds * c.Charges[c.Mounts[m].Type].MassKg * s.FirePropellantMJkg;
+        res.Fire |= Fires.Ignite(c, k, c.FireOfPart(part), s.ReadyAmmoSeatMW, s, charges);
+        Casualties.Flash(k, Casualties.Part(part), Casualties.Enclosed(c, m), s);
+        res.Flash = true;
+        if (b.ReadyMount < 0 && c.StationOfPart(m, part) is var st and >= 0)
+            (b.ReadyMount, b.ReadySt) = (m, st);
+    }
+
+    /// <summary>The space it burst in: what matters in its rooms, as its fragments find it (the gas may yet).</summary>
+    static void SpaceBurstIn(ref BurstSite b, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
+        foreach (int room in c.RoomsIn(b.Cell))
         {
-            foreach (int room in c.RoomsIn(cell))
+            ref readonly var rr = ref c.Rooms[room];
+            int node = c.RoomNode(room);
+            if (res.Part < 0 || b.Part < 0 && res.Part >= c.Components.Length)
+                res.Part = node;
+            if (r.NextDouble() >= RoomChance(c, room, b.WreckM, b.Force, s))
+                continue;
+            Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
+            if (b.Magazine < 0 && rr.Kind == RoomKind.Magazine)
+                (b.Magazine, b.Via) = (room, MagazineVia.In);
+        }
+    }
+
+    /// <summary>The spaces its fragments get into through the bulkheads and decks, and the parts in them.</summary>
+    static void SpacesNextDoor(ref BurstSite b, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
+        var comps = c.Components;
+        foreach (var n in c.Neighbours(c.Cells[b.Cell].Neighbours))
+        {
+            if (BoxDistance(c.Cells[n.Cell].Box, b.At) > b.WreckM)
+                continue;
+            // its fragments through the join (as mild steel against them), square to its plate
+            var there = c.Cells[n.Cell].Box;
+            double join = JoinMild(c, n, b.CellBox, there, b.At);
+            var normal = JoinNormal(n, b.CellBox, there);
+            // the coal, oil or water they go through in the burst's own space on the way (C3b)
+            double drag = MediumDragM(c, k, b.Cell, b.At, Nearest(there, b.At), s);
+            double into = b.Share * (b.Frag?.Hits(b.At, b.Dir, b.V, there, join, normal, drag) ?? 0);
+            if (!(into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into)))
+                continue;
+            if (n.Join != JoinKind.Open)
+                k.CellOpened[b.Cell] = k.CellOpened[n.Cell] = true;
+            // the parts in it (not in the burst's own space, nor within the wreck radius, which the parts above had):
+            // damaged by the fragments through the join and their own plates
+            for (int j = 0; j < comps.Length; j++)
             {
-                ref readonly var rr = ref c.Rooms[room];
+                ref readonly var comp = ref comps[j];
+                if (j == b.Part || !Overlaps(comp.Bounds, there) || Overlaps(comp.Bounds, b.CellBox) || Distance(c, j, b.At) <= b.WreckM)
+                    continue;
+                double hits = b.Share * (b.Frag?.Hits(b.At, b.Dir, b.V, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal, drag) ?? 0);
+                if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]))
+                    Count(ref res, k, j, k.Harm(j) ? k.State[j] : PartState.Ok);
+            }
+            foreach (int room in c.RoomsIn(n.Cell))
+            {
+                if (r.NextDouble() >= s.NeighbourShare * RoomChance(c, room, b.WreckM, b.Force, s))
+                    continue;
                 int node = c.RoomNode(room);
-                if (res.Part < 0 || part < 0 && res.Part >= c.Components.Length)
-                    res.Part = node;
-                if (r.NextDouble() >= RoomChance(c, room, rw, force, s))
-                    continue;   // its fragments missed what matters in it (the gas below may not)
-                Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
-                if (magazine < 0 && rr.Kind == RoomKind.Magazine)
-                    (magazine, via) = (room, MagazineVia.In);
-            }
-            foreach (var n in c.Neighbours(c.Cells[cell].Neighbours))
-            {
-                double d = BoxDistance(c.Cells[n.Cell].Box, p);
-                if (d > rw)
-                    continue;
-                // its fragments through the join (as mild steel against them), square to its plate
-                var there = c.Cells[n.Cell].Box;
-                double join = n.Join switch
-                {
-                    JoinKind.Deck => DeckMild(c, n.Through, c.Cells[cell].Box, there),
-                    JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + Fragments.MildMm(c.Bulkheads[n.Through].ArmourMm, FragmentClass.Ductile),
-                    _ => 0,
-                } + InclinedMild(c, p, Nearest(there, p));
-                var normal = n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(c.Cells[cell].Box, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
-                // the coal, oil or water they go through in the burst's own space on the way (C3b)
-                double drag = MediumDragM(c, k, cell, p, Nearest(there, p), s);
-                double into = share * (frag?.Hits(p, fdir, t.BurstMs, there, join, normal, drag) ?? 0);
-                if (!(into > 1e-4 && r.NextDouble() < 1 - Math.Exp(-into)))
-                    continue;
-                if (n.Join != JoinKind.Open)
-                    k.CellOpened[cell] = k.CellOpened[n.Cell] = true;
-                // the parts in it (not in the burst's own space, nor within the wreck radius, which the parts above had):
-                // damaged by the fragments through the join and their own plates
-                for (int j = 0; j < comps.Length; j++)
-                {
-                    ref readonly var comp = ref comps[j];
-                    if (j == part || !Overlaps(comp.Bounds, there) || Overlaps(comp.Bounds, cellBox) || Distance(c, j, p) <= rw)
-                        continue;
-                    double hits = share * (frag?.Hits(p, fdir, t.BurstMs, comp.Bounds, join + PartMild(c, j, Armour(c, j)), normal, drag) ?? 0);
-                    if (hits > 1e-4 && r.NextDouble() < 1 - Math.Exp(-hits * s.PartVital[Math.Min((int)comp.Kind, s.PartVital.Length - 1)]))
-                        Count(ref res, k, j, k.Harm(j) ? k.State[j] : PartState.Ok);
-                }
-                foreach (int room in c.RoomsIn(n.Cell))
-                {
-                    if (r.NextDouble() >= s.NeighbourShare * RoomChance(c, room, rw, force, s))
-                        continue;
-                    int node = c.RoomNode(room);
-                    Count(ref res, k, node, k.Worsen(node, PartState.Damaged) ? PartState.Damaged : PartState.Ok);
-                    if (magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
-                        (magazine, via) = (room, MagazineVia.Beside);
-                }
+                Count(ref res, k, node, k.Worsen(node, PartState.Damaged) ? PartState.Damaged : PartState.Ok);
+                if (b.Magazine < 0 && c.Rooms[room].Kind == RoomKind.Magazine)
+                    (b.Magazine, b.Via) = (room, MagazineVia.Beside);
             }
         }
+    }
 
-        // the gas (E5): in a closed space it stays until it vents or the walls give way; on deck, in an open mount or
-        // vented as fast as it forms there's only the shock and the fragments above
-        int gasMagazine = -1, gasHandling = -1;
-        bool inHandling = false;
-        if (!broken && t.Burst != BurstKind.Outside && shell.FillerKg > 0)
-        {
-            double fill = shell.FillerKg * force, vent = NearWall(c, xs, t.BurstT, size, s);
-            if (part >= 0)
-                PartGas(c, k, part, fill, shell, vent, s, ref res, ref r);
-            else if (inHull)
-            {
-                var net = GasNetwork.For(c);
-                res.Blast = net.Detonate(k, cell, p, fill, shell, vent, rw, s.NearHoleK * size, s, ref r);
-                res.BreachM2 += res.Blast.HoleM2;
-                Felt(c, k, net, s, ref res);
-                Flashed(c, net, cell, ref gasMagazine, ref gasHandling, ref inHandling);
-            }
-        }
+    /// <summary>What a join stops of a burst's fragments, as mild steel, with any inclined plate on the way.</summary>
+    static double JoinMild(ShipClass c, in Neighbour n, in Box here, in Box there, P3 p) => n.Join switch
+    {
+        JoinKind.Deck => DeckMild(c, n.Through, here, there),
+        JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + Fragments.MildMm(c.Bulkheads[n.Through].ArmourMm, FragmentClass.Ductile),
+        _ => 0,
+    } + InclinedMild(c, p, Nearest(there, p));
 
-        // the people its pieces and gas reach (E6)
-        Crew(c, k, path, t, part, cell, p, fdir, frag, share, around, broken ? 0 : w * force, broken, res.Blast, s);
+    static P3 JoinNormal(in Neighbour n, in Box here, in Box there) =>
+        n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(here, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
 
-        // fire, by what burns where it burst (docs/battle/fire.md B0): the part it burst in, its cell, or outside the part
-        // its fragments reached first, else the weather deck it burst on (not one on the side below it); and a burst above
-        // the hull, from just under the deck's edge to a few metres over it, also showers that section's weather deck with
-        // its burning pieces and products, as one outside (B5: what's piled there)
-        int space = part >= 0 ? c.FireOfPart(part) : inHull ? cell
+    /// <summary>Fire, by what burns where it burst (docs/battle/fire.md B0): the part it burst in, its cell, or outside the part
+    /// its fragments reached first, else the weather deck it burst on (not one on the side below it); and a burst above
+    /// the hull, from just under the deck's edge to a few metres over it, also showers that section's weather deck with
+    /// its burning pieces and products, as one outside (B5: what's piled there).</summary>
+    static void StartFires(ref BurstSite b, in ShellTypeRow shell, double w, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
+        bool inHull = b.Cell >= 0;
+        int space = b.Part >= 0 ? c.FireOfPart(b.Part) : inHull ? b.Cell
             : res.Part >= 0 && res.Part < c.Components.Length && c.FireOfPart(res.Part) >= 0 ? c.FireOfPart(res.Part)
-            : c.FireOfDeck(c.SectionAt(p.X));
-        int deck = inHull ? -1 : c.FireOfDeck(c.SectionAt(p.X));
+            : c.FireOfDeck(c.SectionAt(b.At.X));
+        int deck = inHull ? -1 : c.FireOfDeck(c.SectionAt(b.At.X));
         double deckTop = deck >= 0 ? c.Cells[c.FireSpaces[deck].Cell].Box.Top : 0;
-        if (deck >= 0 && (p.Z < deckTop - s.FireDeckBurstM || p.Z > deckTop + s.FireDeckReachM))
+        if (deck >= 0 && (b.At.Z < deckTop - s.FireDeckBurstM || b.At.Z > deckTop + s.FireDeckReachM))
             deck = -1;
         if (space >= 0 && c.FireSpaces[space].Kind == FireSpaceKind.Deck && deck < 0)
             space = -1;
-        if (!broken)
-        {
-            if (space >= 0)
-                res.Fire |= Start(c, k, space, shell, w, t.Burst == BurstKind.Outside, s, ref r);
-            if (deck >= 0 && deck != space)
-                res.Fire |= Start(c, k, deck, shell, w, true, s, ref r);
-        }
+        if (space >= 0)
+            res.Fire |= Start(c, k, space, shell, w, !b.Inside, s, ref r);
+        if (deck >= 0 && deck != space)
+            res.Fire |= Start(c, k, deck, shell, w, true, s, ref r);
+    }
 
-        // the magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them, or its gas reaching one;
-        // else charges lit at a station of a mount's train (ready charges set burning, a burst in a gunhouse, its working
-        // chamber or a casemate, its gas in a handling room: E5's Savannah) and the flame down the train's open doors
+    /// <summary>The magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them, or its gas reaching
+    /// one; else charges lit at a station of a mount's train (ready charges set burning, a burst in a gunhouse, its working
+    /// chamber or a casemate, its gas in a handling room: E5's Savannah) and the flame down the train's open doors.</summary>
+    static void MagazineLit(ref BurstSite b, long now, int gasMagazine, int gasHandling, bool inHandling, ref EffectsResult res, ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
         int reached = -1;
-        if (t.Burst != BurstKind.Outside && magazine < 0 && gasMagazine >= 0)
-            (magazine, via) = (gasMagazine, MagazineVia.Gas);
-        if (t.Burst != BurstKind.Outside && magazine >= 0)
+        if (b.Inside && b.Magazine < 0 && gasMagazine >= 0)
+            (b.Magazine, b.Via) = (gasMagazine, MagazineVia.Gas);
+        var via = b.Via;
+        if (b.Inside && b.Magazine >= 0)
         {
             if (r.NextDouble() < s.MagazineFlashChance)
-                (reached, res.Stations) = (magazine, res.Stations + 1);
+                (reached, res.Stations) = (b.Magazine, res.Stations + 1);
         }
-        else if (readyMount >= 0)
-            (reached, via) = (Magazines.Light(c, k, readyMount, readySt, burning: true, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
-        else if (t.Burst != BurstKind.Outside && turret >= 0)
+        else if (b.ReadyMount >= 0)
+            (reached, via) = (Magazines.Light(c, k, b.ReadyMount, b.ReadySt, burning: true, s, ref r, ref res, now), MagazineVia.Turret);
+        else if (b.Inside && b.Turret >= 0)
         {
-            if (r.NextDouble() < Magazines.LightChance(c, k, turret, turretSt, s))
-                (reached, via) = (Magazines.Light(c, k, turret, turretSt, burning: false, s, ref r, ref res, hit.Ms), MagazineVia.Turret);
+            if (r.NextDouble() < Magazines.LightChance(c, k, b.Turret, b.TurretSt, s))
+                (reached, via) = (Magazines.Light(c, k, b.Turret, b.TurretSt, burning: false, s, ref r, ref res, now), MagazineVia.Turret);
         }
-        else if (t.Burst != BurstKind.Outside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
+        else if (b.Inside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
                  c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < Magazines.Exposed(c, gasHandling) * Magazines.LightChance(c, k, hm, hs, s))
-            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, hit.Ms), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
+            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, now), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         if (reached >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
     }
@@ -668,8 +745,8 @@ public static class Effects
     /// in, in the spaces next to it through their decks and bulkheads (and in the space behind the hull's plating a burst
     /// outside was on), and in the parts its pieces reach (in the hull those in its space, outside it those above the
     /// deck), each through what's between: a part's own plates and armour (an open or shielded mount's men stand open,
-    /// their cover says how much the shield hides them). A burst on a plate throws half its pieces into it. Its gas on the
-    /// men in every space it filled, or in the part it burst in; in the open, its blast by distance (TNT kg w).</summary>
+    /// their cover says how much the shield hides them). A burst on a plate throws half its pieces into it. In the open, its
+    /// blast by distance (TNT kg w); in a closed space its gas, which is <see cref="GasFelt"/>'s.</summary>
     static void Crew(ShipClass c, ShipCondition k, HitPath path, in TerminalResult t, int part, int cell, P3 p, P3 fdir, FragmentBurst? frag,
         double share, double around, double w, bool broken, in GasResult bl, SimSettings s)
     {
@@ -688,14 +765,7 @@ public static class Effects
                 foreach (var n in c.Neighbours(c.Cells[cell].Neighbours))
                 {
                     var there = c.Cells[n.Cell].Box;
-                    double join = n.Join switch
-                    {
-                        JoinKind.Deck => DeckMild(c, n.Through, here, there),
-                        JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + Fragments.MildMm(c.Bulkheads[n.Through].ArmourMm, FragmentClass.Ductile),
-                        _ => 0,
-                    } + InclinedMild(c, p, Nearest(there, p));
-                    var normal = n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(here, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
-                    Casualties.Pieces(c, k, Casualties.Cell(c, n.Cell), frag, p, fdir, v, sh, around + join, normal,
+                    Casualties.Pieces(c, k, Casualties.Cell(c, n.Cell), frag, p, fdir, v, sh, around + JoinMild(c, n, here, there, p), JoinNormal(n, here, there),
                         n.Join == JoinKind.Open && part < 0 ? openW : 0, s);
                 }
             }
@@ -716,16 +786,6 @@ public static class Effects
                 double mild = around + PartMild(c, i, m >= 0 && c.Mounts[m].Component == i && !Casualties.Enclosed(c, m) ? 0 : Armour(c, i));
                 Casualties.Pieces(c, k, Casualties.Part(i), frag, p, fdir, v, sh, mild, default, !inHull && mild <= 0 ? openW : 0, s);
             }
-        }
-        if (broken || !(bl.FeltMPa > 0))
-            return;
-        if (part >= 0)
-            Casualties.Gas(k, Casualties.Part(part), bl.FeltMPa, s);
-        else if (inHull)
-        {
-            var net = GasNetwork.For(c);
-            foreach (int reached in net.Reached())
-                Casualties.Gas(k, Casualties.Cell(c, reached), net.FeltMPa(reached), s);
         }
     }
 
@@ -753,9 +813,8 @@ public static class Effects
 
     /// <summary>A burst inside a part (a gunhouse, a conning tower, a superstructure block, a barbette; E5): a space of the
     /// gas network's, the part's free volume, vented by its kind's openings (an open mount, a mast, a funnel: open) and its own
-    /// hole, against its walls of its armour or plating; what's in the part with it takes the gas.</summary>
-    static void PartGas(ShipClass c, ShipCondition k, int part, double fill, in ShellTypeRow shell, double vent, SimSettings s,
-        ref EffectsResult res, ref RandomStream r)
+    /// hole, against its walls of its armour or plating.</summary>
+    static GasResult DetonateInPart(ShipClass c, ShipCondition k, GasNetwork net, int part, double fill, in ShellTypeRow shell, double vent, SimSettings s, ref RandomStream r)
     {
         ref readonly var comp = ref c.Components[part];
         var b = comp.Bounds;
@@ -763,30 +822,38 @@ public static class Effects
         double v = Math.Max(dx * dy * dz * s.PartAirShare, 1), face = Math.Pow(v, 2.0 / 3);
         int m = c.MountOf(part);
         double share = m >= 0 && c.Mounts[m].Component == part && !c.Enclosed(m) ? 1 : s.PartVentShare[Math.Min((int)comp.Kind, s.PartVentShare.Length - 1)];
-        res.Blast = GasNetwork.For(c).Detonate(k, v, share * face + vent, 2 * (dx * dy + dx * dz + dy * dz), Armour(c, part) + PartMild(c, part, 0), fill, shell, s, ref r);
-        if (!(res.Blast.FeltMPa > 0))
-            return;
-        // what's in it with it: a director in a superstructure block, the conning tower's gear
-        for (int i = 0; i < c.Components.Length; i++)
-            if (i != part && Overlaps(c.Components[i].Bounds, b))
-                Pressed(c, k, i, s.PartBlastMPa[Math.Min((int)c.Components[i].Kind, s.PartBlastMPa.Length - 1)], res.Blast.FeltMPa, s, ref res);
+        return net.Detonate(k, v, share * face + vent, 2 * (dx * dy + dx * dz + dy * dz), Armour(c, part) + PartMild(c, part, 0), fill, shell, s, ref r);
     }
 
-    /// <summary>What an explosion's gas does in the spaces it reached (E5; 11 §4.3): their rooms' gear and the parts in them take
-    /// it by their pressure class (out of action from it, damaged from a share of it); a part behind armour the gas can't burst
-    /// keeps it out.</summary>
-    internal static void Felt(ShipClass c, ShipCondition k, GasNetwork net, SimSettings s, ref EffectsResult res)
+    /// <summary>What an explosion's gas does to men and gear wherever it went, whatever set it off (E5, E6; 11 §4.3, 16 §4.5): the
+    /// men in every space it filled; their rooms' gear and the parts in them by their pressure class (out of action from it, damaged
+    /// from a share of it), a part behind armour the gas can't burst keeping it out. Burst in a part (part ≥ 0): the men there and
+    /// what's in it with it (a director in a superstructure block, the conning tower's gear). Its men are drawn with the rest of
+    /// what the hit did to them (<see cref="Casualties.Draw"/>).</summary>
+    internal static void GasFelt(ShipClass c, ShipCondition k, GasNetwork net, int part, SimSettings s, ref EffectsResult res)
     {
+        var comps = c.Components;
+        if (part >= 0)
+        {
+            double inPart = net.PartFeltMPa;
+            if (!(inPart > 0))
+                return;
+            Casualties.Gas(k, Casualties.Part(part), inPart, s);
+            for (int i = 0; i < comps.Length; i++)
+                if (i != part && Overlaps(comps[i].Bounds, comps[part].Bounds))
+                    Pressed(c, k, i, s.PartBlastMPa[Math.Min((int)comps[i].Kind, s.PartBlastMPa.Length - 1)], inPart, s, ref res);
+            return;
+        }
         var reached = net.Reached();
         foreach (int cell in reached)
         {
             double felt = net.FeltMPa(cell);
             if (!(felt > 0))
                 continue;
+            Casualties.Gas(k, Casualties.Cell(c, cell), felt, s);
             foreach (int room in c.RoomsIn(cell))
                 Pressed(c, k, c.RoomNode(room), s.RoomBlastMPa[Math.Min((int)c.Rooms[room].Kind, s.RoomBlastMPa.Length - 1)], felt, s, ref res);
         }
-        var comps = c.Components;
         for (int j = 0; j < comps.Length; j++)
         {
             double felt = 0;

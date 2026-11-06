@@ -1027,6 +1027,9 @@ public sealed class GasNetwork
     /// <summary>What a cell's boundaries felt, MPa; its peak (0: the gas never got there).</summary>
     public double FeltMPa(int cell) => stamp[cell] == id ? felt[cell] : 0;
 
+    /// <summary>What a part's walls felt, MPa, when the run was in a part.</summary>
+    public double PartFeltMPa => FeltMPa(partNode);
+
     /// <summary>Whether gas hot enough to light charges reached a cell (<see cref="SimSettings.GasIgniteK"/>): the burst's flame
     /// carried there, not the cold air pushed ahead of it.</summary>
     public bool Hot(int cell) => stamp[cell] == id && hottest[cell] >= s.GasIgniteK * AirR;
