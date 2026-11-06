@@ -161,7 +161,7 @@ public sealed class GasNetwork
     {
         public int Room, Cell, Cohort;
         public PropellantRow Pr;
-        public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, More, EnergyJKg;
+        public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, EnergyJKg;
         public readonly double[] Cnt = new double[Cohorts], Z = new double[Cohorts];
         public double Burning, Pending, MadePa;
     }
@@ -219,25 +219,13 @@ public sealed class GasNetwork
     public GasResult Detonate(ShipCondition cond, int cell, P3 at, double w, in ShellTypeRow f, double ventM2, double nearM, double nearHoleM, SimSettings settings, ref RandomStream r)
     {
         Begin(cond, settings);
-        Join(cell);
+        JoinSpace(cell);
         vent[cell] += ventM2;
-        // the space's own: what's open to it is one room
-        for (int i = 0; i < n; i++)
-            foreach (ref readonly var e in c.Neighbours(c.Cells[region[i]].Neighbours))
-                if (e.Join == JoinKind.Open && stamp[e.Cell] != id)
-                    Join(e.Cell);
         double gas = 0, vents = 0;
         for (int i = 0; i < n; i++)
             (gas, vents) = (gas + v[region[i]], vents + vent[region[i]]);
         Near(cell, at, nearM, nearHoleM);
-        if (Blast.Open(gas, vents, s))
-        {
-            res.Open = true;
-            return Finish(cell, ref r);
-        }
-        Charge(cell, w, f, gas);
-        Run(cell, 2e-4);
-        return Finish(cell, ref r);
+        return Burst(cell, gas, vents, w, f, ref r);
     }
 
     /// <summary>w kg bursting in a part of her (a gunhouse, a conning tower, a superstructure block, a barbette; E5): its gas in
@@ -247,14 +235,20 @@ public sealed class GasNetwork
         Begin(cond, settings);
         Node(partNode, gasM3, ventM2);
         (partM2, partMm, partWalls) = (wallM2, wallMm, default);
+        return Burst(partNode, gasM3, ventM2, w, f, ref r);
+    }
+
+    /// <summary>A charge going off in a space of so much gas and vent: all its energy in the first step, unless it's open.</summary>
+    GasResult Burst(int source, double gasM3, double ventM2, double w, in ShellTypeRow f, ref RandomStream r)
+    {
         if (Blast.Open(gasM3, ventM2, s))
-        {
             res.Open = true;
-            return Finish(partNode, ref r);
+        else
+        {
+            Charge(source, w, f, gasM3);
+            Run(source, 2e-4);
         }
-        Charge(partNode, w, f, gasM3);
-        Run(partNode, 2e-4);
-        return Finish(partNode, ref r);
+        return Finish(source, ref r);
     }
 
     void Charge(int cell, double w, in ShellTypeRow f, double gasM3)
@@ -294,6 +288,18 @@ public sealed class GasNetwork
         water = HitQuery.WaterOf(c, k.Attitude);
         Array.Clear(ventedMount);
         Array.Clear(liftedMount);
+    }
+
+    /// <summary>A cell and what's open to it joins: it's one room.</summary>
+    void JoinSpace(int cell)
+    {
+        int first = n;
+        if (stamp[cell] != id)
+            Join(cell);
+        for (int i = first; i < n; i++)
+            foreach (ref readonly var e in c.Neighbours(c.Cells[region[i]].Neighbours))
+                if (e.Join == JoinKind.Open && stamp[e.Cell] != id)
+                    Join(e.Cell);
     }
 
     /// <summary>A cell joins: its air at the atmosphere's pressure, its vents.</summary>
@@ -382,6 +388,17 @@ public sealed class GasNetwork
         if (cell < 0)
             return -1;
         var st = stows[nStows++];
+        LoadStow(st, room, cell, charge);
+        JoinSpace(cell);
+        LinkTrains(room, cell);
+        res.Magazines = nStows;
+        Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} alight ({2:0} open, {3:0} packed, {4:0} kg each, {5:0} m³ of gas)", time, c.RoomId(room), st.Open, st.Cased, st.Ck, v[cell]));
+        return cell;
+    }
+
+    /// <summary>A pooled stow set to a magazine's charges as they lie: what's flooded, its burn law, the first flame.</summary>
+    void LoadStow(Stow st, int room, int cell, in ChargeRow charge)
+    {
         Magazines.Stow(c, room, rounds, flash, out double nOpen, out double nCased, out double mass);
         st.Room = room;
         st.Cell = cell;
@@ -393,21 +410,17 @@ public sealed class GasNetwork
         st.Pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)] * st.Pr.Sensitivity;
         st.TBurn = st.Pr.WebM / Magazines.Rate(101_325, st.Pr);
         st.EnergyJKg = s.MagazineHeatKeep * st.Pr.ImpetusJkg / GammaK;
-        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.More, st.Burning, st.Pending, st.MadePa) = (0, 0, 0, -1, 0, 0, 0, 0);
+        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa) = (0, 0, 0, -1, 0, 0, 0);
         if (nOpen * (1 - st.Flooded) < 1 && nCased * (1 - st.Flooded) >= 1)
         {
             st.LitCased = 1;
             (st.Cnt[0], st.Z[0], st.Cohort, st.CohortT0) = (1, 0, 1, time);
         }
-        int first = n;
-        if (stamp[cell] != id)
-            Join(cell);
-        // what's open to it is one room
-        for (int i = first; i < n; i++)
-            foreach (ref readonly var e in c.Neighbours(c.Cells[region[i]].Neighbours))
-                if (e.Join == JoinKind.Open && stamp[e.Cell] != id)
-                    Join(e.Cell);
-        // the train: the scuttle to its handling room, the way up and out
+    }
+
+    /// <summary>The trains of the mounts a magazine feeds: the scuttle to the handling room, the way up and out.</summary>
+    void LinkTrains(int room, int cell)
+    {
         for (int mt = 0; mt < c.Mounts.Length; mt++)
         {
             ref readonly var mr = ref c.Mounts[mt];
@@ -427,9 +440,6 @@ public sealed class GasNetwork
             else
                 Link(top, -1, s.MagazineScuttleKPa * 1e3, s.MagazineHoistM2, -1);   // a shield's or casemate's hoist: a way out, but no gunhouse vented
         }
-        res.Magazines = nStows;
-        Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} alight ({2:0} open, {3:0} packed, {4:0} kg each, {5:0} m³ of gas)", time, c.RoomId(room), nOpen, nCased, st.Ck, v[cell]));
-        return cell;
     }
 
     void Link(int from, int to, double atPa, double m2, int mount)
@@ -451,7 +461,6 @@ public sealed class GasNetwork
     {
         double dt = dt0, quiet = 0;
         int steps = 0;
-        double keep = s.BlastLoadFactor;
         while (time < s.GasRunS)
         {
             lag = 1 - Math.Exp(-dt * Math.PI * 1000 / Math.Max(s.PanelMs, 1e-3));   // a panel's response: P·min(k, π·t/T) as a lag
@@ -460,54 +469,76 @@ public sealed class GasNetwork
             // half the step's gas before its flows and half after, so what the boundaries feel is the middle of the step: else a long
             // step reads the pressure once it has leaked away, not what a burning stow holds against its vents
             Sources(dt);
-            bool caught = true;
-            for (int a = 0; a < n; a++)
-            {
-                int i = region[a];
-                Refresh(i);
-                double load = keep * Math.Max(p[i] - P0, 0) / 1e6;
-                lagged[i] += (load - lagged[i]) * lag;
-                felt[i] = Math.Max(felt[i], lagged[i]);
-                caught &= load <= 1.02 * lagged[i] || load < 1e-3;
-                hottest[i] = Math.Max(hottest[i], rt[i]);
-                Ignite(i);
-            }
+            bool caught = TakeUp();
             peakSource = Math.Max(peakSource, p[source] - P0);
             bool changed = Boundaries(dt);
             Links(dt);
             SecondHalf();
-            // the step follows the pressures that load something: a far cell's few kPa moving by a share of themselves don't
-            // hold it down while the source's hundreds do the work
-            double most = 0, gauge = 0;
-            for (int a = 0; a < n; a++)
-                gauge = Math.Max(gauge, p[region[a]] - P0);
-            double floor = Math.Max(GaugeFloor, StepShareOfPeak * gauge);
-            for (int a = 0; a < n; a++)
-            {
-                int i = region[a];
-                if (v[i] >= StepCellM3)
-                    most = Math.Max(most, Math.Abs(p[i] - pStart[i]) / Math.Max(Math.Abs(pStart[i] - P0), floor));
-            }
-            // and a burning stow, whose pressure can stand still while gas pours through it: what the step put in, against what's there
-            for (int t = 0; t < nStows; t++)
-                most = Math.Max(most, stows[t].MadePa / Math.Max(Math.Abs(p[stows[t].Cell] - P0), floor));
+            double most = Moved(out double gauge);
             time += dt;
             steps++;
             if (!double.IsNaN(res.HullS) && time <= res.HullS + 1)
                 fastKg = burned;
-            bool burning = false;
-            for (int i = 0; i < nStows; i++)
-                burning |= stows[i].Burning > 0 || stows[i].LitOpen < stows[i].Open * (1 - stows[i].Flooded) - 1e-6 || stows[i].LitCased < stows[i].Cased * (1 - stows[i].Flooded) - 1e-6 && stows[i].Burning > 0;
             quiet = changed || most > 0.01 ? 0 : quiet + dt;
-            // done when every panel has taken up its load, nothing can burn and nothing more can give: no intact door or plate
-            // takes less than the door's own
-            bool low = keep * gauge < s.DoorMinMPa * 1e6;
-            if (caught && (!burning && (low || quiet > 1) || burning && low && quiet > 1 && AllLit()))
+            if (Done(caught, gauge, quiet))
                 break;
             dt = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin) : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax) : dt;
         }
         res.Steps = steps;
         res.EndS = time;
+    }
+
+    /// <summary>Each space's gas as it stands: what its walls feel as their panels take it up, how hot it has been, and whether
+    /// that lights what's there. Whether every panel has caught up with its load.</summary>
+    bool TakeUp()
+    {
+        bool caught = true;
+        double keep = s.BlastLoadFactor;
+        for (int a = 0; a < n; a++)
+        {
+            int i = region[a];
+            Refresh(i);
+            double load = keep * Math.Max(p[i] - P0, 0) / 1e6;
+            lagged[i] += (load - lagged[i]) * lag;
+            felt[i] = Math.Max(felt[i], lagged[i]);
+            caught &= load <= 1.02 * lagged[i] || load < 1e-3;
+            hottest[i] = Math.Max(hottest[i], rt[i]);
+            Ignite(i);
+        }
+        return caught;
+    }
+
+    /// <summary>How far this step moved what matters, as a share (the step's control), and the highest gauge pressure anywhere.
+    /// The step follows the pressures that load something: a far cell's few kPa moving by a share of themselves don't hold it
+    /// down while the source's hundreds do the work. And a burning stow, whose pressure can stand still while gas pours through
+    /// it: what the step put in, against what's there.</summary>
+    double Moved(out double gauge)
+    {
+        double most = 0;
+        gauge = 0;
+        for (int a = 0; a < n; a++)
+            gauge = Math.Max(gauge, p[region[a]] - P0);
+        double floor = Math.Max(GaugeFloor, StepShareOfPeak * gauge);
+        for (int a = 0; a < n; a++)
+        {
+            int i = region[a];
+            if (v[i] >= StepCellM3)
+                most = Math.Max(most, Math.Abs(p[i] - pStart[i]) / Math.Max(Math.Abs(pStart[i] - P0), floor));
+        }
+        for (int t = 0; t < nStows; t++)
+            most = Math.Max(most, stows[t].MadePa / Math.Max(Math.Abs(p[stows[t].Cell] - P0), floor));
+        return most;
+    }
+
+    /// <summary>Done when every panel has taken up its load, nothing can burn and nothing more can give: no intact door or plate
+    /// takes less than the door's own.</summary>
+    bool Done(bool caught, double gauge, double quiet)
+    {
+        bool burning = false;
+        for (int i = 0; i < nStows; i++)
+            burning |= stows[i].Burning > 0 || stows[i].LitOpen < stows[i].Open * (1 - stows[i].Flooded) - 1e-6;
+        bool low = s.BlastLoadFactor * gauge < s.DoorMinMPa * 1e6;
+        return caught && (!burning && (low || quiet > 1) || burning && low && quiet > 1 && AllLit());
     }
 
     /// <summary>Whether the flame has been through every stow: what's left of them only burns out.</summary>
@@ -522,31 +553,14 @@ public sealed class GasNetwork
         return true;
     }
 
-    /// <summary>The stows' gas: r = β·P^α, cohorts of lit charges, the flame through the stow.</summary>
+    /// <summary>The stows' gas: half of what each makes this step into its space, the flame on through it.</summary>
     void Sources(double dt)
     {
         double released = 0, madeKg = 0;
         for (int t = 0; t < nStows; t++)
         {
             var st = stows[t];
-            double pa = p[st.Cell], rate = Magazines.Rate(pa, st.Pr), gen = 0, burning = 0;
-            for (int i = 0; i < st.Cohort; i++)
-            {
-                if (st.Z[i] >= 1)
-                    continue;
-                double shape = st.Pr.Form switch
-                {
-                    PropellantForm.Cord => Math.Sqrt(1 - st.Z[i]),
-                    PropellantForm.Grain => Math.Pow(1 - st.Z[i], 2.0 / 3),
-                    _ => 1,
-                };
-                double kg = Math.Min(st.Pr.DensityKgM3 * st.Cnt[i] * st.Ck * st.Pr.SurfaceM2Kg * shape * rate, st.Cnt[i] * st.Ck * (1 - st.Z[i]) / dt);
-                gen += kg;
-                st.Z[i] = Math.Min(1, st.Z[i] + kg * dt / (st.Cnt[i] * st.Ck));
-                burning += st.Cnt[i];
-            }
-            st.Burning = burning;
-            double made = gen * dt;
+            double made = BurnStow(st, dt);
             st.Pending = made / 2;
             st.MadePa = made * st.EnergyJKg * GammaK / v[st.Cell];
             m[st.Cell] += st.Pending;
@@ -555,32 +569,7 @@ public sealed class GasNetwork
             burned += made;
             released += made * st.EnergyJKg;
             madeKg += made;
-
-            double openDry = st.Open * (1 - st.Flooded), casedDry = st.Cased * (1 - st.Flooded), d = 0;
-            if (openDry - st.LitOpen > 0)
-            {
-                double dOpen = (openDry - st.LitOpen) * (1 - Math.Exp(-dt / s.MagazineBagSpreadS));
-                (st.LitOpen, d) = (st.LitOpen + dOpen, d + dOpen);
-            }
-            if (casedDry - st.LitCased > 0 && (burning > 0 || st.More > 0))
-            {
-                // a branching process: what's burning lights its neighbours at a rate, so it grows as an exponential over the step,
-                // whatever the step's length (Euler here under-read the race at any step the pressures allow)
-                double growth = st.Pkg / st.TBurn * (casedDry - st.LitCased) / Math.Max(casedDry, 1);
-                double dCased = Math.Min(casedDry - st.LitCased, burning * (Math.Exp(Math.Min(growth * dt, 20)) - 1) + st.More);
-                (st.LitCased, d, st.More) = (st.LitCased + dCased, d + dCased, 0);
-            }
-            if (d > 0)
-            {
-                if (st.Cohort > 0 && (time - st.CohortT0 < 0.1 || st.Cohort == Cohorts))
-                {
-                    int last = st.Cohort - 1;
-                    st.Z[last] = st.Cnt[last] * st.Z[last] / (st.Cnt[last] + d);
-                    st.Cnt[last] += d;
-                }
-                else
-                    (st.Cnt[st.Cohort], st.Z[st.Cohort], st.Cohort, st.CohortT0) = (d, 0, st.Cohort + 1, time);
-            }
+            SpreadFlame(st, dt);
         }
         if (nStows == 0)
             return;
@@ -588,6 +577,58 @@ public sealed class GasNetwork
         double fade = Math.Exp(-dt);
         (whipKg, whipJ) = (whipKg * fade + madeKg, whipJ * fade + released);
         whipPeak = Math.Max(whipPeak, whipKg * whipJ);
+    }
+
+    /// <summary>What a stow's lit charges make in a step, kg: r = β·P^α on each cohort's burning surface.</summary>
+    double BurnStow(Stow st, double dt)
+    {
+        double rate = Magazines.Rate(p[st.Cell], st.Pr), gen = 0, burning = 0;
+        for (int i = 0; i < st.Cohort; i++)
+        {
+            if (st.Z[i] >= 1)
+                continue;
+            double shape = st.Pr.Form switch
+            {
+                PropellantForm.Cord => Math.Sqrt(1 - st.Z[i]),
+                PropellantForm.Grain => Math.Pow(1 - st.Z[i], 2.0 / 3),
+                _ => 1,
+            };
+            double kg = Math.Min(st.Pr.DensityKgM3 * st.Cnt[i] * st.Ck * st.Pr.SurfaceM2Kg * shape * rate, st.Cnt[i] * st.Ck * (1 - st.Z[i]) / dt);
+            gen += kg;
+            st.Z[i] = Math.Min(1, st.Z[i] + kg * dt / (st.Cnt[i] * st.Ck));
+            burning += st.Cnt[i];
+        }
+        st.Burning = burning;
+        return gen * dt;
+    }
+
+    /// <summary>The flame on through a stow: what lies open catches at once, what's packed by what's burning beside it.</summary>
+    void SpreadFlame(Stow st, double dt)
+    {
+        double openDry = st.Open * (1 - st.Flooded), casedDry = st.Cased * (1 - st.Flooded), d = 0;
+        if (openDry - st.LitOpen > 0)
+        {
+            double dOpen = (openDry - st.LitOpen) * (1 - Math.Exp(-dt / s.MagazineBagSpreadS));
+            (st.LitOpen, d) = (st.LitOpen + dOpen, d + dOpen);
+        }
+        if (casedDry - st.LitCased > 0 && st.Burning > 0)
+        {
+            // a branching process: what's burning lights its neighbours at a rate, so it grows as an exponential over the step,
+            // whatever the step's length (Euler here under-read the race at any step the pressures allow)
+            double growth = st.Pkg / st.TBurn * (casedDry - st.LitCased) / Math.Max(casedDry, 1);
+            double dCased = Math.Min(casedDry - st.LitCased, st.Burning * (Math.Exp(Math.Min(growth * dt, 20)) - 1));
+            (st.LitCased, d) = (st.LitCased + dCased, d + dCased);
+        }
+        if (!(d > 0))
+            return;
+        if (st.Cohort > 0 && (time - st.CohortT0 < 0.1 || st.Cohort == Cohorts))
+        {
+            int last = st.Cohort - 1;
+            st.Z[last] = st.Cnt[last] * st.Z[last] / (st.Cnt[last] + d);
+            st.Cnt[last] += d;
+        }
+        else
+            (st.Cnt[st.Cohort], st.Z[st.Cohort], st.Cohort, st.CohortT0) = (d, 0, st.Cohort + 1, time);
     }
 
     /// <summary>The step's other half of the gas <see cref="Sources"/> made.</summary>
