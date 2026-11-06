@@ -138,4 +138,140 @@ public class HullGirderTests
         var hog = h.Read(default, default, k, 0, 0, Settings);
         Assert.True(hog.Load > dry.Load, $"water in her ends: {hog.Load:0.000} against {dry.Load:0.000}");
     }
+
+    (ShipClass C, World W, ShipCondition K) Ship(string name)
+    {
+        var c = Class(name);
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 50, -20, 0, 0));
+        return (c, w, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity)));
+    }
+
+    /// <summary>Her end's section all gone: that end comes off, once, everything past the cut open to the sea and what stood there
+    /// gone, and she's not broken for it (07 §3.2). What floods past the cut carries nothing across it.</summary>
+    [Fact]
+    public void An_end_gone_comes_off_and_she_lives()
+    {
+        var (c, _, k) = Ship("destroyer");
+        var h = HullGirder.Of(c);
+        double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity;
+        foreach (ref readonly var cell in c.Cells)
+            (x0, x1) = (Math.Min(x0, cell.Box.X0), Math.Max(x1, cell.Box.X1));
+        double cut = x0 + 0.92 * (x1 - x0);
+        for (int i = 0; i < c.Cells.Length; i++)
+            if ((c.Cells[i].Box.X0 + c.Cells[i].Box.X1) / 2 > cut)
+                for (int f = 0; f < 4; f++)
+                    k.FaceLost[i * 4 + f] = 1;
+        for (int i = 0; i < c.Cells.Length; i++)
+            foreach (ref readonly var e in c.Neighbours(c.Cells[i].Neighbours))
+                if ((c.Cells[i].Box.X0 + c.Cells[i].Box.X1) / 2 > cut && (c.Cells[e.Cell].Box.X0 + c.Cells[e.Cell].Box.X1) / 2 > cut)
+                    k.EdgeLost[Leaks.Entry(c, e.Cell, Pool(c, e.Cell, i))] = 1;
+        k.GirderStale = true;
+        var r = h.Bear(k, 0, 1000, 1, Settings);
+        Assert.True(r.EndOff);
+        Assert.False(r.Broken, $"{r.Load:0.00}");
+        Assert.True(double.IsFinite(k.CutBowX));
+        Assert.True(k.BreachM2.Sum() > 1);
+        var held = k.BreachM2.Sum();
+        var again = h.Bear(k, 0, 2000, 1, Settings);
+        Assert.False(again.EndOff);
+        Assert.Equal(held, k.BreachM2.Sum());
+        int part = Enumerable.Range(0, c.Components.Length).FirstOrDefault(j => (c.Components[j].Bounds.X0 + c.Components[j].Bounds.X1) / 2 > k.CutBowX, -1);
+        if (part >= 0)
+            Assert.Equal(PartState.Destroyed, k.State[part]);
+
+        // the water past the cut adds no moment
+        var before = h.Read(k, 0, 0, Settings);
+        for (int i = 0; i < c.Cells.Length; i++)
+            if ((c.Cells[i].Box.X0 + c.Cells[i].Box.X1) / 2 > k.CutBowX + 3)
+                k.WaterM3[i] = c.Cells[i].VolumeM3 * 0.5;
+        k.WaterT = 50;
+        Assert.Equal(before.Load, h.Read(k, 0, 0, Settings).Load, 3);
+    }
+
+    static int Pool(ShipClass c, int from, int to)
+    {
+        var nb = c.Cells[from].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
+            if (c.Neighbour(j).Cell == to)
+                return j;
+        return nb.Start;
+    }
+
+    /// <summary>The destroyer the plan began with (explosions.md "Why now"): one 46 cm burst inside cuts her section; a shell can break
+    /// a ship in a seaway, and in calm water she holds.</summary>
+    [Fact]
+    public void A_big_shell_inside_a_destroyer_breaks_her_in_a_seaway()
+    {
+        var (c, _, k) = Ship("destroyer");
+        var x = Explosives.Get("TNA")!;
+        var shell = new ShellTypeRow { CalibreMm = 460, FillerKg = 61.7, FillerRe = x.Re ?? 1, FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15, FillerAirM3Kg = x.AirM3Kg ?? 0, FillerEta = x.Eta ?? 1 };
+        int room = Enumerable.Range(0, c.Rooms.Length).Where(i => c.Rooms[i].Kind == RoomKind.EngineRoom).OrderBy(i => Math.Abs((c.Rooms[i].X0 + c.Rooms[i].X1) / 2 - c.Hydrostatics.Lcf)).First();
+        int cell = -1;
+        foreach (int ci in c.Links(c.Rooms[room].Cells))
+            if (cell < 0 || c.Cells[ci].VolumeM3 > c.Cells[cell].VolumeM3)
+                cell = ci;
+        var b = c.Cells[cell].Box;
+        double size = Math.Cbrt(61.7 * shell.FillerRe);
+        var rng = RandomStream.Named(1, "girder test");
+        var g = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 61.7, shell, 0, Settings.WreckRadiusK * size, Settings.NearHoleK * size, Settings, ref rng);
+        var h = HullGirder.Of(c);
+        var whip = h.Whip(g.WhipEM, Settings.GirderWhipK);
+        Assert.False(h.Read(k, 0, whip, Settings).Broken);
+        Assert.True(h.Read(k, 1, whip, Settings).Broken);
+    }
+
+    /// <summary>Her section cut, the water going in does the rest in time (Bristol, Strong, Beatty: explosions.md): the damage
+    /// system's own step reads her girder as she floods, and she's lost broken in two.</summary>
+    [Fact]
+    public void A_ship_cut_nearly_through_breaks_as_she_floods()
+    {
+        var (c, w, k) = Ship("destroyer");
+        var h = HullGirder.Of(c);
+        var intact = h.Read(k, 0, 0, Settings);
+        var section = intact.Section;
+        // as much of her section gone as she can just stand on in calm water
+        double share = 0;
+        for (double s = 0.1; s <= 1 && h.Read(k, 0, 0, Settings).Load < 0.8; s += 0.02)
+        {
+            share = s;
+            for (int i = 0; i < c.Cells.Length; i++)
+                if (c.Cells[i].Section == section)
+                    for (int f = 0; f < 4; f++)
+                        k.FaceLost[i * 4 + f] = s;
+            k.GirderStale = true;
+        }
+        var cutDown = h.Read(k, 0, 0, Settings);
+        Assert.False(cutDown.Broken, $"standing, in calm water: {cutDown.Load:0.00} with {share:0.00} gone");
+        Assert.True(cutDown.Load >= 0.8, $"{cutDown.Load:0.00}");
+        // the sea into her ends: a hog on what's left
+        for (int i = 0; i < c.Cells.Length; i++)
+            if (c.Cells[i].Section <= 2 || c.Cells[i].Section >= c.Sections.Length - 3)
+            {
+                var b = c.Cells[i].Box;
+                if (c.Cells[i].VolumeM3 > 5)
+                    k.Hole(i, 0.3, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base + 0.1));
+            }
+        k.Damaged = true;
+        w.Damage.Settle(w, w.Ships.NewestEntity, 600);
+        Assert.Equal(LossKind.BrokeInTwo, k.Loss);
+    }
+
+    /// <summary>A read allocates nothing, stale or not.</summary>
+    [Fact]
+    public void A_read_allocates_nothing()
+    {
+        var (c, _, k) = Ship("lion");
+        var h = HullGirder.Of(c);
+        k.WaterM3[0] = 10;
+        k.WaterT = 10;
+        h.Bear(k, 0, 0, 1, Settings);
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int i = 0; i < 100; i++)
+        {
+            k.GirderStale = true;
+            h.Bear(k, 1e12, i, 1, Settings);
+        }
+        Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
+    }
 }

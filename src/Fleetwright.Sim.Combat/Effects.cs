@@ -57,7 +57,7 @@ public struct EffectsResult
     /// <summary>E4: the shock put gear out for a while; the whole ship's power cascaded out.</summary>
     public bool Shock, Blackout;
     /// <summary>E5: what its gas did in a closed space (none: it burst outside, in the open, or held).</summary>
-    public BlastResult Blast;
+    public GasResult Blast;
     /// <summary>E7: a near miss's splinters expected through the hull's side, and into the parts above it; its shock factor
     /// at the hull's nearest wetted point, and the seams and plating its shock opened to the sea (m², in BreachM2).</summary>
     public double SideThrough, UpperThrough, Nsf, ShockM2;
@@ -591,12 +591,14 @@ public static class Effects
         {
             double fill = shell.FillerKg * force, vent = NearWall(c, xs, t.BurstT, size, s);
             if (part >= 0)
-                res.Blast = PartGas(c, k, part, fill, shell, vent, s, ref res);
+                PartGas(c, k, part, fill, shell, vent, s, ref res, ref r);
             else if (inHull)
             {
-                res.Blast = Blast.Cascade(c, k, cell, p, fill, shell, vent, rw, s.NearHoleK * size, s, ref r);
+                var net = GasNetwork.For(c);
+                res.Blast = net.Detonate(k, cell, p, fill, shell, vent, rw, s.NearHoleK * size, s, ref r);
                 res.BreachM2 += res.Blast.HoleM2;
-                Gas(c, k, cell, part, fill * s.HotProductsM3Kg, s, ref res, ref gasMagazine, ref gasHandling, ref inHandling);
+                Felt(c, k, net, s, ref res);
+                Flashed(c, net, cell, ref gasMagazine, ref gasHandling, ref inHandling);
             }
         }
 
@@ -669,7 +671,7 @@ public static class Effects
     /// their cover says how much the shield hides them). A burst on a plate throws half its pieces into it. Its gas on the
     /// men in every space it filled, or in the part it burst in; in the open, its blast by distance (TNT kg w).</summary>
     static void Crew(ShipClass c, ShipCondition k, HitPath path, in TerminalResult t, int part, int cell, P3 p, P3 fdir, FragmentBurst? frag,
-        double share, double around, double w, bool broken, in BlastResult bl, SimSettings s)
+        double share, double around, double w, bool broken, in GasResult bl, SimSettings s)
     {
         var xs = path.Crossings;
         bool inHull = cell >= 0;
@@ -720,8 +722,11 @@ public static class Effects
         if (part >= 0)
             Casualties.Gas(k, Casualties.Part(part), bl.FeltMPa, s);
         else if (inHull)
-            for (int i = 0; i < bl.Spaces; i++)
-                Casualties.Gas(k, Casualties.Cell(c, k.BlastRegion[i]), k.BlastFelt[k.BlastRegion[i]], s);
+        {
+            var net = GasNetwork.For(c);
+            foreach (int reached in net.Reached())
+                Casualties.Gas(k, Casualties.Cell(c, reached), net.FeltMPa(reached), s);
+        }
     }
 
     /// <summary>A burst against the plating it came through (within <see cref="NearWallM"/> of it: a nose fuze just
@@ -746,11 +751,11 @@ public static class Effects
 
     const double NearWallM = 2;
 
-    /// <summary>A burst inside a part (a gunhouse, a conning tower, a superstructure block, a barbette; E5): its gas in the
-    /// part's free volume, vented by its kind's openings (an open mount, a mast, a funnel: open) and its own hole, its
-    /// walls torn open if they can't hold it (a vent then); what's in the part with it takes the gas.</summary>
-    static BlastResult PartGas(ShipClass c, ShipCondition k, int part, double fill, in ShellTypeRow shell, double vent, SimSettings s,
-        ref EffectsResult res)
+    /// <summary>A burst inside a part (a gunhouse, a conning tower, a superstructure block, a barbette; E5): a space of the
+    /// gas network's, the part's free volume, vented by its kind's openings (an open mount, a mast, a funnel: open) and its own
+    /// hole, against its walls of its armour or plating; what's in the part with it takes the gas.</summary>
+    static void PartGas(ShipClass c, ShipCondition k, int part, double fill, in ShellTypeRow shell, double vent, SimSettings s,
+        ref EffectsResult res, ref RandomStream r)
     {
         ref readonly var comp = ref c.Components[part];
         var b = comp.Bounds;
@@ -758,68 +763,59 @@ public static class Effects
         double v = Math.Max(dx * dy * dz * s.PartAirShare, 1), face = Math.Pow(v, 2.0 / 3);
         int m = c.MountOf(part);
         double share = m >= 0 && c.Mounts[m].Component == part && !c.Enclosed(m) ? 1 : s.PartVentShare[Math.Min((int)comp.Kind, s.PartVentShare.Length - 1)];
-        double a = share * face + vent;   // a share of 1 and over: open (α·A ≥ 0.6·V^⅔)
-        var bl = new BlastResult { Spaces = 1, VolumeM3 = v, Rounds = 1 };
-        double p = Blast.Pressure(shell, fill, v, s), felt = Blast.Felt(p, v, a, s);
-        (bl.FirstMPa, bl.FeltMPa, bl.LastMPa, bl.Open) = (p, felt, p, felt <= 0);
-        if (felt <= 0)
-            return bl;
-        // its walls: its armour, or its plating
-        double wall = Armour(c, part) + PartMild(c, part, 0);
-        if (felt >= s.RuptureMPaMm * Math.Max(wall, 1))
-        {
-            bl.Ruptured = 1;
-            felt = Blast.Felt(p, v, a + 2 * (dx * dy + dx * dz + dy * dz), s);
-            bl.Rounds = 2;
-        }
-        bl.FeltMPa = Math.Max(felt, 0);
+        res.Blast = GasNetwork.For(c).Detonate(k, v, share * face + vent, 2 * (dx * dy + dx * dz + dy * dz), Armour(c, part) + PartMild(c, part, 0), fill, shell, s, ref r);
+        if (!(res.Blast.FeltMPa > 0))
+            return;
         // what's in it with it: a director in a superstructure block, the conning tower's gear
         for (int i = 0; i < c.Components.Length; i++)
             if (i != part && Overlaps(c.Components[i].Bounds, b))
-                Pressed(c, k, i, s.PartBlastMPa[Math.Min((int)c.Components[i].Kind, s.PartBlastMPa.Length - 1)], bl.FeltMPa, s, ref res);
-        return bl;
+                Pressed(c, k, i, s.PartBlastMPa[Math.Min((int)c.Components[i].Kind, s.PartBlastMPa.Length - 1)], res.Blast.FeltMPa, s, ref res);
     }
 
-    /// <summary>What the gas does in the spaces it reached (E5; 11 §4.3): their rooms' gear and the parts in them take it by
-    /// their pressure class (out of action from it, damaged from a share of it); a part behind armour the gas can't burst
-    /// keeps it out. A magazine (other than the burst's own, the burst's roll) or a handling room it reached while still
-    /// carrying flame (the burst in it, or its hot products, m³, filling the spaces reached before it) is a flash
-    /// source.</summary>
-    static void Gas(ShipClass c, ShipCondition k, int burstCell, int part, double hotM3, SimSettings s, ref EffectsResult res, ref int magazine,
-        ref int handling, ref bool inHandling)
+    /// <summary>What an explosion's gas does in the spaces it reached (E5; 11 §4.3): their rooms' gear and the parts in them take
+    /// it by their pressure class (out of action from it, damaged from a share of it); a part behind armour the gas can't burst
+    /// keeps it out.</summary>
+    internal static void Felt(ShipClass c, ShipCondition k, GasNetwork net, SimSettings s, ref EffectsResult res)
     {
-        double best = 0;
-        for (int i = 0; i < res.Blast.Spaces; i++)
+        var reached = net.Reached();
+        foreach (int cell in reached)
         {
-            int cell = k.BlastRegion[i];
-            double felt = k.BlastFelt[cell];
+            double felt = net.FeltMPa(cell);
             if (!(felt > 0))
                 continue;
             foreach (int room in c.RoomsIn(cell))
-            {
-                var kind = c.Rooms[room].Kind;
-                Pressed(c, k, c.RoomNode(room), s.RoomBlastMPa[Math.Min((int)kind, s.RoomBlastMPa.Length - 1)], felt, s, ref res);
-                bool hot = cell == burstCell || k.BlastBefore[cell] < hotM3;
-                if (kind == RoomKind.Magazine && cell != burstCell && hot && felt > best)
-                    (magazine, best) = (room, felt);
-                else if (kind is RoomKind.Handling or RoomKind.Passage && hot && handling < 0 && c.Rooms[room].Mount >= 0)
-                    (handling, inHandling) = (room, cell == burstCell);
-            }
+                Pressed(c, k, c.RoomNode(room), s.RoomBlastMPa[Math.Min((int)c.Rooms[room].Kind, s.RoomBlastMPa.Length - 1)], felt, s, ref res);
         }
         var comps = c.Components;
         for (int j = 0; j < comps.Length; j++)
         {
-            if (j == part)
-                continue;
             double felt = 0;
-            for (int i = 0; i < res.Blast.Spaces; i++)
-            {
-                int cell = k.BlastRegion[i];
-                if (k.BlastFelt[cell] > felt && Overlaps(comps[j].Bounds, c.Cells[cell].Box))
-                    felt = k.BlastFelt[cell];
-            }
+            foreach (int cell in reached)
+                if (net.FeltMPa(cell) > felt && Overlaps(comps[j].Bounds, c.Cells[cell].Box))
+                    felt = net.FeltMPa(cell);
             if (felt > 0 && felt >= s.RuptureMPaMm * Armour(c, j))
                 Pressed(c, k, j, s.PartBlastMPa[Math.Min((int)comps[j].Kind, s.PartBlastMPa.Length - 1)], felt, s, ref res);
+        }
+    }
+
+    /// <summary>Where a burst's gas carried its flame (hot enough to light charges: <see cref="GasNetwork.Hot"/>): a magazine other
+    /// than the burst's own (the burst's roll) or a handling room it reached is a flash source.</summary>
+    static void Flashed(ShipClass c, GasNetwork net, int burstCell, ref int magazine, ref int handling, ref bool inHandling)
+    {
+        double best = 0;
+        foreach (int cell in net.Reached())
+        {
+            if (!net.Hot(cell))
+                continue;
+            double felt = net.FeltMPa(cell);
+            foreach (int room in c.RoomsIn(cell))
+            {
+                var kind = c.Rooms[room].Kind;
+                if (kind == RoomKind.Magazine && cell != burstCell && felt > best)
+                    (magazine, best) = (room, felt);
+                else if (kind is RoomKind.Handling or RoomKind.Passage && handling < 0 && c.Rooms[room].Mount >= 0)
+                    (handling, inHandling) = (room, cell == burstCell);
+            }
         }
     }
 

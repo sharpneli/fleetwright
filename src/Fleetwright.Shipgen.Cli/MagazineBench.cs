@@ -22,7 +22,7 @@ static class MagazineBench
     {
         Doctrine = doctrine;
         if (trace)
-            Magazines.Trace = Console.WriteLine;
+            GasNetwork.Trace = Console.WriteLine;
         var settings = SimSettings.Load(settingsPath);
         foreach (var name in designs.Count > 0 ? designs : ["iron_duke"])
         {
@@ -127,14 +127,6 @@ static class MagazineBench
                 foreach (int cell in c.Links(c.Rooms[room].Cells))
                     k.WaterM3[cell] = flooded * c.Cells[cell].VolumeM3 * Math.Clamp(c.Cells[cell].Permeability, 0.05, 1);
             var rng = RandomStream.Named(1, "magazine race");
-            var give = new double[4];
-            var plates = new double[4];
-            Magazines.GiveMm(c, k, room, plates);
-            var opens = new double[4];
-            Magazines.GiveKPa(c, k, room, s, give);
-            Magazines.GiveM2(c, room, s, opens);
-            Console.WriteLine(string.Format(Inv, "      the steel, mm, what it gives at, kPa, and opens, m²: bulkhead {0:0} ({1:0}, {8:0.0}), deck {2:0} ({3:0}, {9:0.0}), side {4:0} ({5:0}, {10:0.0}), bottom {6:0} ({7:0}, {11:0.0})",
-                plates[0], give[0], plates[1], give[1], plates[2], give[2], plates[3], give[3], opens[0], opens[1], opens[2], opens[3]));
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), s, 0, ref rng, sea);
             double ms = sw.Elapsed.TotalMilliseconds;
@@ -146,11 +138,11 @@ static class MagazineBench
             }
             var ch = c.Charges[c.Mounts[mr].Type];
             Console.WriteLine(string.Format(Inv, "    {0}: {1} — {2:0} charges of {3:0} kg ({4}), peak {5:0} kPa, burned {6:0.0} t ({7:0.0} t by the girder's failure + 1 s), " +
-                "girder lost {8:0.00} at {19:0.00} of her length (load {20:0.00} of what's left{21}), gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
+                "worst section lost {8:0.00} at {19:0.00} of her length (load {20:0.00} of what's left{21}), gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
                 "killed {14}, wounded {15} ({16:0.0} ms)", c.RoomId(room), r.Tier,
                 r.Charges, ch.MassKg, ch.Packaging, r.PeakKPa, r.BurnedKg / 1000, r.FastKg / 1000, r.D, r.Vented, r.Lifted,
                 double.IsNaN(r.VentS) ? "" : string.Format(Inv, " at {0:0.00} s", r.VentS),
-                double.IsNaN(r.StructureS) ? "" : string.Format(Inv, ", the girder at {0:0.00} s", r.StructureS), r.Magazines, r.Killed, r.Wounded, ms,
+                double.IsNaN(r.StructureS) ? "" : string.Format(Inv, ", her hull at {0:0.00} s", r.StructureS), r.Magazines, r.Killed, r.Wounded, ms,
                 r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom" }.Where((_, i) => (r.Gave & (1 << i)) != 0)),
                 r.Station, r.GirderLoad, r.EndLost ? ", her end lost" : ""));
         }

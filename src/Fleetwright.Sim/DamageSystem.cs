@@ -712,6 +712,8 @@ public sealed class DamageSystem : IWorldSystem
     internal void Prepare(ShipClass cls)
     {
         Flood(cls);
+        HullGirder.Of(cls);
+        GasNetwork.For(cls);   // grown to her now, on this thread, not at her first burst
         path.Reserve(cls.Solids.Solids.Length);
         bender.Reserve(cls.Solids.Solids.Length);
         if (bearings.Length < cls.Mounts.Length)
@@ -778,9 +780,9 @@ public sealed class DamageSystem : IWorldSystem
             t = Terminal.Resolve(cls, hit, path, bender, lots, settings, ref rng, k, Trace);
             e = Effects.Apply(cls, k, hit, path, t, settings, ref rng);
         }
-        // a magazine set off: the venting race decides what's left (docs/battle/magazines.md V3)
+        // a magazine set off: its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
         var race = default(RaceResult);
-        if (e.Magazine && k.Status == ShipStatus.Afloat)
+        if (e.Magazine && k.Status == ShipStatus.Afloat && !(e.MagazineRoom >= 0 && k.MagazineSpent[e.MagazineRoom]))
         {
             race = Magazines.SetOff(cls, k, e.MagazineRoom, store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
             (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
@@ -789,6 +791,10 @@ public sealed class DamageSystem : IWorldSystem
         }
         trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
+        // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion)
+        var girder = default(GirderReading);
+        if (k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0))
+            girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, Sea(world, slot), settings);
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
             Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
@@ -825,12 +831,12 @@ public sealed class DamageSystem : IWorldSystem
         if (e.Blackout)
             fx |= HitEffect.Blackout;
         // men hit or shaken change what her stations can do (docs/battle/crew.md N2, N3b)
-        if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred) && k.Status == ShipStatus.Afloat)
+        if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred || girder.EndOff) && k.Status == ShipStatus.Afloat)
         {
             fx |= Recompute(world, slot, k, ref rng);
             Remind(world, slot, k);
         }
-        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = e.Broken && !blew && k.Status == ShipStatus.Afloat;
+        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = (e.Broken || girder.Broken) && !blew && k.Status == ShipStatus.Afloat;
         if (blew)
             fx |= HitEffect.Magazine;
         if (broke)
@@ -845,7 +851,7 @@ public sealed class DamageSystem : IWorldSystem
             Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point, race);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
-        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
+        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || race.Gas.HoleM2 > 0 || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
 
@@ -1072,9 +1078,9 @@ public sealed class DamageSystem : IWorldSystem
         struckCount = Math.Min(struckCount + 1, struck.Length);
     }
 
-    /// <summary>The sea a ship's girder takes at a magazine's set-off (docs/battle/magazines.md V4): the wind where she is,
-    /// as a share of a seaway's (<see cref="SimSettings.MagazineSeawayMs"/>).</summary>
-    double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.MagazineSeawayMs;
+    /// <summary>The sea a ship's girder takes (docs/battle/explosions.md): the wind where she is, as a share of a seaway's
+    /// (<see cref="SimSettings.GirderSeawayMs"/>).</summary>
+    double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.GirderSeawayMs;
 
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
     /// (<see cref="Blast"/>: the tier and the propellant burned by the girder's failure, the fireball's), and the ship
@@ -1254,9 +1260,9 @@ public sealed class DamageSystem : IWorldSystem
         if (fs.Flooded > 0)
             k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // a magazine's valves opened: its water from the next second
         touched = true;
-        if (fs.Magazine)
+        if (fs.Magazine && !(fs.MagazineRoom >= 0 && k.MagazineSpent[fs.MagazineRoom]))
         {
-            // fire's heat set it off (fire B2): the venting race decides (docs/battle/magazines.md V3)
+            // fire's heat set it off (fire B2): its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
             var race = Magazines.SetOff(cls, k, fs.MagazineRoom, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot));
             MagazineCounts.ByFire[(int)race.Tier]++;
             LogRace(slot, race.Tier);
@@ -1267,12 +1273,22 @@ public sealed class DamageSystem : IWorldSystem
             }
             Recompute(world, slot, k, ref rng);
         }
+        // her girder as the water goes in: she can break later, and in a seaway (docs/battle/explosions.md: Bristol, Strong, Beatty)
+        var girder = default(GirderReading);
+        if (flooding && how == LossKind.None && k.WaterT > 0)
+        {
+            girder = HullGirder.Of(cls).Bear(k, 0, now, Sea(world, slot), settings);
+            if (girder.Broken)
+                how = LossKind.BrokeInTwo;
+            else if (girder.EndOff)
+                k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);
+        }
         if (how != LossKind.None)
         {
             Lose(world, slot, k, how);
             return -1;
         }
-        if (fl.RoomsFlooded || fs.Changed || repaired == RepairChange.Parts || Functions.Supply(cls, k, settings) != k.SupplyKw)
+        if (girder.EndOff || fl.RoomsFlooded || fs.Changed || repaired == RepairChange.Parts || Functions.Supply(cls, k, settings) != k.SupplyKw)
             Recompute(world, slot, k, ref rng);
         else if (repaired == RepairChange.Steering)
             Hold(world, slot, k, force: true);

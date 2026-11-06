@@ -1351,8 +1351,7 @@ public sealed record SimSettings
 
     /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
     /// φ·(Q_c − Q_d)]·W/V MPa (W the filler's kg, V the space's gas, φ = 1/(1 + W·air/V) the afterburn its air allows);
-    /// it blows down through the vents A as exp(−<see cref="VentC"/>·<see cref="VentAlpha"/>·A·t/V), measured
-    /// <see cref="BurnStretch"/>× longer, and a panel feels P·min(<see cref="BlastLoadFactor"/>, π·t/<see cref="PanelMs"/>);
+    /// a panel takes it up over <see cref="PanelMs"/> to <see cref="BlastLoadFactor"/> of it as it flows on (the gas network, docs/battle/explosions.md),
     /// none at all once α·A ≥ <see cref="OpenVentRatio"/>·V^⅔ (open). A boundary deforms from <see cref="DeformMPaMm"/> per
     /// mm of plate and ruptures at <see cref="RuptureMPaMm"/> (riveted × <see cref="RivetedK"/>); a door goes at
     /// <see cref="DoorShare"/> of its bulkhead's, at least <see cref="DoorMinMPa"/>, opening <see cref="DoorM2"/>; a
@@ -1360,9 +1359,7 @@ public sealed record SimSettings
     /// zone (WreckRadiusK·W^⅓) a boundary is holed <see cref="NearHoleK"/>·W^⅓ across.</summary>
     public double BlastHeatK { get; init; } = 0.28;
     public double AtmosphereMPa { get; init; } = 0.101;
-    public double VentC { get; init; } = 725;
     public double VentAlpha { get; init; } = 0.6;
-    public double BurnStretch { get; init; } = 2;
     public double PanelMs { get; init; } = 15;
     public double BlastLoadFactor { get; init; } = 1.3;
     public double OpenVentRatio { get; init; } = 0.6;
@@ -1379,7 +1376,6 @@ public sealed record SimSettings
     /// filler at flame temperature [EST: TNT's ~0.75 m³/kg of gas at STP, ×7 at ~2,000 K]. A magazine or handling room
     /// the gas reaches is a flash source only if the burst was in it, or the products fill the spaces reached before it
     /// (a 4" HE's don't get past its own space, a bomb's do).</summary>
-    public double HotProductsM3Kg { get; init; } = 5;
 
     /// <summary>A deformed boundary's seam leak (E5; damage/17 leakage §3.2, <c>leak_ratio</c>): D = felt/deform; none below
     /// <see cref="LeakWeepD"/>, <see cref="LeakR1"/>·D² cm²/m² to D 1, then log-linear to <see cref="LeakR5"/> at D 5;
@@ -1768,12 +1764,10 @@ public sealed record SimSettings
     /// </list></summary>
     public double[] StationLightChance { get; init; } = [0.5, 0.5, 0.5, 0.5, 0.5];
 
-    /// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6,
-    /// magazine_race_ref.py): a magazine alight is one gas volume, its spaces' gas, made by the lit charges' surface and
-    /// let out through the vents.
+    /// <summary>A magazine alight, as a source for the gas network (docs/battle/explosions.md, magazines.md V3; research/
+    /// simulation/damage-research/10 §6):
     /// <list type="bullet">
-    /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing];
-    /// MagazineVentCd a ragged opening's discharge coefficient [EST]; MagazineGasGamma the hot gas's [EST: 1.2-1.25].</item>
+    /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing].</item>
     /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
     /// package before it burns out, a branching process, times its propellant's Sensitivity (docs/battle/magazines.md
     /// "Too safe" [EST, until research/REQUESTS.md's 2026-11-05 answers]: Clarkson 32, brass 28, tank 24 on cordite, so
@@ -1783,23 +1777,7 @@ public sealed record SimSettings
     /// 40 kPa]; a gunhouse's roof at MagazineRoofShare of its lift [EST, 10 §2.3: 0.3-0.5], the gunhouse itself at its
     /// lift (<see cref="Fleetwright.Sim.Ships.ShipClass.LiftKPa"/>); either opens its trunk, MagazineTrunkShare of the
     /// barbette's bore [EST, 10 §2.2: 2-6 m² for a heavy turret]; a mount without a barbette has its hoist,
-    /// MagazineHoistM2 [EST], at the scuttle's pressure. The magazine's own boundaries give by the research's table
-    /// (10 §6 [EST]), MagazineGiveKPa and the vent each opens, MagazineGiveM2: [the bulkhead to the next space, 250 kPa,
-    /// a 4 m² tear; the armoured deck over it, 700, 10 m²; its sides, 1,000, 60 m²; its bottom, 2,000, 60 m²]. An
-    /// approved exception to the blast's own rules (the user, 2026-10-20): on a ship's own plating they spread the gas
-    /// through her thin bulkheads and never load the girder. The pressures are for the steel at Lion's main magazines,
-    /// MagazineGiveMm [bulkhead, deck, side, bottom], and go as the steel at the magazine (the user, 2026-11-05;
-    /// Magazines.GiveKPa); the openings are for the faces of her Q, MagazineGiveFaceM2 [across her, in plan, along her, in
-    /// plan], and go as the magazine's (Magazines.GiveM2).</item>
-    /// <item>The hull girder at the magazine (V4; 07 §3.1): the share of its section lost there, d, by MagazineD [the deck
-    /// over it, its sides, its bottom] [EST, 10 §6]; it breaks when the moment on it passes what's left of its capacity,
-    /// K·(1 − d) ≥ sin(π·x/L)·(still + wave·sea + whip), MagazineGirder [K, still water, the waves in a seaway, the
-    /// explosion's whipping] as shares of the design moment [EST, fitted to 07 §3.1: amidships in calm water past d ≈
-    /// 0.75, in a seaway past ≈ 0.5, near the ends hardly ever]; the sea is the wind's share of MagazineSeawayMs (a
-    /// moderate gale) [EST]. A magazine within MagazineEndShare of the length from an end that loses MagazineEndD of
-    /// the section without breaking her takes that end off instead (New Orleans: the bow lost, the ship afloat).
-    /// Less, it's a local breach; a gunhouse vented and nothing more, burned out; else contained.</item>
-    /// <item>The steps: MagazineRaceMs [the first 5 s, after], up to MagazineRaceS.</item>
+    /// MagazineHoistM2 [EST], at the scuttle's pressure. Its other boundaries give as any boundary does, at their own plate.</item>
     /// </list></summary>
     /// <summary>The magazines' flooding (docs/battle/magazines.md V6; research 10 §4): a flash in a train orders its
     /// magazine flooded, the order and the walk to the valves the median MagazineOrderS later, lognormal of sigma
@@ -1825,25 +1803,29 @@ public sealed record SimSettings
     public double MagazineSprinkleS { get; init; } = 60;
     public double MagazineSprinkleShare { get; init; } = 0.95;
     public double MagazineHeatKeep { get; init; } = 0.5;
-    public double MagazineVentCd { get; init; } = 0.7;
-    public double MagazineGasGamma { get; init; } = 1.25;
+    /// <summary>A ragged opening's discharge coefficient, for any explosion's gas [EST].</summary>
+    public double GasVentCd { get; init; } = 0.7;
+    /// <summary>The gas's temperature that lights charges and carries a burst's flame, K [EST: nitrocellulose ignites near 450-470 K].</summary>
+    public double GasIgniteK { get; init; } = 470;
     public double[] MagazinePackageR { get; init; } = [0, 32, 28, 24];
     public double MagazineBagSpreadS { get; init; } = 0.5;
     public double MagazineScuttleKPa { get; init; } = 40;
     public double MagazineRoofShare { get; init; } = 0.4;
     public double MagazineTrunkShare { get; init; } = 0.05;
     public double MagazineHoistM2 { get; init; } = 0.25;
-    public double[] MagazineGiveKPa { get; init; } = [250, 700, 1000, 2000];
-    public double[] MagazineGiveMm { get; init; } = [8, 27, 73, 39];
-    public double[] MagazineGiveFaceM2 { get; init; } = [118, 252, 51, 252];
-    public double[] MagazineGiveM2 { get; init; } = [4, 10, 60, 60];
-    public double[] MagazineD { get; init; } = [0.35, 0.45, 0.2];
-    public double[] MagazineGirder { get; init; } = [2.5, 0.35, 0.6, 0.35];
-    public double MagazineSeawayMs { get; init; } = 15;
-    public double MagazineEndShare { get; init; } = 0.12;
-    public double MagazineEndD { get; init; } = 0.8;
-    public double[] MagazineRaceMs { get; init; } = [2, 20];
-    public double MagazineRaceS { get; init; } = 180;
+    /// <summary>The moment on her hull as shares of shipgen's design moment (docs/battle/explosions.md EX3): still water, the
+    /// waves in a seaway [EST, 07 §3.1].</summary>
+    public double[] GirderMoment { get; init; } = [0.35, 0.6];
+    /// <summary>What's vertical and in phase of an explosion's impulse on her hull (HullGirder.Whip) [EST: 0.2 gives Lion 0.2 of a
+    /// design moment from 20 t of cordite in a second and about 0.6 from her bags' whole rush; to the research, EX5's bubble will
+    /// test it].</summary>
+    public double GirderWhipK { get; init; } = 0.2;
+    /// <summary>The sea on her girder is the wind's share of this (a moderate gale) [EST].</summary>
+    public double GirderSeawayMs { get; init; } = 15;
+    /// <summary>What breaks within this share of her length from an end takes the end off, and she may live (07 §3.2).</summary>
+    public double GirderEndShare { get; init; } = 0.12;
+    /// <summary>The longest an explosion's gas runs, s.</summary>
+    public double GasRunS { get; init; } = 180;
     /// <summary>How a side's crews handle charges (docs/battle/magazines.md V5, decision 2; research/simulation/
     /// damage-research/10 §3): a doctrine row names one (<see cref="DamageControlDoctrine.Flash"/>).
     /// <list type="bullet">

@@ -86,7 +86,7 @@ public class CasualtyTests(ITestOutputHelper output)
         var at = new P3((flat.X0 + flat.X1) / 2, (flat.Y0 + flat.Y1) / 2, flat.Base + 1.5);
         var (pk, pc) = Casualties.PiecesRisk(flat, Settings.CoverRoom[(int)RoomKind.Accommodation], f.High, at, Along, v, 1, 0, default, 0, Settings);
         double vol = (flat.X1 - flat.X0) * (flat.Y1 - flat.Y0) * (flat.Top - flat.Base);
-        double p = Blast.Pressure(charge, charge.FillerKg, vol, Settings), felt = Blast.Felt(p, vol, 0, Settings);
+        double p = Blast.Pressure(charge, charge.FillerKg, vol, Settings), felt = p * Settings.BlastLoadFactor;
         var (gk, gc) = Casualties.GasRisk(felt, Settings);
         return (men * (1 - (1 - pk) * (1 - gk)), men * (1 - (1 - pc) * (1 - gc)));
     }

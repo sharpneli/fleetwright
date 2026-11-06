@@ -12,18 +12,28 @@ public struct GirderReading
 {
     public int Section;
     public double Station, D, Capacity, Moment, Load, Deck, Side, Bottom, Longitudinal, Whip;
-    /// <summary>The worst load within an end of her (1 or more: that end comes off), and where.</summary>
+    /// <summary>The worst load within an end of her still on (1 or more: that end comes off), and where.</summary>
     public double EndLoad, EndStation;
+    /// <summary>This reading took an end off her (<see cref="HullGirder.Bear"/>).</summary>
+    public bool EndOff;
+    /// <summary>Broken: she can't carry what's on her.</summary>
+    public readonly bool Broken => Load >= 1;
 }
 
 /// <summary>The hull as a beam (docs/battle/explosions.md EX3; research 07 §3.1): each section's elements are the boundaries
 /// themselves, the weather deck and bottom over and under its cells, the sides, the decks and longitudinal bulkheads between
 /// them, so what an explosion ruptures comes out of the section with nothing kept apart. Its capacity is the steel's yield
 /// (<see cref="ShipClass.GirderStressMpa"/> × the design's safety factor) on what's left of its plastic modulus; the moment
-/// is shipgen's design moment shared out as still water and waves, plus what the flooding adds, plus the whip. A class's, one
-/// per class; reads allocate nothing.</summary>
+/// is shipgen's design moment shared out as still water and waves, plus what the flooding adds, plus the whip. One per class,
+/// shared by every ship and world of it (<see cref="Of"/>), read only; what a ship has lost is on her condition, and reads
+/// allocate nothing.</summary>
 public sealed class HullGirder
 {
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ShipClass, HullGirder> Table = new();
+
+    /// <summary>The class's girder.</summary>
+    public static HullGirder Of(ShipClass c) => Table.GetValue(c, static x => new HullGirder(x));
+
     enum Kind : byte { Deck, Side, Bottom, Longitudinal }
 
     readonly record struct Element(double AreaM2, double Z, int Edge, int Face, Kind Kind);
@@ -34,7 +44,7 @@ public sealed class HullGirder
     readonly ShipClass c;
     readonly Element[] elements;
     readonly int[] start;
-    readonly double[] intact, station, floodMoment;
+    readonly double[] intact, station;
     readonly double x0, x1;
 
     /// <summary>The design moment, N·m (shipgen's sizing), the steel's yield, Pa, and the second moment amidships intact, m⁴.</summary>
@@ -47,7 +57,7 @@ public sealed class HullGirder
         c = cls;
         int sections = c.Sections.Length;
         start = new int[sections + 1];
-        (intact, station, floodMoment) = (new double[sections], new double[sections], new double[sections]);
+        (intact, station) = (new double[sections], new double[sections]);
         (x0, x1) = (double.PositiveInfinity, double.NegativeInfinity);
         foreach (ref readonly var cell in c.Cells)
             (x0, x1) = (Math.Min(x0, cell.Box.X0), Math.Max(x1, cell.Box.X1));
@@ -59,6 +69,7 @@ public sealed class HullGirder
                 if (c.Cells[i].Section == sec)
                     Add(list, i, sec);
             Inclined(list, sec);
+            list.Sort(start[sec], list.Count - start[sec], Comparer<Element>.Create(static (a, b) => a.Z.CompareTo(b.Z)));   // the plastic axis's walk
             station[sec] = x1 > x0 ? Math.Clamp(((c.Sections[sec].X0 + c.Sections[sec].X1) / 2 - x0) / (x1 - x0), 0, 1) : 0.5;
         }
         start[sections] = list.Count;
@@ -84,7 +95,7 @@ public sealed class HullGirder
         var b = cell.Box;
         for (int f = 0; f < 4; f++)
         {
-            double fa = Blast.Outside(c, i, f, out double mm, out _);
+            double fa = Blast.Outside(c, i, f, out double mm, out var point);
             if (!(fa > 0))
                 continue;
             int x = i * 4 + f;
@@ -97,19 +108,7 @@ public sealed class HullGirder
             else if (f == 2)
                 list.Add(new Element((b.Y1 - b.Y0) * mm / 1000, b.Top, -1, x, Kind.Deck));
             else
-                list.Add(new Element((b.Y1 - b.Y0) * mm / 1000, b.Base, -1, x, Kind.Bottom));
-        }
-        // a lowest cell over no keel tier (the double bottom stops short of her ends): her bottom is still under it. Blast.Outside
-        // only sees the keel's tier; it takes this at EX2
-        if (!(Blast.Outside(c, i, 3, out _, out _) > 0) && NothingUnder(i))
-        {
-            // the cell is a box and her bottom rises toward her ends: it's where the hull first has breadth inside the box
-            double xm = (b.X0 + b.X1) / 2, z = b.Base;
-            while (z < b.Top && !(c.Hull.HalfWidth(xm, z) > 0.3))
-                z += 0.25;
-            double half = c.Hull.HalfWidth(xm, z), y0 = Math.Max(b.Y0, -half), y1 = Math.Min(b.Y1, half);
-            if (z < b.Top && y1 > y0)
-                list.Add(new Element((y1 - y0) * ((xm >= c.Plating.MidX0 && xm <= c.Plating.MidX1) ? c.Plating.ShellMm : c.Plating.ShellEndMm) / 1000, z, -1, i * 4 + 3, Kind.Bottom));
+                list.Add(new Element(fa / Math.Max(b.X1 - b.X0, 1e-6) * mm / 1000, point.Z, -1, x, Kind.Bottom));   // where her bottom is, as wide as it's there
         }
         var nb = cell.Neighbours;
         for (int j = nb.Start; j < nb.End; j++)
@@ -133,16 +132,6 @@ public sealed class HullGirder
         }
     }
 
-    /// <summary>Whether a cell has none of her cells under it.</summary>
-    bool NothingUnder(int i)
-    {
-        var b = c.Cells[i].Box;
-        foreach (ref readonly var e in c.Neighbours(c.Cells[i].Neighbours))
-            if (c.Cells[e.Cell].Box.Top <= b.Base + 0.05)
-                return false;
-        return true;
-    }
-
     /// <summary>The inclined plates through a section (a deck's slopes: protection-plan.md H6), each side, as shipgen counts them.</summary>
     void Inclined(List<Element> list, int sec)
     {
@@ -162,7 +151,7 @@ public sealed class HullGirder
     /// elastic second moment for the whip. <see cref="BucklingK"/> takes off what the compressed side buckles.</summary>
     double Modulus(int sec, ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost, out double i)
     {
-        double a = 0, az = 0, lo = double.PositiveInfinity, hi = double.NegativeInfinity;
+        double a = 0, az = 0;
         for (int n = start[sec]; n < start[sec + 1]; n++)
         {
             ref readonly var e = ref elements[n];
@@ -170,27 +159,23 @@ public sealed class HullGirder
             if (!(left > 0))
                 continue;
             (a, az) = (a + left, az + left * e.Z);
-            (lo, hi) = (Math.Min(lo, e.Z), Math.Max(hi, e.Z));
         }
         i = 0;
         if (!(a > 0))
             return 0;
-        // the plastic axis, by halving: the height with half her area above it
-        for (int step = 0; step < 24; step++)
+        // the plastic axis: the height with half her area above it, walking up the section
+        double zp = elements[start[sec]].Z, under = 0;
+        for (int n = start[sec]; n < start[sec + 1]; n++)
         {
-            double mid = (lo + hi) / 2, under = 0;
-            for (int n = start[sec]; n < start[sec + 1]; n++)
+            ref readonly var e = ref elements[n];
+            under += e.AreaM2 * (1 - Lost(e, edgeLost, faceLost));
+            if (under * 2 >= a)
             {
-                ref readonly var e = ref elements[n];
-                if (e.Z < mid)
-                    under += e.AreaM2 * (1 - Lost(e, edgeLost, faceLost));
+                zp = e.Z;
+                break;
             }
-            if (under * 2 < a)
-                lo = mid;
-            else
-                hi = mid;
         }
-        double zp = (lo + hi) / 2, na = az / a, plastic = 0;
+        double na = az / a, plastic = 0;
         for (int n = start[sec]; n < start[sec + 1]; n++)
         {
             ref readonly var e = ref elements[n];
@@ -217,10 +202,11 @@ public sealed class HullGirder
         energyMass > 0 ? Math.Sqrt(2 * k * energyMass / (c.Hydrostatics.DisplacementT * 1000) * SteelE * MidIM4 / Math.Max(c.Length, 1)) / DesignNm : 0;
 
     /// <summary>The flooding's moment by section, design moments, hogging positive: the water's weight against the buoyancy
-    /// that carries it, parallel sinkage and trim over a prismatic waterplane, summed from the bow.</summary>
-    void Flooding(ShipCondition? k)
+    /// that carries it, parallel sinkage and trim over a prismatic waterplane, summed from the bow. An end that's come off carries
+    /// nothing across its cut.</summary>
+    void Flooding(ShipCondition? k, Span<double> moment)
     {
-        Array.Clear(floodMoment);
+        moment.Clear();
         if (k is null || !(k.WaterT > 0))
             return;
         var sections = c.Sections;
@@ -233,8 +219,10 @@ public sealed class HullGirder
             if (t <= 0)
                 continue;
             int sec = c.Cells[i].Section;
-            weight[sec] += t;
             double xm = (sections[sec].X0 + sections[sec].X1) / 2;
+            if (xm > k.CutBowX || xm < k.CutSternX)
+                continue;
+            weight[sec] += t;
             (total, about) = (total + t, about + t * (xm - mid));
         }
         double v = 0, m = 0, xPrev = double.NaN;
@@ -243,7 +231,7 @@ public sealed class HullGirder
             double xm = (sections[sec].X0 + sections[sec].X1) / 2, len = sections[sec].X1 - sections[sec].X0;
             if (!double.IsNaN(xPrev))
                 m += v * Math.Abs(xPrev - xm);
-            floodMoment[sec] = m * 9.81 * 1000 / DesignNm;
+            moment[sec] = m * 9.81 * 1000 / DesignNm;
             double buoyancy = (total / l + 12 * about * (xm - mid) / (l * l * l)) * len;
             v += weight[sec] - buoyancy;
             xPrev = xm;
@@ -274,37 +262,103 @@ public sealed class HullGirder
     }
 
     /// <summary>A hull's standing moment and capacity with what's gone gone: her worst section. sea 1: a seaway's waves.
-    /// Still water and the waves are <see cref="SimSettings.MagazineGirder"/>'s shares of the design moment.</summary>
+    /// Still water and the waves are <see cref="SimSettings.GirderMoment"/>'s shares of the design moment. A bench's and a
+    /// test's, on what it says is lost; a ship's goes by <see cref="Read(ShipCondition, double, double, SimSettings)"/>.</summary>
     public GirderReading Read(ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost, ShipCondition? k, double sea, double whip, SimSettings s)
     {
-        Flooding(k);
-        var g = s.MagazineGirder;
+        int sections = c.Sections.Length;
+        Span<double> z = sections <= 256 ? stackalloc double[sections] : new double[sections];
+        for (int sec = 0; sec < sections; sec++)
+            z[sec] = Modulus(sec, edgeLost, faceLost, out _);
+        return Reading(z, edgeLost, faceLost, k, sea, whip, s);
+    }
+
+    /// <summary>A ship's reading: what she has lost and the water in her, a sea and a whip.</summary>
+    public GirderReading Read(ShipCondition k, double sea, double whip, SimSettings s)
+    {
+        if (k.GirderStale)
+        {
+            for (int sec = 0; sec < k.GirderZ.Length; sec++)
+                k.GirderZ[sec] = Modulus(sec, k.EdgeLost, k.FaceLost, out _);
+            k.GirderStale = false;
+        }
+        return Reading(k.GirderZ, k.EdgeLost, k.FaceLost, k, sea, whip, s);
+    }
+
+    GirderReading Reading(ReadOnlySpan<double> z, ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost, ShipCondition? k, double sea, double whip, SimSettings s)
+    {
+        int sections = c.Sections.Length;
+        Span<double> flood = sections <= 256 ? stackalloc double[sections] : new double[sections];
+        Flooding(k, flood);
+        double still = s.GirderMoment[0], waves = s.GirderMoment[1];
         var worst = new GirderReading { Section = -1, Load = -1, Whip = whip };
         double end = 0, endAt = 0;
-        for (int sec = 0; sec < c.Sections.Length; sec++)
+        for (int sec = 0; sec < sections; sec++)
         {
-            double z = Modulus(sec, edgeLost, faceLost, out _), u = station[sec];
+            double u = station[sec];
             // a free beam: no shear at its ends, so the moment rises from them as x²: sin², not 07's rough sin, which would have
             // the tip of her carrying a third of her moment
             double bend = Math.Sin(Math.PI * u) * Math.Sin(Math.PI * u);
-            double moment = Math.Abs(g[1] * bend + floodMoment[sec]) + (g[2] * Math.Clamp(sea, 0, 1.5) + whip) * bend;
-            double capacity = YieldPa * z / DesignNm;
+            double moment = Math.Abs(still * bend + flood[sec]) + (waves * Math.Clamp(sea, 0, 1.5) + whip) * bend;
+            double capacity = YieldPa * z[sec] / DesignNm;
             double load = capacity > 0 ? moment / capacity : double.PositiveInfinity;
             // near an end what breaks takes the end off and she may live (07 §3.2: New Orleans); read apart from her body
-            if (Math.Min(u, 1 - u) <= s.MagazineEndShare)
+            if (Math.Min(u, 1 - u) <= s.GirderEndShare)
             {
-                if (load > end)
+                bool gone = k is not null && (u > 0.5 ? double.IsFinite(k.CutBowX) : double.IsFinite(k.CutSternX));
+                if (!gone && load > end)
                     (end, endAt) = (load, u);
                 continue;
             }
             if (load <= worst.Load)
                 continue;
-            worst = new GirderReading { Section = sec, Station = u, D = intact[sec] > 0 ? 1 - z / intact[sec] : 0, Capacity = capacity, Moment = moment, Load = load, Whip = whip };
+            worst = new GirderReading { Section = sec, Station = u, D = intact[sec] > 0 ? 1 - z[sec] / intact[sec] : 0, Capacity = capacity, Moment = moment, Load = load, Whip = whip };
         }
         if (worst.Section >= 0)
             Shares(ref worst, edgeLost, faceLost);
         (worst.EndLoad, worst.EndStation) = (end, endAt);
         return worst;
+    }
+
+    /// <summary>What's on her now (docs/battle/explosions.md: after every explosion and as she floods): an explosion's whip joins
+    /// what's left of those in the last moments (each spends itself in about her period; several out of phase add as energies), and
+    /// her worst section is read in this sea. An end that can't carry its load comes off and she may live: everything past the cut
+    /// open to the sea and what stands there gone (07 §3.2). Whether she's broken is the reading's to say.</summary>
+    public GirderReading Bear(ShipCondition k, double energyMass, long now, double sea, SimSettings s)
+    {
+        k.WhipEM = k.WhipEM * Math.Exp(-Math.Max(now - k.WhipMs, 0) / 1000.0) + energyMass;
+        k.WhipMs = now;
+        var r = Read(k, sea, Whip(k.WhipEM, s.GirderWhipK), s);
+        if (r.EndLoad >= 1 && !r.Broken)
+        {
+            TakeOff(k, r.EndStation, s);
+            r.EndOff = true;
+        }
+        return r;
+    }
+
+    void TakeOff(ShipCondition k, double at, SimSettings s)
+    {
+        bool bow = at > 0.5;
+        double cut = x0 + at * (x1 - x0);
+        if (bow)
+            k.CutBowX = cut;
+        else
+            k.CutSternX = cut;
+        for (int i = 0; i < c.Cells.Length; i++)
+        {
+            var b = c.Cells[i].Box;
+            if (bow ? b.X1 < cut : b.X0 > cut)
+                continue;
+            k.Hole(i, s.RupturedShare * (b.Y1 - b.Y0) * (b.Top - b.Base), new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, b.Base));
+        }
+        for (int j = 0; j < c.Components.Length; j++)
+        {
+            var b = c.Components[j].Bounds;
+            double xm = (b.X0 + b.X1) / 2;
+            if (bow ? xm > cut : xm < cut)
+                k.Worsen(j, PartState.Destroyed);
+        }
     }
 
     void Shares(ref GirderReading r, ReadOnlySpan<double> edgeLost, ReadOnlySpan<double> faceLost)

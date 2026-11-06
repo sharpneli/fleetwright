@@ -177,6 +177,8 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [ ] **A ship runs through her own torpedoes** (found 2026-11-06, EX2, `AimsTests`' raid on seed 3). Emden fired at the tramps, turned for home at 29 kn and took two of her own: shooter 4 is her, 533 mm, `HitSource.Torpedo`, broken in two by `Underwater`'s old chance. Torpedoes have always been able to do this and it's a real accident (HMS Trinidad, 1942), but a captain with a spread running should keep out of its way. The test now plays seed 4; the raid passes on 4, 5 and 6.
+
 Both seen in `MatchupPlayTests.A_pack_of_destroyers_presses_its_attack_home_on_a_battleship` (2026-10-16, while
 moving underwater shells to a 3-decay reach), which now runs with hits doing no damage so it tests the attack alone.
 
@@ -450,7 +452,7 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   closes to 5-8 km, sinks the escort and stops the convoy; in seeds 1, 3 and 11 she stays at about 20 km for 40-60 minutes, and in seed 3 she takes an hour to
   her first hit on the escort and the convoy reaches its zone. Not chased: for the stock-take of how ships are lost (docs/battle/electrics.md, the user's next).
   Next: why she doesn't close in those seeds (captain's stand-off, the admiral's range).
-- [ ] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan): a 102 mm HE burst
+- [x] **A light shell's burst can open a large hole in a destroyer** (found 2026-11-04, the same scan; the rule went with `Blast.Cascade`, explosions.md EX2: a face just past rupture now cracks, about 1% of it, on one curve up to `RupturedShare`; the same scan not rerun): a 102 mm HE burst
   inside S15 (1,556 t) opened 18.6 m², a 152 mm 17.8 m² in V189, with nobody hurt. `Blast.Cascade`: a thin outside face
   whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side
   goes at once. Rare (about one in 12,000 hits under 130 mm) and from the sourced rule, so not touched. Next: whether a

@@ -471,7 +471,7 @@ public class DamageTests(ITestOutputHelper output)
     [Fact]
     public void A_magazine_set_off_by_a_hit_records_its_room_once()
     {
-        // every charge lighting the next at once (magazines.md V3): the race severs her, as the record's case wants
+        // every charge lighting the next at once (magazines.md V3)
         var cls = Class("dreadnought");
         // a WWII shell (proofed to 30° on a calibre of plate): a WWI British one shatters on her belt at this fall (P2)
         var (shell, _) = Shell(Class("kgv"), 0);
@@ -483,6 +483,7 @@ public class DamageTests(ITestOutputHelper output)
             w = World("dreadnought", out int c, Settings with
             {
                 MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
+                GirderWhipK = 100,   // and her hull made to break by it: what's tested is the record (explosions.md: whether she breaks is the girder's)
             });
             w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));
             w.AdvanceTo(w.Time + 1000);
@@ -607,7 +608,8 @@ public class DamageTests(ITestOutputHelper output)
         var w = World("dreadnought", out int c, Settings with
         {
             FireMagazineS = [60, 60, 60, 60, 60], DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = "nobody",
-            MagazinePackageR = [0, 1000, 1000, 1000],   // every charge lighting the next at once: the race severs her (magazines.md V3)
+            MagazinePackageR = [0, 1000, 1000, 1000],   // every charge lighting the next at once
+            GirderWhipK = 100,   // and her hull made to break by it: what's tested is the record (explosions.md: whether she breaks is the girder's)
         });
         var cls = Class("dreadnought");
         w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));

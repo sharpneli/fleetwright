@@ -378,7 +378,7 @@ public static class Program
                 "explode" => ExplodeBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new ExplodeBench.Options(a.Get("room"), D(a, "kg", 0), a.Get("explosive") ?? "TNT", D(a, "calibre", 152), a.Get("magazine"), a.Get("packaging"),
-                        D(a, "flooded", 0), a.Get("doctrine"), D(a, "belt", -1), D(a, "keep", -1), D(a, "tear", -1), D(a, "panel", -1), D(a, "rupture", -1), D(a, "step", -1), a.Has("trace"), a.Has("cells"), a.Int("salvo", 0), a.Has("girder"), D(a, "whip", -1), a.Has("volumes"))),
+                        D(a, "flooded", 0), a.Get("doctrine"), D(a, "keep", -1), D(a, "tear", -1), D(a, "panel", -1), D(a, "rupture", -1), D(a, "step", -1), a.Has("trace"), a.Has("cells"), a.Int("salvo", 0), a.Has("girder"), D(a, "whip", -1), a.Has("volumes"))),
                 "magazine" => MagazineBench.Run(a.Positional, n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"), a.Int("runs", 0), a.Has("race"),
                     D(a, "flooded", 0), a.Get("packaging"), a.Has("trace"), D(a, "sea", 0), a.Get("doctrine")),

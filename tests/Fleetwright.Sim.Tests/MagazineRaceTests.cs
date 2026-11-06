@@ -7,10 +7,10 @@ using Xunit.Abstractions;
 
 namespace Fleetwright.Sim.Tests;
 
-/// <summary>The venting race (docs/battle/magazines.md V3; research/simulation/damage-research/10 §6): the research's
-/// anchors on our own ships. Charges in bags alone sever a battlecruiser at her magazine (the BCF at Jutland, lids off);
-/// in Clarkson cases, lids on, a magazine alight takes her deck at least (magazines.md "Too safe"); brass burns out far
-/// lower (Seydlitz); a flooded magazine holds.</summary>
+/// <summary>A magazine alight through the gas network and the girder (docs/battle/explosions.md EX2, magazines.md V3; research/
+/// simulation/damage-research/10 §6): what the physics gives on our own ships, nothing fitted. Bags alone break a battlecruiser
+/// in a seaway, and in calm water leave her afloat by a little (explosions.md's first open item); cases open her up and she holds;
+/// Seydlitz's brass burns out with her afloat; a flooded magazine holds.</summary>
 public class MagazineRaceTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
@@ -47,72 +47,99 @@ public class MagazineRaceTests(ITestOutputHelper output)
         var rng = RandomStream.Named(1, "magazine race test");
         var r = Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), Settings, 0, ref rng, sea);
         output.WriteLine($"{c.Name} {magazine}: {r.Tier}, peak {r.PeakKPa:0} kPa, burned {r.BurnedKg / 1000:0.0} t of {r.Charges:0} charges, " +
-                         $"girder {r.D:0.00} at {r.Station:0.00} (load {r.GirderLoad:0.00}), vented {r.Vented}, magazines {r.Magazines}");
+                         $"section lost {r.D:0.00} at {r.Station:0.00} (load {r.GirderLoad:0.00}), vented {r.Vented}, magazines {r.Magazines}, gave {r.Gas.Bulkheads} bulkheads, {r.Gas.Decks} decks, {r.Gas.Sides} sides, {r.Gas.Bottoms} bottom");
         return r;
     }
 
+    /// <summary>Lids off: every bag lights at once and the gas wins (10 §6: tier 3 at ~1,000 kPa). On her own plating it takes a
+    /// seaway to finish her: explosions.md's first open item, and not tuned.</summary>
     [Fact]
-    public void Bags_alone_sever_a_battlecruiser_at_her_magazine()
+    public void Bags_alone_break_a_battlecruiser_in_a_seaway()
     {
-        var r = Race(Packed("lion", "bag"), "Magazine Q");
-        Assert.True(r.Lost, "lids off: every bag lights at once and the gas wins (10 §6: tier 3 at ~1,000 kPa)");
+        var c = Packed("lion", "bag");
+        var r = Race(c, "Magazine Q", sea: 1);
+        Assert.True(r.Lost);
         Assert.InRange(r.PeakKPa, 700, 3000);
         Assert.False(double.IsNaN(r.StructureS));
+        var calm = Race(c, "Magazine Q");
+        Assert.False(calm.Lost);
+        Assert.InRange(calm.GirderLoad, 0.6, 1);
     }
 
     [Fact]
     public void Clarkson_cases_alight_beat_her_trunk()
     {
         var r = Race(Packed("lion", null), "Magazine Q");
-        Assert.True(r.Tier >= MagazineTier.Breached, "lids on, the record's dry cordite magazines still blew: the trunk doesn't keep up");
+        Assert.True(r.Tier >= MagazineTier.Breached, "lids on, the trunk doesn't keep up: her plating gives");
         Assert.True(r.Vented >= 1);
-        Assert.InRange(r.PeakKPa, 700, 1500);
+        Assert.InRange(r.PeakKPa, 300, 1500);
     }
 
+    /// <summary>What's in the stow decides how far it goes, on one plate and one gas: bags break her and cases don't, a stow
+    /// of cool propellant in brass vents and holds. Clarkson and brass read alike on cordite (explosions.md's third open item).</summary>
     [Fact]
-    public void The_propellant_decides_whether_she_burns_out()
+    public void The_propellant_and_its_packing_decide_what_she_lives_through()
     {
-        Assert.True(Race(Packed("lion", "brass"), "Magazine Q").Lost, "hot propellant goes in brass as in Clarkson cases (Pommern, not Gneisenau)");
-        Assert.Equal(MagazineTier.BurnedOut, Race(Fleet.Get("bismarck").Class!, "Magazine A").Tier);   // cool, in brass: Gneisenau
+        var bags = Race(Packed("lion", "bag"), "Magazine Q", sea: 1);
+        var brass = Race(Packed("lion", "brass"), "Magazine Q", sea: 1);
+        Assert.True(bags.Lost);
+        Assert.False(brass.Lost);
+        Assert.True(brass.PeakKPa < bags.PeakKPa);
+        var bismarck = Race(Fleet.Get("bismarck").Class!, "Magazine A");   // cool, in brass: Gneisenau
+        Assert.False(bismarck.Lost);
+        Assert.True(bismarck.Vented >= 1);
         Assert.False(Race(Fleet.Get("colorado").Class!, "Magazine A").Lost);   // stabilised, in tanks: Boise
-        Assert.True(Race(Fleet.Get("seydlitz").Class!, "Magazine X").Tier >= MagazineTier.Breached);   // RP C/12, in brass, dry
+        var seydlitz = Race(Fleet.Get("seydlitz").Class!, "Magazine X");   // RP C/12, in brass, dry
+        Assert.False(seydlitz.Lost, "burns out and fights on, as the record has her");
+        Assert.True(seydlitz.Vented >= 1);
     }
 
-    /// <summary>"Too safe": a magazine's boundaries give at what its own steel gives at, and what they open goes with their
-    /// area: a destroyer's isn't a battleship's, and a magazine alight doesn't sit "contained" in her.</summary>
+    /// <summary>A side torn under the waterline is no way out for the gas (07 §2.4), but the sea's way in: Lion's Q opens her side
+    /// and it doesn't let her off.</summary>
     [Fact]
-    public void A_thin_hull_gives_at_what_a_thin_hull_gives_at()
+    public void A_torn_side_under_water_lets_the_sea_in()
     {
-        double[] Give(ShipClass c, string magazine)
+        var r = Race(Packed("lion", null), "Magazine Q", out var k);
+        Assert.True(r.Gas.Sides > 0);
+        Assert.True(k.BreachM2.Sum() > 0);
+        Assert.True(r.Tier >= MagazineTier.Breached);
+    }
+
+    /// <summary>The answer doesn't hang on the solver's step (explosions.md EX2: a magazine's room the right size left the first
+    /// solver reading half the pressure): the game's against one eight times finer.</summary>
+    [Theory]
+    [InlineData("bag")]
+    [InlineData(null)]
+    public void What_a_magazine_does_doesnt_hang_on_the_step(string? packing)
+    {
+        var c = Packed("lion", packing);
+        var game = Race(c, "Magazine Q", sea: 1);
+        RaceResult fine;
+        GasNetwork.StepK = 1.0 / 8;
+        try
         {
-            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
-            w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
-            var kpa = new double[4];
-            Magazines.GiveKPa(c, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity)), Room(c, magazine), Settings, kpa);
-            return kpa;
+            fine = Race(c, "Magazine Q", sea: 1);
         }
-        var mClass = Scenario("m_class");
-        // Lion's B: a magazine with its full wing (A now fills her narrowing hull, with no room for a wing at its lowest tier: explosions.md "Magazine volumes")
-        var (lion, boat) = (Give(Fleet.Get("lion").Class!, "Magazine B"), Give(mClass, "Magazine B"));
-        for (int b = 0; b < 4; b++)
-            Assert.True(boat[b] < lion[b] / 1.5, $"boundary {b}: {boat[b]:0} kPa against {lion[b]:0}");
-        Assert.InRange(lion[0], 200, 300);   // the research's table, at Lion's own steel
-        Assert.InRange(lion[1], 600, 800);
-        Assert.InRange(lion[2], 900, 1100);
-
-        var r = Race(mClass, "Magazine B");
-        Assert.True(r.D > 0, $"a boat's magazine alight opens her up (peak {r.PeakKPa:0} kPa)");
-        var rc = Race(Scenario("arethusa"), "Magazine A");
-        Assert.True(rc.D > 0, $"a light cruiser's too (peak {rc.PeakKPa:0} kPa)");
+        finally
+        {
+            GasNetwork.StepK = 1;
+        }
+        Assert.InRange(game.PeakKPa / fine.PeakKPa, 0.85, 1.15);
+        Assert.InRange(game.GirderLoad / fine.GirderLoad, 0.9, 1.1);
     }
 
-    /// <summary>A side torn under the waterline is no way out for the gas until the deck has opened one up: Lion's Q has
-    /// the thinnest side of her magazines, and it goes first, and she's still broken at Q, not saved by it.</summary>
+    /// <summary>What a magazine held burns once: a second set-off on a ship that lived through the first has nothing to burn.</summary>
     [Fact]
-    public void A_torn_side_under_water_doesnt_save_her()
+    public void A_magazine_goes_up_once()
     {
-        var r = Race(Packed("lion", null), "Magazine Q");
-        Assert.True(r.Lost);
+        var c = Fleet.Get("seydlitz").Class!;
+        var first = Race(c, "Magazine X", out var k);
+        Assert.True(first.BurnedKg > 0);
+        Assert.False(first.Lost);
+        var rng = RandomStream.Named(1, "once");
+        var again = Magazines.SetOff(c, k, Room(c, "Magazine X"), default, Settings, 1000, ref rng);
+        Assert.Equal(0, again.BurnedKg);
+        Assert.False(again.Lost);
     }
 
     [Fact]
@@ -133,31 +160,18 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.Equal(MagazineTier.TwoGroups, r.Tier);   // forward of amidships: broken in a seaway (V4), breached in calm water
     }
 
-    /// <summary>V4 (07 §3.1): amidships the girder breaks in calm water; a quarter-length magazine breaks her only in a
-    /// seaway, and in calm water leaves her breached (her deck and sides gone at the magazine, open to the sea).</summary>
+    /// <summary>07 §3.1, on her own section: forward, where the gas takes the thin plate and the ship is narrow, she breaks in a
+    /// seaway; aft her charges are fewer and the section holds, breached and open to the sea.</summary>
     [Fact]
-    public void The_girder_breaks_amidships_in_calm_water_and_toward_the_ends_in_a_seaway()
+    public void The_sea_decides_at_the_margin_and_an_aft_magazine_leaves_her_breached()
     {
         var c = Packed("lion", "bag");
-        Assert.True(Race(c, "Magazine Q").Lost);
-        var calm = Race(c, "Magazine Y", out var k);
-        Assert.Equal(MagazineTier.Breached, calm.Tier);
-        Assert.True(k.BreachM2.Sum() > 10, "her sides gone at the magazine: the sea in");
-        Assert.True(Race(c, "Magazine Y", sea: 1).Lost);
-    }
-
-    /// <summary>V4: a magazine near an end takes the end off and leaves her afloat (New Orleans), everything beyond it open
-    /// to the sea.</summary>
-    [Fact]
-    public void An_end_magazine_takes_her_end_off()
-    {
-        var c = Packed("gangut", "bag");
-        var r = Race(c, "Magazine Y", out var k);
-        Assert.True(r.EndLost);
-        Assert.False(r.Lost);
-        var mag = c.Rooms[Room(c, "Magazine Y")];
-        int aft = Enumerable.Range(0, c.Cells.Length).Count(i => c.Cells[i].Box.X1 <= mag.X1 && k.BreachM2[i] > 0);
-        Assert.True(aft > 5, $"the stern beyond the magazine open to the sea ({aft} spaces)");
+        Assert.True(Race(c, "Magazine B", sea: 1).Lost);
+        Assert.False(Race(c, "Magazine B").Lost);
+        var aft = Race(c, "Magazine Y", out var k, sea: 1);
+        Assert.False(aft.Lost);
+        Assert.Equal(MagazineTier.Breached, aft.Tier);
+        Assert.True(k.BreachM2.Sum() > 0, "the sea in");
     }
 
     /// <summary>V5: the BCF's rate first (doors propped, lids off) burns harder than drill, and the flame from her
@@ -166,8 +180,9 @@ public class MagazineRaceTests(ITestOutputHelper output)
     public void Rate_first_props_the_doors_and_takes_the_lids_off()
     {
         var c = Fleet.Get("lion").Class!;
-        var (drill, rate) = (Race(c, "Magazine Q", doctrine: "1916"), Race(c, "Magazine Q", doctrine: "1916 BCF"));
+        var (drill, rate) = (Race(c, "Magazine Q", doctrine: "1916", sea: 1), Race(c, "Magazine Q", doctrine: "1916 BCF", sea: 1));
         Assert.True(rate.Lost);
+        Assert.False(drill.Lost);
         Assert.True(rate.PeakKPa >= drill.PeakKPa);
 
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);

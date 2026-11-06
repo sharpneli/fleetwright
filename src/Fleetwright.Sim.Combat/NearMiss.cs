@@ -133,7 +133,7 @@ public static class NearMiss
         double sg = face == 0 ? -1 : 1;
         for (int ci = 0; ci < cells.Length; ci++)
         {
-            if (!(Blast.Outside(c, k, ci, face, out _, out _) > 0))
+            if (!(Blast.Outside(k, ci, face, out _, out _) > 0))
                 continue;
             var b = cells[ci].Box;
             double xm = Math.Clamp(p.X, b.X0, b.X1);
@@ -310,7 +310,7 @@ public static class NearMiss
         out double mm)
     {
         (at, areaM2) = (default, 0);
-        if (!(Blast.Outside(c, k, cell, face, out mm, out _) > 0))
+        if (!(Blast.Outside(k, cell, face, out mm, out _) > 0))
             return false;
         var b = c.Cells[cell].Box;
         double x = Math.Clamp(p.X, b.X0, b.X1);

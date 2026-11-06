@@ -300,6 +300,7 @@ public static class Flooding
                 // past its rating it gives way: a share of it open (11's ruptured)
                 k.JoinMarks[p] = marks |= JoinMark.Collapsed;
                 k.JoinOpenM2[p] += s.RupturedShare * f.FaceM2[ei];
+                (k.EdgeLost[p], k.GirderStale) = (1, true);   // torn out, as a burst tears one: gone from her section too
                 res.Collapsed++;
             }
             double area = e.Join switch

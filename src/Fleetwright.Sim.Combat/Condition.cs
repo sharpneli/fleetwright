@@ -226,6 +226,8 @@ public sealed class ShipCondition
     /// its stow its sprinklers have wetted.</summary>
     public long[] MagazineOrderMs = [];
     public double[] MagazineWet = [];
+    /// <summary>The magazines that have gone up (by room): what they held has burned, and can't again.</summary>
+    public bool[] MagazineSpent = [];
     /// <summary>How the men are getting to each magazine's valves (research 11; by room).</summary>
     public ValveStage[] MagazineValve = [];
     /// <summary>The machinery spaces (by room) abandoned to smoke (B2), until their outage runs out.</summary>
@@ -309,20 +311,20 @@ public sealed class ShipCondition
     public long[] JoinWetMs = [];
     /// <summary>Whether her watertight doors left open have been drawn (at her first damage, by her readiness).</summary>
     public bool DoorsDrawn;
-    /// <summary>The last cascade's (E5, <see cref="Blast.Cascade"/>): its number, the spaces it reached (BlastRegion, by
-    /// BlastStamp) and what each felt, MPa; scratch for the boundaries' marks. E6 reads the pressures.</summary>
-    public int BlastId;
-    public int[] BlastRegion = [], BlastStamp = [];
-    /// <summary>What each reached space felt, MPa, and the gas the region held before it joined, m³ (whether the burst's
-    /// hot products got there).</summary>
-    public double[] BlastFelt = [], BlastBefore = [];
-    internal int[] JoinStamp = [], FaceStamp = [];
-    internal byte[] JoinFate = [], FaceFate = [];
-    internal double[] JoinFelt = [], FaceFelt = [];
-    /// <summary>The class's cells' outside faces (E5): area, plate and middle, worked out at the first burst.</summary>
-    internal double[] FaceArea = [], FaceMm = [];
-    internal P3[] FacePoint = [];
-    internal bool FacesReady;
+    /// <summary>The class's outside faces (<see cref="HullFaces"/>).</summary>
+    public HullFaces Faces = null!;
+    /// <summary>What her explosions have left of her boundaries (docs/battle/explosions.md, <see cref="GasNetwork"/>): the share of
+    /// each edge's tension gone, as <see cref="JoinOpenM2"/>, of each outside face's (cell x 4 + face), and the m² a face has
+    /// torn. <see cref="HullGirder"/> reads them.</summary>
+    public double[] EdgeLost = [], FaceLost = [], FaceTornM2 = [];
+    /// <summary>Each section's modulus with what's gone gone, and whether what's gone has moved since (<see cref="HullGirder"/>).</summary>
+    public double[] GirderZ = [];
+    public bool GirderStale;
+    /// <summary>Her whip so far (<see cref="HullGirder.Bear"/>): E·m, J·kg, as of a moment, world ms.</summary>
+    public double WhipEM;
+    public long WhipMs;
+    /// <summary>Where her bow and stern have come off, ship x (infinite: they haven't).</summary>
+    public double CutBowX = double.PositiveInfinity, CutSternX = double.NegativeInfinity;
     /// <summary>When the next timed outage ends, world ms (-1: none does; one for the battle never ends), and the
     /// damage system's event for it: its generation and when it's set for.</summary>
     public long NextClearMs = -1, ClearAtMs = -1;
@@ -535,6 +537,7 @@ public sealed class ShipCondition
             (MagazineHeat, MagazineLimit, MagazineThreatS, MagazineFlood) =
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
             (MagazineOrderMs, MagazineWet, MagazineValve) = (new long[c.Rooms.Length], new double[c.Rooms.Length], new ValveStage[c.Rooms.Length]);
+            MagazineSpent = new bool[c.Rooms.Length];
             Smoked = new bool[c.Rooms.Length];
             (Stoke, StokeUntilMs) = (new double[c.Rooms.Length], new long[c.Rooms.Length]);
             (PartSpace, CellSpace) = (new int[c.Components.Length], new int[c.Cells.Length]);
@@ -572,11 +575,9 @@ public sealed class ShipCondition
             PumpsIn = new byte[c.Cells.Length];
             Counterflooded = new bool[c.Cells.Length];
             (Fix, FixManMin, Drowned) = (new byte[c.NodeCount], new double[c.NodeCount], new bool[c.NodeCount]);
-            (BlastRegion, BlastStamp, BlastFelt) = (new int[c.Cells.Length], new int[c.Cells.Length], new double[c.Cells.Length]);
-            BlastBefore = new double[c.Cells.Length];
-            (JoinStamp, JoinFate, JoinFelt) = (new int[c.NeighbourCount], new byte[c.NeighbourCount], new double[c.NeighbourCount]);
-            (FaceStamp, FaceFate, FaceFelt) = (new int[4 * c.Cells.Length], new byte[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
-            (FaceArea, FaceMm, FacePoint, FacesReady) = (new double[4 * c.Cells.Length], new double[4 * c.Cells.Length], new P3[4 * c.Cells.Length], false);
+            Faces = HullFaces.Of(c);
+            (EdgeLost, FaceLost, FaceTornM2) = (new double[c.NeighbourCount], new double[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
+            GirderZ = new double[c.Sections.Length];
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
             In = new int[groups];
@@ -607,9 +608,9 @@ public sealed class ShipCondition
             Array.Clear(Fix);
             Array.Clear(FixManMin);
             Array.Clear(Drowned);
-            Array.Clear(BlastStamp);
-            Array.Clear(JoinStamp);
-            Array.Clear(FaceStamp);
+            Array.Clear(EdgeLost);
+            Array.Clear(FaceLost);
+            Array.Clear(FaceTornM2);
             Array.Clear(Mount);
             Array.Clear(DownUntil);
             Array.Clear(DownWhy);
@@ -638,6 +639,7 @@ public sealed class ShipCondition
             Array.Clear(MagazineFlood);
             Array.Clear(MagazineOrderMs);
             Array.Clear(MagazineWet);
+            Array.Clear(MagazineSpent);
             Array.Clear(MagazineValve);
             Array.Clear(Smoked);
         }
@@ -655,6 +657,7 @@ public sealed class ShipCondition
         Array.Fill(TubeWorks, true);
         Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
+        (GirderStale, WhipEM, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
         (GivenUp, ColoursMs, AbandonMs, OffMs, ScuttleMs) = (GivenUp.None, 0, 0, 0, 0);
@@ -1192,6 +1195,18 @@ public sealed class ShipCondition
                 h.Add(i + 2000);
                 h.Add(JoinOpenM2[i]);
             }
+        for (int i = 0; i < FaceLost.Length; i++)
+            if (FaceLost[i] != 0)
+            {
+                h.Add(i + 3000);
+                h.Add(FaceLost[i]);
+            }
+        for (int i = 0; i < EdgeLost.Length; i++)
+            if (EdgeLost[i] != 0)
+            {
+                h.Add(i + 4000);
+                h.Add(EdgeLost[i]);
+            }
         if (SteerCause != SteerCause.None)
             h.Add((int)SteerCause);
         for (int i = 0; i < Fix.Length; i++)
@@ -1323,13 +1338,14 @@ public sealed class ShipCondition
                 h.Add(MainCutMs[i]);
             }
         for (int i = 0; i < MagazineHeat.Length; i++)
-            if (MagazineHeat[i] != 0 || MagazineFlood[i] || MagazineOrderMs[i] != 0 || MagazineWet[i] != 0)
+            if (MagazineHeat[i] != 0 || MagazineFlood[i] || MagazineOrderMs[i] != 0 || MagazineWet[i] != 0 || MagazineSpent[i])
             {
                 h.Add(i + 6000);
                 h.Add(MagazineHeat[i]);
                 h.Add(MagazineFlood[i]);
                 h.Add(MagazineOrderMs[i]);
                 h.Add(MagazineWet[i]);
+                h.Add(MagazineSpent[i] ? 1 : 0);
                 h.Add((int)MagazineValve[i]);
             }
         for (int i = 0; i < Fire.Length; i++)

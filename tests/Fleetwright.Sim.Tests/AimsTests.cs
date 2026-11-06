@@ -297,6 +297,8 @@ public class AimsTests(ITestOutputHelper output)
     {
         var store = w.Ships.Store;
         int slot = store.SlotOf(ship);
+        if (slot < 0)
+            return 0;   // gone: home, or lost
         var cls = store[slot].Handling.Class;
         for (int b = 0; b < cls.Batteries.Length; b++)
             if (cls.Batteries[b].Chief)
@@ -406,8 +408,8 @@ public class AimsTests(ITestOutputHelper output)
     /// <summary>A4's hunting ground: three tramps alone on routes across a ground 40 km about [56.5, 4.3], each 25 km
     /// out; a German light cruiser raider at its western edge, out to sink two of them's tonnage, then home 100 km west.
     /// <paramref name="more"/> more units.</summary>
-    static string Raid(string more = "", string until = "1916-05-31T22:00", double tonnes = 0) => $$"""
-        { "scenario": 1, "start": "1916-05-31T14:00", "seed": 3, "sides": ["Britain", "Germany"], "until": "{{until}}",
+    static string Raid(string more = "", string until = "1916-05-31T22:00", double tonnes = 0, int seed = 3) => $$"""
+        { "scenario": 1, "start": "1916-05-31T14:00", "seed": {{seed}}, "sides": ["Britain", "Germany"], "until": "{{until}}",
           "aims": { "Germany": [ { "sink": "merchants", "tonnes": {{(tonnes > 0 ? tonnes : 2 * 4000.0):R}}, "where": { "at": [56.5, 4.3], "km": 40 } },
                                  { "reach": "Raider", "zone": { "at": [56.5, {{4.3 - 100 / KmPerLonDeg:R}}], "km": 5 }, "weight": 0.5 } ],
                     "Britain": { "stop": "Germany" } },
@@ -443,7 +445,7 @@ public class AimsTests(ITestOutputHelper output)
     public void A_raider_hunts_her_ground_and_the_merchants_scatter_from_her()
     {
         var fled = new HashSet<string>();
-        var (w, end, start, ai) = Play(Raid(), hours: 8, minute: (w, start, ai) =>
+        var (w, end, start, ai) = Play(Raid(seed: 4), hours: 8, minute: (w, start, ai) =>
         {
             Watch(w, start, ai, "Emden", "One", "Two", "Three");
             foreach (var n in new[] { "One", "Two", "Three" })

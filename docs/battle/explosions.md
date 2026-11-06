@@ -1,7 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). EX0, EX1 and EX3 run on the bench, EX3 first at the user's word, and magazines' rooms
-are fixed in shipgen (ShipDesign.Version 58). The game's gas and girder are still the old ones. **Pick up at "Where to pick up", next.**
+Status: **decided 2026-11-05** ("Decided" at the end). EX0-EX3 are built and EX2 wires the network and girder into the game (2026-11-06). **Pick up at "Where to pick up", next.**
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -14,25 +13,20 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**Next: EX2, wiring the network and the girder into the game.** It's the step that changes real battles: compare against "EX0: the baseline".
-
-What goes with it:
-
-- `Blast.Outside` takes the bottom past the double bottom (the girder already finds it, `HullGirder.Add`).
-- `GasNetwork`'s state and what's gone (`EdgesLost`, `FacesLost`) move onto the ship's condition, `HullGirder` onto the class. It's bench-shaped today.
-- The flooding's moment gets run: `HullGirder.Read` takes the condition, and it's tested but the bench has no water in it.
-- `GasKnobs` goes. `BeltShare` 0, `HeatKeep` and the rest become settings or nothing.
-- The bench's `burned` under-reports after an early stop, and a deformed boundary's seam leak isn't committed yet.
-- The cost budget: 0.2-1 ms a shell (about 200 µs wanted), up to about 140 ms a magazine (about 20 wanted). Threads are an option (the user).
+**EX2 is built; the user's call is next: no magazine broke a ship in any of the 68 games of the panel.** See "EX2: what it showed". The destroyer the plan began with now comes out on the research's figures, with nothing fitted.
 
 **Open, in order of what they decide:**
 
-1. **Lion's Q in calm water.** Bags peak at 836 kPa, against the 1.4 MPa her 27 mm shell needs amidships, so she breaks forward at 0.88 of her length, and only in a seaway. The room's now the right size, so that wasn't it. Left: a stow's own confinement (a bed of charges burning inside itself), shell rooms' bursters (needs EX4), what a real magazine's boundaries are like.
-2. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
-3. **Clarkson and brass read alike,** with the research. Bags against the rest separate well.
-4. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
-5. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
-6. **The research request** "Big explosions in and beside ships" is open and bears on 1, 3 and 4.
+1. **Magazines at the margin.** Set off a little more often than before (17.7 a seed at Jutland against 14.8), they broke no ship in the panel's games (6% of losses before). Fresh, on the BCF's handling at Jutland's 8 kn: Indefatigable's wing and after shell-room magazines break her (1.09-1.18; her A and Y 0.54), Lion's and Queen Mary's forward ones read 0.85-0.95, Invincible's 0.41-0.67. In the same seaway bags break Lion everywhere forward. So the physics is within about 10% of the record's outcome for these ships, and just on the wrong side of it in light airs. Left to try, none yet tried: a stow's own confinement (a bed of charges burning inside itself), shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, and a shell's own damage already in her section. **Not tuned, and decision 3 says no balancing yet.**
+2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
+3. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
+4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
+5. **Clarkson and brass read alike,** with the research. Bags against the rest separate well.
+6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
+7. **A magazine's cost:** about 70-165 ms for a big ship's, against about 20 wanted (a shell's 10-230 µs is on budget). A longer step isn't the way: see "the solver". Threads are the option (the user). About 20 a Jutland, so 2-3 s in a 14-hour game, each a hitch on the sim thread.
+8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
+9. **The research request** "Big explosions in and beside ships" is open and bears on 1, 5 and 6.
+
 ## Why now
 
 Yamato's nine HE at 1 km on the Fleet Destroyer (`shipgen hits destroyer --shooter yamato --kind he --range 1000`, two
@@ -385,6 +379,74 @@ the waterline. The contact holes are vents only on this bench and aren't in the 
 **Not there yet:**
 
 Moved to "Where to pick up", at the top.
+## EX2: what it showed (2026-11-06)
+
+**What went:** `Blast.Cascade`, `Felt`, `PartGas`, the race's own loop, `MagazineGive*`, `MagazineD`, `MagazineEndD`, `Magazines.Girder`, `HotProductsM3Kg`, `GasKnobs`, and `magazines.md` decision 6. **What's one path now:** every shell burst and magazine goes through `GasNetwork`, a part being a space of its own there, and `HullGirder.Bear` reads her after every explosion and as she floods: shells break ships, flooding does (the moment is now run), an end comes off and she may live. A flooded section past the cut carries nothing across it. A tier is only a report. Torpedoes and near misses keep their own rules until EX4-EX5, and `Underwater`'s break chance with them.
+
+**Where the state went:** what's torn is on the condition (`EdgeLost`, `FaceLost`, `FaceTornM2`, `GirderZ`); `HullGirder`, `HullFaces` and the edge table are one per class; the solver's working state says nothing between runs, so it's one per thread, not one per ship (plan said the condition; 250 copies would be about 25 MB for nothing).
+
+**The destroyer from "Why now" (`hits destroyer --shooter yamato --kind he --range 1000`, 2 h on). Nothing fitted:**
+
+| Hits | Crippled: before, now, research | Lost: before, now, research | Mean water: before, now, research |
+|---:|---:|---:|---:|
+| 1 | 41%, 48%, 36% | 1%, 0%, 7% | 239, 145, 114 t |
+| 5 | 92%, 92%, 89% | 23%, 43%, 44% | 1,443, 781, 580 t |
+| 9 | 99%, 99%, 99% | 47%, 75%, 79% | 2,487, 725, 1,050 t |
+
+Nine hits' water is low because the ones that would have filled now break first.
+
+**The panel (`explosions-ex2/`, beside `explosions-baseline/`; 8 seeds, Jutland 4):**
+
+| Lost a seed | Before | Now | Record | | Before | Now | Record |
+|---|---:|---:|---:|---|---:|---:|---:|
+| Dover Strait: Britain | 0.5 | 0.4 | 0 | Germany | 1.6 | 1.8 | 2 |
+| Coronel: Britain | 1.4 | **0.5** | 2 | Germany | 1.1 | 0.8 | 0 |
+| Cape Sarych: Russia | 2.8 | 3.3 | 0 | Ottoman Empire | 0.9 | 1.0 | 0 |
+| Heligoland Bight: Britain | 2.0 | 2.0 | 0 | Germany | 14.3 | 11.4 | 4 |
+| Dogger Bank: Britain | 7.3 | 5.9 | 0 | Germany | 8.4 | 12.0 | 1 |
+| Tsushima: Russia | 4.9 | **3.1** | 7 | Japan | 4.8 | 4.8 | 0 |
+| Jutland: Britain | 28.5 | 20.8 | 14 | Germany | 49.8 | 46.8 | 11 |
+| The prizes' war: France | 1.5 | 2.0 | - | Italy | 2.6 | 2.4 | - |
+| Åland: Finland | 6.0 | 6.0 | - | Sweden | 4.1 | 2.3 | - |
+
+- **All together:** 5 of 14 sides within about twice the record (5 before); the record's loser lost more in 22 of 44 seeds (23). Capsized 59% (54), foundered 22% (32), **broke in two 19% (8), magazine 0% (6)**. Mind the noise: EX0's warning stands.
+- **Where it hurts:** Coronel and Tsushima, where the record's ships went up (from memory: Good Hope, Borodino); Britain's side there now reads LOW.
+- **Magazines at Jutland, a seed:** 1,548 heavy hits, 95.8 lit charges in a train. Set off by a hit: contained 5.3, burned out 0.8, breached 8.3, broken 0 (before: 8.5, 0.5, 2.0, 3.5). By a fire: contained 1.0, burned out 0.5, breached 1.8, broken 0 (0.3, 0, 0, 0.3). Fire set-offs are up: ships now live with their fires.
+- **The record's ships in `damage-history`** are the one place they go: Indefatigable under Von der Tann's five 11″ in 15 minutes, the record's own case, is lost in 20% of runs, all four by her magazine.
+
+**The magazines on the settled solver (load calm / in a seaway; 1 is broken):**
+
+| | Peak, kPa | Load |
+|---|---:|---:|
+| Lion, bags, forward magazines | 1,000-1,565 | 0.77-0.82 / **1.25-1.32** |
+| Lion, Clarkson, forward | 680-1,190 | 0.30-0.54 / 0.57-0.95 |
+| Lion, aft | ~1,000-1,230 | 0.25-0.27 / 0.52-0.54 |
+| Iron Duke, as designed | 950-1,680 | 0.56-**1.02** / 0.92-**1.52** |
+| Seydlitz, brass | 630-970 | 0.25-0.37 / 0.46-0.58: burns out, as the record has her |
+| Destroyer, V25 | 250-350 | 0.11-0.15 / 0.27-0.32: **check against the record** |
+
+Iron Duke reading worse than Lion on Clarkson is new, and unexplained so far.
+
+**The solver (a lesson twice over).** EX1's convergence check (666, 682, 684 kPa) was done before magazines' rooms shrank to their load, and it no longer held: Lion's Q with Clarkson read 473 kPa and 0.58 at the game's step, 813 and 0.93 at a tenth of it, enough to be wrong about which ships break. **Check again whenever the inputs move.** Three causes, none a tuning:
+
+1. The stow's gas went in before each step's flows, so a long step read what was left after they had relaxed, not what a burning stow holds against its vents. Now half before and half after (Strang splitting).
+2. The flame through a stow is a branching process, integrated by Euler while the pressure was too low to shorten the step. It now grows by its exact exponential.
+3. The step followed every cell's own share, so a far cell's few kPa held it down while the source wasn't watched at all when gas in and gas out balanced. Now it follows what's put in at the source and what's within a quarter of the peak.
+
+Down to 1/16 of the chosen step the loads settle (bags 0.80/1.29, Clarkson 0.51/0.95, Iron Duke 0.91/1.41, Seydlitz 0.37/0.59 in the limit; the game's within 7% on peak and 8% on the loads that decide anything, up to 19% on Seydlitz's, far from breaking; `MagazineRaceTests.What_a_magazine_does_doesnt_hang_on_the_step`). Detonations were and are converged, and don't move at all.
+
+**Found on the way:**
+
+- **A magazine could go up again and again.** The ship's second set-off burned a full stow anew, about two a ship before and four once they lived. Now once (`MagazineSpent`).
+- **The bench had drifted from the rule it replaced:** a blown door or a deck giving lit the whole passage group, so a flooded magazine set off the dry ones next door. Passages give with bulkheads, as before; hot gas has its own rule.
+- **The first gas loop stopped before a panel had taken up its load,** so a small shell's felt read near nothing. Now it runs until they've caught up.
+- **A door left open** was no way for the gas, and what a burst tore could be torn again past its area; both fixed.
+- **A ship through her own torpedoes:** to `bugs.md`.
+
+**Anchors moved in the tests, on the user to check:** Lion's Q on bags is lost in a seaway and not in calm water (open 1); a Clarkson or brass Lion holds, in `The_propellant_and_its_packing_decide...`; a 16″ AP in a battleship's engine room felt 0.124 MPa against 11's under 0.1, with nothing ruptured.
+
+**Cost,** steady-state (DevRelease, `DOTNET_TieredCompilation=0`): a shell 10-230 µs, a big magazine 70-165 ms, a destroyer's a few ms. The panel took 655 s against 675 s: the whole game is no slower to play.
+
 ## What stays out
 
 - Aircraft, bomb sights, a bomb's flight.

@@ -1,0 +1,69 @@
+fire's yardstick (docs/battle/fire.md B5): 20 runs a case, the hits at random over the case's minutes, through the world's damage system; ablaze: developed fires in half her sections
+
+1890-1925
+  Santiago 1898: armoured cruiser, unstripped, unorganised, 30 hits in 45 min
+    Armoured cruiser (Scharnhorst-like, 1906), outfit Victorian (1890); unprepared, 1890; 50% connecticut battery 4 common + 30% connecticut battery 2 common + 10% connecticut battery 1 ap + 10% connecticut battery 0 common at 2600 m
+    fires lit by hits 4 a ship (median), spaces burned developed 132; ablaze 80% of runs, median 50 min; all out after the last hit 20% (median 44 min); still burning at 4 h 70%, 87 spaces
+    water 970 t (median), power 34%, killed and wounded 516, machinery abandoned to smoke 6, magazines flooded 2.9; lost 10% (Foundered 2, median 203 min)
+    record: Teresa beached burning at 40 min, Oquendo 55, Vizcaya 100: burned out
+    wanted: beyond help in most runs, in about 30-100 min
+    (11.4 s)
+  Same hits, stripped and prepared
+    Armoured cruiser (Scharnhorst-like, 1906), outfit Victorian (1890); prepared, 1905; 50% connecticut battery 4 common + 30% connecticut battery 2 common + 10% connecticut battery 1 ap + 10% connecticut battery 0 common at 2600 m
+    fires lit by hits 4 a ship (median), spaces burned developed 0; ablaze 5% of runs, median 46 min; all out after the last hit 90% (median 45 min); still burning at 4 h 10%, 0 spaces
+    water 73 t (median), power 93%, killed and wounded 35, machinery abandoned to smoke 0, magazines flooded 0.65; lost 0%
+    record: (Zhenyuan at the Yalu: fires kept beside these
+    wanted: later than unprepared
+    (1.9 s)
+  Yalu 1894: 12 hits in 45 min, unstripped, unorganised
+    Armoured cruiser (Scharnhorst-like, 1906), outfit Victorian (1890); unprepared, 1890; 60% mikasa battery 1 common + 30% mikasa battery 3 common + 10% mikasa battery 0 common at 3000 m
+    fires lit by hits 2 a ship (median), spaces burned developed 0; ablaze 20% of runs, median 85 min; all out after the last hit 80% (median 43 min); still burning at 4 h 20%, 0 spaces
+    water 0 t (median), power 98%, killed and wounded 11, machinery abandoned to smoke 0, magazines flooded 0; lost 0%
+    record: Chaoyong, Yangwei lost to fire
+    wanted: beyond help in most runs
+    (1.0 s)
+  Yalu 1894: 12 hits in 45 min, stripped and prepared
+    Armoured cruiser (Scharnhorst-like, 1906), outfit Victorian (1890); prepared, 1905; 60% mikasa battery 1 common + 30% mikasa battery 3 common + 10% mikasa battery 0 common at 3000 m
+    fires lit by hits 1 a ship (median), spaces burned developed 0; ablaze 0% of runs, median - min; all out after the last hit 100% (median 43 min); still burning at 4 h 0%, 0 spaces
+    water 0 t (median), power 98%, killed and wounded 9, machinery abandoned to smoke 0, magazines flooded 0; lost 0%
+    record: Matsushima, Hiei, Zhenyuan: fires kept beside these
+    wanted: all fires out in most runs
+    (0.1 s)
+  Tsushima 1905: Suvorov, 60 hits in 40 min, prepared and cluttered, 1905
+    Borodino-like (Knyaz Suvorov, Tsushima 1905); prepared, cluttered, 1905; 30% mikasa battery 0 ap + 45% mikasa battery 1 common + 25% mikasa battery 1 ap at 4600 m
+    fires lit by hits 12 a ship (median), spaces burned developed 0; ablaze 5% of runs, median 46 min; all out after the last hit 75% (median 44 min); still burning at 4 h 25%, 0 spaces
+    water 0 t (median), power 73%, killed and wounded 175, machinery abandoned to smoke 0, magazines flooded 1.15; lost 0%
+    record: ablaze fore and aft ~30 min after; burned ~5 h, sunk
+    wanted: ablaze in about 20-40 min
+    (2.9 s)
+  Tsushima 1905: Orel, ~50 hits over the day (4 h), prepared and cluttered, 1905
+    Borodino-like (Knyaz Suvorov, Tsushima 1905); prepared, cluttered, 1905; 20% mikasa battery 0 ap + 50% mikasa battery 1 common + 30% mikasa battery 1 ap at 5500 m
+    fires lit by hits 11 a ship (median), spaces burned developed 0; ablaze 0% of runs, median - min; all out after the last hit 100% (median 238 min); still burning at 5 h 0%, 0 spaces
+    water 0 t (median), power 76%, killed and wounded 164, machinery abandoned to smoke 0, magazines flooded 0.65; lost 0%
+    record: 34 fires, each fought, survived; hose water heeled her
+    wanted: many fires, mostly out; tens to hundreds of tonnes of water
+    (1.5 s)
+  Jutland 1916: RN battleship, 15 heavy hits in 30 min, closed up, 1916
+    Iron Duke-like (1914); closed up, 1916; 80% seydlitz battery 0 + 20% seydlitz battery 3 at 11000 m
+    fires lit by hits 1 a ship (median), spaces burned developed 0; ablaze 0% of runs, median - min; all out after the last hit 95% (median 29 min); still burning at 4 h 0%, 0 spaces
+    water 0 t (median), power 83%, killed and wounded 81, machinery abandoned to smoke 0, magazines flooded 0.3; lost 5% (magazine by a hit 1, median 21 min)
+    record: fires rare and short (D.K. Brown); propellant the danger
+    wanted: fires out in minutes; the danger the magazine
+    (1.3 s)
+
+later cuts
+  Savo 1942: heavy cruiser, 1942 fit, 50 hits in 20 min
+    Heavy Cruiser, outfit Interwar (1939); unprepared, 1942; 50% heavy_cruiser battery 0 ap + 50% heavy_cruiser battery 1 he at 5000 m
+    fires lit by hits 5 a ship (median), spaces burned developed 25; ablaze 50% of runs, median 48 min; all out after the last hit 20% (median 215 min); still burning at 4 h 35%, 4 spaces
+    water 7837 t (median), power 27%, killed and wounded 427, machinery abandoned to smoke 2, magazines flooded 1.6; lost 45% (Foundered 4, median 161 min, Capsized 5, median 166 min)
+    record: Astoria, Quincy, Vincennes: never out
+    wanted: never out in most runs
+    (4.5 s)
+  Same hits, post-Savo fit
+    Heavy Cruiser, outfit Post-Savo (1943); closed up, 1944; 50% heavy_cruiser battery 0 ap + 50% heavy_cruiser battery 1 he at 5000 m
+    fires lit by hits 3 a ship (median), spaces burned developed 0; ablaze 0% of runs, median - min; all out after the last hit 95% (median 21 min); still burning at 4 h 0%, 0 spaces
+    water 528 t (median), power 51%, killed and wounded 331, machinery abandoned to smoke 0, magazines flooded 0.65; lost 5% (Capsized 1, median 203 min)
+    record: later USN cruisers controlled their fires
+    wanted: out within ~30 min in nearly all
+    (2.2 s)
+
