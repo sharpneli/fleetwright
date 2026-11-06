@@ -320,6 +320,7 @@ public sealed class GasNetwork
             int q = canon[j];
             double hole = Math.Min(Math.PI * nearHoleM * nearHoleM, area[j]);
             (open[q], opened[q], fate[q]) = (Math.Min(open[q] + hole, area[j]), opened[q] + hole, Blast.Fate.Holed);
+            tornEdge[q] = Math.Min(tornEdge[q] + hole, area[j]);   // what the gas tears from here on starts from this
             res.Holed++;
         }
     }
@@ -592,7 +593,7 @@ public sealed class GasNetwork
                     continue;   // from the lower cell
                 double a1 = EdgeOpen(j), po = inside ? p[o] : P0, diff = p[i] - po;
                 int q = canon[j];
-                if (e.Join != JoinKind.Open && fate[q] != Blast.Fate.Holed)
+                if (e.Join != JoinKind.Open)
                 {
                     edgeFelt[q] += (keep * Math.Abs(diff) / 1e6 - edgeFelt[q]) * lag;
                     edgePeak[q] = Math.Max(edgePeak[q], edgeFelt[q]);
@@ -878,7 +879,7 @@ public sealed class GasNetwork
                         opened[q] = 0;
                     }
                     double share = was == Blast.Fate.Ruptured ? Math.Sqrt(Math.Min(tornEdge[q] / (s.RupturedShare * area[j]), 1))
-                        : was == Blast.Fate.Holed ? Math.Sqrt(Math.Min(open[q] / area[j], 1)) : 0;
+                        : was == Blast.Fate.Holed ? Math.Sqrt(Math.Min(tornEdge[q] / area[j], 1)) : 0;
                     if (share > k.EdgeLost[q])
                         (k.EdgeLost[q], lost) = (share, true);
                 }

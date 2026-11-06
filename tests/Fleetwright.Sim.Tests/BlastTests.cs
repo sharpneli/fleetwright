@@ -228,6 +228,43 @@ public class BlastTests(ITestOutputHelper output)
         Assert.True(open.Spaces > shut.Spaces, $"{open.Spaces} against {shut.Spaces}");
     }
 
+    /// <summary>The near zone's holes don't take a boundary out of the gas: one holed goes on taking the load and can give at its own
+    /// plate like any other, so the plate nearest the charge is never better off than the plate next to it.</summary>
+    [Fact]
+    public void A_holed_boundary_still_gives()
+    {
+        var (c, k) = Ship("destroyer");
+        int cell = Cell(c, k, RoomKind.Accommodation);
+        var b = c.Cells[cell].Box;
+        var r = RandomStream.Named(11, "holed");
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 60, Charge(60, "TNT"), 0, 100, 0.1, Settings, ref r);
+        output.WriteLine($"  holed {res.Holed}, ruptured {res.Ruptured} ({res.Bulkheads} bulkheads, {res.Decks} decks), peak {res.PeakKPa:0} kPa");
+        Assert.True(res.Holed > 0);
+        Assert.True(res.Bulkheads + res.Decks > 0, "every boundary of the space within the near zone, none giving under a bomb's gas");
+    }
+
+    /// <summary>A hole's read as the plate it cut, not as a door left open beside it.</summary>
+    [Fact]
+    public void A_holed_boundary_loses_what_was_cut_not_its_door()
+    {
+        var (c, k) = Ship("destroyer");
+        int cell = Enumerable.Range(0, c.Cells.Length).Where(i => c.Neighbours(c.Cells[i].Neighbours).ToArray().Any(e => Leaks.HasDoor(c, e, i))).MaxBy(i => c.Cells[i].VolumeM3);
+        Leaks.OpenDoors(c, k);
+        var b = c.Cells[cell].Box;
+        var r = RandomStream.Named(11, "holed door");
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 1, Charge(1, "Explosive D"), 0, 100, 0.1, Settings, ref r);
+        output.WriteLine($"  {c.CellId(cell)}: peak {res.PeakKPa:0} kPa, holed {res.Holed}, ruptured {res.Ruptured}");
+        Assert.Equal(0, res.Ruptured);
+        var nb = c.Cells[cell].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
+        {
+            ref readonly var e = ref c.Neighbour(j);
+            int q = Leaks.Entry(c, cell, j);
+            if (Leaks.HasDoor(c, e, cell))
+                Assert.True(k.EdgeLost[q] < Math.Sqrt(Settings.DoorM2 / Blast.Area(c.Cells[cell].Box, c.Cells[e.Cell].Box, e.Join)), $"{k.EdgeLost[q]:0.00} lost");
+        }
+    }
+
     /// <summary>A door blows out once: there's none left for the next burst to blow, however many there are.</summary>
     [Fact]
     public void A_door_blows_out_once()
