@@ -1209,6 +1209,22 @@ public sealed class ShipCondition
                 h.Add(i + 4000);
                 h.Add(EdgeLost[i]);
             }
+        for (int i = 0; i < FaceTornM2.Length; i++)
+            if (FaceTornM2[i] != 0)
+            {
+                h.Add(i + 3500);
+                h.Add(FaceTornM2[i]);
+            }
+        if (WhipMs != 0)
+        {
+            h.Add(WhipEM);
+            h.Add(WhipMs);
+        }
+        if (double.IsFinite(CutBowX) || double.IsFinite(CutSternX))
+        {
+            h.Add(CutBowX);
+            h.Add(CutSternX);
+        }
         if (SteerCause != SteerCause.None)
             h.Add((int)SteerCause);
         for (int i = 0; i < Fix.Length; i++)

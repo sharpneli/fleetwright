@@ -970,7 +970,7 @@ public sealed class GasNetwork
                     opened[q] = 0;
                 }
                 double share = b.Fate == Blast.Fate.Ruptured ? Blast.LostShare(b.Torn, area[j], s)
-                    : b.Fate == Blast.Fate.Holed ? Math.Sqrt(Math.Min(b.Torn / area[j], 1)) : 0;
+                    : b.Fate == Blast.Fate.Holed ? Blast.HoleShare(b.Torn, area[j]) : 0;
                 if (share > k.EdgeLost[q])
                     (k.EdgeLost[q], lost) = (share, true);
             }

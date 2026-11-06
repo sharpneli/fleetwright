@@ -130,6 +130,10 @@ public static class Blast
     /// the area going as the length squared, and all of it is gone when it's torn out.</summary>
     public static double LostShare(double tornM2, double areaM2, SimSettings s) => Math.Sqrt(Math.Min(tornM2 / (s.RupturedShare * areaM2), 1));
 
+    /// <summary>The share of a boundary's plate cut by a hole through it, all of it open: as wide as it's long, not a crack's
+    /// narrow slot (<see cref="LostShare"/>).</summary>
+    public static double HoleShare(double holeM2, double areaM2) => Math.Sqrt(Math.Min(holeM2 / areaM2, 1));
+
     /// <summary>A deformed boundary's seam leak, m² (damage/17 leakage §3.2): r(D) cm² per m² of it, lognormal about the
     /// curve, welded less.</summary>
     public static double Leak(double d, double areaM2, Joint joint, SimSettings s, ref RandomStream r)
