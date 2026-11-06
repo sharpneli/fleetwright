@@ -143,7 +143,7 @@ static class MagazineBench
                 r.Charges, ch.MassKg, ch.Packaging, r.PeakKPa, r.BurnedKg / 1000, r.FastKg / 1000, r.D, r.Vented, r.Lifted,
                 double.IsNaN(r.VentS) ? "" : string.Format(Inv, " at {0:0.00} s", r.VentS),
                 double.IsNaN(r.StructureS) ? "" : string.Format(Inv, ", her hull at {0:0.00} s", r.StructureS), r.Magazines, r.Killed, r.Wounded, ms,
-                r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom" }.Where((_, i) => (r.Gave & (1 << i)) != 0)),
+                r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom", "weather deck" }.Where((_, i) => (r.Gave & (1 << i)) != 0)),
                 r.Station, r.GirderLoad, r.EndLost ? ", her end lost" : ""));
         }
     }

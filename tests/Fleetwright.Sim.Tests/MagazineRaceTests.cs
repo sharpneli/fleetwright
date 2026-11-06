@@ -24,6 +24,49 @@ public class MagazineRaceTests(ITestOutputHelper output)
         return ShipClassCompiler.Compile(ShipDesign.Build(d));
     }
 
+    [Fact]
+    public void What_else_drove_her_is_read_with_the_magazine()
+    {
+        var c = Fleet.Get("lion").Class!;
+        double alone = Race(c, "Magazine Q").GirderLoad;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        int slot = w.Ships.Store.SlotOf(w.Ships.NewestEntity);
+        var k = w.Ships.Store.Combat.Condition(slot);
+        var rng = RandomStream.Named(1, "magazine race test");
+        var r = Magazines.SetOff(c, k, Room(c, "Magazine Q"), w.Ships.Store.Combat.Mounts(slot), Settings, 0, ref rng, 0, 1e13);
+        output.WriteLine($"load {alone:0.000} alone, {r.GirderLoad:0.000} with a shell's whip");
+        Assert.True(r.GirderLoad > alone, "one moment, one reading of her girder");
+    }
+
+    [Fact]
+    public void What_a_magazine_wrecks_it_reports()
+    {
+        var r = Race(Fleet.Get("lion").Class!, "Magazine Q");
+        Assert.True(r.Destroyed >= 1, "its own room, at least");
+    }
+
+    [Fact]
+    public void A_magazine_a_fire_set_off_wakes_the_water()
+    {
+        var nobody = Settings.DamageControl.Single(d => d.Name == "1890") with { Name = "nobody", WatchS = -1, PartyShare = 0, TurnTo = 0, FloodMagazineS = -1 };
+        var settings = Settings with { FireMagazineS = [60, 60, 60, 60, 60], DamageControl = [.. Settings.DamageControl, nobody], DamageControlDefault = "nobody", GirderSeawayMs = 1e9 };
+        var c = Fleet.Get("dreadnought").Class!;
+        var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, settings);
+        w.Apply(ShipSystem.Spawn(w.Ships.AddClass(c), 56, 4, 0, 0));
+        int entity = w.Ships.NewestEntity;
+        var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity));
+        int next = Enumerable.Range(0, c.Cells.Length).First(i => c.FireSpaces[i].Use != FireUse.None &&
+            c.Neighbours(c.Cells[i].Neighbours).ToArray().Any(n => c.Rooms[c.Cells[n.Cell].Room].Kind == RoomKind.Magazine));
+        w.Apply(DamageSystem.BurnCell(entity, next));
+        for (int sec = 0; sec < 1800 && !k.MagazineSpent.AsSpan().Contains(true); sec++)
+            w.AdvanceTo(w.Time + 1000);
+        Assert.Contains(true, k.MagazineSpent);
+        output.WriteLine($"{k.Status}, the water due in {k.FloodDueMs - w.Time.Ms} ms");
+        Assert.Equal(ShipStatus.Afloat, k.Status);
+        Assert.True(k.FloodDueMs - w.Time.Ms <= settings.FloodMs, "what it opened takes the sea from her next second");
+    }
+
     /// <summary>A scenario's design (Content/Scenarios/Designs), compiled.</summary>
     static ShipClass Scenario(string name) => ShipClassCompiler.Compile(ShipDesign.Build(Design.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "Designs", name + ".json"))));
 

@@ -752,15 +752,15 @@ public sealed class DamageSystem : IWorldSystem
         var race = default(RaceResult);
         if (e.Magazine && k.Status == ShipStatus.Afloat)
         {
-            race = SetOff(world, slot, k, e.MagazineRoom, MagazineCounts.ByHit, ref rng);
+            race = SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
             if (race.Magazines > 0)
-                (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
+                Join(ref e, race);
         }
         trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
-        // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion)
-        var girder = default(GirderReading);
-        if (k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0))
+        // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion, one reading a moment)
+        var girder = race.Girder;
+        if (race.Magazines == 0 && k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0))
             girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, Sea(world, slot), settings);
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
@@ -788,7 +788,7 @@ public sealed class DamageSystem : IWorldSystem
             Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point, race);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
-        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || race.Gas.HoleM2 > 0 || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
+        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
     }
 
@@ -1089,16 +1089,26 @@ public sealed class DamageSystem : IWorldSystem
     double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.GirderSeawayMs;
 
     /// <summary>A magazine set off, by a hit or a fire: its gas through her and what it leaves of her girder decide
-    /// (docs/battle/explosions.md); how it ended counted.</summary>
-    RaceResult SetOff(World world, int slot, ShipCondition k, int room, int[] counts, ref RandomStream rng)
+    /// (docs/battle/explosions.md); how it ended counted; if she lives, what it opened takes the sea from her next second.</summary>
+    RaceResult SetOff(World world, int slot, ShipCondition k, int room, double alsoWhipEM, int[] counts, ref RandomStream rng)
     {
-        var race = Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, world.Time.Ms, ref rng, Sea(world, slot));
-        if (race.Magazines > 0)
-        {
-            counts[(int)race.Tier]++;
-            LogRace(slot, race.Tier);
-        }
+        long now = world.Time.Ms;
+        var race = Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM);
+        if (race.Magazines == 0)
+            return race;
+        counts[(int)race.Tier]++;
+        LogRace(slot, race.Tier);
+        if (!race.Lost)
+            k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);
         return race;
+    }
+
+    /// <summary>A magazine a hit set off is what the hit did, too.</summary>
+    static void Join(ref EffectsResult e, in RaceResult race)
+    {
+        (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
+        (e.Destroyed, e.Disabled, e.Damaged) = (e.Destroyed + race.Destroyed, e.Disabled + race.Disabled, e.Damaged + race.Damaged);
+        e.BreachM2 += race.Gas.HoleM2;
     }
 
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
@@ -1263,7 +1273,7 @@ public sealed class DamageSystem : IWorldSystem
         if (fs.Magazine)
         {
             // fire's heat set it off (fire B2)
-            var race = SetOff(world, slot, k, fs.MagazineRoom, MagazineCounts.ByFire, ref rng);
+            var race = SetOff(world, slot, k, fs.MagazineRoom, 0, MagazineCounts.ByFire, ref rng);
             if (race.Magazines > 0)
             {
                 if (race.Lost)

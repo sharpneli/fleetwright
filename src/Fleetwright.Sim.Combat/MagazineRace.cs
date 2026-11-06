@@ -19,13 +19,14 @@ public enum MagazineTier : byte
 /// <summary>A magazine set off (<see cref="Magazines.SetOff"/>): its tier, the peak gauge pressure (kPa), the propellant burned
 /// (kg; and by the hull's first giving and a second after, the fireball's), the charges that were there, the share of the
 /// girder's worst section lost, the vents at the end (m²), the magazines alight, the gunhouses vented (and lifted), when the first
-/// vented and when her hull first gave (s from the flash; NaN none), and the men it killed and wounded.</summary>
+/// vented and when her hull first gave (s from the flash; NaN none), the men it killed and wounded, and the parts and spaces it
+/// wrecked, put out of action and damaged.</summary>
 public struct RaceResult
 {
     public MagazineTier Tier;
     public double PeakKPa, BurnedKg, FastKg, Charges, VentM2, VentS, StructureS;
-    public int Magazines, Vented, Lifted, Killed, Wounded;
-    /// <summary>What gave, as flags: 1 a bulkhead, 2 a deck, 4 the sides, 8 the bottom.</summary>
+    public int Magazines, Vented, Lifted, Killed, Wounded, Destroyed, Disabled, Damaged;
+    /// <summary>What gave, as flags: 1 a bulkhead, 2 a deck, 4 the sides, 8 the bottom, 16 the weather deck.</summary>
     public int Gave;
     /// <summary>Spaces the gas reached, and what it did there: what the flooding has from it.</summary>
     public GasResult Gas;
@@ -46,9 +47,10 @@ public static partial class Magazines
     /// (<see cref="GasNetwork.Burn"/>), the same gas and plate as any explosion's; what it left of her girder read
     /// (<see cref="HullGirder.Bear"/>). What it leaves when she lives: the magazines alight spent (their mounts out of ammunition), the
     /// vented gunhouses and barbettes destroyed and burning, the trains' men flashed (a contained one, the magazine's), the men and
-    /// gear in the spaces its gas reached, the holes the network tore. Allocation-free.</summary>
+    /// gear in the spaces its gas reached, the holes the network tore. alsoWhipEM: what else drove her at this moment (the shell that
+    /// set it off), read with it: one moment, one reading of her girder. Allocation-free.</summary>
     public static RaceResult SetOff(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, SimSettings s, long now,
-        ref RandomStream r, double sea = 0)
+        ref RandomStream r, double sea = 0, double alsoWhipEM = 0)
     {
         var res = new RaceResult { VentS = double.NaN, StructureS = double.NaN };
         if (room < 0 || k.MagazineSpent[room])
@@ -60,11 +62,11 @@ public static partial class Magazines
             k.MagazineSpent[room] = true;   // a room with no charge in it (a carrier's bombs, not in the model yet): nothing to go up, now or later
             return res;
         }
-        var girder = HullGirder.Of(c).Bear(k, gas.WhipEM, now, sea, s);
+        var girder = HullGirder.Of(c).Bear(k, gas.WhipEM + alsoWhipEM, now, sea, s);
         res.Gas = gas;
         (res.PeakKPa, res.BurnedKg, res.FastKg, res.Charges, res.VentM2, res.VentS, res.StructureS) = (gas.PeakKPa, gas.BurnedKg, gas.FastKg, gas.Charges, gas.VentM2, gas.VentS, gas.HullS);
         (res.Magazines, res.Vented, res.Lifted) = (gas.Magazines, gas.Vented, gas.Lifted);
-        res.Gave = (gas.Bulkheads > 0 ? 1 : 0) | (gas.Decks > 0 ? 2 : 0) | (gas.Sides > 0 ? 4 : 0) | (gas.Bottoms > 0 ? 8 : 0);
+        res.Gave = (gas.Bulkheads > 0 ? 1 : 0) | (gas.Decks > 0 ? 2 : 0) | (gas.Sides > 0 ? 4 : 0) | (gas.Bottoms > 0 ? 8 : 0) | (gas.WeatherDecks > 0 ? 16 : 0);
         res.Girder = girder;
         bool breached = girder.EndOff || gas.Sides + gas.WeatherDecks + gas.Bottoms + gas.Decks > 0;
         bool contained = !girder.Broken && !breached && gas.Vented == 0;
@@ -122,10 +124,11 @@ public static partial class Magazines
     static void Aftermath(ShipClass c, ShipCondition k, GasNetwork net, bool contained, ref RaceResult res, SimSettings s, long now, ref RandomStream r)
     {
         Casualties.Begin(k, now);
+        var fx = new EffectsResult { Part = -1, MagazineRoom = -1 };
         for (int i = 0; i < net.LitCount; i++)
         {
             int rm = net.LitRoom(i);
-            k.Worsen(c.RoomNode(rm), PartState.Destroyed);
+            Wreck(k, c.RoomNode(rm), ref fx);
             if (contained)
                 foreach (int cell in c.Links(c.Rooms[rm].Cells))
                     Casualties.Flash(k, Casualties.Cell(c, cell), true, s);
@@ -136,18 +139,20 @@ public static partial class Magazines
         {
             ref readonly var mr = ref c.Mounts[m];
             if (net.LiftedMount(m))
-                k.Worsen(mr.Component, PartState.Destroyed);
+                Wreck(k, mr.Component, ref fx);
             if (!net.VentedMount(m) || !c.Enclosed(m))
                 continue;
-            k.Worsen(mr.Component, PartState.Destroyed);
+            Wreck(k, mr.Component, ref fx);
             if (mr.Barbette >= 0)
-                k.Worsen(mr.Barbette, PartState.Destroyed);
+                Wreck(k, mr.Barbette, ref fx);
             Fires.Ignite(c, k, c.FireOfPart(mr.Component), s.ReadyAmmoSeatMW, s);
         }
-        var fx = new EffectsResult { Part = -1, MagazineRoom = -1 };
         Effects.GasFelt(c, k, net, -1, s, ref fx);
         Casualties.Draw(c, k, now, s, ref fx, ref r);
-        (res.Killed, res.Wounded) = (fx.Killed, fx.Wounded);
+        (res.Killed, res.Wounded, res.Destroyed, res.Disabled, res.Damaged) = (fx.Killed, fx.Wounded, fx.Destroyed, fx.Disabled, fx.Damaged);
         k.Version++;
     }
+
+    static void Wreck(ShipCondition k, int node, ref EffectsResult fx) =>
+        Effects.Count(ref fx, k, node, k.Worsen(node, PartState.Destroyed) ? PartState.Destroyed : PartState.Ok);
 }
