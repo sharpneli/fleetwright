@@ -553,7 +553,7 @@ Bed 0 is the old model, exactly (the table's every line). It only moves how fast
 | Lion on Clarkson, forward | 0.30-0.54 to 0.33-0.56 | 0.57-0.95 to 0.60-0.97 |
 | Tiger on Clarkson | 0.28-0.39 to 0.28-0.41 | 0.54-0.65 to 0.54-0.67 |
 | Iron Duke | 0.56-1.02 to 0.59-1.02 | 0.92-1.52 to 0.96-1.51 |
-| Seydlitz, brass | 0.32-0.38 to 0.33-0.40: **burns out, as the record has her** | 0.54-0.59 to 0.54-0.62 |
+| Seydlitz, brass | 0.32-0.38 to 0.35-0.40: **burns out, as the record has her** | 0.54-0.59 to 0.57-0.62 |
 | Destroyer, V25 | 0.11-0.15, unchanged | 0.27-0.33, unchanged |
 
 **On the BCF's own handling (`--doctrine "1916 BCF"`), before and after:** Lion's forward magazines 0.76-0.82 to 1.05-1.10; Tiger's 0.49 to 0.54; Invincible's 0.34-0.60 to 0.38-0.69 (0.48-0.75 to 0.52-0.84 at half a seaway).
@@ -565,7 +565,7 @@ Bed 0 is the old model, exactly (the table's every line). It only moves how fast
 | Among the charges, kPa | | 1,470 | 3,210 | 16,800 | 16,850 |
 | Load, calm | 0.79 | 0.81 | 0.87 | 1.05 | 1.11 |
 
-So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in calm water, and a larger one changes little. 16.8 MPa is about the bed's own limit there (half the stack is 1.8 m). **This is the reading to be careful with.** It's a real knife edge (07 §2.3's), and which side she's on hangs on an estimate.
+So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in calm water, and a larger one changes little. Past it the pressure stops climbing, against the algebra: probably because at 17 MPa a charge burns out in about a third of a second, as fast as the flame spreads through the stack, so they never all burn at once (not traced; and the depth is capped at half the stack, 1.8 m here). **This is the reading to be careful with.** It's a real knife edge (07 §2.3's), and which side she's on hangs on an estimate.
 
 **The panel (`explosions-bed/`, beside `explosions-review/`; 8 seeds, Jutland 4), against the review's:**
 
@@ -583,12 +583,12 @@ So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in c
 
 - **All together:** 8 of 14 sides within about twice the record (7); the record's loser lost more in 27 of 44 seeds (25). Capsized 46% (51), foundered 31% (27), broke in two 22% (22), **magazine 1% (0)**: Tsushima 4%, Dogger Bank and Jutland 1%. EX0's warning on noise stands: most of the sides' moves are within it, and Jutland is 4 seeds.
 - **Magazines at Jutland, a seed:** set off by a hit: contained 4.0, breached 5.3, **broken 0.6** (0 before). Those that break her are British: capital ships and a destroyer.
-- **Not this step's:** Jutland's heavy hits read 1,544 a seed (2,320 in the review's run, 1,548 in EX2's). That swing is between runs of 4 seeds with nothing near gunnery changed, so read the review's figure as noise.
-- **`damage-history`:** Indefatigable's own case still 20%, all by her magazine: her case's magazine already broke her. Lützow's side up by a run or two (noise at 20 runs).
+- **Jutland's heavy hits** read 1,544 a seed (2,320 in the review's run, 1,548 in EX2's), the review's rise "not looked into". Probably noise between runs of 4 seeds, as nothing near gunnery changed; not shown.
+- **`damage-history`, lost, 20 runs a case:** Indefatigable's own case still 20%, all by her magazine: on that handling and small stow the old model already broke her. Only three cases moved at all, each by a few runs: Derfflinger 5% to 10%, Tiger 20% to 25%, Bismarck 50% to 35%.
 
 **Convergence, checked again as the lesson says.** Lion's Q at 1, ¼ and 1/16 of the step: on bags load 1.05, 1.04, 1.04, peak 1,244, 1,140, 1,098 kPa; on Clarkson load 0.48, 0.53, 0.51, peak 964, 944, 947 kPa. The loads are settled; bags' peak at the game's step reads 13% over its limit.
 
-**Cost:** about what it was, 140 ms for Lion's Q on bags against 125, 105 on Clarkson against 105. The panel took no longer.
+**Cost:** about what it was, 140 ms for Lion's Q on bags against 125, 105 on Clarkson against 105 (one run each).
 
 **Anchors moved in the tests, on the user to check:** Lion's Q on bags is now lost in calm water (`Bags_alone_break_a_battlecruiser`); the sea's margin moved to Iron Duke's Q (`The_sea_decides_at_the_margin...`). Tests: `A_bed_burns_above_its_room...`, `A_bed_is_a_whole_stow_alight`.
 
