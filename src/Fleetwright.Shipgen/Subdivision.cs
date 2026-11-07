@@ -870,6 +870,17 @@ public static class Subdivision
         var grid = cells.GroupBy(c => c.Si).ToDictionary(g => g.Key, g => g.ToList());
         static bool Meets(Cell c, Cell d) => d.T0 <= c.Ti && c.T0 <= d.Ti;
         var lon = longi.ToDictionary(l_ => (l_.Section!, Math.Round(l_.Y ?? 0.0, 3)), l_ => l_.Id);
+        // a torpedo protection's wing cell meets a space inside it across a transverse bulkhead where the protection's depth changes
+        // from one section to the next, or where it ends: that patch is its holding bulkhead's jog, continuous with it, not the
+        // transverse bulkhead's plate (docs/battle/explosions.md EX5: the gas went round the holding bulkhead's end there)
+        string? Jog(Cell wing, Cell inside)
+        {
+            var kw = roomOut[owner[wing.Id]].Kind;
+            var ki = roomOut[owner[inside.Id]].Kind;
+            if (kw != RoomKind.Tds || ki is RoomKind.Tds or RoomKind.DoubleBottom)
+                return null;
+            return lon.GetValueOrDefault((wing.Section, Math.Round(wing.Y0 >= 0 ? wing.Y0 : wing.Y1, 3)));
+        }
         foreach (var c in cells)
         {
             var nb = new List<(Cell D, string Via)>();
@@ -894,7 +905,7 @@ public static class Subdivision
                 if (grid.TryGetValue(c.Si + ds, out var gl))
                     foreach (var d in gl)
                         if (Meets(c, d) && Ov(c.Y0, c.Y1, d.Y0, d.Y1) > 1e-6)
-                            nb.Add((d, tb[Math.Min(c.Si, d.Si)].Id));
+                            nb.Add((d, Jog(c, d) ?? Jog(d, c) ?? tb[Math.Min(c.Si, d.Si)].Id));
             c.Neighbours = nb.Select(t => new[] { t.D.Id, t.D.Room == c.Room ? "open" : t.Via }).ToList();
         }
 
