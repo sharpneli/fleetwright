@@ -109,6 +109,8 @@ public sealed class ShipStore
 
     /// <summary>Slots in use or freed; iterate [0, Slots) and skip the dead.</summary>
     public int Slots => high;
+    /// <summary>Slots the store has room for before it grows (at a spawn).</summary>
+    public int Capacity => alive.Length;
     public int Count => high - free.Count;
     public int RouteCapacity => routeCap;
 

@@ -183,6 +183,13 @@ public enum ShipStatus : byte
 /// eyes work, the power it can make and its steering. Allocated at spawn, sized by the class.</summary>
 public sealed class ShipCondition
 {
+    public ShipCondition()
+    {
+    }
+
+    /// <summary>A fresh condition of a class, whole as she's built: a copy to work her explosions on (docs/battle/workers.md W16).</summary>
+    public ShipCondition(ShipClass c) => Reset(c);
+
     public ShipClass Class { get; private set; } = null!;
     public PartState[] State = [];
     public PartFlags[] Flags = [];

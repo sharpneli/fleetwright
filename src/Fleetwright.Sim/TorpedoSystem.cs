@@ -368,7 +368,7 @@ public sealed class TorpedoSystem : IWorldSystem
                 Hits++;
                 End(world, ref t, e.Entity);
                 if (Damage != null && settings.HitsDoDamage && t.ShooterClass >= 0)
-                    Damage.Strike(world, new Hit
+                    Damage.Take(world, new Hit
                     {
                         Ship = t.Hit, Ms = world.Time.Ms, Point = t.HitPoint, Direction = t.HitDirection, SpeedMs = t.HitSpeed, Source = HitSource.Torpedo,
                         Torpedo = ships.Class(t.ShooterClass).Torpedoes[t.Row], ShellType = -1, Shooter = t.Shooter, Battery = t.Launcher,

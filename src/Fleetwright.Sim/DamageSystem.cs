@@ -304,6 +304,10 @@ public sealed partial class DamageSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
+        // a command on a ship lands what's on its way to her first (docs/battle/workers.md W16): it acts on her as she is then
+        if ((DamageCommand)c.Code is not (DamageCommand.SetFuel or DamageCommand.SetReadiness or DamageCommand.SetDamageControl or DamageCommand.SetStupidity)
+            && ships.Store.SlotOf(c.Entity) is var fs and >= 0)
+            Flush(world, fs);
         switch ((DamageCommand)c.Code)
         {
             case DamageCommand.SetFuel:
@@ -715,6 +719,9 @@ public sealed partial class DamageSystem : IWorldSystem
         Flood(cls);
         HullGirder.Of(cls);
         GasNetwork.For(cls);   // grown to her now, on this thread, not at her first burst
+        Copies(cls);   // her copies to work explosions on (W16), made now, not at her first hit
+        _ = cls.Electric;   // built on its first read: now, on this thread, not in a hit worked off it (W16)
+        Grow();
         scratch.Reserve(cls);
     }
 
@@ -747,11 +754,15 @@ public sealed partial class DamageSystem : IWorldSystem
             ref readonly var row = ref cls.Launchers[l];
             StoresSetOff++;
             k.StoreLit[l] = false;   // taken now, so a hit Strike passes over (a bench's Spared) can't hold this loop on it
-            Strike(world, new Hit
+            var store = new Hit
             {
                 Ship = entity, Ms = world.Time.Ms, Point = row.StoreAt, Direction = row.StoreAxis, Source = HitSource.Store, Store = l,
                 Shell = cls.Torpedoes[row.Torpedo].Warhead, ShellType = -1, Shooter = k.LastShooter, Battery = k.LastBattery,
-            });
+            };
+            if (slot == landingSlot || slot == steppingSlot && Deferring(world))
+                Take(world, store);   // into her batch, after the explosion or the fire that set it off (W16)
+            else
+                Strike(world, store);
         }
         (LastTerminal, LastEffects, LastEffect, LastRace) = (lt, le, lf, lr);
         goingOff = false;
@@ -871,10 +882,19 @@ public sealed partial class DamageSystem : IWorldSystem
                    c.Mounts[mount].ReloadS / 1200;
         if (r.NextDouble() >= p)
             return;
+        if (OnWay(slot) is { } b)
+            b.Wait(new WaitOp { Kind = WaitKind.OwnGun, Ms = world.Time.Ms, Mount = mount });   // on her once the batch has landed (W16)
+        else
+            OwnGunsOut(world, slot, k, mount, world.Time.Ms, ref r);
+    }
+
+    /// <summary>Her own guns' shock took a section's power out round the mount, at its moment.</summary>
+    void OwnGunsOut(World world, int slot, ShipCondition k, int mount, long ms, ref RandomStream r)
+    {
+        var c = k.Class;
         ref readonly var m = ref c.Mounts[mount];
         var at = new P3(m.X, m.Y, c.Components[m.Component].Bounds.Base);
-        long now = world.Time.Ms;
-        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), now, settings))
+        if (!Effects.PowerOut(c, k, at, m.Component, -1, settings.ShockZoneBM, NonPen.Minutes(settings.SectionPowerMin, ref r), ms, settings))
             return;
         k.Damaged = touched = true;
         Recompute(world, slot, k, ref r);
@@ -903,8 +923,18 @@ public sealed partial class DamageSystem : IWorldSystem
                 return;
         }
         long now = world.Time.Ms;
-        Steadiness.Pressed(k, settings.DuressStraddle * settings.DuressStraddleGreen * green, now, settings);
-        var r = stream.Derive(0x57AD1u).Derive((ulong)ship.Entity).Derive((ulong)now);
+        double amount = settings.DuressStraddle * settings.DuressStraddleGreen * green;
+        if (OnWay(slot) is { } b)
+            b.Wait(new WaitOp { Kind = WaitKind.Salvo, Ms = now, Amount = amount });   // on her men once the batch has landed (W16)
+        else
+            Pressed(world, slot, k, amount, now);
+    }
+
+    /// <summary>A salvo's pressure on her men at its moment, and who stays worked out again.</summary>
+    void Pressed(World world, int slot, ShipCondition k, double amount, long ms)
+    {
+        Steadiness.Pressed(k, amount, ms, settings);
+        var r = stream.Derive(0x57AD1u).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)ms);
         Recompute(world, slot, k, ref r);
         Remind(world, slot, k);
     }
@@ -1161,7 +1191,9 @@ public sealed partial class DamageSystem : IWorldSystem
         if (fs.Flooded > 0)
             k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // a magazine's valves opened: its water from the next second
         touched = true;
-        if (fs.Magazine)
+        if (fs.Magazine && Deferring(world))
+            TakeSetOff(world, slot, fs.MagazineRoom);   // fire's heat set it off (fire B2): an explosion of hers, landing later (W16)
+        else if (fs.Magazine)
         {
             // fire's heat set it off (fire B2)
             var race = SetOff(world, slot, k, fs.MagazineRoom, 0, MagazineCounts.ByFire, ref rng);
@@ -1294,6 +1326,7 @@ public sealed partial class DamageSystem : IWorldSystem
         int slot = ships.Store.SlotOf(entity);
         if (slot < 0)
             return ShipStatus.GoingDown;
+        Flush(world, slot);
         var k = ships.Store.Combat.Condition(slot);
         long t = world.Time.Ms, end = t + (long)(seconds * 1000);
         if (k.NextStepMs < 0 && k.Status == ShipStatus.Afloat)
@@ -1302,6 +1335,26 @@ public sealed partial class DamageSystem : IWorldSystem
         k.NextStepMs = -1;
         long next = (t / settings.FloodMs + 1) * settings.FloodMs;
         k.FloodDueMs = Math.Min(k.FloodDueMs, next);
+        settling = true;   // its steps run here, not as the world's events: what they set off lands at once
+        try
+        {
+            SettleSteps(world, slot, k, entity, next, end);
+        }
+        finally
+        {
+            settling = false;
+        }
+        // the timed outages that end meanwhile (E4) over too
+        if (k.Status == ShipStatus.Afloat && k.Clear(end))
+        {
+            var rc = stream.Derive(0xC1EBu).Derive((ulong)entity).Derive((ulong)end);
+            Recompute(world, slot, k, ref rc);
+        }
+        return k.Status;
+    }
+
+    void SettleSteps(World world, int slot, ShipCondition k, int entity, long next, long end)
+    {
         while (k.Status == ShipStatus.Afloat && next <= end)
         {
             // the timed outages and the walking wounded (E6) ending by then over first, as the world's clear event has them
@@ -1315,13 +1368,6 @@ public sealed partial class DamageSystem : IWorldSystem
                 break;
             next = (next / d + 1) * d;
         }
-        // the timed outages that end meanwhile (E4) over too
-        if (k.Status == ShipStatus.Afloat && k.Clear(end))
-        {
-            var rc = stream.Derive(0xC1EBu).Derive((ulong)entity).Derive((ulong)end);
-            Recompute(world, slot, k, ref rc);
-        }
-        return k.Status;
     }
 
     public void Handle(World world, in SimEvent e)
@@ -1331,36 +1377,73 @@ public sealed partial class DamageSystem : IWorldSystem
             return;
         if (e.Code == LossEvent)
         {
+            Flush(world, slot);
             Gone(e.Entity);
             world.Issue(ShipSystem.Drop(e.Entity));
             return;
         }
         var k = ships.Store.Combat.Condition(slot);
-        if (e.Code == ClearEvent)
+        if (e.Code == LandEvent)
         {
-            // timed outages over (E4): what the ship can do worked out again, and the next one's end
-            if (e.A != k.ClearGen || k.Status != ShipStatus.Afloat)
-                return;
-            k.ClearAtMs = -1;
-            if (k.Clear(world.Time.Ms))
-            {
-                touched = true;
-                var rc = stream.Derive(0xC1EAu).Derive((ulong)e.Entity).Derive((ulong)world.Time.Ms);
-                Recompute(world, slot, k, ref rc);
-            }
-            Remind(world, slot, k);
+            if (OnWay(slot) is { } on && on.Ticket == e.A)
+                Landing(world, slot, on);
             return;
         }
-        if (e.A != k.StepGen || k.Status != ShipStatus.Afloat)
+        // her outages' clear and her step wait behind a batch on its way (W16), and run when it has landed
+        if (OnWay(slot) is { } b)
+        {
+            if (e.Code == ClearEvent)
+                (b.ClearWaits, b.ClearGen) = (true, e.A);
+            else
+                (b.StepWaits, b.StepGen) = (true, e.A);
             return;
-        long now = world.Time.Ms, d = Step(world, slot, k, now);
+        }
+        if (e.Code == ClearEvent)
+            RunClear(world, slot, k, e.A);
+        else
+            RunStep(world, slot, k, e.A);
+    }
+
+    /// <summary>Timed outages over (E4): what the ship can do worked out again, and the next one's end.</summary>
+    void RunClear(World world, int slot, ShipCondition k, long gen)
+    {
+        if (gen != k.ClearGen || k.Status != ShipStatus.Afloat)
+            return;
+        k.ClearAtMs = -1;
+        if (k.Clear(world.Time.Ms))
+        {
+            touched = true;
+            var rc = stream.Derive(0xC1EAu).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)world.Time.Ms);
+            Recompute(world, slot, k, ref rc);
+        }
+        Remind(world, slot, k);
+    }
+
+    /// <summary>Her flooding and fire step, and the next one's event; a batch of explosions it opened (her fire set a magazine off)
+    /// closes when it's done.</summary>
+    void RunStep(World world, int slot, ShipCondition k, long gen)
+    {
+        if (gen != k.StepGen || k.Status != ShipStatus.Afloat)
+            return;
+        steppingSlot = slot;
+        long now = world.Time.Ms, d;
+        try
+        {
+            d = Step(world, slot, k, now);
+        }
+        finally
+        {
+            steppingSlot = -1;
+        }
+        if (OnWay(slot) is { Closed: false } opened)
+            Close(world, slot, opened);
         if (d < 0 || k.Status != ShipStatus.Afloat)
         {
             k.NextStepMs = -1;
             return;
         }
         k.NextStepMs = (now / d + 1) * d;
-        world.Schedule(new WorldTime(k.NextStepMs), EventTier.Fine, e.Entity, Id, StepEvent, e.Generation, k.StepGen);
+        world.Schedule(new WorldTime(k.NextStepMs), EventTier.Fine, ships.Store[slot].Entity, Id, StepEvent, ships.Store[slot].Generation, k.StepGen);
     }
 
     /// <summary>A ship gone under: every navy that has it in sight saw it go (its contact says so until it's forgotten).</summary>
@@ -1418,6 +1501,11 @@ public sealed partial class DamageSystem : IWorldSystem
         if (!touched)
             return;   // a world never hit hashes as before there was damage
         h.Add(hits);
+        for (int slot = 0; slot < onWay.Length; slot++)
+        {
+            HashBatch(ref h, onWay[slot], slot);
+            HashBatch(ref h, behind[slot], slot);
+        }
         var store = ships.Store;
         for (int slot = 0; slot < store.Slots; slot++)
             if (store.IsAlive(slot) && store.Combat.Condition(slot) is { Damaged: true } k)
@@ -1425,6 +1513,22 @@ public sealed partial class DamageSystem : IWorldSystem
                 h.Add(slot);
                 k.Hash(ref h);
             }
+    }
+
+    /// <summary>A batch on its way (W16) into the hash: when it lands, what's in it and what waits behind it.</summary>
+    void HashBatch(ref StateHash h, Batch? b, int slot)
+    {
+        if (b is null || !Hers(b, slot))
+            return;
+        h.Add(slot + 9000);
+        h.Add(b.LandMs);
+        h.Add(b.Count);
+        h.Add(b.Ops);
+        h.Add(b.StepWaits);
+        h.Add(b.ClearWaits);
+        h.Add(b.Closed);
+        for (int i = 0; i < b.Count; i++)
+            h.Add(b.Inputs[i].Index);
     }
 
     public void Fill(Snapshot snap)
