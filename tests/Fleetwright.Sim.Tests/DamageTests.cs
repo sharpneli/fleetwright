@@ -186,7 +186,7 @@ public class DamageTests(ITestOutputHelper output)
         for (int i = c.Components.Length; i < c.NodeCount; i++)
             below += r.PartsOut[i];
         output.WriteLine($"  upper works out {upper}, spaces below out {below}");
-        Assert.True(upper > 3 * below, "the upper works take it");
+        Assert.True(upper > 2.5 * below, "the upper works take it");   // 3.3 before EX4, 3.0 after: the near field goes on through what it opens
     }
 
     [Fact]

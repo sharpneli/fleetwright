@@ -1345,9 +1345,15 @@ public sealed record SimSettings
     /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked by its shock and fragments, in
     /// the open and in the near zone of a burst inside (docs/battle/shells-armour-damage.md E5; damage/11 §3.3, §5.1: was
     /// 1.6, an internal number); a contact burst's hole in plating, times the square root of 6 mm over the plate (11 §3.1:
-    /// unbiased against 13 holes). People are E6's (<see cref="CasualtyS"/>).</summary>
+    /// unbiased against 13 holes). People are E6's (<see cref="CasualtyS"/>). The same with water backing the charge
+    /// (<c>NearField</c>, docs/battle/explosions.md EX4): how far inboard it wrecks (a 300 kg charge 4.7 m, the depth of a TDS rated
+    /// for it; damage-model-research.md §3.4, A6), its hole's radius whatever the plate (1.4·W^⅔ m²: Seydlitz's 12 × 4 m from a
+    /// ~200 kg charge), and how deep it's whole, m a kg^⅓ [EST: where the surface no longer vents it].</summary>
     public double WreckRadiusK { get; init; } = 1.0;
     public double HoleRadiusK { get; init; } = 0.45;
+    public double TampedReachK { get; init; } = 0.7;
+    public double TampedHoleK { get; init; } = 0.6676;
+    public double TampDepthK { get; init; } = 0.5;
 
     /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
     /// φ·(Q_c − Q_d)]·W/V MPa (W the filler's kg, V the space's gas, φ = 1/(1 + W·air/V) the afterburn its air allows);
@@ -1355,8 +1361,7 @@ public sealed record SimSettings
     /// none at all once α·A ≥ <see cref="OpenVentRatio"/>·V^⅔ (open). A boundary deforms from a fifth of what it ruptures at, <see cref="RuptureMPaMm"/> per
     /// mm of plate (riveted × <see cref="RivetedK"/>); a door goes at
     /// <see cref="DoorShare"/> of its bulkhead's, at least <see cref="DoorMinMPa"/>, opening <see cref="DoorM2"/>; a
-    /// ruptured boundary opens <see cref="RupturedShare"/> of its area to the flooding (all of it to the gas). In the near
-    /// zone (WreckRadiusK·W^⅓) a boundary is holed <see cref="NearHoleK"/>·W^⅓ across.</summary>
+    /// ruptured boundary opens <see cref="RupturedShare"/> of its area to the flooding (all of it to the gas).</summary>
     public double BlastHeatK { get; init; } = 0.28;
     public double AtmosphereMPa { get; init; } = 0.101;
     public double VentAlpha { get; init; } = 0.6;
@@ -1369,7 +1374,6 @@ public sealed record SimSettings
     public double DoorMinMPa { get; init; } = 0.08;
     public double DoorM2 { get; init; } = 1.2;
     public double RupturedShare { get; init; } = 0.25;
-    public double NearHoleK { get; init; } = 0.5;
 
     /// <summary>A deformed boundary's seam leak (E5; damage/17 leakage §3.2, <c>leak_ratio</c>): D = felt/deform; none below
     /// <see cref="LeakWeepD"/>, <see cref="LeakR1"/>·D² cm²/m² to D 1, then log-linear to <see cref="LeakR5"/> at D 5;
@@ -2505,14 +2509,11 @@ public sealed record SimSettings
     /// turning swings her tubes through it, so each torpedo's course errs by her rate of turn times it.</summary>
     public double TorpedoFireTimingS { get; init; } = 0.5;
 
-    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6): how far inboard it wrecks, m per kg^⅓ of its
-    /// charge (TNT's worth; a 300 kg charge 4.7 m, the depth of a TDS rated for it), and the hole it tears in the side,
-    /// m² per kg^⅔ (Seydlitz's 12 × 4 m from a ~200 kg charge). Each other cell within the reach takes a hole of its own
+    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6), its reach and hole the near field's
+    /// (<see cref="TampedReachK"/>). Each other cell within the reach takes a hole of its own
     /// of this share of it, less by its distance; machinery spaces within this many reaches may trip from the shock (the
     /// chance), the nearest magazine within the reach is lit as by a burst among its charges (MagazineFlashChance, fading
     /// to none over the reach's outer half; docs/battle/magazines.md V7), and this share of the battle crew in the spaces it floods is lost.</summary>
-    public double TorpedoReachK { get; init; } = 0.7;
-    public double TorpedoHoleK { get; init; } = 1.4;
     public double TorpedoInnerHoleShare { get; init; } = 0.5;
     public double TorpedoShockShare { get; init; } = 2;
     public double TorpedoShockChance { get; init; } = 0.5;

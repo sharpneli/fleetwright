@@ -8,8 +8,8 @@ namespace Fleetwright.Sim.Combat;
 /// terminal and effects in one, v0 (damage-model-research.md §3.4, 05-mechanics-and-games.md A6):
 /// <list type="bullet">
 /// <item><b>a dud</b> by the era's chance: nothing but the blow;</item>
-/// <item><b>the reach and the hole:</b> the charge w (TNT's worth) wrecks <see cref="SimSettings.TorpedoReachK"/>·w^⅓
-/// inboard and tears <see cref="SimSettings.TorpedoHoleK"/>·w^⅔ m² of the side; the cell behind the hull takes that hole,
+/// <item><b>the reach and the hole:</b> the charge w (TNT's worth) wrecks and tears as any detonation does (<see cref="NearField"/>),
+/// as tamped as its depth makes it; the cell behind the hull takes that hole, in the side and out of her section,
 /// and every other cell within the reach one of its own, smaller by its distance: the cells there flood;</item>
 /// <item><b>the torpedo protection:</b> when the struck cell is a TDS cell at least as deep as the reach, its holding
 /// bulkhead holds: only the TDS and the double bottom flood, and nothing inside it is wrecked;</item>
@@ -44,7 +44,10 @@ public static class Underwater
             return res;
         }
 
-        double w = Math.Max(hit.Torpedo.ChargeKg, 0), reach = s.TorpedoReachK * Math.Cbrt(w), hole = s.TorpedoHoleK * Math.Pow(w, 2.0 / 3);
+        double size = Math.Cbrt(Math.Max(hit.Torpedo.ChargeKg, 0)), tamp = NearField.Tamp(HitQuery.WaterOf(c, k.Attitude).At(p.X, p.Y) - p.Z, size, s);
+        double reach = NearField.Charge(size, 1, tamp, s).ReachM;
+        int face = first >= 0 ? NearField.NearestFace(k, first, p) : -1;
+        double radius = NearField.HoleM(size, face >= 0 ? k.Faces.Mm[face] : c.Plating.ShellMm, tamp, s), hole = Math.PI * radius * radius;
         bool held = first >= 0 && cells[first].TdsM >= reach;
         outcome = held ? Outcome.Held : Outcome.Exploded;
 
@@ -60,7 +63,11 @@ public static class Underwater
             if (a <= 0)
                 continue;
             var b = cells[i].Box;
-            k.Hole(i, a, new P3(Math.Clamp(p.X, b.X0, b.X1), Math.Clamp(p.Y, b.Y0, b.Y1), Math.Clamp(p.Z, b.Base, b.Top)));
+            var there = new P3(Math.Clamp(p.X, b.X0, b.X1), Math.Clamp(p.Y, b.Y0, b.Y1), Math.Clamp(p.Z, b.Base, b.Top));
+            if (i == first)
+                NearField.Punch(c, k, i, a, there, s);
+            else
+                k.Hole(i, a, there);
             res.BreachM2 += a;
             res.CrewLost += cells[i].BattleCrew * s.TorpedoCasualtyShare * (1 - d / reach);
             foreach (int room in c.RoomsIn(i))

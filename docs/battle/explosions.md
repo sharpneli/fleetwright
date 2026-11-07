@@ -13,13 +13,13 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**EX2 is built, reviewed and unified. Magazines break ships in the panel's games again ("The stow's own confinement", 2026-11-07), but the research that came back the same day says the rule that does it isn't physical: a stack with a free face throws itself into the aisle in 10-20 ms ("What the research found"). The rule is still in the game. Next is the user's call on taking it out.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
+**EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
 
-1. **Magazines at the margin.** The bed moved it ("The stow's own confinement"), and research says the bed doesn't exist ("What the research found"), so these figures are in doubt: on the BCF's handling Lion's forward magazines now break her in calm water (1.05-1.10). **Still short:** Tiger reads 0.54 and Invincible 0.38-0.69 in calm water, 0.68 and 0.84 in a moderate sea; a magazine takes about 0.6 ship a seed at Jutland, where the record has several. Left to try: shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, a shell's own damage already in her section, and the pressure in the bed on the plate beside it. **Not tuned, and decision 3 says no balancing yet.**
+1. **Magazines at the margin.** The bed is out ("What the research found"), so it's back where EX3 left it: on the BCF's handling Lion's forward magazines read 0.82 in calm water, Tiger 0.49, Invincible 0.60. EX4 didn't touch a magazine's own race (a burn has no near field). Left to try: shell rooms' bursters (EX6's chain, now that the near field can carry a detonation through her), what a real magazine's boundaries are like. **Not tuned, and decision 3 says no balancing yet.**
 2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
-3. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
+3. **The near field:** built (EX4). A Tallboy's charge in Lion's aft engine room still leaves her whole: her bottom holed, at 0.31 of her length where the moment is small. In a destroyer it now takes her whole section.
 4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
 5. **cases and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
 6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
@@ -183,7 +183,7 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
   `PartGas`, `Felt`, `MagazineGiveKPa/Mm/M2/FaceM2`, decision 6. `Magazines` keeps the stow and the burn law, as a source.
 - **EX3. One girder.** Section elements per station, losses adding up, flooding's moment. Shells can break a ship.
   `Magazines.Girder`, `MagazineD`, `MagazineEnd*` go. **This step answers the destroyer above.**
-- **EX4. One near field.** The wreck reach and the holes as one rule for all sources, tamped by water by where it is.
+- **EX4. One near field.** The wreck reach and the holes as one rule for all sources, tamped by water by where it is. **Built 2026-11-07** ("EX4: one near field").
 - **EX5. One water.** Contact and non-contact underwater as one model: the shock factor, the tamped hole, the bubble's
   whip, a TDS from its own volumes and plates through the network. `Underwater`'s separate rules, `TorpedoBreakShare` and
   the `Held` switch go. Its anchors are the hard ones (one torpedo usually sinks a destroyer, 7 of 31 lived; capital ships
@@ -629,6 +629,57 @@ So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in c
 **Anchors moved in the tests, on the user to check:** Lion's Q on bags is now lost in calm water (`Bags_alone_break_a_battlecruiser`); the sea's margin moved to Iron Duke's Q (`The_sea_decides_at_the_margin...`). Tests: `A_bed_burns_above_its_room...`, `A_bed_is_a_whole_stow_alight`.
 
 **Also (2026-11-07): the side plate counted twice.** Where the hull narrows, an inner cell's wall can stand within the 0.6 m the side test allows, so it read as side plate with a wing outboard of it. Now only what no other space stands outboard of is outside (`Blast.Outboard`; `A_side_belongs_to_one_space_at_a_height` over the fleet). Peaks and loads hardly moved, within 0.01: these sections aren't where magazines are read. It's off the review's list below.
+
+## EX4: one near field (2026-11-07)
+
+**What there was:** three hole rules (a shell's contact hole, a near zone's flat 0.5·W^⅓ in any plate, the torpedo's 1.4·W^⅔ m²), two reaches (1.0 and 0.7·W^⅓), and a near zone that stopped at the burst's own space. A shell's contact hole in the hull was the sea's way in and the gas's vent, but never in her section; a torpedo's and a near miss's holes weren't either.
+
+**What there is (`NearField`):**
+
+- **One charge:** its size W^⅓ (TNT's worth), how far water backs it (`Tamp`: 0 at the surface, whole `TampDepthK` 0.5·W^⅓ down [EST]; a burst in a flooded space by its depth under the water there), and its reach, 1.0·W^⅓ in air to 0.7 in water.
+- **One hole:** in air 11 §3.1's contact rule, 0.45·W^⅓·√(6/t); in water 0.668·W^⅓ whatever the plate (the torpedo's 1.4·W^⅔ m²); between them by the tamp, both the constant and the plate's exponent. No switch.
+- **Off the plate,** the hole is what the reach's sphere cuts of it, and a thick plate lies within less of the reach (its share √(6/t), at most all of it): a charge 2 m off 76 mm doesn't hole it, in contact it does (Marblehead's, 11 §3.2). This replaces the near zone's flat 0.5·W^⅓, which holed an armoured bulkhead as readily as a joiner partition.
+- **A plate split between spaces is holed once,** a square of the hole's area clipped to each piece.
+- **The walk:** from the charge's space outwards, every boundary within the reach, between spaces or to the outside, holed by the rule; it goes on only through what's open or it opened (not a sprung seam). So what a plate holds back stays behind it, and a big charge goes on past the next space.
+- **Hull holes are in her section,** whatever made them: a burst's through the walk, a torpedo's and a near miss's through `NearField.Punch`. The sea's way in is the same hole.
+- **The open-space shortcut** counts only what was open before the burst. What the charge opens, its gas goes out by in the run. Without this a Tallboy in a destroyer holed her so wide that its gas never ran, and it had no whip at all.
+
+**Kept for EX5** (with the reason): the torpedo's inner cells' holes and its `Held` switch, `TorpedoBreakShare`, and the near miss's own shock rules. **One judgement:** a shell's own calibre hole where it passed the plate it burst against is kept only if larger than the near field's there, so they aren't counted twice.
+
+**The charges (`explosions-ex4/charges.txt`), before and after:**
+
+| | Before | After |
+|---|---|---|
+| 11 §5.5's seven, mid-space | | the same within a few %; 16" AP in a battleship's quarters reaches 1 space, not 16 (its bulkheads no longer holed regardless of their plate) |
+| Tallboy's charge, destroyer | load 3.41 calm, lost 0.80 | **24.9, lost 0.97**: gone |
+| The same, Iron Duke | 0.33 / 0.72, lost 0.12 | 0.36 / 0.79, lost 0.37, her bottom holed |
+| The same, Yamato | 0.45 / 1.10 | 0.40 / 0.96 |
+| The same, Lion (her engine room aft) | 0.20 / 0.48 | the same: holed aft, not where her moment is |
+| Nine 46 cm HE along a destroyer | 0.75 / 1.54 | 0.84 / 1.72, 305 m² of holes (246) |
+| Eighteen 12″ HE along a destroyer | 0.13 / 0.30 | 0.20 / 0.45, her section at 0.88 77% gone (18%), her bow nearly off |
+| Eighteen 6″, Iron Duke or QE under 46 cm | | unchanged |
+
+**On ships (`hits`, `torpedo`):** Yamato's HE on the destroyer, lost after 1, 5, 9 hits and two hours: 0%, 46%, 86% before; **4%, 60%, 94%** now (the guess's 7, 44, 79%). Torpedoes on a capital ship read the same, run for run; on the destroyer, 2.3 m down, the hole is 47 m² (63) and the reach 5.3 m (4.7), lost 74% to one (72%).
+
+**The panel (`explosions-ex4/`, 8 seeds, Jutland 4; before is the bed out):**
+
+| Lost a seed | Before | Now | Record | | Before | Now | Record |
+|---|---:|---:|---:|---|---:|---:|---:|
+| Dover Strait: Britain | 0.1 | 0.4 | 0 | Germany | 1.4 | 1.3 | 2 |
+| Coronel: Britain | 1.1 | 1.6 | 2 | Germany | 1.0 | 0.6 | 0 |
+| Cape Sarych: Russia | 3.9 | 4.9 | 0 | Ottoman Empire | 0.5 | 0.5 | 0 |
+| Heligoland Bight: Britain | 0.8 | 1.5 | 0 | Germany | 8.5 | 13.1 | 4 |
+| Dogger Bank: Britain | 5.9 | 6.8 | 0 | Germany | 11.3 | 9.6 | 1 |
+| Tsushima: Russia | 3.3 | 3.0 | 7 | Japan | 4.0 | 5.1 | 0 |
+| Jutland: Britain | 27.8 | 29.5 | 14 | Germany | 47.5 | 49.3 | 11 |
+| The prizes' war: France | 1.5 | 1.8 | - | Italy | 3.0 | 2.5 | - |
+| Åland: Finland | 6.8 | 5.8 | - | Sweden | 3.8 | 2.5 | - |
+
+- **All together:** 5 of 14 sides within about twice the record (7); the record's loser lost more in 23 of 44 seeds (26); **broke in two 33% of losses (24)**, capsized 43% (44), foundered 23% (32), magazine 0% (0; Jutland 1%, one seed's). Most single sides move within EX0's noise; the shift to breaking is across every scenario but Tsushima, and is the step's: holes now count against the section.
+- **`damage-history`:** five cases moved by a few runs of 20: Tiger 20% to 35%, Bismarck 50% to 60%, the 10 × 5″ destroyer 0% to 10%, the 40 × 5″ one 40% to 35%, Samar's 5% to 0%. **`dc-history`:** Lützow 40% to 25%, Seydlitz at 24 kn 5% to 0%, the rest the same.
+- **Cost:** the panel ran in 686 s against 813, beside other runs both times; a Tallboy's charge 1-16 ms, a shell's burst as before (the 11 §5.5 charges 34-381 µs).
+
+**Not tuned, by decision 3.** The panel reads worse against the record, and it's the record's losers losing more by breaking. Read it beside EX5, which owns the torpedo's switches and the water.
 
 ## What stays out
 

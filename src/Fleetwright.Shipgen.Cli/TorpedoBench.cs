@@ -45,7 +45,8 @@ static class TorpedoBench
         var r = GivenTorpedoes(tc, torpedo, depth, o, settings, fallOut);
         double secs = sw.Elapsed.TotalSeconds;
         int k = Math.Max(o.PerShip, 1);
-        double reach = settings.TorpedoReachK * Math.Cbrt(torpedo.ChargeKg), hole = settings.TorpedoHoleK * Math.Pow(torpedo.ChargeKg, 2.0 / 3);
+        double size = Math.Cbrt(torpedo.ChargeKg), tamp = NearField.Tamp(depth, size, settings), reach = NearField.Charge(size, 1, tamp, settings).ReachM;
+        double radius = NearField.HoleM(size, tc.Plating.ShellMm, tamp, settings), hole = Math.PI * radius * radius;
         Console.WriteLine(string.Format(Inv, "{0} ({1:0} t, {2:0} m, depth {3:0.0} m, draught {4:0.0} m): {5} hits {6:0.0} m down {7}, {8} a ship; reach {9:0.0} m, " +
             "hole {10:0} m²; {11:0.00} s", tc.Name, tc.Hydrostatics.DisplacementT, tc.Length, tc.Vertical.Depth, tc.Vertical.Draught, r.Hits, depth,
             double.IsNaN(o.AtShare) ? "along the side" : $"at {o.AtShare:0.##} of the length from the stern", k, reach, hole, secs));

@@ -71,21 +71,20 @@ static class BurstBench
         var warm = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
         w.Apply(ShipSystem.Spawn(cls, 56.1, 4, 0, 0));
         var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(w.Ships.NewestEntity));
-        double size = Math.Cbrt(fillerKg * shell.FillerRe), rw = settings.WreckRadiusK * size;
+        var near = NearField.Charge(Math.Cbrt(fillerKg * shell.FillerRe), 1, 0, settings);
         var rng = RandomStream.Named(1, "burst bench");
         double gas = Blast.GasM3(c, k, cell), vents = Blast.VentM2(c, k, cell, settings);
         var net = GasNetwork.For(c);
         var rw0 = RandomStream.Named(2, "burst bench");
-        net.Detonate(warm, cell, at, fillerKg, shell, 0, settings.WreckRadiusK * Math.Cbrt(fillerKg * shell.FillerRe),
-            settings.NearHoleK * Math.Cbrt(fillerKg * shell.FillerRe), settings, ref rw0);   // a first one on another ship: the timing below is a burst's own
+        net.Detonate(warm, cell, at, fillerKg, shell, near, settings, ref rw0);   // a first one on another ship: the timing below is a burst's own
         var sw = Stopwatch.StartNew();
-        var res = net.Detonate(k, cell, at, fillerKg, shell, 0, rw, settings.NearHoleK * size, settings, ref rng);
+        var res = net.Detonate(k, cell, at, fillerKg, shell, near, settings, ref rng);
         double us = sw.Elapsed.TotalMilliseconds * 1000;
 
         if (title != null)
             Console.WriteLine($"\n{title}");
         Console.WriteLine(string.Format(Inv, "  {0}: {1:0.#} kg {2} in {3} ({4}, {5:0} m³ of gas, vents {6:0.00} m²), the near zone {7:0.0} m",
-            c.Name, fillerKg, explosive, c.RoomId(r0), c.CellId(cell), gas, vents, rw));
+            c.Name, fillerKg, explosive, c.RoomId(r0), c.CellId(cell), gas, vents, near.ReachM));
         Console.WriteLine(string.Format(Inv, "  peak {0:0.000} MPa, felt {1:0.000}{2}; {3} steps, {4:0.00} s, {5} space(s) reached ({6:0} m³)",
             res.PeakKPa / 1000, res.FeltMPa, res.Open ? " (open)" : "", res.Steps, res.EndS, res.Spaces, res.VolumeM3));
         Console.WriteLine(string.Format(Inv, "  ruptured {0}, doors blown {1}, deformed {2}; opened between spaces {3:0.00} m², sprung {4:0.000} m², to the sea or air {5:0.000} m² ({6:0} µs)",

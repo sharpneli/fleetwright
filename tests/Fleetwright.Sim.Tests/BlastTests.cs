@@ -72,8 +72,7 @@ public class BlastTests(ITestOutputHelper output)
         var b = c.Cells[cell].Box;
         double size = Math.Cbrt(kg * f.FillerRe);
         var r = RandomStream.Named(11, "blast tests");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), kg, f, 0, Settings.WreckRadiusK * size,
-            Settings.NearHoleK * size, Settings, ref r);
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), kg, f, NearField.Charge(size, 1, 0, Settings), Settings, ref r);
         output.WriteLine($"{what}: {c.CellId(cell)} ({Blast.GasM3(c, k, cell):0} m³): peak {res.PeakKPa:0} kPa, felt {res.FeltMPa:0.000}, {res.Spaces} spaces " +
                          $"({res.VolumeM3:0} m³), ruptured {res.Ruptured}, doors {res.Doors}, deformed {res.Deformed}, opened {res.OpenM2:0.0} m², to the sea or air {res.HoleM2:0.00} m²");
         return res;
@@ -176,10 +175,10 @@ public class BlastTests(ITestOutputHelper output)
         var r = RandomStream.Named(1, "alloc");
         var at = new P3(0, 0, -1);
         var net = GasNetwork.For(c);
-        net.Detonate(k, cell, at, 9.7, f, 0, 2, 1, Settings, ref r);
+        net.Detonate(k, cell, at, 9.7, f, new NearCharge(1, 0, 2), Settings, ref r);
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int i = 0; i < 100; i++)
-            GasNetwork.For(c).Detonate(k, cell, at, 9.7, f, 0, 2, 1, Settings, ref r);
+            GasNetwork.For(c).Detonate(k, cell, at, 9.7, f, new NearCharge(1, 0, 2), Settings, ref r);
         Assert.Equal(0, GC.GetAllocatedBytesForCurrentThread() - before);
     }
 
@@ -221,10 +220,10 @@ public class BlastTests(ITestOutputHelper output)
         var r = RandomStream.Named(1, "door");
         var b = c.Cells[cell].Box;
         var at = new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
-        var shut = GasNetwork.For(c).Detonate(k, cell, at, 3.3, f, 0, 0, 0, Settings, ref r);
+        var shut = GasNetwork.For(c).Detonate(k, cell, at, 3.3, f, default, Settings, ref r);
         var (c2, k2) = Ship("destroyer");
         Leaks.OpenDoors(c2, k2);
-        var open = GasNetwork.For(c2).Detonate(k2, cell, at, 3.3, f, 0, 0, 0, Settings, ref r);
+        var open = GasNetwork.For(c2).Detonate(k2, cell, at, 3.3, f, default, Settings, ref r);
         Assert.True(open.Spaces > shut.Spaces, $"{open.Spaces} against {shut.Spaces}");
     }
 
@@ -237,7 +236,7 @@ public class BlastTests(ITestOutputHelper output)
         int cell = Cell(c, k, RoomKind.Accommodation);
         var b = c.Cells[cell].Box;
         var r = RandomStream.Named(11, "holed");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 60, Charge(60, "TNT"), 0, 100, 0.1, Settings, ref r);
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 60, Charge(60, "TNT"), new NearCharge(0.2, 0, 8), Settings, ref r);
         output.WriteLine($"  holed {res.Holed}, ruptured {res.Ruptured} ({res.Bulkheads} bulkheads, {res.Decks} decks), peak {res.PeakKPa:0} kPa");
         Assert.True(res.Holed > 0);
         Assert.True(res.Bulkheads + res.Decks > 0, "every boundary of the space within the near zone, none giving under a bomb's gas");
@@ -252,7 +251,7 @@ public class BlastTests(ITestOutputHelper output)
         Leaks.OpenDoors(c, k);
         var b = c.Cells[cell].Box;
         var r = RandomStream.Named(11, "holed door");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 1, Charge(1, "Explosive D"), 0, 100, 0.1, Settings, ref r);
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 1, Charge(1, "Explosive D"), new NearCharge(0.2, 0, 8), Settings, ref r);
         output.WriteLine($"  {c.CellId(cell)}: peak {res.PeakKPa:0} kPa, holed {res.Holed}, ruptured {res.Ruptured}");
         Assert.Equal(0, res.Ruptured);
         var nb = c.Cells[cell].Neighbours;
@@ -278,7 +277,7 @@ public class BlastTests(ITestOutputHelper output)
         for (int i = 0; i < 6; i++)
         {
             var r = RandomStream.Named(11, "door " + i);
-            doors.Add(GasNetwork.For(c).Detonate(k, cell, at, 10, f, 0, 0, 0, Settings, ref r).Doors);
+            doors.Add(GasNetwork.For(c).Detonate(k, cell, at, 10, f, default, Settings, ref r).Doors);
         }
         int blown = k.JoinMarks.Count(m => (m & JoinMark.DoorBlown) != 0);
         output.WriteLine($"  doors blown by each burst: {string.Join(", ", doors)}; marked {blown}");
@@ -305,7 +304,7 @@ public class BlastTests(ITestOutputHelper output)
             var b = c.Cells[cell].Box;
             at = new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
             var r = RandomStream.Named(11, "torn");
-            GasNetwork.For(c).Detonate(k, cell, at, w, Charge(w, "TNT"), 0, 0, 0, Settings, ref r);
+            GasNetwork.For(c).Detonate(k, cell, at, w, Charge(w, "TNT"), default, Settings, ref r);
             for (int i = 0; i < c.Cells.Length; i++)
             {
                 var nb = c.Cells[i].Neighbours;
@@ -327,7 +326,7 @@ public class BlastTests(ITestOutputHelper output)
         k2.JoinOpenM2[best] = Settings.DoorM2;
         k2.JoinMarks[best] |= JoinMark.DoorBlown;
         var r2 = RandomStream.Named(11, "torn");
-        GasNetwork.For(c2).Detonate(k2, cell, at, kg, Charge(kg, "TNT"), 0, 0, 0, Settings, ref r2);
+        GasNetwork.For(c2).Detonate(k2, cell, at, kg, Charge(kg, "TNT"), default, Settings, ref r2);
         output.WriteLine($"  {kg} kg: lost {alone:0.00} with its door shut, {k2.EdgeLost[best]:0.00} with it blown before; read as torn plate it would be {alone + bestGap:0.00}");
         Assert.True(k2.EdgeLost[best] < alone + bestGap - 1e-6, $"{k2.EdgeLost[best]:0.00}");
     }
@@ -346,7 +345,7 @@ public class BlastTests(ITestOutputHelper output)
             k.FaceTornM2[cell * 4 + f] = Settings.RupturedShare * hull.Area[cell * 4 + f];   // as torn as a plate gets, from before
         var b = c.Cells[cell].Box;
         var r = RandomStream.Named(11, "blast tests");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 400, Charge(400, "TNT"), 0, 0, 0, Settings, ref r);
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 400, Charge(400, "TNT"), default, Settings, ref r);
         output.WriteLine($"{res.Sides} sides, {res.WeatherDecks} weather decks, {res.Bottoms} bottoms, {k.BreachM2[cell]:0.000} m² in her, peak {res.PeakKPa:0} kPa");
         Assert.True(res.Sides >= 1, "one rule with any boundary: past rupture it has given, however much was torn before");
         Assert.Equal(0, k.BreachM2[cell]);
@@ -359,7 +358,7 @@ public class BlastTests(ITestOutputHelper output)
         int cell = Cell(c, k, RoomKind.Accommodation);
         var b = c.Cells[cell].Box;
         var r = RandomStream.Named(1, "held");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 10, Charge(10, "TNT"), 0, 0, 0, Settings, ref r);   // no near zone: every boundary takes its load
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 10, Charge(10, "TNT"), default, Settings, ref r);   // no near zone: every boundary takes its load
         Assert.Equal(0, res.Ruptured);
         double felt = GasNetwork.For(c).FeltMPa(cell), worst = 0, expected = 0;
         var nb = c.Cells[cell].Neighbours;

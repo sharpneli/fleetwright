@@ -476,7 +476,7 @@ public sealed unsafe partial class HitboxScene
             p.StepTime = new double[s.Steps.Length];
             for (int i = 0; i < s.Steps.Length; i++)
                 p.StepTime[i] = p.TimeAt(s.Steps[i].T);
-            p.WreckM = s.Terminal.Bursts ? Effects.WreckRadiusM(s.Shell, s.Terminal.Force, settings) : 0;
+            p.WreckM = s.Terminal.Bursts ? NearField.Charge(Math.Cbrt(Math.Max(s.Shell.FillerKg * s.Shell.FillerRe, 0)), s.Terminal.Force, 0, settings).ReachM : 0;
             p.TotalS = p.EndS + AfterS;
             return p;
         }

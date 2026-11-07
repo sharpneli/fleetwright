@@ -159,14 +159,32 @@ public static class Effects
             ref readonly var x = ref xs[i];
             if (x.Kind is not (CrossingKind.HullIn or CrossingKind.HullOut))
                 continue;
-            bool contact = t.Bursts && t.Burst != BurstKind.Outside && Math.Abs(t.BurstT - x.T) <= 2;
+            bool contact = t.Bursts && t.Burst != BurstKind.Outside && Math.Abs(t.BurstT - x.T) <= NearWallM;
             if (!(x.T < t.StopT) && !contact)
                 continue;
             int behind = CellAt(xs, i, x.Kind == CrossingKind.HullIn);
             if (behind < 0)
                 continue;
-            double hole = contact ? s.HoleRadiusK * size * Math.Sqrt(6 / Math.Max(x.Mm, 1)) : 0.5 * s.ShellHoleCalibres * calM;
-            double a = Math.PI * hole * hole;
+            double through = 0.5 * s.ShellHoleCalibres * calM;
+            if (contact)
+            {
+                BurstPlace(xs, t.BurstT, out int burstCell, out int burstPart);
+                double burstHole = NearField.HoleM(size, x.Mm, 0, s);
+                if (burstPart < 0 && burstCell >= 0)
+                {
+                    // its near field holes this plate with the rest, from where it burst: the shell's own hole only if it's the larger
+                    if (NearField.HoleM(NearField.Charge(size, t.Force, 0, s), x.Mm, Math.Abs(t.BurstT - x.T), s) >= through)
+                        continue;
+                }
+                else
+                {
+                    double burstM2 = Math.PI * burstHole * burstHole;
+                    NearField.Punch(c, k, behind, burstM2, x.Point, s);
+                    res.BreachM2 += burstM2;
+                    continue;
+                }
+            }
+            double a = Math.PI * through * through;
             k.Hole(behind, a, x.Point);
             res.BreachM2 += a;
         }
@@ -421,18 +439,13 @@ public static class Effects
         }
     }
 
-    /// <summary>A burst's wreck radius, m: parts within it are wrecked or put out of action by distance (cube-root
-    /// scaled by its filler's TNT equivalent, times the root of its force).</summary>
-    public static double WreckRadiusM(in ShellTypeRow shell, double force, SimSettings s) =>
-        s.WreckRadiusK * Math.Cbrt(Math.Max(shell.FillerKg * shell.FillerRe, 0)) * Math.Sqrt(force);
-
     /// <summary>A burst at its point along the path, with its force. Broken (E2): a shell's pieces through a plate it
     /// holed, a weak burst of its fragments at the force's share and nothing else: no blast, no fire; the part they're in takes them, and an enclosed turret or barbette they're in is a flash source.</summary>
     static void Burst(ShipClass c, ShipCondition k, in Hit hit, HitPath path, in TerminalResult t, SimSettings s,
         double w, double size, ref EffectsResult res, ref RandomStream r, bool broken = false)
     {
         var shell = hit.Shell;
-        var b = Locate(c, k, shell, path, t, s, broken);
+        var b = Locate(c, k, shell, path, t, s, size, broken);
         if (b.Part >= 0)
             PartBurstIn(ref b, ref res, ref r);
         PartsAround(ref b, ref res, ref r);
@@ -449,12 +462,12 @@ public static class Effects
         if (!broken && b.Inside && shell.FillerKg > 0 && (b.Part >= 0 || b.Cell >= 0))
         {
             net = GasNetwork.For(c);
-            double fill = shell.FillerKg * b.Force, vent = NearWall(c, path.Crossings, t.BurstT, size, s);
+            double fill = shell.FillerKg * b.Force;
             if (b.Part >= 0)
-                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, vent, s, ref r);
+                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, NearWall(c, path.Crossings, t.BurstT, size, s), s, ref r);
             else
             {
-                res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, vent, b.WreckM, s.NearHoleK * size, s, ref r);
+                res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, b.Charge, s, ref r);
                 res.BreachM2 += res.Blast.HoleM2;
                 Flashed(c, net, b.Cell, ref gasMagazine, ref gasHandling, ref inHandling);
             }
@@ -477,9 +490,12 @@ public static class Effects
         public ShipCondition K;
         public SimSettings S;
         public P3 At, Dir;
-        /// <summary>Its fragments' speed, its force, its wreck radius (m), the fragments' share of a full burst's, and the armour and
-        /// plating of the part it's in round it.</summary>
-        public double V, Force, WreckM, Share, Around;
+        /// <summary>Its near field, whose reach is what it wrecks (none: holed in pieces, a weak burst of its fragments).</summary>
+        public NearCharge Charge;
+        /// <summary>Its fragments' speed, its force, the fragments' share of a full burst's, and the armour and plating of the part
+        /// it's in round it.</summary>
+        public double V, Force, Share, Around;
+        public readonly double WreckM => Charge.ReachM;
         public int Cell, Part;
         public Box CellBox;
         public FragmentBurst? Frag;
@@ -491,30 +507,18 @@ public static class Effects
 
     /// <summary>Where along its path a burst is: the space and part it's in, its fragments (a low-order burst's are fewer, slower
     /// and larger; they fly with the shell's motion).</summary>
-    static BurstSite Locate(ShipClass c, ShipCondition k, in ShellTypeRow shell, HitPath path, in TerminalResult t, SimSettings s, bool broken)
+    static BurstSite Locate(ShipClass c, ShipCondition k, in ShellTypeRow shell, HitPath path, in TerminalResult t, SimSettings s, double size, bool broken)
     {
-        int cell = -1, part = -1;
-        foreach (ref readonly var x in path.Crossings)
-        {
-            if (x.T > t.BurstT)
-                break;
-            if (x.Kind == CrossingKind.CellIn)
-                cell = x.Index;
-            else if (x.Kind == CrossingKind.CellOut && x.Index == cell)
-                cell = -1;
-            else if (x.Kind == CrossingKind.PartIn)
-                part = x.Index;
-            else if (x.Kind == CrossingKind.PartOut && x.Index == part)
-                part = -1;
-        }
+        BurstPlace(path.Crossings, t.BurstT, out int cell, out int part);
+        var at = path.At(t.BurstT);
         return new BurstSite
         {
             C = c, K = k, S = s,
-            At = path.At(t.BurstT),
+            At = at,
             Dir = path.LegOf(path.Leg(t.BurstT)).Direction,
             V = t.BurstMs,
             Force = t.Force,
-            WreckM = broken ? 0 : WreckRadiusM(shell, t.Force, s),
+            Charge = broken ? default : NearField.Charge(size, t.Force, cell >= 0 ? NearField.TampIn(c, k, cell, at, size, s) : 0, s),
             Share = broken ? t.Force : 1,
             // burst inside a part (a gunhouse, a barbette, a superstructure block), its fragments leave through its own walls
             Around = part >= 0 ? PartMild(c, part, Armour(c, part)) : 0,
@@ -527,6 +531,25 @@ public static class Effects
             Magazine = -1, Turret = -1, TurretSt = -1, ReadyMount = -1, ReadySt = -1,
             Via = MagazineVia.None,
         };
+    }
+
+    /// <summary>The space and part a point along its path is in.</summary>
+    static void BurstPlace(ReadOnlySpan<Crossing> xs, double burstT, out int cell, out int part)
+    {
+        (cell, part) = (-1, -1);
+        foreach (ref readonly var x in xs)
+        {
+            if (x.T > burstT)
+                break;
+            if (x.Kind == CrossingKind.CellIn)
+                cell = x.Index;
+            else if (x.Kind == CrossingKind.CellOut && x.Index == cell)
+                cell = -1;
+            else if (x.Kind == CrossingKind.PartIn)
+                part = x.Index;
+            else if (x.Kind == CrossingKind.PartOut && x.Index == part)
+                part = -1;
+        }
     }
 
     /// <summary>The part it burst in: wrecked; or the part its pieces got into, struck by them from inside its plates. A gunhouse,
@@ -789,7 +812,7 @@ public static class Effects
         }
     }
 
-    /// <summary>A burst against the plating it came through (within <see cref="NearWallM"/> of it: a nose fuze just
+    /// <summary>A burst in a part against the plating it came through (within <see cref="NearWallM"/> of it: a nose fuze just
     /// inside a thin side, a burst in the plate) vents through its own hole (11 §4.1, §5.1): the contact hole's area, m².</summary>
     static double NearWall(ShipClass c, ReadOnlySpan<Crossing> xs, double burstT, double size, SimSettings s)
     {
@@ -802,7 +825,7 @@ public static class Effects
                 break;
             if (x.Kind is CrossingKind.HullIn or CrossingKind.HullOut or CrossingKind.PartIn && x.Mm > 0)
             {
-                double hole = s.HoleRadiusK * size * Math.Sqrt(6 / Math.Max(x.Mm, 1));
+                double hole = NearField.HoleM(size, x.Mm, 0, s);
                 return Math.PI * hole * hole;
             }
         }

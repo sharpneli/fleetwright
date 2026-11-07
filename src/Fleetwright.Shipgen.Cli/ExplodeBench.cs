@@ -137,15 +137,15 @@ static class ExplodeBench
                 cell = ci;
         var b = c.Cells[cell].Box;
         var at = new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
-        double size = Math.Cbrt(kg * shell.FillerRe), rw = s.WreckRadiusK * size;
+        var near = NearField.Charge(Math.Cbrt(kg * shell.FillerRe), 1, 0, s);
 
         var rng = RandomStream.Named(1, "explode bench");
         _ = Ship(c, s, out var k, out _);
         var net = GasNetwork.For(c);
-        net.Detonate(k, cell, at, kg, shell, 0, rw, s.NearHoleK * size, s, ref rng);   // a first one: the timing below is a burst's own
+        net.Detonate(k, cell, at, kg, shell, near, s, ref rng);   // a first one: the timing below is a burst's own
         _ = Ship(c, s, out k, out _);
         var sw = Stopwatch.StartNew();
-        var r = net.Detonate(k, cell, at, kg, shell, 0, rw, s.NearHoleK * size, s, ref rng);
+        var r = net.Detonate(k, cell, at, kg, shell, near, s, ref rng);
         double us = sw.Elapsed.TotalMilliseconds * 1000;
         if (title != null)
             Console.WriteLine($"  {title}");
@@ -167,7 +167,8 @@ static class ExplodeBench
             CalibreMm = calibreMm, FillerKg = kg, FillerRe = x.Re ?? 1, FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15,
             FillerAirM3Kg = x.AirM3Kg ?? 0, FillerEta = x.Eta ?? 1,
         };
-        double size = Math.Cbrt(kg * shell.FillerRe), rw = s.WreckRadiusK * size;
+        double size = Math.Cbrt(kg * shell.FillerRe);
+        var near = NearField.Charge(size, 1, 0, s);
         _ = Ship(c, s, out var k, out _);
         var net = GasNetwork.For(c);
         var girder = HullGirder.Of(c);
@@ -177,7 +178,7 @@ static class ExplodeBench
         foreach (ref readonly var cell in c.Cells)
             (x0, x1) = (Math.Min(x0, cell.Box.X0), Math.Max(x1, cell.Box.X1));
         double wl = c.Vertical.Waterline, plate = c.Plating.ShellMm;
-        double contact = Math.PI * Math.Pow(s.HoleRadiusK * size, 2) * 6 / Math.Max(plate, 1);
+        double contact = Math.PI * Math.Pow(NearField.HoleM(size, plate, 0, s), 2);
         Console.WriteLine(string.Format(Inv, "  {0}: {1} x {2:0.#} kg {3} along her side at the waterline, {4:0.0} m apart; a contact hole {5:0.0} m² in {6:0.0} mm", c.Name, shells, kg, explosive, (x1 - x0) / shells, contact, plate));
         for (int i = 0; i < shells; i++)
         {
@@ -194,7 +195,7 @@ static class ExplodeBench
                 Console.WriteLine(string.Format(Inv, "    shell {0}: x {1:0.0}, no cell there (over the end)", i + 1, xs));
                 continue;
             }
-            var r = net.Detonate(k, at, new P3(xs, y, z), kg, shell, contact, rw, s.NearHoleK * size, s, ref rng);
+            var r = net.Detonate(k, at, new P3(xs, y, z), kg, shell, near, s, ref rng);
             salvoJ += r.WhipEM;
             var h = girder.Read(k, 0, girder.Whip(salvoJ, s.GirderWhipK), s);
             Console.WriteLine(string.Format(Inv, "    shell {0} at x {1,6:0.0} in {2,-12}: peak {3,5:0} kPa, {4,3} spaces, holed {5}, gave {6} bulkheads, {7} decks, {8} doors, {9} sides, {10} weather deck, {11} bottom | worst at {12:0.00}: deck {13:0%}, sides {14:0%}, bottom {15:0%}, d {16:0.00}, load {17:0.00}",

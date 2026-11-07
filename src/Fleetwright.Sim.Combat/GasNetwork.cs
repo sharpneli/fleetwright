@@ -212,19 +212,17 @@ public sealed class GasNetwork
     double Gm => 1 + s.BlastHeatK;
     double P0 => s.AtmosphereMPa * 1e6;
 
-    /// <summary>w kg of a filler bursting at a point in a space: all its energy in the first step, its afterburn as the
-    /// space's air allows (11 §2.1); the near zone's holes in the space's boundaries (11 §4.1), and ventM2 more from the start
-    /// (a near-wall burst's own hole). A space with vents as big as its faces is open: nothing builds there, and only the near
-    /// zone stays.</summary>
-    public GasResult Detonate(ShipCondition cond, int cell, P3 at, double w, in ShellTypeRow f, double ventM2, double nearM, double nearHoleM, SimSettings settings, ref RandomStream r)
+    /// <summary>w kg of a filler bursting at a point in a space: its near field's holes (<see cref="Near"/>), then all its energy in
+    /// the first step, its afterburn as the space's air allows (11 §2.1). A space already with vents as big as its faces is open:
+    /// nothing builds there, and only the near field stays. What the charge opens itself the gas goes out by, in the run.</summary>
+    public GasResult Detonate(ShipCondition cond, int cell, P3 at, double w, in ShellTypeRow f, in NearCharge near, SimSettings settings, ref RandomStream r)
     {
         Begin(cond, settings);
         JoinSpace(cell);
-        vent[cell] += ventM2;
         double gas = 0, vents = 0;
         for (int i = 0; i < n; i++)
             (gas, vents) = (gas + v[region[i]], vents + vent[region[i]]);
-        Near(cell, at, nearM, nearHoleM);
+        Near(at, near);
         return Burst(cell, gas, vents, w, f, ref r);
     }
 
@@ -348,22 +346,78 @@ public sealed class GasNetwork
         return open[q];
     }
 
-    /// <summary>The near zone: the space's boundaries within it holed through, by the shock and fragments.</summary>
-    void Near(int cell, P3 at, double nearM, double nearHoleM)
+    /// <summary>The near field: outwards from the charge's space, what's within its reach holed by <see cref="NearField"/>, its
+    /// boundaries with her other spaces and her outside alike. It goes on only through what's open or it opened, so what a plate
+    /// holds back stays behind that plate.</summary>
+    void Near(P3 at, in NearCharge near)
     {
-        var b0 = c.Cells[cell].Box;
-        var pool = c.Cells[cell].Neighbours;
+        if (!(near.ReachM > 0))
+            return;
+        for (int a = 0; a < n; a++)   // the region grows as it goes
+        {
+            int i = region[a];
+            NearEdges(i, at, near);
+            NearFaces(i, at, near);
+        }
+    }
+
+    void NearEdges(int i, P3 at, in NearCharge near)
+    {
+        var box = c.Cells[i].Box;
+        var pool = c.Cells[i].Neighbours;
         for (int j = pool.Start; j < pool.End; j++)
         {
             ref readonly var e = ref c.Neighbour(j);
-            if (e.Join == JoinKind.Open || Blast.FaceDistance(b0, c.Cells[e.Cell].Box, e.Join, at) > nearM)
+            var there = c.Cells[e.Cell].Box;
+            if (Effects.BoxDistance(there, at) > near.ReachM)
                 continue;
             EdgeOpen(j);
             int q = canon[j];
-            double hole = Math.Min(Math.PI * nearHoleM * nearHoleM, area[j]);
-            (open[q], opened[q], edges[q].Fate) = (Math.Min(open[q] + hole, area[j]), opened[q] + hole, Blast.Fate.Holed);
-            edges[q].Torn = Math.Min(edges[q].Torn + hole, area[j]);   // what the gas tears from here on starts from this
+            if (e.Join != JoinKind.Open && edges[q].Fate != Blast.Fate.Holed)
+            {
+                double standoff = Blast.Shared(box, there, e.Join, at, out double u, out double w, out double u0, out double u1, out double w0, out double w1);
+                double hole = Math.Min(NearField.Disc(NearField.HoleM(near, mm[j], standoff, s), u, w, u0, u1, w0, w1), area[j] - open[q]);
+                if (hole > 0)
+                {
+                    (open[q], opened[q], edges[q].Fate) = (open[q] + hole, opened[q] + hole, Blast.Fate.Holed);
+                    edges[q].Torn = Math.Min(edges[q].Torn + hole, area[j]);   // what the gas tears from here on starts from this
+                    res.Holed++;
+                }
+            }
+            if (open[q] > k.JoinSeamM2[q] && stamp[e.Cell] != id)   // a sprung seam lets water through, not this
+                JoinSpace(e.Cell);
+        }
+    }
+
+    /// <summary>A space's outside faces in the near field: the hole's on the ship at once, the sea's way in, and what's of it
+    /// above the sea a vent.</summary>
+    void NearFaces(int i, P3 at, in NearCharge near)
+    {
+        var box = c.Cells[i].Box;
+        for (int f = 0; f < Faces; f++)
+        {
+            int x = i * Faces + f;
+            double fa = hull.Area[x];
+            if (!(fa > 0))
+                continue;
+            var pt = hull.Point[x];
+            double r = NearField.HoleM(near, hull.Mm[x], f < 2 ? Math.Abs(at.Y - pt.Y) : Math.Abs(at.Z - pt.Z), s);
+            if (!(r > 0))
+                continue;
+            if (faceStamp[x] != id)
+                FirstOnFace(x, i, f);
+            ref var b = ref faces[x];
+            double hole = Math.Min(f < 2 ? NearField.Disc(r, at.X, at.Z, box.X0, box.X1, box.Base, box.Top) : NearField.Disc(r, at.X, at.Y, box.X0, box.X1, box.Y0, box.Y1), fa - b.Torn);
+            if (!(hole > 0))
+                continue;
+            var there = f < 2 ? new P3(Math.Clamp(at.X, box.X0, box.X1), pt.Y, Math.Clamp(at.Z, box.Base, box.Top))
+                : new P3(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Y, box.Y0, box.Y1), pt.Z);
+            (b.Torn, b.Fate) = (b.Torn + hole, Blast.Fate.Holed);
+            k.Hole(i, hole, there);
+            k.FaceTornM2[x] = b.Torn;
+            res.HoleM2 += hole;
             res.Holed++;
+            vent[i] += hole * (f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((there.Z + r - water.At(there.X, there.Y)) / (2 * r), 0, 1));
         }
     }
 
@@ -995,7 +1049,13 @@ public sealed class GasNetwork
                 continue;
             double fa = hull.Area[x];
             ref var b = ref faces[x];
-            if (b.Fate == Blast.Fate.Ruptured)
+            if (b.Fate == Blast.Fate.Holed)
+            {
+                double share = Blast.HoleShare(b.Torn, fa);
+                if (share > k.FaceLost[x])
+                    (k.FaceLost[x], lost) = (share, true);
+            }
+            else if (b.Fate == Blast.Fate.Ruptured)
             {
                 double more = b.Torn - k.FaceTornM2[x];
                 if (more > 0)

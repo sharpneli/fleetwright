@@ -1,0 +1,32 @@
+#### Tallboy in destroyer's engine room
+      peak 16172 kPa, felt 5236; 25 spaces, holed 45, gave: 6 bulkheads, 1 decks, 3 doors, 10 sides, 5 weather deck, 0 bottom; sprung 22; 0.05 s (988 µs)
+      girder 0.44 of her length, section lost 0.97 (d 94%, sides 89%, bottom 86%, long 0%), whip 2.26; load 24.88 calm BROKEN, 30.61 in a seaway BROKEN
+#### Tallboy in yamato's engine room
+      peak 6408 kPa, felt 4212; 126 spaces, holed 10, gave: 34 bulkheads, 3 decks, 0 doors, 16 sides, 0 weather deck, 5 bottom; sprung 201; 2.16 s (15460 µs)
+      girder 0.43 of her length, section lost 0.52 (d 4%, sides 24%, bottom 100%, long 7%), whip 0.07; load 0.40 calm, 0.96 in a seaway
+#### Tallboy in lion's engine room
+      peak 6969 kPa, felt 5521; 129 spaces, holed 20, gave: 60 bulkheads, 19 decks, 13 doors, 4 sides, 0 weather deck, 0 bottom; sprung 184; 0.50 s (14930 µs)
+      girder 0.48 of her length, section lost 0.00 (d 0%, sides 0%, bottom 0%, long 0%), whip 0.10; load 0.20 calm, 0.48 in a seaway
+#### Tallboy in iron_duke's engine room
+      peak 10190 kPa, felt 7255; 82 spaces, holed 26, gave: 26 bulkheads, 9 decks, 5 doors, 14 sides, 0 weather deck, 0 bottom; sprung 146; 0.80 s (8418 µs)
+      girder 0.37 of her length, section lost 0.37 (d 21%, sides 16%, bottom 42%, long 0%), whip 0.17; load 0.36 calm, 0.79 in a seaway
+#### 9 x 61.7 kg TNA along destroyer
+  Fleet Destroyer: 9 x 61.7 kg TNA along her side at the waterline, 12.8 m apart; a contact hole 8.1 m² in 7.4 mm
+      girder 0.52 of her length, section lost 0.82 (d 52%, sides 43%, bottom 0%, long 0%), whip 0.22; load 0.84 calm, 1.72 in a seaway BROKEN; her end off at 0.93
+    the sea's way in: 304.5 m² of holes, of which under the waterline 0.0
+#### 18 x 23 kg TNT along destroyer
+  Fleet Destroyer: 18 x 23 kg TNT along her side at the waterline, 6.4 m apart; a contact hole 4.2 m² in 7.4 mm
+      girder 0.88 of her length, section lost 0.77 (d 86%, sides 48%, bottom 0%, long 0%), whip 0.13; load 0.20 calm, 0.45 in a seaway; her end off at 0.98
+    the sea's way in: 119.2 m² of holes, of which under the waterline 0.7
+#### 18 x 3.3 kg TNT along destroyer
+  Fleet Destroyer: 18 x 3.3 kg TNT along her side at the waterline, 6.4 m apart; a contact hole 1.1 m² in 7.4 mm
+      girder 0.52 of her length, section lost 0.02 (d 0%, sides 4%, bottom 0%, long 0%), whip 0.02; load 0.10 calm, 0.26 in a seaway; her end off at 0.98
+    the sea's way in: 14.3 m² of holes, of which under the waterline 0.0
+#### 9 x 61.7 kg TNA along super_dreadnought
+  Super-dreadnought (Queen Elizabeth-like, 1913): 9 x 61.7 kg TNA along her side at the waterline, 21.0 m apart; a contact hole 3.6 m² in 16.5 mm
+      girder 0.51 of her length, section lost 0.01 (d 7%, sides 0%, bottom 0%, long 0%), whip 0.02; load 0.16 calm, 0.43 in a seaway
+    the sea's way in: 15.6 m² of holes, of which under the waterline 0.7
+#### 9 x 61.7 kg TNA along iron_duke
+  Iron Duke-like (1914): 9 x 61.7 kg TNA along her side at the waterline, 19.8 m apart; a contact hole 5.0 m² in 11.9 mm
+      girder 0.50 of her length, section lost 0.02 (d 6%, sides 0%, bottom 0%, long 0%), whip 0.02; load 0.21 calm, 0.55 in a seaway
+    the sea's way in: 19.4 m² of holes, of which under the waterline 0.8

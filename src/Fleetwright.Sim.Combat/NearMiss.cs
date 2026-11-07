@@ -399,10 +399,10 @@ public static class NearMiss
         // the contact rule at D 5 on the nearest face (11 §3.1), less the splinters' holes there
         if (nearCell >= 0 && 5 * nsf * s.ShockPlateMm / Math.Max(nearMm, 1) >= 5)
         {
-            double hole = s.HoleRadiusK * Math.Cbrt(w) * Math.Sqrt(6 / Math.Max(nearMm, 1)), more = Math.PI * hole * hole - nearHoles;
+            double size = Math.Cbrt(w), hole = NearField.HoleM(size, nearMm, NearField.Tamp(surface - p.Z, size, s), s), more = Math.PI * hole * hole - nearHoles;
             if (more > 0)
             {
-                k.Hole(nearCell, more, nearAt);
+                NearField.Punch(c, k, nearCell, more, nearAt, s);
                 (res.BreachM2, res.ShockM2) = (res.BreachM2 + more, res.ShockM2 + more);
             }
         }

@@ -240,7 +240,7 @@ public class HullGirderTests
         var b = c.Cells[cell].Box;
         double size = Math.Cbrt(61.7 * shell.FillerRe);
         var rng = RandomStream.Named(1, "girder test");
-        var g = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 61.7, shell, 0, Settings.WreckRadiusK * size, Settings.NearHoleK * size, Settings, ref rng);
+        var g = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 61.7, shell, NearField.Charge(size, 1, 0, Settings), Settings, ref rng);
         var h = HullGirder.Of(c);
         var whip = h.Whip(g.WhipEM, Settings.GirderWhipK);
         Assert.False(h.Read(k, 0, whip, Settings).Broken);

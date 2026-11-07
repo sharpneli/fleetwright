@@ -206,14 +206,22 @@ public static class Blast
         return Math.Max(oy < 0.05 ? ox * oz : oy * oz, 1);
     }
 
-    /// <summary>How far a point is from the face two spaces share.</summary>
-    internal static double FaceDistance(in Box a, in Box b, JoinKind join, P3 p)
+    /// <summary>The plate two spaces share against a point: how far the point is from its plane (the return), where the point
+    /// falls in that plane (u, w), and the plate's rectangle there.</summary>
+    internal static double Shared(in Box a, in Box b, JoinKind join, P3 p, out double u, out double w, out double u0, out double u1, out double w0, out double w1)
     {
+        double x0 = Math.Max(a.X0, b.X0), x1 = Math.Min(a.X1, b.X1), y0 = Math.Max(a.Y0, b.Y0), y1 = Math.Min(a.Y1, b.Y1), z0 = Math.Max(a.Base, b.Base), z1 = Math.Min(a.Top, b.Top);
         if (join == JoinKind.Deck)
+        {
+            (u, w, u0, u1, w0, w1) = (p.X, p.Y, x0, x1, y0, y1);
             return Math.Abs(p.Z - (b.Base >= a.Top - 0.05 ? a.Top : a.Base));
-        bool along = Math.Min(a.Y1, b.Y1) - Math.Max(a.Y0, b.Y0) < 0.05;   // side by side across the ship
-        if (along)
+        }
+        if (y1 - y0 < 0.05)   // side by side across the ship
+        {
+            (u, w, u0, u1, w0, w1) = (p.X, p.Z, x0, x1, z0, z1);
             return Math.Abs(p.Y - (b.Y0 >= a.Y1 - 0.05 ? a.Y1 : a.Y0));
+        }
+        (u, w, u0, u1, w0, w1) = (p.Y, p.Z, y0, y1, z0, z1);
         return Math.Abs(p.X - (b.X0 >= a.X1 - 0.05 ? a.X1 : a.X0));
     }
 
