@@ -13,11 +13,11 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**EX2 is built, reviewed and unified, and magazines break ships in the panel's games again ("The stow's own confinement", 2026-11-07), on one estimated number and at about 1% of losses. Next is the user's call on that.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
+**EX2 is built, reviewed and unified. Magazines break ships in the panel's games again ("The stow's own confinement", 2026-11-07), but the research that came back the same day says the rule that does it isn't physical: a stack with a free face throws itself into the aisle in 10-20 ms ("What the research found"). The rule is still in the game. Next is the user's call on taking it out.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
 
-1. **Magazines at the margin.** The bed moved it ("The stow's own confinement"): on the BCF's handling Lion's forward magazines now break her in calm water (1.05-1.10). **Still short:** Tiger reads 0.54 and Invincible 0.38-0.69 in calm water, 0.68 and 0.84 in a moderate sea; a magazine takes about 0.6 ship a seed at Jutland, where the record has several. Left to try: shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, a shell's own damage already in her section, and the pressure in the bed on the plate beside it. **Not tuned, and decision 3 says no balancing yet.**
+1. **Magazines at the margin.** The bed moved it ("The stow's own confinement"), and research says the bed doesn't exist ("What the research found"), so these figures are in doubt: on the BCF's handling Lion's forward magazines now break her in calm water (1.05-1.10). **Still short:** Tiger reads 0.54 and Invincible 0.38-0.69 in calm water, 0.68 and 0.84 in a moderate sea; a magazine takes about 0.6 ship a seed at Jutland, where the record has several. Left to try: shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, a shell's own damage already in her section, and the pressure in the bed on the plate beside it. **Not tuned, and decision 3 says no balancing yet.**
 2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
 3. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
 4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
@@ -526,6 +526,42 @@ Taking either out isn't a refactor. It decides how often magazines go, which is 
 ## The stow's own confinement (2026-11-07)
 
 **The user chose to try the missing physics before EX4-EX6.** The first candidate, a bed of charges burning inside itself. Its setting is new and estimated; nothing is tuned.
+
+### What the research found (the same day; the user's call open)
+
+**[12-charge-bed.md](../../research/simulation/damage-research/12-charge-bed.md) goes against the rule below, and I checked and agree.** `BedPressure` solves a steady bed, its pressure held for the whole burn. Nothing holds a stack that long: 5 MPa on a 1.5 m column accelerates it at about 15,000 m/s², so it's in the aisle within 10-20 ms. Over a whole burn, inertia keeps 0.4-120 Pa. Racks don't matter (50 kPa of hold changes nothing). Only strong walls could keep it there, and that's a gun chamber, not a magazine. Racked cases aren't a bed at all: they're closed tubes, each with its own mouth. The code applies the bed to every stow.
+
+**Checked by running [charge_bed_ref.py](../../research/simulation/damage-research/charge_bed_ref.py):** its tables come out as the note has them, and the steps converge (4, 2, 1 µs agree within 0.01%).
+
+**One slip in the note, which matters to its proposed kick.** Its "burned" figures include what would have burned at the room's pressure anyway, and its 0.03% for that is really 0.2-0.4% (the bed's own burn law, over 15 ms). What the bed adds, 1.5 m deep unless stated:
+
+| Lit over | Burned by the time it opens | At the room's pressure alone | Extra |
+|---:|---:|---:|---:|
+| At once | 2.4-2.8% | 0.2-0.8% | **2.0-2.2%** (1 m: 0.9-1.1%; 2.5 m: 4.6-4.8%) |
+| 0.2 s | 0.5-1.1% | 0.3-1.0% | **0.1-0.2%** (2.5 m: 0.4-0.7%) |
+| 0.5 s, the game's `MagazineBagSpreadS` | 0.4-1.1% | 0.3-1.0% | **0.03-0.06%** (2.5 m: 0.1-0.3%) |
+
+So the kick lit at once is about 0.010·L^1.7 rather than the note's 0.016·L^1.3, and at the game's own spread it's nothing.
+
+**What the game reads with the bed out (`--bed 0`), and the open charges' flame spread moved** (the note's recommendation 2: a thrown stack carries the flame; `MagazineBagSpreadS` 0.5 [EST 0.2-1], settings files in a scratch copy, nothing committed). BCF handling, calm water, highest load among a ship's magazines:
+
+| | Bed in, 0.5 s | Bed out, 0.5 s | Bed out, 0.2 s | Bed out, 0.05 s |
+|---|---:|---:|---:|---:|
+| Lion | 1.10 | 0.82 | 0.93 | **1.03**, the forward four break |
+| Tiger | 0.54 | 0.49 | 0.53 | 0.52 |
+| Invincible | 0.69 | 0.60 | 0.64 | 0.64 |
+| Seydlitz | 0.63 | 0.54 | 0.57 | 0.57 |
+
+Seydlitz still burns out at every setting, destroyers stay at 0.10-0.19. 0.05 s is below the estimate's range. It's only there to show how far spread alone can go.
+
+**So taking the bed out most likely puts the panel's magazine losses back to none, and open item 1 back where it was.** Bed 0 is the old model exactly, so nothing else has to change for it to come out. Also from the note, none of it acted on:
+- **Stowage:** bulk 500-630 kg/m³ cased, 340-500 USN tanks, 580-770 loose bags, so 600 is fair.
+- **Naming:** `Packaging.Clarkson` names the wrong thing. Clarkson's was the transit case of the smaller calibres; heavy guns used a metal magazine case with lids at both ends [SRC: Harley]. The `MagazinePackageR` fit stands for what it was fitted to.
+- **A package's own mouth:** ×1-2 on the rate for RN cases and USN tanks, ×5 for a German brass case lit inside, about 60 ms. Not recommended until the record asks for it.
+- **Detonation:** no case for the propellant itself at a magazine's bulk and boundaries. The detonation tier stays with bursters and black powder, which points at shell rooms and EX4.
+- **Not found:** magazine plans for Lion, Queen Mary, Iron Duke or Seydlitz, the RN case's size, any stack trial of 1916-30.
+
+### The rule as built
 
 **What was missing.** A charge burned at the pressure of the room round it. But gas made deep in a stack has to get out through the gaps between the charges, and that takes pressure. Burning goes as P^0.78, so the stack feeds itself. The research has the law and the feedback against the room's vents (07 §2.3, 10 §1.1, MSIAC's "quasi static pressure") but not this step inside the stack.
 
