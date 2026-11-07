@@ -12,11 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-07 - What sets an explosive store off: sympathetic detonation, cook-off and flame, by store
-- Question: For what a warship carried, 1890-1945: propellant charges (bags, cased, brass), shells' bursters (black powder, lyddite/picric, TNT, Amatol, Explosive D, Shellite) in shell rooms and racks, torpedo warheads (wet guncotton, TNT, Type 93's), depth charges, mines, aircraft bombs. (1) **Blast and shock:** the overpressure or impulse that detonates or breaks up each when an explosion goes off beside it (sympathetic detonation, the gap and card tests' figures turned into a distance from a given charge, kg at m), and what a store does that's struck but not set off (burns, breaks, nothing). (2) **Fragments:** the speed and mass of fragment that initiates a cased charge or a shell's filler (impact sensitivity, bullet and fragment tests), and how a shell's own case shields its filler. (3) **Heat:** cook-off: how long each takes to burn or detonate in a fire or beside a burning magazine (fast and slow cook-off times; Type 93s and depth charges aboard), and the gas temperature that lights propellant in its bag or case. (4) **Does a shell room go up with its magazine?** The cases: Hood's 4 in to her 15 in, Defence, Queen Mary, Invincible, Mutsu, Arizona, Fuso, the Japanese cruisers' torpedoes (Mikuma, Suzuya, Chōkai), and shell rooms that survived a magazine's fire.
-- Context / relevant files: `docs/battle/explosions.md` EX6 ("the chain": what an explosion reaches goes off, each as its own explosion through the one path; flat rolls to go where physics replaces them); `docs/battle/magazines.md`; today a shell's burst lights a magazine by `MagazineFlashChance` [EST] and hot gas lights one above 470 K [EST]; `research/simulation/damage-research/07-magazine-explosions.md`, `10-magazine-flash-chain.md`, `03-small-vessels.md` §2.5 (the cruisers' torpedoes).
-- Wanted output: by store, the thresholds (overpressure or impulse at a distance, fragment speed and mass, temperature and time) with ranges and tags, and whether each goes off whole (detonation) or burns; the cases with what went off and what didn't.
-
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?
@@ -276,6 +271,22 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-07 - What sets an explosive store off: sympathetic detonation, cook-off and flame, by store
+- Done 2026-11-07 (draft): [simulation/damage-research/15-what-sets-a-store-off.md](simulation/damage-research/15-what-sets-a-store-off.md) with
+  [store_initiation_ref.py](simulation/damage-research/store_initiation_ref.py). **Blast sets off nothing past contact:** fillers need
+  1-5 GPa (cast TNT 3.7, Comp B 2.0-2.1; big charges ~3x more sensitive: Mk 82 tritonal 1.1-1.2), air blast gives at most a quarter of
+  that even at 0.06 m/kg^1/3; Mk 82s detonated at 8 in, not at 12 in (0.044/0.066 m/kg^1/3), stacks by fragments; in water the firing
+  gear fails at ~7 MPa (DC pistols at 80-110 ft from 300 lb), the filler only at contact. **Fragments set off thin-cased stores, not
+  shells:** Held v2d (Comp B 16, cast TNT ~52 INFERRED) after THOR through the case: shell fragments (<1 km/s) set off only Torpex
+  warheads; bomb fragments (~2 km/s) and a neighbour's (2.6-2.8) set off warheads, DCs, mines, GP bombs; nothing short of contact an AP
+  shell (Brownson, Suzuya's near miss; Chokai's torpedoes intact; 5 in AA "most susceptible"). **Heat:** cordite's surface lights at
+  190-227 C; 2,000 K gas lights it in 0.04-0.16 s, 900 K in 1.4-40 s, 500 K in hours, so `GasIgniteK` 470 is the surface's, not the gas's;
+  a dose rule sum(q^2 dt) >= 13,900 (kW/m2)^2 s for the code. Cook-off by wall: DCs/warheads 1-1.3 min in a fuel fire, GP bombs 1.6-2.4
+  (Forrestal 1.5, Franklin 3-4 "or not at all", >=40% low order), AP shells 12; aboard, DCs at 23-26 min (Mullany, Isherwood), "no
+  positive case" of a TNT warhead by roasting, oxygen Type 93s within ~1 h (Mikuma). **Shell rooms didn't go with magazines:** Defence's
+  and Invincible's wrecks hold unexploded shells beside burnt or unburnt cordite; Hood's 4 in to 15 in was gas, propellant to propellant.
+  Not reached: lab data for lyddite, shellite, Type 91/97, Explosive D's gap; USNTMJ O-01-1 and O-25 (scanned); Hood's and Queen Mary's shells.
 
 ### 2026-11-07 - Torpedo protection walls: how much they held, and how far they bent
 - Done 2026-11-07 (draft): [simulation/damage-research/14-torpedo-protection-walls.md](simulation/damage-research/14-torpedo-protection-walls.md) with
