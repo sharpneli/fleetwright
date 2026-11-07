@@ -584,7 +584,7 @@ So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in c
 - **All together:** 8 of 14 sides within about twice the record (7); the record's loser lost more in 27 of 44 seeds (25). Capsized 46% (51), foundered 31% (27), broke in two 22% (22), **magazine 1% (0)**: Tsushima 4%, Dogger Bank and Jutland 1%. EX0's warning on noise stands: most of the sides' moves are within it, and Jutland is 4 seeds.
 - **Magazines at Jutland, a seed:** set off by a hit: contained 4.0, breached 5.3, **broken 0.6** (0 before). Those that break her are British: capital ships and a destroyer.
 - **Jutland's heavy hits** read 1,544 a seed (2,320 in the review's run, 1,548 in EX2's), the review's rise "not looked into". Probably noise between runs of 4 seeds, as nothing near gunnery changed; not shown.
-- **`damage-history`, lost, 20 runs a case:** Indefatigable's own case still 20%, all by her magazine: on that handling and small stow the old model already broke her. Only three cases moved at all, each by a few runs: Derfflinger 5% to 10%, Tiger 20% to 25%, Bismarck 50% to 35%.
+- **`damage-history`, lost, 20 runs a case:** Indefatigable's own case still 20%, all by her magazine, as it was before the bed. Only three cases moved at all, each by a few runs: Derfflinger 5% to 10%, Tiger 20% to 25%, Bismarck 50% to 35%.
 
 **Convergence, checked again as the lesson says.** Lion's Q at 1, ¼ and 1/16 of the step: on bags load 1.05, 1.04, 1.04, peak 1,244, 1,140, 1,098 kPa; on Clarkson load 0.48, 0.53, 0.51, peak 964, 944, 947 kPa. The loads are settled; bags' peak at the game's step reads 13% over its limit.
 
