@@ -40,6 +40,8 @@ public struct EffectsResult
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
     public MagazineVia MagazineVia;
+    /// <summary>Whether the magazine's race already ran, in this hit's own gas (<see cref="Blast"/>: its gas lit it; EX6a).</summary>
+    public bool Raced;
     /// <summary>An underwater burst's bubble's whip on her girder, design moments (<see cref="HullGirder.Bubble"/>).</summary>
     public double BubbleWhip;
     /// <summary>The stations of an ammunition train whose charges this hit lit, the magazine's own among them
@@ -458,7 +460,7 @@ public static class Effects
         // the gas (E5): in a closed space it stays until it vents or the walls give way; on deck, in an open mount or
         // vented as fast as it forms there's only the shock and the fragments above
         GasNetwork? net = null;
-        int gasMagazine = -1, gasHandling = -1;
+        int gasHandling = -1;
         bool inHandling = false;
         if (!broken && b.Inside && shell.FillerKg > 0 && (b.Part >= 0 || b.Cell >= 0))
         {
@@ -470,7 +472,7 @@ public static class Effects
             {
                 res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, b.Charge, s, ref r);
                 res.BreachM2 += res.Blast.HoleM2;
-                Flashed(c, net, b.Cell, ref gasMagazine, ref gasHandling, ref inHandling);
+                Flashed(c, net, b.Cell, ref gasHandling, ref inHandling);
             }
         }
         // the people its pieces reach (E6), and what its gas does to them and the gear wherever it went
@@ -479,7 +481,7 @@ public static class Effects
             GasFelt(c, k, net, b.Part, s, ref res);
         if (!broken)
             StartFires(ref b, shell, w, ref res, ref r);
-        MagazineLit(ref b, hit.Ms, gasMagazine, gasHandling, inHandling, ref res, ref r);
+        MagazineLit(ref b, hit.Ms, gasHandling, inHandling, ref res, ref r);
     }
 
     /// <summary>A burst where it is, as <see cref="Burst"/>'s steps read it, and what its fragments lit on the way to the
@@ -735,12 +737,17 @@ public static class Effects
     /// <summary>The magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them, or its gas reaching
     /// one; else charges lit at a station of a mount's train (ready charges set burning, a burst in a gunhouse, its working
     /// chamber or a casemate, its gas in a handling room: E5's Savannah) and the flame down the train's open doors.</summary>
-    static void MagazineLit(ref BurstSite b, long now, int gasMagazine, int gasHandling, bool inHandling, ref EffectsResult res, ref RandomStream r)
+    static void MagazineLit(ref BurstSite b, long now, int gasHandling, bool inHandling, ref EffectsResult res, ref RandomStream r)
     {
         var (c, k, s) = (b.C, b.K, b.S);
         int reached = -1;
-        if (b.Inside && b.Magazine < 0 && gasMagazine >= 0)
-            (b.Magazine, b.Via) = (gasMagazine, MagazineVia.Gas);
+        if (res.Blast.Magazines > 0)
+        {
+            // its gas lit one (EX6a): that's the magazine's race, already run, the burst its first second
+            int lit = GasNetwork.For(c).LitRoom(0);
+            (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Raced) = (true, lit, lit == b.Magazine ? b.Via : MagazineVia.Gas, true);
+            return;
+        }
         var via = b.Via;
         if (b.Inside && b.Magazine >= 0)
         {
@@ -898,22 +905,18 @@ public static class Effects
         }
     }
 
-    /// <summary>Where a burst's gas carried its flame (hot enough to light charges: <see cref="GasNetwork.Hot"/>): a magazine other
-    /// than the burst's own (the burst's roll) or a handling room it reached is a flash source.</summary>
-    static void Flashed(ShipClass c, GasNetwork net, int burstCell, ref int magazine, ref int handling, ref bool inHandling)
+    /// <summary>Where a burst's gas carried its flame (hot enough to light charges: <see cref="GasNetwork.Hot"/>): a handling room it
+    /// reached is a flash source. A magazine it reached lit in the run itself (EX6a).</summary>
+    static void Flashed(ShipClass c, GasNetwork net, int burstCell, ref int handling, ref bool inHandling)
     {
-        double best = 0;
         foreach (int cell in net.Reached())
         {
             if (!net.Hot(cell))
                 continue;
-            double felt = net.FeltMPa(cell);
             foreach (int room in c.RoomsIn(cell))
             {
                 var kind = c.Rooms[room].Kind;
-                if (kind == RoomKind.Magazine && cell != burstCell && felt > best)
-                    (magazine, best) = (room, felt);
-                else if (kind is RoomKind.Handling or RoomKind.Passage && handling < 0 && c.Rooms[room].Mount >= 0)
+                if (kind is RoomKind.Handling or RoomKind.Passage && handling < 0 && c.Rooms[room].Mount >= 0)
                     (handling, inHandling) = (room, cell == burstCell);
             }
         }

@@ -12,7 +12,8 @@ namespace Fleetwright.Sim.Tests;
 public class TorpedoEvasionTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
-    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
+    // the helm's tests: a torpedo that hits her anyway does nothing, so what it does can't take her off her course
+    static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { HitsDoDamage = false };
 
     /// <summary>A battleship (side 0) steaming north at 15 kn, a destroyer (side 1) 3 km off her starboard beam holding
     /// her fire; the destroyer's spread of 4 launched at her as she truly is.</summary>

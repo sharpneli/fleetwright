@@ -747,15 +747,18 @@ public sealed class DamageSystem : IWorldSystem
 
         Prepare(cls);
         var rng = stream.Derive((ulong)hits++);
+        var net = GasNetwork.For(cls);
+        net.Arm(ships.Store.Combat.Mounts(slot));   // a magazine the hit's gas lights stows what's left (EX6a)
         var e = WhatItDoes(hit, slot, cls, k, now, out var t, ref rng);
         // a magazine set off: its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
         var race = default(RaceResult);
         if (e.Magazine && k.Status == ShipStatus.Afloat)
         {
-            race = SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
+            race = e.Raced ? Raced(world, slot, k, e.Blast) : SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
             if (race.Magazines > 0)
                 Join(ref e, race);
         }
+        net.Disarm();
         trainsLit += e.Stations > 0 ? 1 : 0;
         LastRace = race;
         // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion, one reading a moment)
@@ -1093,7 +1096,19 @@ public sealed class DamageSystem : IWorldSystem
     RaceResult SetOff(World world, int slot, ShipCondition k, int room, double alsoWhipEM, int[] counts, ref RandomStream rng)
     {
         long now = world.Time.Ms;
-        var race = Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM);
+        return Counted(world, slot, k, Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM), counts);
+    }
+
+    /// <summary>A hit's own gas lit a magazine (EX6a): its race ran there; what follows.</summary>
+    RaceResult Raced(World world, int slot, ShipCondition k, in GasResult gas)
+    {
+        var rng = stream.Derive((ulong)hits++);
+        return Counted(world, slot, k, Magazines.Raced(k.Class, k, gas, settings, world.Time.Ms, ref rng, Sea(world, slot)), MagazineCounts.ByHit);
+    }
+
+    RaceResult Counted(World world, int slot, ShipCondition k, in RaceResult race, int[] counts)
+    {
+        long now = world.Time.Ms;
         if (race.Magazines == 0)
             return race;
         counts[(int)race.Tier]++;
@@ -1103,12 +1118,13 @@ public sealed class DamageSystem : IWorldSystem
         return race;
     }
 
-    /// <summary>A magazine a hit set off is what the hit did, too.</summary>
+    /// <summary>A magazine a hit set off is what the hit did, too (its holes already the hit's when its own gas raced it).</summary>
     static void Join(ref EffectsResult e, in RaceResult race)
     {
         (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
         (e.Destroyed, e.Disabled, e.Damaged) = (e.Destroyed + race.Destroyed, e.Disabled + race.Disabled, e.Damaged + race.Damaged);
-        e.BreachM2 += race.Gas.HoleM2;
+        if (!e.Raced)
+            e.BreachM2 += race.Gas.HoleM2;
     }
 
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens

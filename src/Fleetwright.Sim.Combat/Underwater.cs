@@ -56,6 +56,8 @@ public static class Underwater
         res.BubbleWhip = HullGirder.Of(c).Bubble(w, p, Math.Sqrt((p.X - at.X) * (p.X - at.X) + (p.Y - at.Y) * (p.Y - at.Y) + (p.Z - at.Z) * (p.Z - at.Z)),
             HitQuery.WaterOf(c, k.Attitude), s);   // none at her plate: its bubble vents into what it opened
         res.BreachM2 += res.Blast.HoleM2;
+        if (res.Blast.Magazines > 0)   // its gas lit one (EX6a): the race has run
+            (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Raced) = (true, net.LitRoom(0), MagazineVia.Underwater, true);
         outcome = Outboard(c, first) && !Inside(c, net) ? Outcome.Held : Outcome.Exploded;
 
         Reach(c, k, net, p, near.ReachM, s, ref res, ref r);
@@ -90,6 +92,8 @@ public static class Underwater
                     (magazine, magazineD) = (room, d);
             }
         }
+        if (res.Raced)
+            return;
         res.Magazine = magazine >= 0 && r.NextDouble() < s.MagazineFlashChance * Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 

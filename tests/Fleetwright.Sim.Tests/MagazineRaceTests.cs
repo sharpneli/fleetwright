@@ -323,15 +323,16 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(k.BreachM2.Sum() > 0, "the sea in");
     }
 
-    /// <summary>V5: the BCF's rate first (doors propped, lids off) burns harder than drill, and the flame from her
-    /// gunhouse always reaches the magazine; on drill only one time in ten does (below): that's where they part.</summary>
+    /// <summary>V5: the BCF's rate first (doors propped, lids off) burns harder than drill, loading her girder at least as hard, and
+    /// loses her; and the flame from her gunhouse always reaches the magazine, on drill only one time in ten (below): that's where
+    /// they part. (Whether drill's own race loses her in a seaway sits at the margin of her girder: not pinned, explosions.md EX6a.)</summary>
     [Fact]
     public void Rate_first_props_the_doors_and_takes_the_lids_off()
     {
         var c = Fleet.Get("lion").Class!;
         var (drill, rate) = (Race(c, "Magazine Q", doctrine: "1916", sea: 1), Race(c, "Magazine Q", doctrine: "1916 BCF", sea: 1));
         Assert.True(rate.Lost);
-        Assert.False(drill.Lost);
+        Assert.True(rate.GirderLoad >= drill.GirderLoad, $"{rate.GirderLoad:0.00} against drill's {drill.GirderLoad:0.00}");
         Assert.True(rate.PeakKPa >= drill.PeakKPa);
 
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), 1, Settings);

@@ -209,6 +209,19 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
     void-liquid-void, the US layers, Bismarck's oil tanks, Littorio, Richelieu; Yamato's voids).
   - **EX5e. The torpedo on it.** Half a contact burst's products into her (the hemisphere facing her), the anchors, the
     panel, `dc-history` and `damage-history`; then EX5 lands.
+  EX6 in sub-steps (2026-11-07; today only propellant goes off, and six triggers end in one flat roll, `MagazineFlashChance`):
+  - **EX6a. The two rules keyed on the source.** Hot gas lights a magazine in any run, a shell's or a torpedo's as a magazine's
+    (`Ignite` without "a stow already burns"), so a burst whose gas lights one becomes that magazine's race in the same run, with
+    no roll after; and a magazine's scuttles and trunks are the ship's in every run, joined as its cell joins, so a shell's gas in a
+    handling room vents up the trunk. The gas route's `MagazineFlashChance` goes.
+  - **EX6b. Stores that detonate.** Torpedo warheads (tubes, mounts, torpedo rooms) and shell rooms' bursters become stores of
+    their mass and explosive. A store goes off as its own detonation through the one path when a detonation's near field reaches
+    it, when hot gas or fire cooks it (the magazines' dose), or when fragments strike through its case; one hit's explosions queue
+    and each finds what the last opened. Depth charges, mines and bombs then need only a row.
+  - **EX6c. The rolls that remain.** A burst in or beside a magazine, spall and a torpedo light charges by the fragments that reach
+    them through their packaging, not a flat chance; ready-use charges likewise. The flash chain's doors stay `magazines.md`'s.
+  - **EX6d. The anchors.** `magazine --runs` and `--race`, Lion's four, `losses`, the panel. Thresholds [EST] until research
+    ("What sets an explosive store off") comes back.
 - **EX6. The chain.** What's reached goes off: charges, warheads, depth charges, shell rooms' bursters, each its own
   `Explosion` (Hood's 4″ to her 15″, Defence's passages). Flat rolls left over from before go where physics replaces them;
   the flash chain's doors stay `magazines.md`'s.

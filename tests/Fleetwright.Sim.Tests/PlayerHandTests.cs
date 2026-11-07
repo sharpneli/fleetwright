@@ -132,7 +132,7 @@ public class PlayerHandTests(ITestOutputHelper output)
     [Fact]
     public void Combing_a_spread_on_her_route_she_takes_up_the_route_again()
     {
-        var w = new World(Start, 7, Settings);
+        var w = new World(Start, 7, Settings with { HitsDoDamage = false });   // the helm's test: a hit does nothing
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(25_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TorpedoEvasion, (double)TorpedoEvasion.Comb));

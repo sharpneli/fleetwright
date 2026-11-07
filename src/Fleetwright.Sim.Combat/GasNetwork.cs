@@ -154,6 +154,9 @@ public sealed class GasNetwork
     double time, chokeK, whipKg, whipJ, whipPeak, lag, period = 1;
     /// <summary>Whether a panel bent further this step: the run isn't done while one does.</summary>
     bool moving;
+    /// <summary>Whether the rounds are the ship's (<see cref="Arm"/>); each magazine's trains linked this run, by room.</summary>
+    bool armed;
+    int[] trainStamp = [];
     GasResult res;
 
     /// <summary>A boundary in a run, whichever it is (a plate between two spaces, one to the outside, a part's walls): by one rule
@@ -321,6 +324,8 @@ public sealed class GasNetwork
             (vent, lagged, felt, hottest, hyd, spilled) = (new double[size], new double[size], new double[size], new double[size], new double[size], new bool[size]);
             (faceStamp, faces, faceBack, faceDry) = (new int[size * Faces], new Boundary[size * Faces], new double[size * Faces], new double[size * Faces]);
         }
+        if (trainStamp.Length < cls.Rooms.Length)
+            trainStamp = new int[cls.Rooms.Length];
         if (edgeStamp.Length < ne)
             (edgeStamp, open, opened, edges) = (new int[ne], new double[ne], new double[ne], new Boundary[ne]);
         if (ventedMount.Length < nm)
@@ -421,7 +426,6 @@ public sealed class GasNetwork
         Begin(cond, settings);
         for (int mt = 0; mt < c.Mounts.Length; mt++)
             rounds[mt] = mt < mounts.Length ? mounts[mt].Rounds : c.Mounts[mt].Rounds;
-        flash = Magazines.Discipline(cond, settings);
         int cell = Light(room);
         if (cell < 0)
             return res;
@@ -438,6 +442,11 @@ public sealed class GasNetwork
         (n, links, nStows, burned, fastKg, time, peakSource) = (0, 0, 0, 0, 0, 0, 0);
         res = new GasResult { FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN };
         (whipKg, whipJ, whipPeak) = (0, 0, 0);
+        // any run can light a magazine (EX6a): what it would stow, and how its trains stand
+        if (!armed)
+            for (int mt = 0; mt < c.Mounts.Length; mt++)
+                rounds[mt] = c.Mounts[mt].Rounds;
+        flash = Magazines.Discipline(cond, settings);
         period = HullGirder.Of(c).PeriodS;
         water = HitQuery.WaterOf(c, k.Attitude);
         Array.Clear(ventedMount);
@@ -456,8 +465,24 @@ public sealed class GasNetwork
                     Join(e.Cell);
     }
 
-    /// <summary>A cell joins: its air at the atmosphere's pressure, its vents.</summary>
-    void Join(int i) => Node(i, Blast.GasM3(c, k, i), Blast.VentM2(c, k, i, s));
+    /// <summary>A cell joins: its air at the atmosphere's pressure, its vents, and a magazine's trains if it's that magazine's
+    /// space: its scuttles and trunks are the ship's in every run, not only once it's alight (EX6a).</summary>
+    void Join(int i)
+    {
+        Node(i, Blast.GasM3(c, k, i), Blast.VentM2(c, k, i, s));
+        foreach (int room in c.RoomsIn(i))
+            if (c.Rooms[room].Kind == RoomKind.Magazine && Largest(room) == i)
+                Trains(room, i);
+    }
+
+    /// <summary>A magazine's trains, once a run.</summary>
+    void Trains(int room, int cell)
+    {
+        if (trainStamp[room] == id)
+            return;
+        trainStamp[room] = id;
+        LinkTrains(room, cell);
+    }
 
     void Node(int i, double gasM3, double ventM2)
     {
@@ -605,7 +630,7 @@ public sealed class GasNetwork
         var st = stows[nStows++];
         LoadStow(st, room, cell, charge);
         JoinSpace(cell);
-        LinkTrains(room, cell);
+        Trains(room, cell);
         res.Magazines = nStows;
         Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} alight ({2:0} open, {3:0} packed, {4:0} kg each, {5:0} m³ of gas)", time, c.RoomId(room), st.Open, st.Cased, st.Ck, v[cell]));
         return cell;
@@ -1029,10 +1054,11 @@ public sealed class GasNetwork
     }
 
     /// <summary>Gas hot enough to light charges (<see cref="SimSettings.GasIgniteK"/>) in a magazine's space lights it, as
-    /// the air pushed ahead of the hot gas doesn't.</summary>
+    /// the air pushed ahead of the hot gas doesn't: a shell's or a torpedo's gas as a magazine's (EX6a), the burst becoming that
+    /// magazine's race in the same run.</summary>
     void Ignite(int cell)
     {
-        if (nStows == 0 || rt[cell] < s.GasIgniteK * AirR || cell == partNode)
+        if (rt[cell] < s.GasIgniteK * AirR || cell == partNode)
             return;
         foreach (int room in c.RoomsIn(cell))
             if (c.Rooms[room].Kind == RoomKind.Magazine)
@@ -1273,6 +1299,17 @@ public sealed class GasNetwork
         }
         return lost;
     }
+
+    /// <summary>The ship's rounds by mount for the runs to come (a magazine any of them lights stows what's left), until
+    /// <see cref="Disarm"/>; a run unarmed takes the class's full outfit (docs/battle/explosions.md EX6a).</summary>
+    public void Arm(ReadOnlySpan<MountState> mounts)
+    {
+        for (int mt = 0; mt < c.Mounts.Length; mt++)
+            rounds[mt] = mt < mounts.Length ? mounts[mt].Rounds : c.Mounts[mt].Rounds;
+        armed = true;
+    }
+
+    public void Disarm() => armed = false;
 
     /// <summary>Whether the last run got into a cell: its near field or its gas.</summary>
     public bool InRun(int cell) => stamp[cell] == id;

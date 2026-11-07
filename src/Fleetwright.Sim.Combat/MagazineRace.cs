@@ -62,6 +62,17 @@ public static partial class Magazines
             k.MagazineSpent[room] = true;   // a room with no charge in it (a carrier's bombs, not in the model yet): nothing to go up, now or later
             return res;
         }
+        return Race(c, k, net, gas, s, now, ref r, sea, alsoWhipEM);
+    }
+
+    /// <summary>A magazine a burst's own gas lit (docs/battle/explosions.md EX6a): its race ran in that run, the burst its first
+    /// second, its whip in it; what follows is a set-off's. The thread's network still holds that run.</summary>
+    public static RaceResult Raced(ShipClass c, ShipCondition k, in GasResult gas, SimSettings s, long now, ref RandomStream r, double sea = 0) =>
+        Race(c, k, GasNetwork.For(c), gas, s, now, ref r, sea, 0);
+
+    static RaceResult Race(ShipClass c, ShipCondition k, GasNetwork net, in GasResult gas, SimSettings s, long now, ref RandomStream r, double sea, double alsoWhipEM)
+    {
+        var res = new RaceResult { VentS = double.NaN, StructureS = double.NaN };
         var girder = HullGirder.Of(c).Bear(k, gas.WhipEM + alsoWhipEM, now, sea, s);
         res.Gas = gas;
         (res.PeakKPa, res.BurnedKg, res.FastKg, res.Charges, res.VentM2, res.VentS, res.StructureS) = (gas.PeakKPa, gas.BurnedKg, gas.FastKg, gas.Charges, gas.VentM2, gas.VentS, gas.HullS);
