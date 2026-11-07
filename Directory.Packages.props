@@ -12,6 +12,9 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
 
     <PackageVersion Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.2.8" />
+
+    <!-- the AOT compiler PublishAot pulls in, past the SDK's bundled 10.0.12 (NU1903: GHSA-p3jp-9v83-76w9) -->
+    <PackageVersion Include="Microsoft.DotNet.ILCompiler" Version="10.0.14" />
   </ItemGroup>
 
 </Project>

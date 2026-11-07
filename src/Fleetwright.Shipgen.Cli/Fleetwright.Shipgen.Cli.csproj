@@ -10,6 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- newer than the SDK's own, which has an advisory against it (Directory.Packages.props) -->
+    <PackageReference Include="Microsoft.DotNet.ILCompiler" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Fleetwright.Shipgen\Fleetwright.Shipgen.csproj" />
     <ProjectReference Include="..\Fleetwright.Shipgen.Render\Fleetwright.Shipgen.Render.csproj" />
     <!-- a tool may depend on anything; the libraries may not (docs/battle/plan.md, "The code, checked again") -->
