@@ -822,6 +822,7 @@ public sealed class DamageSystem : IWorldSystem
         {
             ref readonly var row = ref cls.Launchers[l];
             StoresSetOff++;
+            k.StoreLit[l] = false;   // taken now, so a hit Strike passes over (a bench's Spared) can't hold this loop on it
             Strike(world, new Hit
             {
                 Ship = entity, Ms = world.Time.Ms, Point = row.StoreAt, Direction = row.StoreAxis, Source = HitSource.Store, Store = l,

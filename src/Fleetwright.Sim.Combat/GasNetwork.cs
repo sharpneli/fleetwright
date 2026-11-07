@@ -35,7 +35,8 @@ public sealed class GasNetwork
     const double DtMin = 1e-4, DtMax = 0.02, GaugeFloor = 40e3, RtAir = 84_000, AirR = 287, SeaRhoG = 1025 * 9.81, StepCellM3 = 10, Sigma = 5.670e-8;
     /// <summary>The step's control, checked by <c>explode --step</c> (explosions.md EX2): the most a pressure that matters may
     /// move in one, or a burning stow put in, as a share of itself or of this share of the highest pressure anywhere. Halved it
-    /// moves nothing much; doubled it starts to overshoot.</summary>
+    /// moves nothing much; doubled it starts to overshoot. A finer check (<see cref="StepK"/> under 1) shortens the longest step
+    /// with it, or a slow burn's steps, held at the longest, would never be checked at all.</summary>
     const double StepMost = 0.8, StepShareOfPeak = 0.25;
 
     /// <summary>A bench's view: what gave and when. Null in the game.</summary>
@@ -151,7 +152,7 @@ public sealed class GasNetwork
     ShipCondition k = null!;
     Waterplane water;
     FlashDiscipline flash;
-    double time, chokeK, whipKg, whipJ, whipPeak, lag, period = 1;
+    double time, chokeK, whipKg, whipJ, whipPeak, lag, plainLag, period = 1;
     /// <summary>Whether a panel bent further this step: the run isn't done while one does.</summary>
     bool moving;
     /// <summary>Whether the rounds are the ship's (<see cref="Arm"/>); each magazine's trains linked this run, by room.</summary>
@@ -163,6 +164,14 @@ public sealed class GasNetwork
     bool intoBubble;
     int[] trainStamp = [];
     GasResult res;
+    // what a step reads of each boundary and isn't moved by the run (Run fills or stamps them, after the near field's holes): each
+    // cell's liquid share, each pool entry's panel over its plate and each outside face's (Boundary.Take's heavy), and each pool
+    // entry's rupture pressure for the class and settings it was worked out for
+    double[] liq = [], heavyJ = [], faceHeavy = [], ruptureJ = [];
+    int[] heavyStamp = [], faceHeavyStamp = [];
+    int run;
+    ShipClass? ruptureClass;
+    SimSettings? ruptureSettings;
 
     /// <summary>A boundary in a run, whichever it is (a plate between two spaces, one to the outside, a part's walls): by one rule
     /// its load taken up as its panel responds, what it opens going up <see cref="Blast.Opening"/>'s curve, giving at
@@ -187,10 +196,19 @@ public sealed class GasNetwork
         /// <summary>A load of MPa on it for a step of dt s, its plate's rupture pressure, how heavy it is against its plate (its mass
         /// over its plate's, each as steel), joint and area: what it opened more this step, m², the load as a D and the room its bulge
         /// swept, m³.</summary>
-        public double Take(double load, double rupture, double heavy, Joint joint, double areaM2, double dt, SimSettings s, out double d, out double swept)
+        public double Take(double load, double rupture, double heavy, Joint joint, double areaM2, double dt, double plainLag, SimSettings s, out double d,
+            out double swept)
         {
-            double tear = s.PanelTearM, rise = s.PanelMs / 1000 * Math.Sqrt(Math.Max(heavy, 1));
-            Felt += (Math.Max(load, 0) - Felt) * (1 - Math.Exp(-dt * Math.PI / rise));   // P·min(k, π·t/T) as a lag
+            if (!(load > 0) && Felt == 0)
+            {
+                // unloaded and never loaded: nothing moves (an underwater face, a wall between two spaces at one pressure)
+                (d, swept) = (Blast.RuptureD * Felt / rupture, 0);
+                return 0;
+            }
+            double tear = s.PanelTearM;
+            // P·min(k, π·t/T) as a lag; a plain plate's rise is the panel's own, its lag the step's (Run), so only one with liquid
+            // behind it pays for its own
+            Felt += (Math.Max(load, 0) - Felt) * (heavy <= 1 ? plainLag : 1 - Math.Exp(-dt * Math.PI / (s.PanelMs / 1000 * Math.Sqrt(heavy))));
             Peak = Math.Max(Peak, Felt);
             d = Blast.RuptureD * Felt / rupture;
             double was = Delta, yield = tear / Blast.RuptureD;   // under D 1 it springs back, and sweeps nothing the gas would feel
@@ -223,7 +241,7 @@ public sealed class GasNetwork
     /// <summary>Half the liquid still in a cell as deep as this, kg/m².</summary>
     double Liquid(int cell, double depth)
     {
-        double share = k.Liquid(cell);
+        double share = liq[cell];
         ref readonly var x = ref c.Cells[cell];
         return share > 0 ? 0.5 * share * x.Permeability * x.LiquidTPerM3 * 1000 * Math.Max(depth, 0) : 0;
     }
@@ -245,7 +263,7 @@ public sealed class GasNetwork
                 int o = region[a];
                 if (o == partNode || spilled[o])
                     continue;
-                double share = k.Liquid(o);
+                double share = liq[o];
                 if (!(share > 0))
                     continue;
                 double push = 0;
@@ -344,13 +362,18 @@ public sealed class GasNetwork
             (stamp, region, nearStamp) = (new int[size], new int[size], new int[size]);
             (v, m, u, p, rt, pStart) = (new double[size], new double[size], new double[size], new double[size], new double[size], new double[size]);
             (vent, lagged, felt, hottest, hyd, spilled) = (new double[size], new double[size], new double[size], new double[size], new double[size], new bool[size]);
-            dose = new double[size];
+            (dose, liq) = (new double[size], new double[size]);
+            (faceHeavy, faceHeavyStamp) = (new double[size * Faces], new int[size * Faces]);
             (faceStamp, faces, faceBack, faceDry) = (new int[size * Faces], new Boundary[size * Faces], new double[size * Faces], new double[size * Faces]);
         }
         if (trainStamp.Length < cls.Rooms.Length)
             trainStamp = new int[cls.Rooms.Length];
         if (edgeStamp.Length < ne)
+        {
             (edgeStamp, open, opened, edges) = (new int[ne], new double[ne], new double[ne], new Boundary[ne]);
+            (heavyJ, heavyStamp, ruptureJ) = (new double[ne], new int[ne], new double[ne]);
+            ruptureClass = null;
+        }
         if (ventedMount.Length < nm)
         {
             (ventedMount, liftedMount, rounds) = (new bool[nm], new bool[nm], new int[nm]);
@@ -728,9 +751,11 @@ public sealed class GasNetwork
     {
         double dt = dt0, quiet = 0;
         int steps = 0;
+        Fixed();
         while (time < s.GasRunS)
         {
             lag = 1 - Math.Exp(-dt * Math.PI * 1000 / Math.Max(s.PanelMs, 1e-3));   // a panel's response: P·min(k, π·t/T) as a lag
+            plainLag = 1 - Math.Exp(-dt * Math.PI / (s.PanelMs / 1000));   // a plain plate's in Boundary.Take, as it reckons it
             for (int a = 0; a < n; a++)
                 pStart[region[a]] = p[region[a]];   // the step's control compares end with end
             // half the step's gas before its flows and half after, so what the boundaries feel is the middle of the step: else a long
@@ -749,11 +774,34 @@ public sealed class GasNetwork
             quiet = changed || most > 0.01 ? 0 : quiet + dt;
             if (Done(caught, gauge, quiet))
                 break;
-            dt = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin) : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax) : dt;
+            dt = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin) : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax * Math.Min(StepK, 1)) : dt;
             dt = Math.Max(Math.Min(dt, soonest), DtMin);   // the step ends where a magazine's dose would light it, not a step's length after
         }
         res.Steps = steps;
         res.EndS = time;
+    }
+
+    /// <summary>What the run's steps read and nothing in them moves, as it stands once the near field has holed her (<see cref="liq"/>
+    /// and the rest).</summary>
+    void Fixed()
+    {
+        run++;
+        for (int i = 0; i < c.Cells.Length; i++)
+            liq[i] = k.Liquid(i);
+        if (ReferenceEquals(ruptureClass, c) && ReferenceEquals(ruptureSettings, s))
+            return;
+        (ruptureClass, ruptureSettings) = (c, s);
+        for (int j = 0; j < c.NeighbourCount; j++)
+            ruptureJ[j] = EdgeRupture(j);
+    }
+
+    /// <summary>A pool entry's panel over its plate, each as steel (<see cref="Boundary.Take"/>'s heavy): its plate's and the liquid's
+    /// either side (<see cref="PanelKg"/>), worked out once a run.</summary>
+    double Heavy(int i, int j)
+    {
+        if (heavyStamp[j] != run)
+            (heavyJ[j], heavyStamp[j]) = (PanelKg(i, j) / (SteelKgM2Mm * Math.Max(heldMm[j], 1)), run);
+        return heavyJ[j];
     }
 
     /// <summary>Each space's gas as it stands: what its walls feel as their panels take it up, how hot it has been, and whether
@@ -950,7 +998,7 @@ public sealed class GasNetwork
             if (inside && o < i)
                 continue;   // from the lower cell
             double a1 = EdgeOpen(j);
-            if (!inside && e.Join != JoinKind.Open && k.Liquid(o) * s.BlastLoadFactor * (Pe(i) - P0) / 1e6 >= EdgeRupture(j) / Blast.RuptureD)
+            if (!inside && e.Join != JoinKind.Open && liq[o] * s.BlastLoadFactor * (Pe(i) - P0) / 1e6 >= ruptureJ[j] / Blast.RuptureD)
             {
                 // a space full of liquid answers the push at once, once what it passes on could bend a wall like the one it's behind
                 Join(o);
@@ -979,8 +1027,8 @@ public sealed class GasNetwork
         // short of yield it springs back, so it bends by how hard it's pushed whichever way; past it the bend has a side
         if (b.Delta < s.PanelTearM / Blast.RuptureD)
             b.Dir = (sbyte)(diff >= 0 ? 1 : -1);
-        double rupture = EdgeRupture(j);
-        double more = b.Take(s.BlastLoadFactor * Math.Abs(diff), rupture, PanelKg(i, j) / (SteelKgM2Mm * Math.Max(heldMm[j], 1)), c.InternalsJoint, area[j], dt, s,
+        double rupture = ruptureJ[j];
+        double more = b.Take(s.BlastLoadFactor * Math.Abs(diff), rupture, Heavy(i, j), c.InternalsJoint, area[j], dt, plainLag, s,
             out double d, out double swept);
         if (b.Dir > 0)
             Bulge(i, e.Cell, swept);
@@ -1033,8 +1081,10 @@ public sealed class GasNetwork
             if (faceStamp[x] != id)
                 FirstOnFace(x, i, f);
             ref var b = ref faces[x];
+            if (faceHeavyStamp[x] != run)
+                (faceHeavy[x], faceHeavyStamp[x]) = ((SteelKgM2Mm * Math.Max(hull.Mm[x], 1) + LiquidKgM2(i, f)) / (SteelKgM2Mm * Math.Max(hull.HeldMm[x], 1)), run);
             double more = b.Take(s.BlastLoadFactor * Math.Max(Pe(i) - P0 - faceBack[x], 0) / 1e6, Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s),
-                (SteelKgM2Mm * Math.Max(hull.Mm[x], 1) + LiquidKgM2(i, f)) / (SteelKgM2Mm * Math.Max(hull.HeldMm[x], 1)), c.ShellJoint, fa, dt, s, out double d, out double swept);
+                faceHeavy[x], c.ShellJoint, fa, dt, plainLag, s, out double d, out double swept);
             Bulge(i, -1, swept);
             vent[i] += more * faceDry[x];
             if (d < Blast.RuptureD || b.Fate == Blast.Fate.Ruptured)
@@ -1072,7 +1122,7 @@ public sealed class GasNetwork
     bool LoadPartWalls(double dt)
     {
         vent[partNode] += partWalls.Take(s.BlastLoadFactor * Math.Max(p[partNode] - P0, 0) / 1e6, Blast.RuptureMPa(Math.Max(partMm, 1), c.ShellJoint, s), 1,
-            c.ShellJoint, partM2, dt, s, out double d, out double swept);
+            c.ShellJoint, partM2, dt, plainLag, s, out double d, out double swept);
         Bulge(partNode, -1, swept);
         if (d < Blast.RuptureD || partWalls.Fate == Blast.Fate.Ruptured)
             return false;

@@ -27,9 +27,10 @@ Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6 is done (2
 4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
 5. **cases and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
 6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
-7. **A magazine's cost:** about 70-165 ms for a big ship's, against about 20 wanted (a shell's 10-230 µs is on budget). A longer step isn't the way: see "the solver". Threads are the option (the user). About 20 a Jutland, so 2-3 s in a 14-hour game, each a hitch on the sim thread.
+7. **A magazine's cost:** 60-700 ms a race (Release; Bismarck's slow burns the worst, 90-170 s of gas in 4,500-8,600 steps), against about 20 wanted; a shell's 10-230 µs is on budget, but a shell whose gas lights a magazine (EX6a) pays the race. Over budget since EX5 at least. A longer step isn't the way, and exact tuning of the loop gave 19%: see "Cost and convergence". Threads are the option (the user). About 20 a Jutland, each a freeze on the map (no snapshot while it runs).
 8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
 9. **The research request** "Big explosions in and beside ships" is open and bears on 1, 5 and 6.
+10. **The game's step isn't converged on every race** ("Cost and convergence"): Iron Duke's S aft breaks her at the game's step and not at an eighth of it, Queen Mary's B and Dreadnought's Y light one magazine fewer.
 
 ## Why now
 
@@ -134,8 +135,8 @@ Only cells with gas in them are stepped, with steps that lengthen as the pressur
 and allocates nothing (its state lives on the ship's condition, as `Cascade`'s does). It runs to the end at the moment of
 the event, as the race does today, so replays hold.
 
-**Cost budget** (DevRelease): a shell's burst under about 200 µs on average, a magazine under about 20 ms (the race takes
-2-13 ms now). A hit costs about 760 µs all told today.
+**Cost budget** (DevRelease): a shell's burst under about 200 µs on average, a magazine under about 20 ms (the race took
+2-13 ms at EX2; 60-700 ms by EX6, "Cost and convergence"). A hit costs about 760 µs all told today.
 
 ### The hull girder: one check
 
@@ -909,6 +910,31 @@ if the result is silly or not"). Nothing silly.
   mount); they take the weather deck's round them too, and a store still warm keeps her steps going until it cools.
 - **Open:** deck fires burn out in minutes, so no store aboard sees an hour-long fire (Suzuya's, Mikuma's: bombs and aviation fuel,
   which aren't in the game); the fire model's, when bombs come.
+
+## Cost and convergence (2026-11-07)
+
+A 2000 mm HE shell (13.6 t of lyddite) froze the map: 60-160 ms a hit on Dreadnought, Bismarck and a destroyer, against 2-3 ms for
+a 12″ HE. Not the shell: its gas lights her magazines (EX6a) and it's their race. **Any magazine set off costs 60-700 ms** (`explode
+DESIGN --magazine all`, Release): Bismarck's slow burns run 90-170 s of gas over 210-280 of her 294 cells in 4,500-8,600 steps; Iron
+Duke's, Lion's, Seydlitz's 20-30 s in 4,000-6,000; a V25's 18 s in 2,000. Already so at EX5 (the bisect: EX2's commits don't build
+alone now). The sim thread publishes nothing while one runs, so the ships stop and then jump.
+
+- **Where it goes:** steps × the boundaries of the cells reached, about 17 ns a pool entry or face a step (48 µs a step for
+  Bismarck). Caching what a step reads and the run doesn't move (each cell's liquid, each entry's panel mass and rupture, a plain
+  plate's lag) took 19% off, results bit for bit the same. 20 ms for a 5,500-step race wants under 4 µs a step: no tuning of this
+  loop gets there.
+- **The longest step (`DtMax`, 20 ms) binds only on slow burns.** Against an eighth of the step and of the longest step, over 75
+  races on eight designs, a longest step of 50, 100 and 200 ms took 11% of the steps off (Bismarck's halved, the violent races
+  none), and read no worse than 20 ms up to 100 ms. Not done: too little for what it moves.
+- **The convergence check didn't shorten the longest step** (`StepK` scaled only the step's control), so a slow burn held at 20
+  ms was never checked. It does now (no change in play). **At the game's step not every race is converged:** against an eighth,
+  peaks within 15%, burned within 29% (one race), seaway load within 0.25; Iron Duke's S aft breaks her at the game's step and holds
+  at the fine one (1.02 against 1.00), Queen Mary's B lights 3 magazines against 4, Dreadnought's Y 2 against 3. Threshold cases,
+  and they move whichever way the step does (at 100 ms those two magazines read right and another race was off): the step's control
+  wants a look before EX7 reads the game.
+- **Fixed on the way:** a lit store whose hit `Strike` passed over (a bench's `Spared`) would have held `GoOff`'s loop forever; the
+  flag is taken before the store's hit. **Noted:** `StoreLimit` isn't in the state hash (a draw that decides; `StoreHeat` is); a
+  store in a fire cooler than its filler neither heats nor cools while it burns.
 
 ## What stays out
 
