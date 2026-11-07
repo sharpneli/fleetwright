@@ -552,7 +552,7 @@ So the kick lit at once is about 0.010·L^1.7 rather than the note's 0.016·L^1.
 | Invincible | 0.69 | 0.60 | 0.64 | 0.64 |
 | Seydlitz | 0.63 | 0.54 | 0.57 | 0.57 |
 
-Seydlitz still burns out at every setting, destroyers stay at 0.10-0.19. 0.05 s is below the estimate's range. It's only there to show how far spread alone can go.
+Seydlitz doesn't break at any setting, and destroyers stay at 0.10-0.19. 0.05 s is below the estimate's range. It's only there to show how far spread alone can go.
 
 **So taking the bed out most likely puts the panel's magazine losses back to none, and open item 1 back where it was.** Bed 0 is the old model exactly, so nothing else has to change for it to come out. Also from the note, none of it acted on:
 - **Stowage:** bulk 500-630 kg/m³ cased, 340-500 USN tanks, 580-770 loose bags, so 600 is fair.
