@@ -75,7 +75,7 @@ public enum HoleAt : byte
 /// its guns fall silent and it leaves its group; it goes under a while later (by how it went), seen to go by those who
 /// have it in sight, and is dropped from the world as a command would. Draws come from the stream "damage", one per hit
 /// and per ship's step. World state: replays, hashes. Registered fifth, so its id is always <see cref="Id"/>.</summary>
-public sealed class DamageSystem : IWorldSystem
+public sealed partial class DamageSystem : IWorldSystem
 {
     public const byte Id = 5;
     const ushort LossEvent = 1, StepEvent = 2, ClearEvent = 3;
@@ -99,8 +99,8 @@ public sealed class DamageSystem : IWorldSystem
     readonly RandomStream stream;
     /// <summary>Each ship's plates' lots (P7): derived by her entity, never advanced, so a plate keeps its quality.</summary>
     readonly RandomStream lotStream;
-    readonly HitPath path = new();
-    readonly PathBender bender = new();
+    /// <summary>The sim thread's own working space for a hit (<see cref="HitScratch"/>): its path is what <see cref="LastPath"/> shows.</summary>
+    readonly HitScratch scratch = new();
     readonly Dictionary<ShipClass, FloodModel> floods = [];
     readonly double[] fuel = new double[256];
     readonly int[] readiness = new int[256], firefighting = new int[256];
@@ -111,7 +111,6 @@ public sealed class DamageSystem : IWorldSystem
     readonly double[] stupidity = new double[256];
     readonly FlashDiscipline[] stupidFlash = new FlashDiscipline[256];
     bool stupiditySet;
-    double[] bearings = new double[16];
     readonly Blast[] blasts;
     int blastNext, blastCount;
     readonly Struck[] struck;
@@ -168,7 +167,7 @@ public sealed class DamageSystem : IWorldSystem
     }
 
     /// <summary>The last hit's own path (tools: it's overwritten by the next hit).</summary>
-    public HitPath LastPath => path;
+    public HitPath LastPath => scratch.Path;
 
     /// <summary>A trace the terminal walk tells each plate of a shell's hit (tools: the hitbox viewer's shot; not world
     /// state, null in play).</summary>
@@ -716,10 +715,7 @@ public sealed class DamageSystem : IWorldSystem
         Flood(cls);
         HullGirder.Of(cls);
         GasNetwork.For(cls);   // grown to her now, on this thread, not at her first burst
-        path.Reserve(cls.Solids.Solids.Length);
-        bender.Reserve(cls.Solids.Solids.Length);
-        if (bearings.Length < cls.Mounts.Length)
-            bearings = new double[Math.Max(cls.Mounts.Length, bearings.Length * 2)];
+        scratch.Reserve(cls);
     }
 
     // ------------------------------------------------------------------ a hit
@@ -727,79 +723,6 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>A bench's counterfactual (<c>shipgen losses --spare</c>, docs/battle/loss-stock-take.md): a hit it says true of
     /// does nothing, so what those hits decide shows in the losses. Never set in play.</summary>
     public Func<Hit, bool>? Spared { get; set; }
-
-    /// <summary>A hit lands, now: what it does to the ship, at once.</summary>
-    public void Strike(World world, in Hit hit)
-    {
-        var store = ships.Store;
-        int slot = store.SlotOf(hit.Ship);
-        if (slot < 0 || Spared?.Invoke(hit) == true)
-            return;
-        var ship = store[slot];
-        var cls = ship.Handling.Class;
-        var k = store.Combat.Condition(slot);
-        long now = world.Time.Ms;
-        bool near = hit.Source == HitSource.NearMiss, own = hit.Source == HitSource.Store;
-        k.Damaged = touched = true;
-        Ready(slot, k);
-        k.Experience = world.Gunnery.Experience(ship.Side);   // her men's nerve (docs/battle/crew.md N3b)
-        if (!near && !own)
-            k.Hits++;
-        (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
-
-        Prepare(cls);
-        ulong index = (ulong)hits++;
-        var rng = stream.Derive(index);
-        var net = GasNetwork.For(cls);
-        net.Arm(ships.Store.Combat.Mounts(slot));   // a magazine the hit's gas lights stows what's left (EX6a)
-        var e = WhatItDoes(hit, slot, cls, k, now, out var t, ref rng);
-        // a magazine set off: its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
-        var race = default(RaceResult);
-        if (e.Magazine && k.Status == ShipStatus.Afloat)
-        {
-            race = e.Raced ? Raced(world, slot, k, e.Blast, index) : SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
-            if (race.Magazines > 0)
-                Join(ref e, race);
-        }
-        net.Disarm();
-        trainsLit += e.Stations > 0 ? 1 : 0;
-        LastRace = race;
-        // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion, one reading a moment)
-        var girder = race.Girder;
-        if (race.Magazines == 0 && k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0 || e.BubbleWhip > 0))
-            girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, Sea(world, slot), settings, e.BubbleWhip);
-        // its section's fire main and the fire parties there (docs/battle/fire.md B4)
-        if (!near && k.Status == ShipStatus.Afloat)
-            Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
-
-        var fx = Flags(e);
-        // men hit or shaken change what her stations can do (docs/battle/crew.md N2, N3b)
-        if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred || girder.EndOff) && k.Status == ShipStatus.Afloat)
-        {
-            fx |= Recompute(world, slot, k, ref rng);
-            Remind(world, slot, k);
-        }
-        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = girder.Broken && !blew && k.Status == ShipStatus.Afloat;
-        if (blew)
-            fx |= HitEffect.Magazine;
-        if (broke)
-            fx |= HitEffect.Broken;
-        (LastTerminal, LastEffects, LastEffect) = (t, e, fx);
-        if (hit.Source is HitSource.Shell or HitSource.Coarse)
-            Record(ship, cls, hit, t, e);
-        if (!near || fx != HitEffect.None || e.Killed + e.Wounded > 0)   // a near miss that did nothing isn't news
-            log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : own ? CombatEvent.Store : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship,
-                own ? hit.Store : hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
-                (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
-        if (blew)
-            Blew(world, slot, k, e.MagazineRoom, hit.Source switch { HitSource.Torpedo => BlastCause.Torpedo, HitSource.Store => BlastCause.Store, _ => BlastCause.Shell },
-                hit.Point, race);
-        else if (broke)
-            Lose(world, slot, k, LossKind.BrokeInTwo);
-        else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
-            Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
-        GoOff(world, slot, k);
-    }
 
     /// <summary>Stores set off and run: how many, each its own explosion (docs/battle/explosions.md EX6c).</summary>
     public int StoresSetOff { get; private set; }
@@ -842,48 +765,6 @@ public sealed class DamageSystem : IWorldSystem
         }
     }
 
-    /// <summary>What a hit does, by what it is: a shell's walk through her and its burst, or an explosion in the water beside her.</summary>
-    EffectsResult WhatItDoes(in Hit hit, int slot, ShipClass cls, ShipCondition k, long now, out TerminalResult t, ref RandomStream rng)
-    {
-        if (hit.Source == HitSource.Torpedo)
-        {
-            // an underwater explosion against the hull (4.6): no path of its own
-            var e = Underwater.Apply(cls, k, hit, settings, ref rng, out var outcome);
-            t = new TerminalResult { Outcome = outcome, Plate = -1 };
-            return e;
-        }
-        if (hit.Source == HitSource.Store)
-        {
-            // a store of hers going off where it is (EX6c): a burst at rest, no path; her launcher's warheads gone with it
-            t = new TerminalResult { Outcome = Outcome.Exploded, Burst = BurstKind.Inside, Plate = -1, Glance = -1, Spall = double.NaN, PlateU = double.NaN };
-            var e = Effects.Detonate(cls, k, hit.Store, now, settings, ref rng);
-            k.StoreLit[hit.Store] = false;
-            ships.Store.Combat.Spent(slot, hit.Store);
-            return e;
-        }
-        if (hit.Source == HitSource.NearMiss)
-        {
-            // a burst in the water outside the hull (E7): no path either
-            t = new TerminalResult { Outcome = hit.Force < 1 ? Outcome.LowOrder : Outcome.BurstOutside, Burst = BurstKind.Outside, Plate = -1, Glance = -1,
-                Spall = double.NaN, PlateU = double.NaN, BurstMs = hit.SpeedMs };
-            return NearMiss.Apply(cls, k, hit, settings, ref rng);
-        }
-        // its own path: from just outside the point along the flight, through the whole ship
-        var store = ships.Store;
-        int n = cls.Mounts.Length;
-        for (int m = 0; m < n; m++)
-            bearings[m] = CombatStore.BearingAt(store.Combat.Mount(slot, m), cls.Mounts[m], now);
-        var d = hit.Direction;
-        double far = 2 * cls.Solids.Radius + 10;
-        var p0 = new P3(hit.Point.X - d.X, hit.Point.Y - d.Y, hit.Point.Z - d.Z);
-        var p1 = new P3(hit.Point.X + d.X * far, hit.Point.Y + d.Y * far, hit.Point.Z + d.Z * far);
-        var water = HitQuery.WaterOf(cls, k.Attitude);
-        ShipTracer.Trace(cls, p0, p1, bearings.AsSpan(0, n), water, path);
-        bender.Set(bearings, n, water);
-        t = Terminal.Resolve(cls, hit, path, bender, lotStream.Derive((ulong)hit.Ship), settings, ref rng, k, Trace);
-        return Effects.Apply(cls, k, hit, path, t, settings, ref rng);
-    }
-
     /// <summary>What a hit did, for the log and the screens.</summary>
     static HitEffect Flags(in EffectsResult e)
     {
@@ -924,17 +805,25 @@ public sealed class DamageSystem : IWorldSystem
     /// trails; the store holds the ship to it. The effects it had.</summary>
     HitEffect Recompute(World world, int slot, ShipCondition k, ref RandomStream rng)
     {
+        var ship = ships.Store[slot];
+        var fx = RecomputeOwn(k, world.Gunnery.Experience(ship.Side), ship.Rudder, world.Time.Ms, ref rng);
+        RecomputeWorld(world, slot, k, fx);
+        return fx;
+    }
+
+    /// <summary><see cref="Recompute"/>'s part on her condition alone (docs/battle/workers.md W16b): what she can still do, her
+    /// steering lost, jammed at the rudder she had (rudder) or back. The effects it had.</summary>
+    HitEffect RecomputeOwn(ShipCondition k, double experience, double rudder, long now, ref RandomStream rng)
+    {
         double cap = k.PowerCap;
         var steering = k.Steering;
-        k.Experience = world.Gunnery.Experience(ships.Store[slot].Side);
-        bool steers = Functions.Evaluate(k, settings, world.Time.Ms, world.Time.Ms + (long)(settings.FallOutWaitMin * 60_000));
-        Freeze(world, slot, k);
-        Stiffen(world, slot, k);
+        k.Experience = experience;
+        bool steers = Functions.Evaluate(k, settings, now, now + (long)(settings.FallOutWaitMin * 60_000));
         if (!steers && k.Steering == Steering.Free)
         {
             bool jam = rng.NextDouble() < settings.RudderJamChance;
-            (k.Steering, k.JamRudderRad) = jam ? (Steering.Jammed, ships.Store[slot].Rudder) : (Steering.Lost, 0);
-            (k.SteerCause, k.SteerSinceMs) = (Repairs.RudderHit(k) ? SteerCause.Rudder : SteerCause.Gear, Math.Max(world.Time.Ms, 1));
+            (k.Steering, k.JamRudderRad) = jam ? (Steering.Jammed, rudder) : (Steering.Lost, 0);
+            (k.SteerCause, k.SteerSinceMs) = (Repairs.RudderHit(k) ? SteerCause.Rudder : SteerCause.Gear, Math.Max(now, 1));
         }
         else if (steers && k.Steering != Steering.Free && k.SteerCause == SteerCause.Gear)
             (k.Steering, k.JamRudderRad, k.SteerCause) = (Steering.Free, 0, SteerCause.None);   // the gear answers again (DC7)
@@ -944,10 +833,18 @@ public sealed class DamageSystem : IWorldSystem
             fx |= HitEffect.Steering;
         if (k.PowerCap < cap)
             fx |= HitEffect.Power;
+        return fx;
+    }
+
+    /// <summary><see cref="Recompute"/>'s part in the world: her mounts stopped and stiffened as she now is, held to her power if
+    /// the recompute changed it or her steering (fx), the next outage's end reminded.</summary>
+    void RecomputeWorld(World world, int slot, ShipCondition k, HitEffect fx)
+    {
+        Freeze(world, slot, k);
+        Stiffen(world, slot, k);
         if (fx != HitEffect.None)
             Hold(world, slot, k, force: true);
         Remind(world, slot, k);   // its functions may have set a time of their own (the conn shifting: crew.md N2)
-        return fx;
     }
 
     /// <summary>Its mounts out of action (or jammed) stop where they are: they train no more.</summary>
@@ -1072,77 +969,6 @@ public sealed class DamageSystem : IWorldSystem
         ships.Damaged(world, slot, cap, k.Steering, k.JamRudderRad);
     }
 
-    /// <summary>A shell's hit into the screens' ring (<see cref="Struck"/>): where it burst and after how long, where it left
-    /// the ship if it flew on (the last time the path left her hull or a part, on the leg it was on then; a glance off her
-    /// side that never got in leaves at the plate), its filler's W and what its burst tore open to the outside.</summary>
-    /// <summary>How far past her far side a shell that bursts beyond her goes off, m [EST]: the walk stops at her side.</summary>
-    const double BeyondM = 5;
-
-    void Record(ShipState ship, ShipClass cls, in Hit hit, in TerminalResult t, in EffectsResult e)
-    {
-        var shell = hit.Shell;
-        var shows = HitShows.None;
-        if (t.Underwater)
-            shows |= HitShows.Underwater;
-        if (e.Fire)
-            shows |= HitShows.Fire;
-        if (e.Blast.Open)
-            shows |= HitShows.Open;
-        if (e.Spall)
-            shows |= HitShows.Spall;
-        // the path starts a metre short of the hit, along the flight
-        P3 burstAt = default;
-        double burstS = 0;
-        if (t.Bursts && double.IsFinite(t.BurstT))
-        {
-            burstAt = path.At(t.BurstT);
-            burstS = Math.Max(t.BurstT - 1, 0) / Math.Max(0.5 * (t.StrikeMs + t.BurstMs), 30);
-        }
-        P3 exitAt = default, exitDir = default;
-        double exitMs = 0;
-        if (t.Outcome is Outcome.PassedThrough or Outcome.Ricochet or Outcome.BurstBeyond)
-        {
-            var xs = path.Crossings;
-            double from = t.Glance >= 0 && t.Glance < xs.Length ? xs[t.Glance].T : 0, exitT = double.NaN;
-            for (int i = xs.Length - 1; i >= 0 && double.IsNaN(exitT); i--)
-                if (xs[i].T >= from && xs[i].Kind is CrossingKind.HullOut or CrossingKind.PartOut)
-                    exitT = xs[i].T;
-            if (double.IsNaN(exitT) && t.Glance >= 0)
-                exitT = from;
-            if (!double.IsNaN(exitT))
-            {
-                exitAt = path.At(exitT);
-                exitDir = path.LegOf(path.Leg(exitT)).Direction;
-                if (t.Outcome == Outcome.BurstBeyond)
-                {
-                    // the walk keeps no point past her far side: it bursts a few metres out [EST]
-                    burstAt = new P3(exitAt.X + exitDir.X * BeyondM, exitAt.Y + exitDir.Y * BeyondM, exitAt.Z + exitDir.Z * BeyondM);
-                    burstS = Math.Max(exitT - 1 + BeyondM, 0) / Math.Max(t.StrikeMs, 30);
-                    (exitAt, exitDir) = (default, default);
-                }
-                else
-                {
-                    // its speed out [EST]: the plates' toll isn't kept; a glance leaves at about half the speed it met the plate
-                    exitMs = t.Outcome == Outcome.Ricochet ? 0.5 * (double.IsFinite(t.PlateMs) && t.PlateMs > 0 ? t.PlateMs : t.StrikeMs) : 0.85 * t.StrikeMs;
-                    if (exitAt.Z > cls.Vertical.Waterline)
-                        shows |= HitShows.Exit;
-                }
-            }
-        }
-        double w = shell.FillerKg * shell.FillerRe * (t.Outcome == Outcome.LowOrder ? Math.Min(t.Force, 1) : 1);
-        // its pieces of 50 g and more (Mott: N(>m) = N₀ e^(−√m / M_k)), when it burst
-        double pieces = 0;
-        if ((t.Bursts || t.Outcome == Outcome.BurstBeyond) && shell.Fragments is { } f)
-        {
-            var fb = f.Of(t.Outcome == Outcome.LowOrder);
-            pieces = fb.MottK > 0 ? fb.MottN0 * Math.Exp(-Math.Sqrt(0.05) / fb.MottK) : 0;
-        }
-        struck[struckNext] = new Struck(hit.Ms, ship.Entity, ship.ClassIndex, hit.Shooter, ship.Position, ship.Forward, hit.Point, hit.Direction,
-            t.Outcome, t.Burst, burstAt, burstS, exitAt, exitDir, exitMs, shell.CalibreMm, w, shell.FillerRe, e.Blast.HoleM2, pieces, shell.Kind, shows);
-        struckNext = (struckNext + 1) % struck.Length;
-        struckCount = Math.Min(struckCount + 1, struck.Length);
-    }
-
     /// <summary>The sea a ship's girder takes (docs/battle/explosions.md): the wind where she is, as a share of a seaway's
     /// (<see cref="SimSettings.GirderSeawayMs"/>).</summary>
     double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.GirderSeawayMs;
@@ -1153,14 +979,6 @@ public sealed class DamageSystem : IWorldSystem
     {
         long now = world.Time.Ms;
         return Counted(world, slot, k, Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM), counts);
-    }
-
-    /// <summary>A hit's own gas lit a magazine (EX6a): its race ran there; what follows. Its draws are the hit's own (by its
-    /// index), not the next hit's: a shared count here moved every later hit's draws on every ship (workers.md: keyed streams).</summary>
-    RaceResult Raced(World world, int slot, ShipCondition k, in GasResult gas, ulong hit)
-    {
-        var rng = stream.Derive(hit).Derive(0x8ACEDu);
-        return Counted(world, slot, k, Magazines.Raced(k.Class, k, gas, settings, world.Time.Ms, ref rng, Sea(world, slot)), MagazineCounts.ByHit);
     }
 
     RaceResult Counted(World world, int slot, ShipCondition k, in RaceResult race, int[] counts)
