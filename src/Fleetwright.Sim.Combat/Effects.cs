@@ -750,10 +750,7 @@ public static class Effects
         }
         var via = b.Via;
         if (b.Inside && b.Magazine >= 0)
-        {
-            if (r.NextDouble() < s.MagazineFlashChance)
-                (reached, res.Stations) = (b.Magazine, res.Stations + 1);
-        }
+            (reached, res.Stations) = (b.Magazine, res.Stations + 1);   // its pieces among the charges light them: their packaging stops nothing a burst throws (15 §2.3)
         else if (b.ReadyMount >= 0)
             (reached, via) = (Magazines.Light(c, k, b.ReadyMount, b.ReadySt, burning: true, s, ref r, ref res, now), MagazineVia.Turret);
         else if (b.Inside && b.Turret >= 0)
@@ -1049,11 +1046,11 @@ public static class Effects
                 }
             }
         }
-        // charges in the cloud's way may light (14 §6.3: about 20% at s >= 0.5, less below; Dunkerque lit, Tiger didn't),
-        // a flash source for the magazine chain as E2's pieces are: in a magazine its own chance, in a turret or handling
-        // room the turret's
+        // charges in the cloud's way may light (14 §6.3: about 20% at s >= 0.5, less below; Dunkerque lit, Tiger didn't), a flash
+        // source for the magazine chain as E2's pieces are: in a magazine what reaches them lights them (15 §2.3), in a turret or
+        // handling room the turret's
         double lights = s.SpallFlashChance * Math.Min(1, cloud.Severity / 0.5);
-        if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights * s.MagazineFlashChance)
+        if (magazine >= 0 && !res.Magazine && r.NextDouble() < lights)
             (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Stations) = (true, magazine, MagazineVia.Spall, res.Stations + 1);
         if (open >= 0 && !res.Magazine && r.NextDouble() < lights * Magazines.Exposed(c, c.Train(open)[openSt].Room) * Magazines.LightChance(c, k, open, openSt, s) &&
             Magazines.Light(c, k, open, openSt, burning: false, s, ref r, ref res) is int reached and >= 0)

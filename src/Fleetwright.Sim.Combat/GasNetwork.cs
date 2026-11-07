@@ -32,7 +32,7 @@ public struct GasResult
 public sealed class GasNetwork
 {
     const int Faces = 4, Cohorts = 32;
-    const double DtMin = 1e-4, DtMax = 0.02, GaugeFloor = 40e3, RtAir = 84_000, AirR = 287, SeaRhoG = 1025 * 9.81, StepCellM3 = 10;
+    const double DtMin = 1e-4, DtMax = 0.02, GaugeFloor = 40e3, RtAir = 84_000, AirR = 287, SeaRhoG = 1025 * 9.81, StepCellM3 = 10, Sigma = 5.670e-8;
     /// <summary>The step's control, checked by <c>explode --step</c> (explosions.md EX2): the most a pressure that matters may
     /// move in one, or a burning stow put in, as a share of itself or of this share of the highest pressure anywhere. Halved it
     /// moves nothing much; doubled it starts to overshoot.</summary>
@@ -122,8 +122,8 @@ public sealed class GasNetwork
     /// <summary>The space a burst in a part is: the node after her cells.</summary>
     int partNode;
     // the cells', and the part's as the last
-    int[] stamp = [], region = [];
-    double[] v = [], m = [], u = [], p = [], rt = [], pStart = [], vent = [], lagged = [], felt = [], hottest = [], hyd = [];
+    int[] stamp = [], region = [], nearStamp = [];
+    double[] v = [], m = [], u = [], p = [], rt = [], pStart = [], vent = [], lagged = [], felt = [], hottest = [], hyd = [], dose = [];
     /// <summary>The liquid spaces whose liquid has run out this run (<see cref="Transmit"/>).</summary>
     bool[] spilled = [];
     int n, id;
@@ -156,6 +156,8 @@ public sealed class GasNetwork
     bool moving;
     /// <summary>Whether the rounds are the ship's (<see cref="Arm"/>); each magazine's trains linked this run, by room.</summary>
     bool armed;
+    /// <summary>How long until the gas's dose lights a magazine not yet alight, s, at this step's flux: the next step ends there.</summary>
+    double soonest = double.PositiveInfinity;
     /// <summary>Whether the near field's holes in her hull open into the charge's own bubble (a contact burst from the sea): the gas that
     /// came in leaves by them as the bubble grows, where a hole under the sea otherwise lets in water, not gas out.</summary>
     bool intoBubble;
@@ -258,6 +260,22 @@ public sealed class GasNetwork
             }
     }
 
+    /// <summary>Whether a cell holds a magazine not yet alight: its dose times the step (<see cref="soonest"/>).</summary>
+    bool UnlitMagazine(int cell)
+    {
+        foreach (int room in c.RoomsIn(cell))
+        {
+            if (c.Rooms[room].Kind != RoomKind.Magazine || k.MagazineSpent[room])
+                continue;
+            bool lit = false;
+            for (int t = 0; t < nStows; t++)
+                lit |= stows[t].Room == room;
+            if (!lit)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>A cell's liquid spills: a wall of it has gone.</summary>
     void Spill(int cell)
     {
@@ -323,9 +341,10 @@ public sealed class GasNetwork
         {
             // stamps start at 0, under every id to come: nothing carries over
             int size = nc + 1;
-            (stamp, region) = (new int[size], new int[size]);
+            (stamp, region, nearStamp) = (new int[size], new int[size], new int[size]);
             (v, m, u, p, rt, pStart) = (new double[size], new double[size], new double[size], new double[size], new double[size], new double[size]);
             (vent, lagged, felt, hottest, hyd, spilled) = (new double[size], new double[size], new double[size], new double[size], new double[size], new bool[size]);
+            dose = new double[size];
             (faceStamp, faces, faceBack, faceDry) = (new int[size * Faces], new Boundary[size * Faces], new double[size * Faces], new double[size * Faces]);
         }
         if (trainStamp.Length < cls.Rooms.Length)
@@ -498,7 +517,7 @@ public sealed class GasNetwork
         m[i] = P0 * gasM3 / RtAir;
         u[i] = P0 * gasM3 / GammaK;
         vent[i] = ventM2;
-        (lagged[i], felt[i], spilled[i]) = (0, 0, false);
+        (lagged[i], felt[i], spilled[i], dose[i]) = (0, 0, false, 0);
         p[i] = pStart[i] = P0;
         hyd[i] = 0;
         rt[i] = hottest[i] = RtAir;
@@ -547,6 +566,8 @@ public sealed class GasNetwork
             NearEdges(i, at, near);
             NearFaces(i, at, near);
         }
+        for (int a = 0; a < n; a++)
+            nearStamp[region[a]] = id;   // what it walked into, apart from what a run's gas or a bent plate brings in later
     }
 
     void NearEdges(int i, P3 at, in NearCharge near)
@@ -715,7 +736,7 @@ public sealed class GasNetwork
             // half the step's gas before its flows and half after, so what the boundaries feel is the middle of the step: else a long
             // step reads the pressure once it has leaked away, not what a burning stow holds against its vents
             Sources(dt);
-            bool caught = TakeUp();
+            bool caught = TakeUp(dt);
             peakSource = Math.Max(peakSource, p[source] - P0);
             bool changed = Boundaries(dt);
             Links(dt);
@@ -729,6 +750,7 @@ public sealed class GasNetwork
             if (Done(caught, gauge, quiet))
                 break;
             dt = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin) : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax) : dt;
+            dt = Math.Max(Math.Min(dt, soonest), DtMin);   // the step ends where a magazine's dose would light it, not a step's length after
         }
         res.Steps = steps;
         res.EndS = time;
@@ -736,9 +758,10 @@ public sealed class GasNetwork
 
     /// <summary>Each space's gas as it stands: what its walls feel as their panels take it up, how hot it has been, and whether
     /// that lights what's there. Whether every panel has caught up with its load.</summary>
-    bool TakeUp()
+    bool TakeUp(double dt)
     {
         bool caught = true;
+        soonest = double.PositiveInfinity;
         double keep = s.BlastLoadFactor;
         for (int a = 0; a < n; a++)
         {
@@ -749,7 +772,7 @@ public sealed class GasNetwork
             felt[i] = Math.Max(felt[i], lagged[i]);
             caught &= load <= 1.02 * lagged[i] || load < 1e-3;
             hottest[i] = Math.Max(hottest[i], rt[i]);
-            Ignite(i);
+            Ignite(i, dt);
         }
         return caught;
     }
@@ -1059,12 +1082,24 @@ public sealed class GasNetwork
         return true;
     }
 
-    /// <summary>Gas hot enough to light charges (<see cref="SimSettings.GasIgniteK"/>) in a magazine's space lights it, as
-    /// the air pushed ahead of the hot gas doesn't: a shell's or a torpedo's gas as a magazine's (EX6a), the burst becoming that
-    /// magazine's race in the same run.</summary>
-    void Ignite(int cell)
+    /// <summary>The gas's heat on the charges in a space, as a dose (research 15 §3.1, docs/battle/explosions.md EX6b): a charge's
+    /// surface lights at <see cref="SimSettings.ChargeIgniteK"/>, reached once Σq²·dt passes <see cref="SimSettings.ChargeDose"/>, q
+    /// the gas's flux onto a surface already there, h·ΔT and its radiation; so a burst's own products light charges in tens of ms
+    /// and gas mixed down to 600-700 K takes minutes. Once there, a magazine in the space lights: a shell's or a torpedo's gas as a
+    /// magazine's (EX6a), the burst becoming that magazine's race in the same run.</summary>
+    void Ignite(int cell, double dt)
     {
-        if (rt[cell] < s.GasIgniteK * AirR || cell == partNode)
+        if (cell == partNode)
+            return;
+        double tg = rt[cell] / AirR, ts = s.ChargeIgniteK;
+        if (tg > ts)
+        {
+            double q = s.ChargeGasW * (tg - ts) + s.GasEmissivity * Sigma * (tg * tg * tg * tg - ts * ts * ts * ts);
+            dose[cell] += q * q * dt;
+            if (dose[cell] < s.ChargeDose * 1e6 && UnlitMagazine(cell))
+                soonest = Math.Min(soonest, (s.ChargeDose * 1e6 - dose[cell]) / (q * q));
+        }
+        if (dose[cell] < s.ChargeDose * 1e6)
             return;
         foreach (int room in c.RoomsIn(cell))
             if (c.Rooms[room].Kind == RoomKind.Magazine)
@@ -1317,6 +1352,9 @@ public sealed class GasNetwork
 
     public void Disarm() => armed = false;
 
+    /// <summary>Whether the last run's near field walked into a cell: what its wreck and debris reached.</summary>
+    public bool NearReached(int cell) => nearStamp[cell] == id;
+
     /// <summary>Whether the last run got into a cell: its near field or its gas.</summary>
     public bool InRun(int cell) => stamp[cell] == id;
 
@@ -1333,9 +1371,9 @@ public sealed class GasNetwork
     /// <summary>What a part's walls felt, MPa, when the run was in a part.</summary>
     public double PartFeltMPa => FeltMPa(partNode);
 
-    /// <summary>Whether gas hot enough to light charges reached a cell (<see cref="SimSettings.GasIgniteK"/>): the burst's flame
-    /// carried there, not the cold air pushed ahead of it.</summary>
-    public bool Hot(int cell) => stamp[cell] == id && hottest[cell] >= s.GasIgniteK * AirR;
+    /// <summary>Whether the gas in a cell lit the charges there (its heat dose, <see cref="SimSettings.ChargeDose"/>): the burst's
+    /// flame carried there, not the cold air pushed ahead of it.</summary>
+    public bool Hot(int cell) => stamp[cell] == id && dose[cell] >= s.ChargeDose * 1e6;
 
     /// <summary>The cells reached, by the order they joined.</summary>
     public ReadOnlySpan<int> Reached() => region.AsSpan(0, n);

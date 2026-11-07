@@ -482,7 +482,7 @@ public class DamageTests(ITestOutputHelper output)
         {
             w = World("dreadnought", out int c, Settings with
             {
-                MagazineFlashChance = 1, StationLightChance = [1, 1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
+                StationLightChance = [1, 1, 1, 1, 1], DamageControlDefault = "1916 BCF", MagazinePackageR = [0, 1000, 1000, 1000],
                 GirderWhipK = 100,   // and her hull made to break by it: what's tested is the record (explosions.md: whether she breaks is the girder's)
             });
             w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 10));

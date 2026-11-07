@@ -149,7 +149,9 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     /// <summary>The answer doesn't hang on the solver's step (explosions.md EX2: a magazine's room the right size left the first
-    /// solver reading half the pressure): the game's against one eight times finer.</summary>
+    /// solver reading half the pressure): the game's against one eight times finer, its peak, the propellant burned and the magazines
+    /// it lit. (Not the girder: with her magazines lit by the gas's dose, EX6b, her side plates late in the run sit within ~2% of
+    /// tearing, and whether they do is a knife-edge, not the step's.)</summary>
     [Theory]
     [InlineData("bag")]
     [InlineData(null)]
@@ -168,7 +170,8 @@ public class MagazineRaceTests(ITestOutputHelper output)
             GasNetwork.StepK = 1;
         }
         Assert.InRange(game.PeakKPa / fine.PeakKPa, 0.85, 1.15);
-        Assert.InRange(game.GirderLoad / fine.GirderLoad, 0.9, 1.1);
+        Assert.InRange(game.BurnedKg / fine.BurnedKg, 0.95, 1.05);
+        Assert.Equal(fine.Magazines, game.Magazines);
     }
 
     /// <summary>What a magazine held burns once: a second set-off on a ship that lived through the first has nothing to burn.</summary>
@@ -200,7 +203,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
     {
         var r = Race(Packed("lion", "bag"), "Magazine A", sea: 1);
         Assert.True(r.Magazines >= 2, "Hood's 4\" to her 15\": the bulkhead gave and the next magazine lit");
-        Assert.Equal(MagazineTier.TwoGroups, r.Tier);   // forward of amidships: broken in a seaway (V4), breached in calm water
+        Assert.True(r.Tier >= MagazineTier.Breached, $"{r.Tier}");   // broken or breached: which sits at her margin (explosions.md EX6b)
     }
 
     /// <summary>A magazine room with no charge in it (a carrier's bombs aren't in the model yet) has nothing to go up: she's not lost

@@ -16,7 +16,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 **EX5 is built and merged (2026-11-07, "EX5: the water"): torpedoes on the one path, the bubble's whip by research 13's law, a
 boundary's mass, liquid that passes its push on and runs out, a protection's walls that stretch. Open there: a held protection
 floods about three times the record; a destroyer is lost to one torpedo about half the time; research asked on protection walls.
-Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a is built (2026-11-07, "EX6a, and research 14"), with research 14 applied; EX6b-c wait on the research "What sets an explosive store off".**
+Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a and EX6b are built (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it"). Next: EX6c, high-explosive stores (research 15).**
 **EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
@@ -214,14 +214,16 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
     (`Ignite` without "a stow already burns"), so a burst whose gas lights one becomes that magazine's race in the same run, with
     no roll after; and a magazine's scuttles and trunks are the ship's in every run, joined as its cell joins, so a shell's gas in a
     handling room vents up the trunk. The gas route's `MagazineFlashChance` goes.
-  - **EX6b. Stores that detonate.** Torpedo warheads (tubes, mounts, torpedo rooms) and shell rooms' bursters become stores of
-    their mass and explosive. A store goes off as its own detonation through the one path when a detonation's near field reaches
-    it, when hot gas or fire cooks it (the magazines' dose), or when fragments strike through its case; one hit's explosions queue
-    and each finds what the last opened. Depth charges, mines and bombs then need only a row.
-  - **EX6c. The rolls that remain.** A burst in or beside a magazine, spall and a torpedo light charges by the fragments that reach
-    them through their packaging, not a flat chance; ready-use charges likewise. The flash chain's doors stay `magazines.md`'s.
-  - **EX6d. The anchors.** `magazine --runs` and `--race`, Lion's four, `losses`, the panel. Thresholds [EST] until research
-    ("What sets an explosive store off") comes back.
+  - **EX6b. Propellant by what reaches it** (research 15, recommendations 2-3). Hot gas lights charges by its heat dose, Σq²·dt ≥
+    13,900 (kW/m²)²·s with q onto a surface at 480 K, in place of `GasIgniteK` read as the gas's temperature: a burst's own products
+    light them in tens of ms, gas mixed down to 600-700 K takes minutes. A burst's fragments, its spall or a near field reaching the
+    charges light them: their packaging stops nothing a burst throws. `MagazineFlashChance` goes everywhere.
+  - **EX6c. High-explosive stores** (15, recommendations 1, 3-5). Torpedo warheads first (on deck, in torpedo rooms), by filler and
+    case: set off by contact (R ≤ 0.06·W^⅓) or by a fragment that keeps v²d ≥ K through its case (Held), never by blast; cooked off
+    by a timer by its wall and the fire. Each goes off as its own detonation through the one path. Shell rooms stay out: the record
+    has them whole beside magazines that went (15 §4). Depth charges, mines and bombs then need only a row.
+  - **EX6d. The anchors.** `magazine --runs` and `--race`, Lion's four, `losses`, the panel, and 15's table (Defence, Glatton,
+    Rowan, Brownson, Suzuya, Chōkai, Kalk).
 - **EX6. The chain.** What's reached goes off: charges, warheads, depth charges, shell rooms' bursters, each its own
   `Explosion` (Hood's 4″ to her 15″, Defence's passages). Flat rolls left over from before go where physics replaces them;
   the flash chain's doors stay `magazines.md`'s.
@@ -798,6 +800,35 @@ One torpedo (the destroyer's), 60 min after:
 The protections now hold as often as with no gas in them; what a held one floods is its coarse compartments (shipgen's, later:
 research 14 recommendation 4). 14's other recommendations wait: the holding bulkhead failing as a leak first (3), the scatter on
 its tearing set (7).
+
+## EX6b: propellant by what reaches it (2026-11-07)
+
+From research 15 (recommendations 2-3), whose findings in short: blast never sets off a filler beyond contact; fragments set off
+thin-cased stores, never shells; propellant lights by heat dose or by any fragment through its packaging; shell rooms didn't go
+up with their magazines.
+
+**Built:**
+- **Hot gas lights charges by its heat dose** (`GasNetwork.Ignite`): each space's Σq²·dt, q = h·(T − 480 K) + εσ(T⁴ − 480⁴), lights
+  a magazine there at 13,900 (kW/m²)²·s (`ChargeIgniteK`, `ChargeDose`, `ChargeGasW` 40 [EST], `GasEmissivity` 0.3 [EST]); `Hot`, a
+  handling room's flash source, reads the same dose. `GasIgniteK` (470 K, the charge's surface read as the gas's) is gone. A
+  step ends where an unlit magazine's dose would light it.
+- **What reaches the charges lights them** (their packaging stops nothing a burst throws): a burst among them, a magazine station
+  in a train, a spall cloud reaching them (damage/14's 20% of clouds kept: that's whether it reaches), a torpedo's near field
+  walked into the magazine (whole within half its reach, fading to its edge, as the rooms it wrecks). `MagazineFlashChance` is gone.
+- **The near field's walk is its own** (`GasNetwork.NearReached`): a space a liquid layer pushes on or a plate bends into is in
+  the run but wasn't reached by the wreck.
+
+**What it did:**
+- **A magazine's race:** every magazine still goes, but the next ones light later, as the dose builds (Lion's bags: B at 6.9 s and
+  A at 10.4 s after Q). Peaks fall in some cases (1,565 → 1,121 kPa) and Lion's girder with them: A's 0.98 calm to 0.57, her
+  forward magazines no longer breaking her in calm water. Open item 1 (magazines at the margin) moves the other way from the
+  record; research 15 recommendation 8 says to look at the propellant there, not the shells.
+- **Torpedoes:** a magazine set off by 45% of hits on a destroyer (lost 43%), 9% on the KGV-like where her protection narrows by
+  the end turrets (lost 9%), Bismarck-like 2.5%, Yamato-like 0.
+- **Shells:** Lion's guns on Lion at 14 km set off a magazine in 0.3% of hits, as before.
+- **Tests:** the step test checks what converges (peak, propellant burned, magazines lit), not the girder: late in Lion Q's run
+  her side plates sit within about 2% of tearing, a knife-edge, not the step. Lion A across the bulkhead lights the next magazine
+  and leaves her broken or breached.
 
 ## What stays out
 

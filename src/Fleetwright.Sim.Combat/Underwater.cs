@@ -68,10 +68,10 @@ public static class Underwater
         return res;
     }
 
-    /// <summary>What's within the reach in the spaces the explosion got into: those within half of it put out of action, the rest
-    /// damaged, a share of their men lost; the nearest magazine among them, lit as by a burst among its charges
-    /// (<see cref="SimSettings.MagazineFlashChance"/>, whole within the half the explosion wrecks, fading to none at the reach;
-    /// docs/battle/magazines.md V7); the parts within it standing in those spaces or in the sea (shafts, propellers, rudders).</summary>
+    /// <summary>What's within the reach in the spaces its near field walked into: those within half of it put out of action, the rest
+    /// damaged, a share of their men lost; the nearest magazine among them, its charges lit by the near field among them (research 15
+    /// §2.3), whole within the half the explosion wrecks, fading to none at the reach (docs/battle/explosions.md EX6b); the parts
+    /// within it standing in those spaces or in the sea (shafts, propellers, rudders).</summary>
     static void Reach(ShipClass c, ShipCondition k, GasNetwork net, P3 p, double reach, SimSettings s, ref EffectsResult res, ref RandomStream r)
     {
         var cells = c.Cells;
@@ -80,7 +80,7 @@ public static class Underwater
         for (int i = 0; i < cells.Length; i++)
         {
             double d = Effects.BoxDistance(cells[i].Box, p);
-            if (d > reach || !net.InRun(i))
+            if (d > reach || !net.NearReached(i))
                 continue;
             res.CrewLost += cells[i].BattleCrew * s.TorpedoCasualtyShare * (1 - d / reach);
             foreach (int room in c.RoomsIn(i))
@@ -94,7 +94,9 @@ public static class Underwater
         }
         if (res.Raced)
             return;
-        res.Magazine = magazine >= 0 && r.NextDouble() < s.MagazineFlashChance * Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
+        // its near field among the charges lights them (research 15 §2.3): whole within the half of its reach it wrecks, weakening to
+        // nothing at the reach, as the rooms it wrecks go (above)
+        res.Magazine = magazine >= 0 && r.NextDouble() < Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
         var comps = c.Components;
@@ -114,7 +116,7 @@ public static class Underwater
         for (int i = 0; i < c.Cells.Length; i++)
             if (Effects.Overlaps(c.Cells[i].Box, box))
             {
-                if (net.InRun(i))
+                if (net.NearReached(i))
                     return true;
                 inAny = true;
             }

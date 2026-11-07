@@ -1750,10 +1750,6 @@ public sealed record SimSettings
     public double KeyManShare { get; init; } = 0.1;
     public double[] KeyManMin { get; init; } = [5, 30];
 
-    /// <summary>A burst among a magazine's charges (in it, its pieces or gas into it) sets it off with
-    /// MagazineFlashChance. v0: the ship is lost at once and goes under <see cref="MagazineLossMs"/> later (the venting
-    /// race is docs/battle/magazines.md V3's).</summary>
-    public double MagazineFlashChance { get; init; } = 0.25;
 
     /// <summary>The ammunition trains (docs/battle/magazines.md V2; research/simulation/damage-research/10 §3), by a
     /// station's kind [gunhouse, working chamber, casemate, handling room]:
@@ -1808,8 +1804,14 @@ public sealed record SimSettings
     public double MagazineHeatKeep { get; init; } = 0.5;
     /// <summary>A ragged opening's discharge coefficient, for any explosion's gas [EST].</summary>
     public double GasVentCd { get; init; } = 0.7;
-    /// <summary>The gas's temperature that lights charges and carries a burst's flame, K [EST: nitrocellulose ignites near 450-470 K].</summary>
-    public double GasIgniteK { get; init; } = 470;
+    /// <summary>Charges lit by hot gas (GasNetwork.Ignite; research 15 §3.1, docs/battle/explosions.md EX6b): a propellant's surface lights
+    /// at ChargeIgniteK [SRC 460-500 K, AD0472135], reached when Σq²·dt passes ChargeDose, (kW/m²)²·s [INFERRED: (π/4)·kρc·(480−300)²
+    /// for cordite, within ~50% of conduction from 550 K up], q = ChargeGasW·(T−T_s) + GasEmissivity·σ·(T⁴−T_s⁴) onto it [EST: h 20-60
+    /// in a space, 200 in a jet through a door; emissivity 0.3].</summary>
+    public double ChargeIgniteK { get; init; } = 480;
+    public double ChargeDose { get; init; } = 13_900;
+    public double ChargeGasW { get; init; } = 40;
+    public double GasEmissivity { get; init; } = 0.3;
     public double[] MagazinePackageR { get; init; } = [0, 32, 28, 24];
     public double MagazineBagSpreadS { get; init; } = 0.5;
     public double MagazineScuttleKPa { get; init; } = 40;

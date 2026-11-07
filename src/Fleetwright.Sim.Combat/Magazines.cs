@@ -99,7 +99,7 @@ public static partial class Magazines
     {
         var kind = c.Train(mount)[station].Kind;
         if (kind == StationKind.Magazine)
-            return s.MagazineFlashChance;
+            return 1;   // a burst among a magazine's charges lights them (research 15 §2.3)
         var flash = Discipline(k, s);
         double n = flash.StationCharges * c.TurretTypes[c.Mounts[mount].Type].Barrels + Stacked(c, mount, kind, flash);
         return 1 - Math.Pow(1 - s.StationLightChance[(int)kind], n);

@@ -5,6 +5,13 @@ for a bug-hunting round. A bug found mid-task is fixed on the spot when that's a
 a bigger one, it goes here and the task goes on. One item each, with what's known; tick off or delete what's fixed,
 add what's found.
 
+## Benches
+
+- **`hits lion --shooter derfflinger --battery 1 --range 14000`** (2026-11-07): ran earlier that day (11″ hits, 13.6 m² holes,
+  "magazine 5.95%"), then said "14000 m is beyond the gun's reach" on `main` too, with nothing touching Derfflinger, the bench or
+  the ballistics in between. Now batteries 1 and 2 read alike (0.009 m² holes, reach under 10 km) and none of 0-3 looks like her
+  30.5 cm. Not chased (explosions.md EX6b). Also: `ballistics` doesn't find the scenarios' designs (`derfflinger`).
+
 ## Flaky tests
 
 Hunted 2026-10-24: every flaky entry below is closed. The check was seven full DevRelease runs of all three test projects
