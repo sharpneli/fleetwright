@@ -65,7 +65,7 @@ public static class Blast
     public static double GasM3(ShipClass c, ShipCondition k, int cell)
     {
         ref readonly var x = ref c.Cells[cell];
-        double v = x.VolumeM3 * Math.Clamp(x.Permeability, 0.05, 1);
+        double v = x.VolumeM3 * Math.Clamp(x.Permeability * (1 - k.Liquid(cell)), 0.005, 1);   // over its liquid: a full tank's ullage
         return Math.Max(v - k.WaterM3[cell], 0.1 * v);
     }
 

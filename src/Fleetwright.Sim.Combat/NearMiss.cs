@@ -100,9 +100,37 @@ public static class NearMiss
                 Splinters(c, k, hit, frag, depth, ReachM(hit.Shell, s), nearCell, ref nearHoles, s, ref res, ref r, intoParts);
         }
         if (w > 0)
-            Shock(c, k, hit, w, surface, water, nsf, nearCell, nearAt, nearMm, nearHoles, s, ref res, ref r);
+        {
+            // at D 5 on the nearest face (11 §3.1) its hole there, the near field's at its distance (EX5), less what the splinters holed
+            double size = Math.Cbrt(w), d = Distance(p, nearAt);
+            if (nearCell >= 0 && 5 * nsf * s.ShockPlateMm / Math.Max(nearMm, 1) >= 5)
+            {
+                double hole = NearField.HoleM(NearField.Charge(size, 1, NearField.Tamp(depth, size, s), s), nearMm, d, s), more = Math.PI * hole * hole - nearHoles;
+                if (more > 0)
+                {
+                    NearField.Punch(c, k, nearCell, more, nearAt, s);
+                    (res.BreachM2, res.ShockM2) = (res.BreachM2 + more, res.ShockM2 + more);
+                }
+            }
+            Shock(c, k, hit, w, surface, water, nsf, nearAt, nearMm, s, ref res, ref r);
+            if (nearCell >= 0)
+                res.BubbleWhip = HullGirder.Of(c).Bubble(w, p, d, water, s);
+        }
         Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);
         return res;
+    }
+
+    /// <summary>The shock of wKg of TNT at the hit's point in the water, as a near miss's (docs/battle/explosions.md EX5: a torpedo's
+    /// and a mine's too): its shock factor at her nearest wetted point, and all that follows from it.</summary>
+    public static void Shock(ShipClass c, ShipCondition k, in Hit hit, double w, SimSettings s, ref EffectsResult res, ref RandomStream r)
+    {
+        if (!(w > 0))
+            return;
+        var water = HitQuery.WaterOf(c, k.Attitude);
+        var p = hit.Point;
+        double surface = Math.Max(water.At(p.X, p.Y), p.Z);
+        double nsf = Nearest(c, k, p, surface, w, water, s, out _, out var nearAt, out double nearMm);
+        Shock(c, k, hit, w, surface, water, nsf, nearAt, nearMm, s, ref res, ref r);
     }
 
     /// <summary>e-foldings of a piece's speed in the water past which it's spent (e^−3: a twentieth).</summary>
@@ -369,8 +397,8 @@ public static class NearMiss
     /// <item><b>the stern:</b> a burst near it shakes the rudders, shafts and propellers by their own NSF across the hull's
     /// band (Ilex, Fortune).</item>
     /// </list></summary>
-    static void Shock(ShipClass c, ShipCondition k, in Hit hit, double w, double surface, in Waterplane water, double nsf, int nearCell, P3 nearAt,
-        double nearMm, double nearHoles, SimSettings s, ref EffectsResult res, ref RandomStream r)
+    static void Shock(ShipClass c, ShipCondition k, in Hit hit, double w, double surface, in Waterplane water, double nsf, P3 nearAt,
+        double nearMm, SimSettings s, ref EffectsResult res, ref RandomStream r)
     {
         var p = hit.Point;
         var b = s.NearShockBands;
@@ -396,16 +424,6 @@ public static class NearMiss
                         (res.BreachM2, res.ShockM2) = (res.BreachM2 + leak, res.ShockM2 + leak);
                     }
                 }
-        // the contact rule at D 5 on the nearest face (11 §3.1), less the splinters' holes there
-        if (nearCell >= 0 && 5 * nsf * s.ShockPlateMm / Math.Max(nearMm, 1) >= 5)
-        {
-            double size = Math.Cbrt(w), hole = NearField.HoleM(size, nearMm, NearField.Tamp(surface - p.Z, size, s), s), more = Math.PI * hole * hole - nearHoles;
-            if (more > 0)
-            {
-                NearField.Punch(c, k, nearCell, more, nearAt, s);
-                (res.BreachM2, res.ShockM2) = (res.BreachM2 + more, res.ShockM2 + more);
-            }
-        }
         // the transverse bulkheads under the sea, by their own plate (each edge once, from its lower cell)
         if (5 * nsf * s.ShockPlateMm >= s.LeakWeepD)
             for (int i = 0; i < c.Cells.Length; i++)

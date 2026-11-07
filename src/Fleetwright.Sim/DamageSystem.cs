@@ -760,8 +760,8 @@ public sealed class DamageSystem : IWorldSystem
         LastRace = race;
         // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion, one reading a moment)
         var girder = race.Girder;
-        if (race.Magazines == 0 && k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0))
-            girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, Sea(world, slot), settings);
+        if (race.Magazines == 0 && k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0 || e.BubbleWhip > 0))
+            girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, Sea(world, slot), settings, e.BubbleWhip);
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
             Fires.Hit(cls, Flood(cls), k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
@@ -773,7 +773,7 @@ public sealed class DamageSystem : IWorldSystem
             fx |= Recompute(world, slot, k, ref rng);
             Remind(world, slot, k);
         }
-        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = (e.Broken || girder.Broken) && !blew && k.Status == ShipStatus.Afloat;
+        bool blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat, broke = girder.Broken && !blew && k.Status == ShipStatus.Afloat;
         if (blew)
             fx |= HitEffect.Magazine;
         if (broke)

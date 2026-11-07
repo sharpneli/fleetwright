@@ -1369,6 +1369,15 @@ public sealed record SimSettings
     public double BlastLoadFactor { get; init; } = 1.3;
     public double OpenVentRatio { get; init; } = 0.6;
     public double RuptureMPaMm { get; init; } = 0.06;
+    /// <summary>How far a boundary bends before it tears, m (docs/battle/explosions.md EX5b): its bend goes as D/5 of this, and past
+    /// yield its bulge takes room from the space in front [EST: research 13 §2's joint "well open" at 0.3 m; a bare plate's membrane
+    /// would go past 1 m, its joints first]. How fast it bends is its mass's (<see cref="PanelMs"/>).</summary>
+    public double PanelTearM { get; init; } = 0.3;
+    /// <summary>A torpedo protection's walls (the holding bulkhead, its layers, the walls between its own spaces) against a pressure, as many times an ordinary
+    /// bulkhead's (<see cref="RuptureMPaMm"/>, joints that fail): built of ductile high-elongation steel to stretch into the space
+    /// behind (research 01 §3.1), they hold a membrane's σ·t·√(24ε)/a (docs/battle/explosions.md EX5) [EST: σ 280 MPa, ε 0.15, a 4 m:
+    /// 0.13 MPa a mm; research asked, REQUESTS.md "Torpedo protection walls"].</summary>
+    public double TdsMembraneK { get; init; } = 2.2;
     public double RivetedK { get; init; } = 0.85;
     public double DoorShare { get; init; } = 0.5;
     public double DoorMinMPa { get; init; } = 0.08;
@@ -1596,10 +1605,6 @@ public sealed record SimSettings
     public double[] ShockSectionPower { get; init; } = [0.02, 0.04, 0.06, 0.15];
     public double[] ShockCascade { get; init; } = [0, 0.002, 0.005, 0.02];
     public double[] ShockPowerGradeK { get; init; } = [1, 0.45, 0.22, 0.11];
-    /// <summary>A torpedo or mine's explosion on the power, a draw a hit at G0 [EST: Inflexible, Marlborough, Seydlitz and Szent István
-    /// are 4 of 4 with a section or ship-wide effect, North Carolina's secured gear none]: the whole ship's, else a section's round it.</summary>
-    public double TorpedoBlackout { get; init; } = 0.3;
-    public double TorpedoSectionPower { get; init; } = 0.75;
     public double[] ShockDirectorGyro { get; init; } = [0.12, 0.06];
     public double[] ShockRangefinder { get; init; } = [0.20, 0.12];
     public double[] ShockGradeK { get; init; } = [1, 1, 0.5, 0.25];
@@ -2139,10 +2144,6 @@ public sealed record SimSettings
     public double RepairShoreAt { get; init; } = 0.5;
     public double RepairShoreWeightM3h { get; init; } = 500;
 
-    /// <summary>A torpedo's shock on the boundaries of the cells it floods: D this at its reach, more nearer (as reach over
-    /// the distance, at most 4.9) (docs/battle/damage-control.md DC1) [EST: damage/17 §6.1's holding bulkhead that stood,
-    /// D 1-2; North Carolina's at its rivets].</summary>
-    public double TorpedoSprungD { get; init; } = 2;
 
     /// <summary>Damage control's work on a boundary (damage/17 §5.2, 09 §4): a caulked seam keeps this share of its leak,
     /// re-dogged closures this; a set of shores raises its rating this many times (at most two sets) and halves its
@@ -2509,22 +2510,31 @@ public sealed record SimSettings
     /// turning swings her tubes through it, so each torpedo's course errs by her rate of turn times it.</summary>
     public double TorpedoFireTimingS { get; init; } = 0.5;
 
-    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6), its reach and hole the near field's
-    /// (<see cref="TampedReachK"/>). Each other cell within the reach takes a hole of its own
-    /// of this share of it, less by its distance; machinery spaces within this many reaches may trip from the shock (the
-    /// chance), the nearest magazine within the reach is lit as by a burst among its charges (MagazineFlashChance, fading
-    /// to none over the reach's outer half; docs/battle/magazines.md V7), and this share of the battle crew in the spaces it floods is lost.</summary>
-    public double TorpedoInnerHoleShare { get; init; } = 0.5;
-    public double TorpedoShockShare { get; init; } = 2;
-    public double TorpedoShockChance { get; init; } = 0.5;
+    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6; docs/battle/explosions.md EX5), its reach and hole the
+    /// near field's (<see cref="TampedReachK"/>), its shock a near miss's: this share of the battle crew in the spaces it got into is
+    /// lost, falling to none at the reach.</summary>
     public double TorpedoCasualtyShare { get; init; } = 0.5;
+    /// <summary>The share of a charge's products at her plate that comes into her through what it opened, the rest the bubble's in
+    /// the sea (docs/battle/explosions.md EX5): the hemisphere facing her [INFERRED: research 13 §4.3 gives a contact burst "the near
+    /// field and the gas"; the user's choice, 2026-11-07].</summary>
+    public double UnderwaterGasShare { get; init; } = 0.5;
 
-    /// <summary>The hull girder (damage-model-research.md §1.6, 03-small-vessels: small ships die by broken backs): an
-    /// underwater explosion breaks a ship whose depth (keel to main deck) is small beside the explosion's height (twice its
-    /// reach): never when the height is under the first share of the depth, always over the second, and between them by
-    /// the share; times 1 over the middle half of its length, falling to none at the ends. A ship broken in two goes
-    /// under in <see cref="BrokenMs"/>.</summary>
-    public double[] TorpedoBreakShare { get; init; } = [0.7, 1.0];
+    /// <summary>An underwater burst's bubble (HullGirder.Bubble; docs/battle/explosions.md EX5; research 13 §4.1) [SRC Cole, Reid, Swisdak;
+    /// Cheonan's 0.985 s against 0.990 observed]: its largest radius, m, this × (W/Z)^⅓, and its first period, s, this × W^⅓/Z^⅚, W kg
+    /// of TNT, Z its depth plus the atmosphere's head, m.</summary>
+    public double BubbleRadiusK { get; init; } = 3.5;
+    public double BubblePeriodK { get; init; } = 2.11;
+    public double BubbleHeadM { get; init; } = 9.8;
+    /// <summary>The share of its energy a bubble keeps into its second cycle [SRC: Cole's K₂ 1.73 against K₁ 2.12, cubed].</summary>
+    public double BubbleSecondShare { get; init; } = 0.55;
+    /// <summary>The hull's reflection of the bubble's pressure on her bottom: 1 none, 2 a rigid wide bottom [EST 1-2, research 13 §4.3].</summary>
+    public double BubbleWallK { get; init; } = 1;
+    /// <summary>Its distance from her nearest plate over its R_max: none of its whip under the first (it meets her hull and vents into
+    /// what it opened: Shubrick 0.28, Uganda 0.16), all of it past the second, between by the share [EST: research 13 §4.3 has it from
+    /// about 1 out; the Mk 48 frigate broke at 0.81 by her keel, Cheonan at about 0.75 by her nearest plate].</summary>
+    public double[] BubbleGamma { get; init; } = [0.5, 1.0];
+
+    /// <summary>How long a ship broken in two takes to go under, ms.</summary>
     public int BrokenMs { get; init; } = 300_000;
 
     /// <summary>The captains' torpedoes (CaptainLayer.Fire.cs): at will when the run for the fast setting is within this

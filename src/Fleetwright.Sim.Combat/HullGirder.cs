@@ -84,6 +84,111 @@ public sealed class HullGirder
                 (midD, midI) = (Math.Abs(station[sec] - 0.5), i);
         }
         MidIM4 = midI;
+        // her two-node vertical mode: a free-free beam of her section amidships carrying her virtual mass (Kumai's)
+        virtualKg = c.Hydrostatics.DisplacementT * 1000 * (1.2 + c.Beam / (3 * Math.Max(c.Vertical.Draught, 0.1)));
+        double l = Math.Max(c.Length, 1);
+        OmegaRad = MidIM4 > 0 ? ModeBL * ModeBL * Math.Sqrt(SteelE * MidIM4 / (virtualKg / l * l * l * l * l)) : 0;
+    }
+
+    /// <summary>Her two-node vertical frequency, rad/s: a free-free beam of her section amidships carrying her virtual mass,
+    /// Δ·(1.2 + B/3T) (Kumai; research 13 §4.2): about 1.2 Hz a destroyer, 1.0 a battlecruiser, 0.5 Yamato. A uniform beam reads
+    /// 10-30% high against a real hull [INFERRED there].</summary>
+    public double OmegaRad { get; }
+
+    /// <summary>Her two-node period, s: how long a whip takes to spend itself, and what an explosion's energy must come within to whip her.</summary>
+    public double PeriodS => OmegaRad > 0 ? 2 * Math.PI / OmegaRad : 1;
+
+    readonly double virtualKg;
+
+    /// <summary>The free-free beam's first root, βL.</summary>
+    const double ModeBL = 4.7300408;
+
+    /// <summary>The two-node mode's shape at <see cref="ModeN"/> stations from end to end, normalised to RMS 1 over the length, and its
+    /// curvature amidships, |φ''|/(βL)² on the same norm (research 13's reference, §4).</summary>
+    const int ModeN = 161;
+    static readonly double[] Mode = new double[ModeN];
+    static readonly double ModeCurvMid;
+
+    static HullGirder()
+    {
+        double sig = (Math.Cosh(ModeBL) - Math.Cos(ModeBL)) / (Math.Sinh(ModeBL) - Math.Sin(ModeBL)), sq = 0;
+        for (int i = 0; i < ModeN; i++)
+        {
+            double a = ModeBL * i / (ModeN - 1);
+            Mode[i] = Math.Cosh(a) + Math.Cos(a) - sig * (Math.Sinh(a) + Math.Sin(a));
+            sq += Mode[i] * Mode[i];
+        }
+        double norm = Math.Sqrt(sq / ModeN), mid = ModeBL / 2;
+        for (int i = 0; i < ModeN; i++)
+            Mode[i] /= norm;
+        ModeCurvMid = Math.Abs(Math.Cosh(mid) - Math.Cos(mid) - sig * (Math.Sinh(mid) - Math.Sin(mid))) / norm;
+    }
+
+    /// <summary>A bubble's drive on her two-node mode over one cycle, by the hull's frequency times the bubble's period f₂·T, every
+    /// eighth from 0 to 4: 2π·f₂T·g(f₂T), g the bubble's volume history at her frequency (research 13 §4.3; its reference's
+    /// Rayleigh-Plesset bubble sized to Cole's R_max, the same for any charge and depth). Full: a bubble that collapses; Vented: one
+    /// that breaks the surface at its first expansion, a step with no collapse (its history stops there, its gas gone to the air).</summary>
+    static readonly double[] CycleFull =
+    [
+        0.000, 0.469, 0.901, 1.262, 1.526, 1.676, 1.704, 1.616, 1.426, 1.159, 0.844, 0.512, 0.194, 0.082, 0.296, 0.435, 0.496,
+        0.484, 0.410, 0.293, 0.152, 0.009, 0.117, 0.213, 0.269, 0.282, 0.254, 0.194, 0.113, 0.024, 0.061, 0.129, 0.173,
+    ];
+    static readonly double[] CycleVented =
+    [
+        1.000, 0.993, 0.979, 0.958, 0.928, 0.891, 0.847, 0.797, 0.742, 0.683, 0.622, 0.559, 0.495, 0.433, 0.373, 0.317, 0.265,
+        0.221, 0.184, 0.158, 0.142, 0.136, 0.136, 0.140, 0.143, 0.145, 0.145, 0.142, 0.137, 0.129, 0.119, 0.108, 0.098,
+    ];
+
+    /// <summary>A bubble's whip on her, design moments amidships (research 13 §4.3's one-cycle law; docs/battle/explosions.md EX5):
+    /// its pressure on her flat of bottom, ρ·V̈/4πr less the surface's image, over her two-node mode, M = E·I·κ·ρ·V_max·h(f₂T)·Infl/(4π·M*).
+    /// The bubble is Cole's (<see cref="SimSettings.BubbleRadiusK"/>, <see cref="SimSettings.BubblePeriodK"/>); one that reaches the
+    /// surface vents at its first expansion, and one that doesn't pulses again with <see cref="SimSettings.BubbleSecondShare"/> of its
+    /// energy, the two cycles adding as energies. A bubble that meets her hull vents into what it opened and its pulse is spent there,
+    /// a wreck, not a whip (Shubrick, Uganda, Roma): none with its distance from her nearest plate under <see cref="SimSettings.BubbleGamma"/>'s
+    /// first R_max, whole past its second. at: the charge, ship frame; gapM: its distance from her nearest wetted plate.</summary>
+    public double Bubble(double wKg, P3 at, double gapM, in Waterplane water, SimSettings s)
+    {
+        double depth = water.At(at.X, at.Y) - at.Z;
+        if (!(wKg > 0) || !(OmegaRad > 0) || !(depth > 0))
+            return 0;
+        double z = depth + s.BubbleHeadM, size = Math.Cbrt(wKg);
+        double rMax = s.BubbleRadiusK * size / Math.Cbrt(z), t = s.BubblePeriodK * size / Math.Pow(z, 5.0 / 6);
+        double lo = s.BubbleGamma[0], hi = s.BubbleGamma[1], share = Math.Clamp((gapM / rMax - lo) / Math.Max(hi - lo, 1e-9), 0, 1);
+        if (!(share > 0))
+            return 0;
+        double infl = Influence(at, depth, water) * s.BubbleWallK;
+        if (rMax >= depth)
+            return share * Cycle(rMax, t, CycleVented, infl);
+        double first = Cycle(rMax, t, CycleFull, infl), k = Math.Cbrt(s.BubbleSecondShare), second = Cycle(rMax * k, t * k, CycleFull, infl);
+        return share * Math.Sqrt(first * first + second * second);
+    }
+
+    /// <summary>One cycle's moment, design moments: a bubble of R_max and period t on an influence.</summary>
+    double Cycle(double rMax, double t, double[] table, double infl)
+    {
+        double x = OmegaRad * t / (2 * Math.PI) * 8, h = x >= table.Length - 1 ? table[^1] : table[(int)x] + (x - (int)x) * (table[(int)x + 1] - table[(int)x]);
+        double l = Math.Max(c.Length, 1), vMax = 4.0 / 3 * Math.PI * rMax * rMax * rMax;
+        return SteelE * MidIM4 * ModeCurvMid * (ModeBL / l) * (ModeBL / l) * FloodModel.SeaT * 1000 * vMax * h * infl / (4 * Math.PI * virtualKg) / DesignNm;
+    }
+
+    /// <summary>How much of a source's pressure lands on her mode, m: Σ φ(x)·(1/r − 1/r′)·dA over her flat of bottom (her beam, at her
+    /// keel), r′ from the surface's image.</summary>
+    double Influence(P3 at, double depth, in Waterplane water)
+    {
+        const int strips = 5;
+        double l = Math.Max(c.Length, 1), mid = (x0 + x1) / 2, dx = l / (ModeN - 1), dy = c.Beam / strips;
+        double draught = Math.Max(water.At(at.X, 0) - c.Vertical.Keel, 0), below = depth - draught, image = depth + draught, sum = 0;
+        for (int i = 0; i < ModeN; i++)
+        {
+            double ax = mid - l / 2 + i * dx - at.X, row = 0;
+            for (int j = 0; j < strips; j++)
+            {
+                double ay = (-0.5 + (j + 0.5) / strips) * c.Beam - at.Y, flat = ax * ax + ay * ay;
+                row += 1 / Math.Max(Math.Sqrt(flat + below * below), 0.5) - 1 / Math.Sqrt(flat + image * image);
+            }
+            sum += Mode[i] * row;
+        }
+        return Math.Abs(sum) * dx * dy;
     }
 
     /// <summary>A cell's share of its section: its outside faces, and the decks and longitudinal bulkheads it shares with
@@ -317,15 +422,17 @@ public sealed class HullGirder
         return worst;
     }
 
-    /// <summary>What's on her now (docs/battle/explosions.md: after every explosion and as she floods): an explosion's whip joins
-    /// what's left of those in the last moments (each spends itself in about her period; several out of phase add as energies), and
-    /// her worst section is read in this sea. An end that can't carry its load comes off and she may live: everything past the cut
-    /// open to the sea and what stands there gone (07 §3.2). Whether she's broken is the reading's to say.</summary>
-    public GirderReading Bear(ShipCondition k, double energyMass, long now, double sea, SimSettings s)
+    /// <summary>What's on her now (docs/battle/explosions.md: after every explosion and as she floods): an explosion's whip, its gas's
+    /// (energyMass, <see cref="Whip"/>) and its bubble's (design moments, <see cref="Bubble"/>), joins what's left of those in the last
+    /// moments (each spends itself in her period; several out of phase add as energies), and her worst section is read in this sea.
+    /// An end that can't carry its load comes off and she may live: everything past the cut open to the sea and what stands there
+    /// gone (07 §3.2). Whether she's broken is the reading's to say.</summary>
+    public GirderReading Bear(ShipCondition k, double energyMass, long now, double sea, SimSettings s, double bubble = 0)
     {
-        k.WhipEM = k.WhipEM * Math.Exp(-Math.Max(now - k.WhipMs, 0) / 1000.0) + energyMass;
+        double gas = Whip(energyMass, s.GirderWhipK);
+        k.WhipSq = k.WhipSq * Math.Exp(-Math.Max(now - k.WhipMs, 0) / (1000 * PeriodS)) + gas * gas + bubble * bubble;
         k.WhipMs = now;
-        var r = Read(k, sea, Whip(k.WhipEM, s.GirderWhipK), s);
+        var r = Read(k, sea, Math.Sqrt(k.WhipSq), s);
         if (r.EndLoad >= 1 && !r.Broken)
         {
             TakeOff(k, r.EndStation, s);

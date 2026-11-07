@@ -360,7 +360,7 @@ public static class Program
                             null => double.NaN, "mid" => 0.5, "bow" => 0.9, "stern" => 0.1,
                             var v => double.Parse(v, System.Globalization.CultureInfo.InvariantCulture),
                         }, D(a, "depth", 0), a.Int("n", 200), a.Int("per-ship", 1), a.Int("seed", 1), D(a, "settle", 60), D(a, "range", 0), D(a, "aspect", 90),
-                        D(a, "target-speed", 15), a.Int("spread", 4), a.Int("runs", 20))),
+                        D(a, "target-speed", 15), a.Int("spread", 4), a.Int("runs", 20), a.Has("trace"))),
                 "flood" => FloodBench.Run(a.Positional.ElementAtOrDefault(0) ?? "destroyer", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new FloodBench.Options(a.Get("hole"), a.Get("rooms"), D(a, "minutes", 60), D(a, "every", 120), a.Int("step", 0), a.Has("cells"))),

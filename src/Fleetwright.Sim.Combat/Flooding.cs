@@ -57,7 +57,7 @@ public sealed class FloodModel
             ref readonly var x = ref cells[i];
             var b = x.Box;
             double h = Math.Max(b.Top - b.Base, 0.1);
-            Capacity[i] = x.VolumeM3 * Math.Clamp(x.Permeability, 0, 1);
+            Capacity[i] = x.VolumeM3 * Math.Clamp(x.SeaPermeability, 0, 1);   // what the sea can add: the air, and the weight oil lacks
             Area[i] = Math.Max(Capacity[i] / h, 0.01);
             (Cx[i], Cy[i]) = ((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2);
             DeckArea[i] = (b.X1 - b.X0) * (b.Y1 - b.Y0);
@@ -523,7 +523,7 @@ public static class Flooding
             // across it; docs/battle/damage-control.md DC9)
             double l = Math.Max(b.X1 - b.X0, 0.1), breadth = cells[i].VolumeM3 / (l * Math.Max(b.Top - b.Base, 0.1));
             double pocket = Math.Min(1, Math.Min(fill, 1 - fill) / s.FreeSurfacePocket);
-            double layer = pocket * cells[i].Permeability * l * breadth * breadth * breadth / 12;
+            double layer = pocket * cells[i].SeaPermeability * l * breadth * breadth * breadth / 12;
             double pooled = v * breadth / 3 / Math.Tan(double.DegreesToRadians(Math.Max(Math.Abs(k.Attitude.HeelDeg), s.FreeSurfacePoolMinDeg)));
             fs += Math.Min(layer, pooled);
         }

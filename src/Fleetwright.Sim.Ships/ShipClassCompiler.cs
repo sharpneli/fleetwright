@@ -602,7 +602,7 @@ public static class ShipClassCompiler
                 rows[i] = new CellRow
                 {
                     Section = Section(x.Section), Tier = Resolve(tier, x.Tier, "tier"), Band = Kinds.BandOf(x.Band), Box = new Box(x.X0, x.X1, x.Y0, x.Y1, x.Base, x.Top),
-                    BelowWaterline = x.BelowWaterline, VolumeM3 = x.VolumeM3, Permeability = x.Permeability, Citadel = x.Citadel ?? false,
+                    BelowWaterline = x.BelowWaterline, VolumeM3 = x.VolumeM3, Permeability = x.Permeability, Liquid = Math.Clamp(x.Liquid ?? 0, 0, 1), LiquidTPerM3 = x.LiquidT ?? 0, Citadel = x.Citadel ?? false,
                     BeltMm = x.BeltMm ?? 0, BeltMaterial = Material(x.BeltMaterial), TdsM = Or(x.TdsM), Crew = Int(x.Crew), BattleCrew = Int(x.BattleCrew),
                     Room = Room(x.Room), Also = AddLinks(x.Also, room, "room"), Neighbours = new Slice(n0, nb.Count - n0),
                     ArmourAbove = new Slice(a0, above.Count - a0), Through = AddLinks(x.Through, comp, "component"),

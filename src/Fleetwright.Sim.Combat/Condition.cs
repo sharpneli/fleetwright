@@ -182,6 +182,12 @@ public sealed class ShipCondition
     public PartState[] State = [];
     public PartFlags[] Flags = [];
     public double[] WaterM3 = [], BreachM2 = [], BreachY = [], BreachZ = [];
+    /// <summary>Each cell whose liquid has run out (docs/battle/explosions.md EX5c): a hole in it, or a boundary of it torn, and its
+    /// oil or water leaks away; the next explosion finds it a void.</summary>
+    public bool[] Drained = [];
+
+    /// <summary>The share of a cell's free space still full of liquid: its fill, until it's drained.</summary>
+    public double Liquid(int cell) => cell < Drained.Length && Drained[cell] ? 0 : Class.Cells[cell].Liquid;
     /// <summary>Each cell's holes by class (docs/battle/damage-control.md DC2; by cell × <see cref="HoleClass"/>): the area
     /// and count still open, their mean height (ship frame), the area of those damage control has worked on and the share
     /// of it that still leaks (1 until worked on). <see cref="BreachM2"/> is their sum as the sea sees it: open + worked ×
@@ -322,8 +328,8 @@ public sealed class ShipCondition
     /// <summary>Each section's modulus with what's gone gone, and whether what's gone has moved since (<see cref="HullGirder"/>).</summary>
     public double[] GirderZ = [];
     public bool GirderStale;
-    /// <summary>Her whip so far (<see cref="HullGirder.Bear"/>): E·m, J·kg, as of a moment, world ms.</summary>
-    public double WhipEM;
+    /// <summary>Her whip so far (<see cref="HullGirder.Bear"/>): design moments squared (whips add as energies), as of a moment, world ms.</summary>
+    public double WhipSq;
     public long WhipMs;
     /// <summary>Where her bow and stern have come off, ship x (infinite: they haven't).</summary>
     public double CutBowX = double.PositiveInfinity, CutSternX = double.NegativeInfinity;
@@ -526,6 +532,7 @@ public sealed class ShipCondition
             State = new PartState[c.NodeCount];
             Flags = new PartFlags[c.NodeCount];
             WaterM3 = new double[c.Cells.Length];
+            Drained = new bool[c.Cells.Length];
             BreachM2 = new double[c.Cells.Length];
             BreachY = new double[c.Cells.Length];
             BreachZ = new double[c.Cells.Length];
@@ -623,6 +630,7 @@ public sealed class ShipCondition
             Array.Clear(State);
             Array.Clear(Flags);
             Array.Clear(WaterM3);
+            Array.Clear(Drained);
             Array.Clear(BreachM2);
             Array.Clear(BreachY);
             Array.Clear(BreachZ);
@@ -659,7 +667,7 @@ public sealed class ShipCondition
         Array.Fill(TubeWorks, true);
         Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
-        (GirderStale, WhipEM, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
+        (GirderStale, WhipSq, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
         (GivenUp, ColoursMs, AbandonMs, OffMs, ScuttleMs) = (GivenUp.None, 0, 0, 0, 0);
@@ -699,6 +707,8 @@ public sealed class ShipCondition
         double a0 = BreachM2[cell], a1 = a0 + areaM2;
         if (a1 <= 0 || !(areaM2 > 0))
             return;
+        if (!seam)
+            Drained[cell] = true;   // its oil or water runs out (a sprung seam only weeps)
         BreachY[cell] = (BreachY[cell] * a0 + at.Y * areaM2) / a1;
         BreachZ[cell] = (BreachZ[cell] * a0 + at.Z * areaM2) / a1;
         BreachM2[cell] = a1;
@@ -1217,7 +1227,7 @@ public sealed class ShipCondition
             }
         if (WhipMs != 0)
         {
-            h.Add(WhipEM);
+            h.Add(WhipSq);
             h.Add(WhipMs);
         }
         if (double.IsFinite(CutBowX) || double.IsFinite(CutSternX))
@@ -1378,13 +1388,14 @@ public sealed class ShipCondition
                 h.Add(f.T);
             }
         for (int i = 0; i < BreachM2.Length; i++)
-            if (BreachM2[i] != 0 || CellFire[i] || CellOpened[i] || WaterM3[i] != 0)
+            if (BreachM2[i] != 0 || CellFire[i] || CellOpened[i] || WaterM3[i] != 0 || Drained[i])
             {
                 h.Add(i);
                 h.Add(BreachM2[i]);
                 h.Add(WaterM3[i]);
                 h.Add(CellFire[i]);
                 h.Add(CellOpened[i]);
+                h.Add(Drained[i]);
             }
     }
 }

@@ -612,6 +612,9 @@ public sealed record ArmourInput
     /// unless both are given.</summary>
     public double? TdsHoldingMm { get; init; }
     public double? TdsLayerMm { get; init; }
+    /// <summary>What each of the TDS's layers holds, from the shell in: "void", "oil" (her fuel) or "water" (docs/battle/explosions.md
+    /// EX5c). Null: an oil-fired ship's half full of oil all through (the fuel her plant counts there), a coal-fired ship's void.</summary>
+    public List<string>? TdsFill { get; init; }
     /// <summary>The wing of stores between a magazine and the side, each side (protection-plan.md H2); null: 0.1 of the
     /// beam, 0: none. Where a TDS or wing bunkers already stand there, they are the wing.</summary>
     public double? MagazineWingM { get; init; }

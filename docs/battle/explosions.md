@@ -188,6 +188,23 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
   whip, a TDS from its own volumes and plates through the network. `Underwater`'s separate rules, `TorpedoBreakShare` and
   the `Held` switch go. Its anchors are the hard ones (one torpedo usually sinks a destroyer, 7 of 31 lived; capital ships
   take several; 4.6's broken back). Mines (4.7) then need only a row.
+  Worked in sub-steps (the user, 2026-11-07, after research 13 and "EX5: the water", below):
+  - **EX5a.** The gas held by slopes between spaces. Built.
+  - **EX5b. A boundary moves by its mass.** Every plate the gas loads is a panel: its mass (the plate, its armour, half the
+    liquid of a full space behind it) driven by the pressure across it against its resistance, rising with its deflection to
+    its rupture pressure at its tearing deflection; it moves only outward (plastic), and its bulge (4/π² of its area times its
+    deflection) adds to the space behind the gas and takes from the space in front, with the work done. It gives at its
+    tearing deflection, not at a pressure. A space a moving plate pushes into joins the run, so what's behind a wall answers
+    it. The lag (`PanelMs`) and the load factor (`BlastLoadFactor`, a dynamic factor the panel now has of itself) go from the
+    boundaries. Research 13 §2's heavy door (a belt, 20-70 ms) and the liquid's in one rule.
+  - **EX5c. Spaces hold liquid.** A cell's fill: oil or water to a share of its free space [EST 0.95: a tank isn't pressed
+    full]. What the gas has is its ullage; what the sea can add is that and the weight the oil is short of sea water by. A
+    TDS layer's fill by design (`armour.tds_fill`, outside in, `void` or `liquid`); oil-fuel bunkers and fuel tanks full.
+    Closes TODO "TDS layers in detail" (the fill); the double bottom's contents stay open.
+  - **EX5d. The protections as built.** The shipped designs with a TDS get research 01 §3.2's layers and fill (KGV
+    void-liquid-void, the US layers, Bismarck's oil tanks, Littorio, Richelieu; Yamato's voids).
+  - **EX5e. The torpedo on it.** Half a contact burst's products into her (the hemisphere facing her), the anchors, the
+    panel, `dc-history` and `damage-history`; then EX5 lands.
 - **EX6. The chain.** What's reached goes off: charges, warheads, depth charges, shell rooms' bursters, each its own
   `Explosion` (Hood's 4″ to her 15″, Defence's passages). Flat rolls left over from before go where physics replaces them;
   the flash chain's doors stay `magazines.md`'s.
@@ -680,6 +697,51 @@ So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in c
 - **Cost:** the panel ran in 686 s against 813, beside other runs both times; a Tallboy's charge 1-16 ms, a shell's burst as before (the 11 §5.5 charges 34-381 µs).
 
 **Not tuned, by decision 3.** The panel reads worse against the record, and it's the record's losers losing more by breaking. Read it beside EX5, which owns the torpedo's switches and the water.
+
+## EX5: the water (2026-11-07, on branch `ex5-water`)
+
+**The framing (the user, 2026-11-07):** the generator's ships are inspired by real ones, never copies, so no rule is shaped to put
+one ship in its record's band. History gives the direction; every change is a rule for every design.
+
+**What's built:**
+- **The bubble whips by research 13's law** (`HullGirder.Bubble`): Cole's bubble on her two-node mode (a free-free beam with
+  Kumai's virtual mass, her own period), the surface's image, a second cycle as energies, a bubble that reaches the surface a step.
+  None from a charge at her plate: its bubble vents into what it opened (γ, its distance over R_max, 0.5 to 1 [EST]). Whips add as
+  moments squared and fade in her period; the gas's window is her period too. The C# law reads the research's reference within a
+  few percent.
+- **A torpedo on the one path:** the near field holes her and walks in (`GasNetwork.Strike`), half its products come in through
+  what it opened (`UnderwaterGasShare` 0.5, the hemisphere facing her; the user's choice), its shock a near miss's. `TorpedoBreakShare`,
+  `Held`'s switch, the inner cells' holes, the shock and power rolls are gone. The near miss's own hole is the near field's at its
+  distance, at D 5 as before.
+- **EX5b, a boundary's mass:** each takes its load up over a plain plate's 15 ms times √(its mass over its plate): a belt on its
+  backing about 50 ms, liquid behind it longer (research 13 §2's heavy door); its bend, kept, takes room from the space in front
+  past yield. A swinging panel was tried and dropped: which plate won a race hung on the solver's step.
+- **EX5c, liquid:** a cell's fill as her plant stows its fuel (an oil-fired ship's double bottom 0.6, the TDS half, bunkers and tanks
+  0.9) or a design's `armour.tds_fill`. It can't be squeezed: while its walls hold a liquid space passes its push on, as much as
+  it's full, and relieves the wall it backs; burst, it runs out (`ShipCondition.Drained`) and the next hit finds a void (the user's
+  physics). The gas has its ullage, the sea its ullage and what oil lacks of the sea's weight.
+- **EX5d:** seven designs' TDS layers and fill, as design inputs (research 01 §3.2).
+- **A protection's walls stretch** (`TdsMembraneK` 2.2, [EST] membrane; research asked): its holding bulkhead, its layers and the
+  walls between its own spaces. One factor on the same check, no cost a hit (the user: keep it simple).
+- **On `main` along the way:** the holding bulkhead's jog where the TDS's depth steps (shipgen, Version 59); the CLI's AOT
+  compiler pinned past an advisory.
+
+**One torpedo (the destroyer's, 303 kg), 60 min after (`shipgen torpedo`, 200 hits):**
+
+| Class | Lost | Protection held | Water |
+|---|---|---|---|
+| Destroyer | 56% (broken 54%) | | 970 t |
+| V25 | 80% | | 380 t |
+| Light cruiser | 24% | | 1,550 t |
+| Super-dreadnought, 1913 | 0% | | 5,185 t |
+| KGV-like | 2% | 39% | 3,940 t |
+| Fast battleship | 0% | 32.5% | 4,140 t |
+| Yamato-like | 0% | 49% | 4,100 t |
+
+**Open:** the water a held protection takes is about three times 01's 500-1,500 t: its cells are a section long and its full
+height. A destroyer is lost to one torpedo about half the time (49-56% by depth), the record's three in four. Four tests pinned
+one generated ship's figure (the 1913 super-dreadnought's water, Seydlitz's blackout rate, Lion's B in calm water at 0.99-1.00 of
+her girder, a destroyer's heel with three machinery spaces flooded); rewritten to the behaviour by type, the user's call.
 
 ## What stays out
 

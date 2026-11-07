@@ -866,6 +866,7 @@ public static class Subdivision
             if (r.Kind == RoomKind.Bunker && (r.Fuel ?? fuel) == "coal")
                 p = CoalPermeability;
             c.Permeability = p;
+            (c.Liquid, c.LiquidT) = Fill(r.Kind, c.Band, r.Fuel ?? fuel, tdsSpec.Layers, design.Armour?.TdsFill);
         }
         var grid = cells.GroupBy(c => c.Si).ToDictionary(g => g.Key, g => g.ToList());
         static bool Meets(Cell c, Cell d) => d.T0 <= c.Ti && c.T0 <= d.Ti;
@@ -941,6 +942,39 @@ public static class Subdivision
     }
 
     static double? Round(double? v, int n) => v is double d ? Math.Round(d, n) : null;
+
+    /// <summary>What a cell holds (docs/battle/explosions.md EX5c), as her plant stows its fuel (Powerplant.Bunkers): an oil-fired ship's
+    /// double bottom 0.6 full and her TDS half full of oil, her oil bunkers and fuel tanks 0.9 full; a TDS's layers as the design
+    /// names them, from the shell in (P1 lies against the holding bulkhead). A coal-fired ship's bunkers hold coal (its
+    /// permeability), her double bottom and TDS nothing. The share of its free space, and t/m³.</summary>
+    static (double?, double?) Fill(RoomKind kind, string band, string? fuel, int layers, List<string>? tdsFill)
+    {
+        bool liquidFuel = fuel is not null and not "coal" && Powerplant.Fuels.ContainsKey(fuel);
+        double fuelT = liquidFuel ? Math.Round(1 / Powerplant.Fuels[fuel!].Stowage, 3) : 0.0;
+        switch (kind)
+        {
+            case RoomKind.Tds when tdsFill is { Count: > 0 }:
+                int layer = band.Length > 1 && int.TryParse(band.AsSpan(1), out int k) ? k : 1;   // 1 against the holding bulkhead
+                string what = tdsFill[Math.Clamp(tdsFill.Count - Math.Min(layer, layers), 0, tdsFill.Count - 1)];
+                return what switch
+                {
+                    "oil" => (FullShare, liquidFuel ? fuelT : Math.Round(1 / Powerplant.Fuels["oil"].Stowage, 3)),
+                    "water" => (FullShare, 1.0),
+                    _ => (null, null),
+                };
+            case RoomKind.Tds when liquidFuel:
+                return (0.5, fuelT);
+            case RoomKind.DoubleBottom when liquidFuel:
+                return (0.6, fuelT);
+            case RoomKind.Bunker or RoomKind.FuelTank when liquidFuel:
+                return (0.9, fuelT);
+            default:
+                return (null, null);
+        }
+    }
+
+    /// <summary>A liquid layer's fill: a tank isn't pressed full [EST].</summary>
+    const double FullShare = 0.95;
 
     /// <summary>A wing band: outboard of a longitudinal bulkhead (P, S, or a layered TDS's P1, S2, ...).</summary>
     static bool Wing(string band) => band.Length > 0 && band[0] is 'P' or 'S';

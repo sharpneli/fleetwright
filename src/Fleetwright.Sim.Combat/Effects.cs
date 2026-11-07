@@ -40,11 +40,12 @@ public struct EffectsResult
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
     public MagazineVia MagazineVia;
+    /// <summary>An underwater burst's bubble's whip on her girder, design moments (<see cref="HullGirder.Bubble"/>).</summary>
+    public double BubbleWhip;
     /// <summary>The stations of an ammunition train whose charges this hit lit, the magazine's own among them
     /// (docs/battle/magazines.md V2).</summary>
     public int Stations;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
-    public bool Broken;
     /// <summary>E3: a plate that held threw spall off its back.</summary>
     public bool Spall;
     /// <summary>E4: what a turret or barbette that held did to its mount, and whether the struck structure's crew were
@@ -62,7 +63,7 @@ public struct EffectsResult
     /// at the hull's nearest wetted point, and the seams and plating its shock opened to the sea (m², in BreachM2).</summary>
     public double SideThrough, UpperThrough, Nsf, ShockM2;
 
-    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Broken ||
+    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine ||
         Turret.Blow != TurretBlow.None || Stunned || Feed || Shock ||
         Blast.OpenM2 + Blast.LeakM2 > 0;
 }
@@ -1247,7 +1248,7 @@ public static class Effects
         ref readonly var row = ref c.Cells[cell];
         int room = row.Room;
         double zRoom = room >= 0 && room < k.Level.Length ? k.Level[room] : double.NaN;
-        double cap = row.VolumeM3 * row.Permeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
+        double cap = row.VolumeM3 * row.SeaPermeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
         double zSea = water > 0 && cap > 0 ? row.Box.Base + Math.Min(water / cap, 1) * (row.Box.Top - row.Box.Base) : double.NaN;
         if (double.IsNaN(zRoom) && double.IsNaN(zSea))
             return 0;

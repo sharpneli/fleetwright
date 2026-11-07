@@ -4,21 +4,22 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
-/// <summary>An underwater explosion against the hull (docs/battle/fighting.md 4.6: a torpedo's hit; a mine's later), its
-/// terminal and effects in one, v0 (damage-model-research.md §3.4, 05-mechanics-and-games.md A6):
+/// <summary>An underwater explosion against the hull (docs/battle/fighting.md 4.6: a torpedo's hit; a mine's later), on the one
+/// path every explosion takes (docs/battle/explosions.md EX5):
 /// <list type="bullet">
-/// <item><b>a dud</b> by the era's chance: nothing but the blow;</item>
-/// <item><b>the reach and the hole:</b> the charge w (TNT's worth) wrecks and tears as any detonation does (<see cref="NearField"/>),
-/// as tamped as its depth makes it; the cell behind the hull takes that hole, in the side and out of her section,
-/// and every other cell within the reach one of its own, smaller by its distance: the cells there flood;</item>
-/// <item><b>the torpedo protection:</b> when the struck cell is a TDS cell at least as deep as the reach, its holding
-/// bulkhead holds: only the TDS and the double bottom flood, and nothing inside it is wrecked;</item>
-/// <item><b>what's in reach:</b> the spaces within half the reach are put out of action, the rest within it damaged; parts
-/// within it (shafts, propellers, rudders, tubes) put out of action; the nearest magazine within it may be lit, as by a burst among its charges; this share of the battle crew in the cells it floods is lost;</item>
-/// <item><b>the shock:</b> machinery spaces further off, within <see cref="SimSettings.TorpedoShockShare"/> reaches, may
-/// trip (damaged);</item>
-/// <item><b>the hull girder:</b> a small ship whose depth is little beside the explosion's height may break in two, the
-/// more likely amidships (<see cref="SimSettings.TorpedoBreakShare"/>): how one torpedo usually sank a destroyer.</item>
+/// <item><b>a dud</b> by the torpedo's own chance: nothing but the blow;</item>
+/// <item><b>the near field:</b> the charge, as tamped as its depth makes it, at her plate: its near field (<see cref="NearField"/>)
+/// holes her side and walks in through what it opens (<see cref="GasNetwork.Strike"/>). Its gas is the bubble in the sea, not in
+/// her. A torpedo protection is its own spaces and plates: a holding bulkhead past the reach isn't holed and holds
+/// (<see cref="Outcome.Held"/>, read from what opened, not decided before). Her section and her flooding take what it opened, and
+/// the girder whether she broke;</item>
+/// <item><b>what's in reach:</b> the spaces it got into within half the reach are put out of action, the rest within it damaged, and
+/// this share of their battle crew lost; parts within it it got to (shafts, propellers, rudders, tubes); the nearest magazine among
+/// them may be lit, as by a burst among its charges; the gas's men and gear as a shell's;</item>
+/// <item><b>the shock</b> by its shock factor, as a near miss's (<see cref="NearMiss"/>): seams, machinery, gear, the plant, the
+/// stern;</item>
+/// <item><b>the bubble's whip</b> (<see cref="HullGirder.Bubble"/>): none from a charge at her plate, its bubble venting into what it
+/// opened (research 13 §4.3); a mine's under her keel whips her.</item>
 /// </list>
 /// Pure and allocation-free; the draws come from the stream it's given.</summary>
 public static class Underwater
@@ -38,37 +39,47 @@ public static class Underwater
         }
         if (first >= 0 && cells[first].Room >= 0)
             res.Part = c.RoomNode(cells[first].Room);
-        if (r.NextDouble() < hit.Torpedo.DudShare)   // the torpedo's own (it was the struck ship's era's until 2026-10-19)
+        if (first < 0 || r.NextDouble() < hit.Torpedo.DudShare)   // the torpedo's own (it was the struck ship's era's until 2026-10-19)
         {
             outcome = Outcome.Dud;
             return res;
         }
 
-        double size = Math.Cbrt(Math.Max(hit.Torpedo.ChargeKg, 0)), tamp = NearField.Tamp(HitQuery.WaterOf(c, k.Attitude).At(p.X, p.Y) - p.Z, size, s);
-        double reach = NearField.Charge(size, 1, tamp, s).ReachM;
-        int face = first >= 0 ? NearField.NearestFace(k, first, p) : -1;
-        double radius = NearField.HoleM(size, face >= 0 ? k.Faces.Mm[face] : c.Plating.ShellMm, tamp, s), hole = Math.PI * radius * radius;
-        bool held = first >= 0 && cells[first].TdsM >= reach;
-        outcome = held ? Outcome.Held : Outcome.Exploded;
+        Casualties.Begin(k, hit.Ms);
+        double w = Math.Max(hit.Torpedo.ChargeKg, 0), size = Math.Cbrt(w);
+        double depth = HitQuery.WaterOf(c, k.Attitude).At(p.X, p.Y) - p.Z;
+        var near = NearField.Charge(size, 1, NearField.Tamp(depth, size, s), s);
+        var b0 = cells[first].Box;
+        var at = new P3(Math.Clamp(p.X, b0.X0, b0.X1), Math.Clamp(p.Y, b0.Y0, b0.Y1), Math.Clamp(p.Z, b0.Base, b0.Top));
+        var net = GasNetwork.For(c);
+        res.Blast = net.Strike(k, first, at, near, s, ref r, w * s.UnderwaterGasShare, Products);
+        res.BubbleWhip = HullGirder.Of(c).Bubble(w, p, Math.Sqrt((p.X - at.X) * (p.X - at.X) + (p.Y - at.Y) * (p.Y - at.Y) + (p.Z - at.Z) * (p.Z - at.Z)),
+            HitQuery.WaterOf(c, k.Attitude), s);   // none at her plate: its bubble vents into what it opened
+        res.BreachM2 += res.Blast.HoleM2;
+        outcome = Outboard(c, first) && !Inside(c, net) ? Outcome.Held : Outcome.Exploded;
 
-        // the cells within the reach flood: the struck one through the hole, the others through holes of their own
+        Reach(c, k, net, p, near.ReachM, s, ref res, ref r);
+        Effects.GasFelt(c, k, net, -1, s, ref res);
+        NearMiss.Shock(c, k, hit, w, s, ref res, ref r);
+        Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);
+        k.CrewLost += res.CrewLost;
+        return res;
+    }
+
+    /// <summary>What's within the reach in the spaces the explosion got into: those within half of it put out of action, the rest
+    /// damaged, a share of their men lost; the nearest magazine among them, lit as by a burst among its charges
+    /// (<see cref="SimSettings.MagazineFlashChance"/>, whole within the half the explosion wrecks, fading to none at the reach;
+    /// docs/battle/magazines.md V7); the parts within it standing in those spaces or in the sea (shafts, propellers, rudders).</summary>
+    static void Reach(ShipClass c, ShipCondition k, GasNetwork net, P3 p, double reach, SimSettings s, ref EffectsResult res, ref RandomStream r)
+    {
+        var cells = c.Cells;
         int magazine = -1;
         double magazineD = double.MaxValue;
         for (int i = 0; i < cells.Length; i++)
         {
-            double d = i == first ? 0 : Effects.BoxDistance(cells[i].Box, p);
-            if (d > reach || held && !Outboard(c, i))
+            double d = Effects.BoxDistance(cells[i].Box, p);
+            if (d > reach || !net.InRun(i))
                 continue;
-            double a = i == first ? hole : hole * s.TorpedoInnerHoleShare * (1 - d / reach);
-            if (a <= 0)
-                continue;
-            var b = cells[i].Box;
-            var there = new P3(Math.Clamp(p.X, b.X0, b.X1), Math.Clamp(p.Y, b.Y0, b.Y1), Math.Clamp(p.Z, b.Base, b.Top));
-            if (i == first)
-                NearField.Punch(c, k, i, a, there, s);
-            else
-                k.Hole(i, a, there);
-            res.BreachM2 += a;
             res.CrewLost += cells[i].BattleCrew * s.TorpedoCasualtyShare * (1 - d / reach);
             foreach (int room in c.RoomsIn(i))
             {
@@ -79,80 +90,51 @@ public static class Underwater
                     (magazine, magazineD) = (room, d);
             }
         }
-        // the boundaries of what it flooded, loaded by its shock: sprung by r(D), their closures loosened
-        // (docs/battle/damage-control.md DC1; D about TorpedoSprungD at the reach, more nearer) [EST, damage/17 §6.1]
-        for (int i = 0; i < cells.Length; i++)
-        {
-            if (!Flooded(c, cells, i, first, p, reach, held))
-                continue;
-            for (int j = cells[i].Neighbours.Start; j < cells[i].Neighbours.End; j++)
-            {
-                ref readonly var e = ref c.Neighbour(j);
-                if (e.Join == JoinKind.Open || Flooded(c, cells, e.Cell, first, p, reach, held))
-                    continue;
-                double d = Math.Min(s.TorpedoSprungD * reach / Math.Max(Effects.BoxDistance(cells[e.Cell].Box, p), 0.5 * reach), 4.9);
-                double area = Blast.Area(cells[i].Box, cells[e.Cell].Box, e.Join), seam = Blast.Leak(d, area, c.InternalsJoint, s, ref r);
-                res.Blast.LeakM2 += seam + Leaks.Sprung(c, k, i, j, seam, d, area, s, ref r);
-            }
-        }
-
-        // the gas in the nearest magazine within the reach: a burst among its charges, as a shell's (MagazineFlashChance),
-        // whole in the half the explosion wrecks, fading to none at the reach (docs/battle/magazines.md V7); the race decides
         res.Magazine = magazine >= 0 && r.NextDouble() < s.MagazineFlashChance * Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
         (res.MagazineRoom, res.MagazineVia) = res.Magazine ? (magazine, MagazineVia.Underwater) : (-1, MagazineVia.None);
 
-        // parts within the reach: what's under the stern, the tubes, whatever stands near (not inside a protection that held)
-        if (!held)
+        var comps = c.Components;
+        for (int i = 0; i < comps.Length; i++)
         {
-            var comps = c.Components;
-            for (int i = 0; i < comps.Length; i++)
-            {
-                if (Effects.Distance(c, i, p) > reach)
-                    continue;
-                var state = Effects.Struck(comps[i].Kind);
-                Effects.Count(ref res, k, i, k.Worsen(i, state) ? state : PartState.Ok);
-            }
-        }
-
-        // the shock: machinery spaces further off may trip
-        double shock = s.TorpedoShockShare * reach;
-        var rooms = c.Rooms;
-        for (int room = 0; room < rooms.Length; room++)
-        {
-            if (rooms[room].Kind is not (RoomKind.BoilerRoom or RoomKind.EngineRoom))
+            if (Effects.Distance(c, i, p) > reach || !Reached(c, net, comps[i].Bounds))
                 continue;
-            int node = c.RoomNode(room);
-            if (k.State[node] != PartState.Ok || RoomDistance(c, room, p) > shock || r.NextDouble() >= s.TorpedoShockChance)
-                continue;
-            Effects.Count(ref res, k, node, k.Harm(node) ? k.State[node] : PartState.Ok);
+            var state = Effects.Struck(comps[i].Kind);
+            Effects.Count(ref res, k, i, k.Worsen(i, state) ? state : PartState.Ok);
         }
-
-        // the power (docs/battle/electrics.md EL6): an underwater blast, not a shell, is what cut a ship's power on the
-        // record (Inflexible's ring main, Marlborough's switches, Seydlitz's generators, Szent István's pumps)
-        double trip = s.ShockPowerGradeK[(int)c.ShockGrade], u0 = r.NextDouble();
-        if (u0 < s.TorpedoBlackout * trip)
-        {
-            res.Shock |= Effects.Blackout(c, k, p, NonPen.Minutes(s.CascadeMin, ref r), hit.Ms, s);
-            res.Blackout = true;
-        }
-        else if (u0 < s.TorpedoSectionPower * trip)
-            res.Shock |= Effects.PowerOut(c, k, p, -1, -1, s.ShockZoneBM, NonPen.Minutes(s.SectionPowerMin, ref r), hit.Ms, s);
-
-        // the hull girder: cut through when the explosion is high beside the hull's depth, amidships
-        if (!held)
-        {
-            double depth = Math.Max(c.Vertical.Depth, 1), lo = s.TorpedoBreakShare[0], hi = s.TorpedoBreakShare[1];
-            double u = (p.X - c.Hydrostatics.Lcf) / Math.Max(c.Length / 2, 1);
-            double chance = Math.Clamp((2 * reach / depth - lo) / Math.Max(hi - lo, 1e-9), 0, 1) * Math.Clamp(2 - 2 * Math.Abs(u), 0, 1);
-            res.Broken = r.NextDouble() < chance;
-        }
-        k.CrewLost += res.CrewLost;
-        return res;
     }
 
-    /// <summary>Whether the explosion holed a cell (as the flooding loop above decides).</summary>
-    static bool Flooded(ShipClass c, ReadOnlySpan<CellRow> cells, int i, int first, P3 p, double reach, bool held) =>
-        (i == first ? 0 : Effects.BoxDistance(cells[i].Box, p)) <= reach && !(held && !Outboard(c, i));
+    /// <summary>Whether a part stands where the explosion got: in a space it reached, or in none of her spaces (the sea's).</summary>
+    static bool Reached(ShipClass c, GasNetwork net, in Box box)
+    {
+        bool inAny = false;
+        for (int i = 0; i < c.Cells.Length; i++)
+            if (Effects.Overlaps(c.Cells[i].Box, box))
+            {
+                if (net.InRun(i))
+                    return true;
+                inAny = true;
+            }
+        return !inAny;
+    }
+
+    /// <summary>Whether the explosion opened a way from a space outside a holding bulkhead into one inside it.</summary>
+    static bool Inside(ShipClass c, GasNetwork net)
+    {
+        foreach (int i in net.Reached())
+        {
+            if (!Outboard(c, i))
+                continue;
+            var nb = c.Cells[i].Neighbours;
+            for (int j = nb.Start; j < nb.End; j++)
+                if (!Outboard(c, c.Neighbour(j).Cell) && net.Opened(j))
+                    return true;
+        }
+        return false;
+    }
+
+    /// <summary>A charge's products as they come into her from the water: TNT's detonation alone, no air to burn in [SRC: TNT's
+    /// 4.5 MJ/kg, Content/Templates/explosives.json; its torpedo's charge is TNT's worth].</summary>
+    static readonly ShellTypeRow Products = new() { FillerRe = 1, FillerQDet = 4.5, FillerQComb = 4.5, FillerEta = 1 };
 
     /// <summary>Whether a cell lies outside a holding bulkhead: a TDS cell, or the double bottom.</summary>
     static bool Outboard(ShipClass c, int cell)
@@ -163,14 +145,5 @@ public static class Underwater
             if (c.Rooms[room].Kind is RoomKind.Tds or RoomKind.DoubleBottom)
                 return true;
         return false;
-    }
-
-    /// <summary>How far a point is from a room: from the nearest of its cells.</summary>
-    static double RoomDistance(ShipClass c, int room, P3 p)
-    {
-        double d = double.MaxValue;
-        foreach (int cell in c.Links(c.Rooms[room].Cells))
-            d = Math.Min(d, Effects.BoxDistance(c.Cells[cell].Box, p));
-        return d;
     }
 }

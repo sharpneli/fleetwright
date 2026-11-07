@@ -798,6 +798,12 @@ public readonly record struct CellRow
     public bool BelowWaterline { get; init; }
     public double VolumeM3 { get; init; }
     public double Permeability { get; init; }
+    /// <summary>The share of its free space full of liquid (oil fuel, water), and the liquid's t/m³ (docs/battle/explosions.md EX5c).</summary>
+    public double Liquid { get; init; }
+    public double LiquidTPerM3 { get; init; }
+    /// <summary>The share of its volume the sea can add as its own weight, m³ of sea water: the air, and what the oil the sea drives
+    /// out is short of sea water's weight (a tank of water takes nothing).</summary>
+    public double SeaPermeability => Permeability * (1 - Liquid * Math.Min(LiquidTPerM3 / Shipgen.Weight.Seawater, 1));
     public bool Citadel { get; init; }
     public double BeltMm { get; init; }
     public int BeltMaterial { get; init; }

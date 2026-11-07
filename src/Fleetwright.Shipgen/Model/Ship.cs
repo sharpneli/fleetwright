@@ -572,6 +572,10 @@ public sealed class Cell
     public string Room { get; set; } = "";
     public List<string>? Also { get; set; }
     public double Permeability { get; set; }
+    /// <summary>The share of its free space full of liquid, and the liquid's t/m³ (docs/battle/explosions.md EX5c): oil fuel or water
+    /// where her plant stows it (the double bottom, the TDS, oil bunkers and tanks). Null: none.</summary>
+    public double? Liquid { get; set; }
+    public double? LiquidT { get; set; }
     /// <summary>[cell id, what joins them: "open" (same room), a deck or a bulkhead].</summary>
     public List<string[]> Neighbours { get; set; } = [];
     /// <summary>The shafts and alleys that pass through.</summary>

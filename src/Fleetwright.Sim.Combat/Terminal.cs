@@ -877,7 +877,7 @@ public static class Terminal
         ref readonly var row = ref c.Cells[cell];
         int room = row.Room;
         double zRoom = room >= 0 && room < k.Level.Length ? k.Level[room] : double.NaN;
-        double cap = row.VolumeM3 * row.Permeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
+        double cap = row.VolumeM3 * row.SeaPermeability, water = cell < k.WaterM3.Length ? k.WaterM3[cell] : 0;
         double zSea = water > 0 && cap > 0 ? row.Box.Base + Math.Min(water / cap, 1) * (row.Box.Top - row.Box.Base) : double.NaN;
         if (double.IsNaN(zRoom) && double.IsNaN(zSea))
             return;

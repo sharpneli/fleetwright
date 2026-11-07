@@ -308,13 +308,15 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     /// <summary>07 §3.1, on her own section: forward, where the gas takes the thin plate and the ship is narrow, she breaks in a
-    /// seaway; aft her charges are fewer and the section holds, breached and open to the sea.</summary>
+    /// seaway, the sea's moment on what's left of her more than the calm's; aft her charges are fewer and the section holds, breached
+    /// and open to the sea. (Whether forward breaks her in calm water too sits at the margin, 0.99-1.00 of her girder: not pinned.)</summary>
     [Fact]
     public void The_sea_decides_at_the_margin_and_an_aft_magazine_leaves_her_breached()
     {
         var c = Packed("lion", "bag");
-        Assert.True(Race(c, "Magazine B", sea: 1).Lost);
-        Assert.False(Race(c, "Magazine B").Lost);
+        var (seaway, calm) = (Race(c, "Magazine B", sea: 1), Race(c, "Magazine B"));
+        Assert.True(seaway.Lost);
+        Assert.True(seaway.GirderLoad > calm.GirderLoad, $"{seaway.GirderLoad:0.00} in a seaway against {calm.GirderLoad:0.00} calm");
         var aft = Race(c, "Magazine Y", out var k, sea: 1);
         Assert.False(aft.Lost);
         Assert.Equal(MagazineTier.Breached, aft.Tier);

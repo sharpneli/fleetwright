@@ -16,13 +16,14 @@ namespace Fleetwright.Shipgen.Cli;
 /// <item><b>the attack</b> (--range M): the shooter at a range on a bearing off the target's bow, the target steaming on,
 /// a spread of n fired through the torpedo system once its navy has the target in sight, run after run: hits, and how
 /// long the torpedoes ran.</item>
-/// </list></summary>
+/// </list>
+/// --trace: each hit's gas, as it went (best with a small --n).</summary>
 static class TorpedoBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Shooter, double AtShare, double DepthM, int N, int PerShip, int Seed, double SettleMin, double RangeM, double AspectDeg,
-        double TargetKn, int Spread, int Runs);
+        double TargetKn, int Spread, int Runs, bool Trace = false);
 
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -42,14 +43,21 @@ static class TorpedoBench
     {
         double depth = o.DepthM > 0 ? o.DepthM : Math.Clamp(settings.TorpedoDepthShare * tc.Vertical.Draught, settings.TorpedoDepthMinM, settings.TorpedoDepthMaxM);
         var sw = Stopwatch.StartNew();
+        if (o.Trace)
+            GasNetwork.Trace = line => Console.WriteLine("    " + line);   // each hit's gas, as it went
         var r = GivenTorpedoes(tc, torpedo, depth, o, settings, fallOut);
+        GasNetwork.Trace = null;
         double secs = sw.Elapsed.TotalSeconds;
         int k = Math.Max(o.PerShip, 1);
         double size = Math.Cbrt(torpedo.ChargeKg), tamp = NearField.Tamp(depth, size, settings), reach = NearField.Charge(size, 1, tamp, settings).ReachM;
         double radius = NearField.HoleM(size, tc.Plating.ShellMm, tamp, settings), hole = Math.PI * radius * radius;
+        // its bubble were it a mine under her keel amidships, as far below it as her draught: the whip on her girder intact (EX5)
+        var girder = HullGirder.Of(tc);
+        double below = tc.Vertical.Draught;
+        double whip = girder.Bubble(torpedo.ChargeKg, new P3(0, 0, tc.Vertical.Keel - below), below, HitQuery.WaterOf(tc, default), settings);
         Console.WriteLine(string.Format(Inv, "{0} ({1:0} t, {2:0} m, depth {3:0.0} m, draught {4:0.0} m): {5} hits {6:0.0} m down {7}, {8} a ship; reach {9:0.0} m, " +
-            "hole {10:0} m²; {11:0.00} s", tc.Name, tc.Hydrostatics.DisplacementT, tc.Length, tc.Vertical.Depth, tc.Vertical.Draught, r.Hits, depth,
-            double.IsNaN(o.AtShare) ? "along the side" : $"at {o.AtShare:0.##} of the length from the stern", k, reach, hole, secs));
+            "hole {10:0} m², a mine's whip {12:0.00} design moments (f2 {13:0.00} Hz); {11:0.00} s", tc.Name, tc.Hydrostatics.DisplacementT, tc.Length, tc.Vertical.Depth, tc.Vertical.Draught, r.Hits, depth,
+            double.IsNaN(o.AtShare) ? "along the side" : $"at {o.AtShare:0.##} of the length from the stern", k, reach, hole, secs, whip, 1 / girder.PeriodS));
         Console.WriteLine("  outcomes: " + string.Join(", ", Enum.GetValues<Outcome>().Where(x => r.Outcomes[(int)x] > 0)
             .Select(x => string.Format(Inv, "{0} {1:0.#}%", x, 100 * r.Share(x)))));
         Console.WriteLine("  the space struck: " + string.Join(", ", r.Struck.OrderByDescending(kv => kv.Value)

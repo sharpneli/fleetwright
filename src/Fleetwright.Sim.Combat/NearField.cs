@@ -25,13 +25,14 @@ public static class NearField
     public static double Tamp(double depthM, double size, SimSettings s) =>
         size > 0 ? Math.Clamp(depthM / (s.TampDepthK * size), 0, 1) : 0;
 
-    /// <summary>How far water backs a charge in a space with water in it: its depth under the space's level.</summary>
+    /// <summary>How far liquid backs a charge in a space with water or its own liquid in it (oil fuel, a TDS's water): its depth under
+    /// the space's level.</summary>
     public static double TampIn(ShipClass c, ShipCondition k, int cell, P3 at, double size, SimSettings s)
     {
-        double water = k.WaterM3[cell];
+        ref readonly var x = ref c.Cells[cell];
+        double water = k.WaterM3[cell] + x.VolumeM3 * x.Permeability * k.Liquid(cell);
         if (!(water > 0))
             return 0;
-        ref readonly var x = ref c.Cells[cell];
         var b = x.Box;
         double plan = (b.X1 - b.X0) * (b.Y1 - b.Y0) * Math.Clamp(x.Permeability, 0.05, 1);
         return Tamp(b.Base + water / Math.Max(plan, 1e-3) - at.Z, size, s);
