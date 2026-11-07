@@ -4,8 +4,8 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
-/// <summary>What an explosion's gas did (<see cref="GasNetwork"/>): the peak pressure at the source (kPa gauge) and what its
-/// boundaries felt (MPa); the propellant burned (kg; and by the hull's first giving and a second after, kg); the spaces it
+/// <summary>What an explosion's gas did (<see cref="GasNetwork"/>): the peak pressure at the source (kPa gauge), among a burning
+/// stow's charges (kPa gauge) and what its boundaries felt (MPa); the propellant burned (kg; and by the hull's first giving and a second after, kg); the spaces it
 /// reached and their gas (m³); what gave: bulkheads, decks, watertight doors, the side, weather deck and bottom plates, a
 /// part's walls; the boundaries it only sprang; the magazines alight, the gunhouses vented and lifted; the first boundary to give
 /// and the first of the hull's own plates (s); when the first way up vented (s); how long it ran (s) and in how many steps.
@@ -13,7 +13,7 @@ namespace Fleetwright.Sim.Combat;
 /// vented as fast as it formed (no gas load at all). What it did to the girder is <see cref="HullGirder"/>'s to read.</summary>
 public struct GasResult
 {
-    public double PeakKPa, FeltMPa, BurnedKg, FastKg, Charges, VolumeM3, FirstS, HullS, VentS, VentM2, EndS;
+    public double PeakKPa, BedKPa, FeltMPa, BurnedKg, FastKg, Charges, VolumeM3, FirstS, HullS, VentS, VentM2, EndS;
     public int Spaces, Holed, Bulkheads, Decks, Doors, Deformed, Sides, WeatherDecks, Bottoms, PartWalls, Magazines, Vented, Lifted, Steps;
     /// <summary>The most it drove within the hull's period, its energy × its mass, J·kg: what can whip her.</summary>
     public double WhipEM;
@@ -122,7 +122,7 @@ public sealed class GasNetwork
     /// <summary>The stows alight: a pool, one for every magazine of the largest class this thread has met.</summary>
     Stow[] stows = [];
     int nStows;
-    double burned, fastKg, peakSource;
+    double burned, fastKg, peakSource, peakBed;
     SimSettings s = null!;
     ShipCondition k = null!;
     Waterplane water;
@@ -162,6 +162,9 @@ public sealed class GasNetwork
         public int Room, Cell, Cohort;
         public PropellantRow Pr;
         public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, EnergyJKg;
+        /// <summary>Its bed (<see cref="Magazines.BedPa"/>): its depth (m), its drag's coefficient over a depth (K/L), the pressure its
+        /// lit charges burn at (Pa).</summary>
+        public double BedM, BedDrag, BedPa;
         public readonly double[] Cnt = new double[Cohorts], Z = new double[Cohorts];
         public double Burning, Pending, MadePa;
     }
@@ -282,7 +285,7 @@ public sealed class GasNetwork
         double gm = Gm;
         chokeK = Math.Sqrt(gm) * Math.Pow(2 / (gm + 1), (gm + 1) / (2 * (gm - 1)));
         id++;
-        (n, links, nStows, burned, fastKg, time, peakSource) = (0, 0, 0, 0, 0, 0, 0);
+        (n, links, nStows, burned, fastKg, time, peakSource, peakBed) = (0, 0, 0, 0, 0, 0, 0, 0);
         res = new GasResult { FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN };
         (whipKg, whipJ, whipPeak) = (0, 0, 0);
         water = HitQuery.WaterOf(c, k.Attitude);
@@ -411,11 +414,22 @@ public sealed class GasNetwork
         st.TBurn = st.Pr.WebM / Magazines.Rate(101_325, st.Pr);
         st.EnergyJKg = s.MagazineHeatKeep * st.Pr.ImpetusJkg / GammaK;
         (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa) = (0, 0, 0, -1, 0, 0, 0);
+        LayBed(st, mass);
         if (nOpen * (1 - st.Flooded) < 1 && nCased * (1 - st.Flooded) >= 1)
         {
             st.LitCased = 1;
             (st.Cnt[0], st.Z[0], st.Cohort, st.CohortT0) = (1, 0, 1, time);
         }
+    }
+
+    /// <summary>A stow as a packed bed: charges of their own size stacked at their own bulk, however big the room is round them, as
+    /// deep as the racks or half the stack. Ergun's inertial term past a sphere is 1.75·(1 − ε)/ε³ a charge's size along the way.</summary>
+    void LayBed(Stow st, double mass)
+    {
+        double rhoS = st.Pr.DensityKgM3, bulk = s.MagazineBedKgM3, solid = Math.Min(bulk / rhoS, 0.74), voids = 1 - solid;
+        st.BedM = Math.Min(s.MagazineBedM, Math.Cbrt(mass / bulk) / 2);
+        st.BedDrag = 1.75 * solid / (voids * voids * voids) / Math.Max(Math.Cbrt(st.Ck / rhoS), 1e-3);
+        st.BedPa = 0;
     }
 
     /// <summary>The trains of the mounts a magazine feeds: the scuttle to the handling room, the way up and out.</summary>
@@ -582,24 +596,47 @@ public sealed class GasNetwork
     /// <summary>What a stow's lit charges make in a step, kg: r = β·P^α on each cohort's burning surface.</summary>
     double BurnStow(Stow st, double dt)
     {
-        double rate = Magazines.Rate(p[st.Cell], st.Pr), gen = 0, burning = 0;
+        double surface = 0, burning = 0, gen = 0;
+        for (int i = 0; i < st.Cohort; i++)
+            if (st.Z[i] < 1)
+            {
+                surface += st.Cnt[i] * st.Ck * st.Pr.SurfaceM2Kg * Shape(st, i);
+                burning += st.Cnt[i];
+            }
+        double rate = Magazines.Rate(BedPressure(st, surface, burning), st.Pr);
         for (int i = 0; i < st.Cohort; i++)
         {
             if (st.Z[i] >= 1)
                 continue;
-            double shape = st.Pr.Form switch
-            {
-                PropellantForm.Cord => Math.Sqrt(1 - st.Z[i]),
-                PropellantForm.Grain => Math.Pow(1 - st.Z[i], 2.0 / 3),
-                _ => 1,
-            };
-            double kg = Math.Min(st.Pr.DensityKgM3 * st.Cnt[i] * st.Ck * st.Pr.SurfaceM2Kg * shape * rate, st.Cnt[i] * st.Ck * (1 - st.Z[i]) / dt);
+            double kg = Math.Min(st.Pr.DensityKgM3 * st.Cnt[i] * st.Ck * st.Pr.SurfaceM2Kg * Shape(st, i) * rate, st.Cnt[i] * st.Ck * (1 - st.Z[i]) / dt);
             gen += kg;
             st.Z[i] = Math.Min(1, st.Z[i] + kg * dt / (st.Cnt[i] * st.Ck));
-            burning += st.Cnt[i];
         }
         st.Burning = burning;
         return gen * dt;
+    }
+
+    static double Shape(Stow st, int i) => st.Pr.Form switch
+    {
+        PropellantForm.Cord => Math.Sqrt(1 - st.Z[i]),
+        PropellantForm.Grain => Math.Pow(1 - st.Z[i], 2.0 / 3),
+        _ => 1,
+    };
+
+    /// <summary>The pressure among a stow's lit charges: the room's, and what it takes to drive their gas out of the bed. The lit
+    /// part of it: as much of the bed as they fill, its way out the bed's depth or, a few alight in the middle of the rest, their
+    /// own cluster's size. So a charge alone hardly confines itself, and a whole bed does.</summary>
+    double BedPressure(Stow st, double surfaceM2, double burning)
+    {
+        double room = p[st.Cell];
+        if (!(burning > 0) || !(st.BedM > 0))
+            return room;
+        double litM3 = burning * st.Ck / s.MagazineBedKgM3, depth = Math.Min(st.BedM, Math.Cbrt(litM3));
+        double perRate = st.Pr.DensityKgM3 * surfaceM2 * depth / litM3;   // G over r
+        double c1 = st.BedDrag * depth * st.EnergyJKg * GammaK * perRate * perRate;
+        st.BedPa = Magazines.BedPa(room, c1, st.Pr, st.BedPa);
+        peakBed = Math.Max(peakBed, st.BedPa - P0);
+        return st.BedPa;
     }
 
     /// <summary>The flame on through a stow: what lies open catches at once, what's packed by what's burning beside it.</summary>
@@ -906,6 +943,7 @@ public sealed class GasNetwork
     GasResult Finish(int source, ref RandomStream r)
     {
         res.PeakKPa = peakSource / 1000;
+        res.BedKPa = peakBed / 1000;
         res.FeltMPa = felt[source];
         // what was lit and hadn't burned when the run stopped goes on burning, harmlessly, at no pressure
         for (int t = 0; t < nStows; t++)

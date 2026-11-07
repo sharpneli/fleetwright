@@ -13,15 +13,15 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**EX2 is built, reviewed and unified. Next is the user's call: no magazine broke a ship in any of the 68 games of the panel, still.** See "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
+**EX2 is built, reviewed and unified, and magazines break ships in the panel's games again ("The stow's own confinement", 2026-11-07), on one estimated number and at about 1% of losses. Next is the user's call on that.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
 
-1. **Magazines at the margin.** Set off a little more often than before (17.7 a seed at Jutland against 14.8), they broke no ship in the panel's games (6% of losses before). Fresh, on the BCF's handling at Jutland's 8 kn: Indefatigable's wing and after shell-room magazines break her (1.09-1.18; her A and Y 0.54), Lion's and Queen Mary's forward ones read 0.85-0.95, Invincible's 0.41-0.67. In the same seaway bags break Lion everywhere forward. So the physics is within about 10% of the record's outcome for these ships, and just on the wrong side of it in light airs. Left to try, none yet tried: a stow's own confinement (a bed of charges burning inside itself), shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, and a shell's own damage already in her section. **Not tuned, and decision 3 says no balancing yet.**
+1. **Magazines at the margin.** The bed moved it ("The stow's own confinement"): on the BCF's handling Lion's forward magazines now break her in calm water (1.05-1.10). **Still short:** Tiger reads 0.54 and Invincible 0.38-0.69 in calm water, 0.68 and 0.84 in a moderate sea; a magazine takes about 0.6 ship a seed at Jutland, where the record has several. Left to try: shell rooms' bursters (needs EX4), what a real magazine's boundaries are like, a shell's own damage already in her section, and the pressure in the bed on the plate beside it. **Not tuned, and decision 3 says no balancing yet.**
 2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
 3. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
 4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
-5. **Clarkson and brass read alike,** with the research. Bags against the rest separate well.
+5. **Clarkson and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
 6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
 7. **A magazine's cost:** about 70-165 ms for a big ship's, against about 20 wanted (a shell's 10-230 µs is on budget). A longer step isn't the way: see "the solver". Threads are the option (the user). About 20 a Jutland, so 2-3 s in a 14-hour game, each a hitch on the sim thread.
 8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
@@ -516,12 +516,83 @@ Taking either out isn't a refactor. It decides how often magazines go, which is 
 
 **Smaller, physics or bookkeeping, not fixed:**
 
-- **The girder:** side plate counted twice where two cells stand at one height (6 of Lion's 20 sections by 12-14%, 22 of 72 designs; cause not traced), which flatters capacity and bears on open item 1. A slope can't be lost. A cut end freezes the whole end zone, including sections still on her. Intact, Littorio, Yamato and the supercarrier read broken at sea 1.5 (44 kn; a hit is all it takes, nothing torn; the scenarios blow at most about 30 kn). `BucklingK` and the 1 s whip period aren't in settings; `?? 111.9`; `YieldPa` under-reads steels past the stress cap.
+- **The girder:** a slope can't be lost. A cut end freezes the whole end zone, including sections still on her. Intact, Littorio, Yamato and the supercarrier read broken at sea 1.5 (44 kn; a hit is all it takes, nothing torn; the scenarios blow at most about 30 kn). `BucklingK` and the 1 s whip period aren't in settings; `?? 111.9`; `YieldPa` under-reads steels past the stress cap.
 - **The gas:** a hole under water vents the next explosion, against what `Boundaries` says of a new one. `FaceTornM2` only grows, so a repaired face can't tear again up to its old size. A welded plate's opening jumps 2.5× at D 5 (the user's call under `no-hard-switches`; rupture itself is a physical step). A source under 10 m³ has no pressure control on its step, untested for convergence.
 - **Housekeeping:** `Blast.Pressure` is only the tests'. `Modulus` works out the elastic moment on every read. The thread's network keeps its last ship alive.
 - **Tests:** the raider test went from seed 3 to 4 in EX2 unremarked (`AimsTests`). `A_thin_hull_gives...` went with no replacement; nothing tests an end coming off through `SetOff`.
 - **Not measured:** the cost findings, `Math.Pow` per edge per step and `Felt` over components × cells.
 - **Found since:** the flotilla's no-garbage test now has a magazine go up inside its window; the smoke field's lists grow by a first entry there (2 kB, once). A loss counts as a one-off from the moment she's lost.
+
+## The stow's own confinement (2026-11-07)
+
+**The user chose to try the missing physics before EX4-EX6.** The first candidate, a bed of charges burning inside itself. Its setting is new and estimated; nothing is tuned.
+
+**What was missing.** A charge burned at the pressure of the room round it. But gas made deep in a stack has to get out through the gaps between the charges, and that takes pressure. Burning goes as P^0.78, so the stack feeds itself. The research has the law and the feedback against the room's vents (07 §2.3, 10 §1.1, MSIAC's "quasi static pressure") but not this step inside the stack.
+
+**The rule (`GasNetwork.BedPressure`, `Magazines.BedPa`).** A packed bed's inertial drop (Ergun), ΔP = K·G²/ρ, with K = 1.75·(1 − ε)/ε³ · depth / a charge's size:
+
+- **G, the gas through the bed,** is what its lit charges make over the bed's face. A few alight in the rest get out through their own cluster, so the depth is the lesser of the bed's and the cluster's. **So a lone charge hardly confines itself and a whole bed does, with no switch.**
+- **A charge's size** is its own volume's cube root (Lion's 133 kg: 0.44 m; a destroyer's: about 0.15 m).
+- **Two estimates, both in settings:** `MagazineBedM` 1.5 m (from the gas's way out to an aisle or the overhead) and `MagazineBedKgM3` 600 (the stack's bulk). Ergun's coefficient is for spheres, and it's mine, not the research's. A request is in `research/REQUESTS.md`.
+- **One thing it isn't:** the room's share. My first try spread the bed through the room, shells' space and all (Lion's Q: 29 t of propellant in 340 m³) and nothing moved. Charges are stacked at their own bulk, whatever the room.
+
+Bed 0 is the old model, exactly (the table's every line). It only moves how fast charges burn. What the boundaries feel is still the room's: the bed's pressure on the plate beside it isn't modelled.
+
+**Peak among the charges, kPa (`GasResult.BedKPa`):**
+
+| Lion's Q on bags | Lion's Q on Clarkson | Seydlitz, brass | Iron Duke | Destroyer, V25 |
+|---:|---:|---:|---:|---:|
+| 16,800 | 4,600 | 3,800 | 4,400 | 380-440 |
+
+**The load on her girder (1 is broken), before and after, calm water and a seaway:**
+
+| | Calm | Seaway |
+|---|---:|---:|
+| Lion on bags, forward magazines | 0.76-0.82 to **1.05-1.10** | 1.24-1.32 to 1.64-1.71 |
+| Lion on bags, aft | 0.27 to 0.29 | 0.54 to 0.57 |
+| Lion on Clarkson, forward | 0.30-0.54 to 0.33-0.56 | 0.57-0.95 to 0.60-0.97 |
+| Tiger on Clarkson | 0.28-0.39 to 0.28-0.41 | 0.54-0.65 to 0.54-0.67 |
+| Iron Duke | 0.56-1.02 to 0.59-1.02 | 0.92-1.52 to 0.96-1.51 |
+| Seydlitz, brass | 0.32-0.38 to 0.33-0.40: **burns out, as the record has her** | 0.54-0.59 to 0.54-0.62 |
+| Destroyer, V25 | 0.11-0.15, unchanged | 0.27-0.33, unchanged |
+
+**On the BCF's own handling (`--doctrine "1916 BCF"`), before and after:** Lion's forward magazines 0.76-0.82 to 1.05-1.10; Tiger's 0.49 to 0.54; Invincible's 0.34-0.60 to 0.38-0.69 (0.48-0.75 to 0.52-0.84 at half a seaway).
+
+**The rack depth is the sensitive number.** Pressure among the charges goes as about depth^6.8 by the algebra, and the girder's load settles past it. Lion's Q on bags:
+
+| `MagazineBedM` | 0 | 0.5 | 1 | 1.5 | 2.5 |
+|---:|---:|---:|---:|---:|---:|
+| Among the charges, kPa | | 1,470 | 3,210 | 16,800 | 16,850 |
+| Load, calm | 0.79 | 0.81 | 0.87 | 1.05 | 1.11 |
+
+So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in calm water, and a larger one changes little. 16.8 MPa is about the bed's own limit there (half the stack is 1.8 m). **This is the reading to be careful with.** It's a real knife edge (07 §2.3's), and which side she's on hangs on an estimate.
+
+**The panel (`explosions-bed/`, beside `explosions-review/`; 8 seeds, Jutland 4), against the review's:**
+
+| Lost a seed | Before | Now | Record | | Before | Now | Record |
+|---|---:|---:|---:|---|---:|---:|---:|
+| Dover Strait: Britain | 0.1 | 0.1 | 0 | Germany | 1.4 | 1.4 | 2 |
+| Coronel: Britain | 1.3 | 1.4 | 2 | Germany | 1.0 | 0.9 | 0 |
+| Cape Sarych: Russia | 3.9 | 4.1 | 0 | Ottoman Empire | 0.5 | 0.6 | 0 |
+| Heligoland Bight: Britain | 0.8 | 0.8 | 0 | Germany | 7.8 | 8.0 | 4 |
+| Dogger Bank: Britain | 5.8 | 5.3 | 0 | Germany | 8.4 | 9.1 | 1 |
+| Tsushima: Russia | 3.0 | 3.0 | 7 | Japan | 3.9 | 3.1 | 0 |
+| Jutland: Britain | 30.5 | 26.3 | 14 | Germany | 45.5 | 39.3 | 11 |
+| The prizes' war: France | 1.6 | 1.4 | - | Italy | 2.5 | 2.8 | - |
+| Åland: Finland | 7.6 | 6.5 | - | Sweden | 2.8 | 4.3 | - |
+
+- **All together:** 8 of 14 sides within about twice the record (7); the record's loser lost more in 27 of 44 seeds (25). Capsized 46% (51), foundered 31% (27), broke in two 22% (22), **magazine 1% (0)**: Tsushima 4%, Dogger Bank and Jutland 1%. EX0's warning on noise stands: most of the sides' moves are within it, and Jutland is 4 seeds.
+- **Magazines at Jutland, a seed:** set off by a hit: contained 4.0, breached 5.3, **broken 0.6** (0 before). Those that break her are British: capital ships and a destroyer.
+- **Not this step's:** Jutland's heavy hits read 1,544 a seed (2,320 in the review's run, 1,548 in EX2's). That swing is between runs of 4 seeds with nothing near gunnery changed, so read the review's figure as noise.
+- **`damage-history`:** Indefatigable's own case still 20%, all by her magazine: her case's magazine already broke her. Lützow's side up by a run or two (noise at 20 runs).
+
+**Convergence, checked again as the lesson says.** Lion's Q at 1, ¼ and 1/16 of the step: on bags load 1.05, 1.04, 1.04, peak 1,244, 1,140, 1,098 kPa; on Clarkson load 0.48, 0.53, 0.51, peak 964, 944, 947 kPa. The loads are settled; bags' peak at the game's step reads 13% over its limit.
+
+**Cost:** about what it was, 140 ms for Lion's Q on bags against 125, 105 on Clarkson against 105. The panel took no longer.
+
+**Anchors moved in the tests, on the user to check:** Lion's Q on bags is now lost in calm water (`Bags_alone_break_a_battlecruiser`); the sea's margin moved to Iron Duke's Q (`The_sea_decides_at_the_margin...`). Tests: `A_bed_burns_above_its_room...`, `A_bed_is_a_whole_stow_alight`.
+
+**Also (2026-11-07): the side plate counted twice.** Where the hull narrows, an inner cell's wall can stand within the 0.6 m the side test allows, so it read as side plate with a wing outboard of it. Now only what no other space stands outboard of is outside (`Blast.Outboard`; `A_side_belongs_to_one_space_at_a_height` over the fleet). Peaks and loads hardly moved, within 0.01: these sections aren't where magazines are read. It's off the review's list below.
 
 ## What stays out
 

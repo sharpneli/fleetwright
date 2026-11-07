@@ -1762,6 +1762,10 @@ public sealed record SimSettings
     /// simulation/damage-research/10 §6):
     /// <list type="bullet">
     /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing].</item>
+    /// <item>MagazineBedM: how deep a bed of charges is, from its gas's way out to an aisle or the overhead, m [EST: racks two or
+    /// three cases deep]; 0 no bed: charges burn at the room's pressure (docs/battle/explosions.md).</item>
+    /// <item>MagazineBedKgM3: charges as they're stacked, kg of propellant a m³ of the stack [EST: a magazine's own bulk, as shipgen
+    /// stows a load; shells aren't in it].</item>
     /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
     /// package before it burns out, a branching process, times its propellant's Sensitivity (docs/battle/magazines.md
     /// "Too safe" [EST, until research/REQUESTS.md's 2026-11-05 answers]: Clarkson 32, brass 28, tank 24 on cordite, so
@@ -1797,6 +1801,8 @@ public sealed record SimSettings
     public double MagazineSprinkleS { get; init; } = 60;
     public double MagazineSprinkleShare { get; init; } = 0.95;
     public double MagazineHeatKeep { get; init; } = 0.5;
+    public double MagazineBedM { get; init; } = 1.5;
+    public double MagazineBedKgM3 { get; init; } = 600;
     /// <summary>A ragged opening's discharge coefficient, for any explosion's gas [EST].</summary>
     public double GasVentCd { get; init; } = 0.7;
     /// <summary>The gas's temperature that lights charges and carries a burst's flame, K [EST: nitrocellulose ignites near 450-470 K].</summary>

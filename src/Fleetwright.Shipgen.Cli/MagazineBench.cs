@@ -18,12 +18,14 @@ static class MagazineBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, int runs = 0, bool race = false,
-        double flooded = 0, string? packaging = null, bool trace = false, double sea = 0, string? doctrine = null)
+        double flooded = 0, string? packaging = null, bool trace = false, double sea = 0, string? doctrine = null, double bed = -1)
     {
         Doctrine = doctrine;
         if (trace)
             GasNetwork.Trace = Console.WriteLine;
         var settings = SimSettings.Load(settingsPath);
+        if (bed >= 0)
+            settings = settings with { MagazineBedM = bed };
         foreach (var name in designs.Count > 0 ? designs : ["iron_duke"])
         {
             var d = load(name);
@@ -139,12 +141,12 @@ static class MagazineBench
             var ch = c.Charges[c.Mounts[mr].Type];
             Console.WriteLine(string.Format(Inv, "    {0}: {1} — {2:0} charges of {3:0} kg ({4}), peak {5:0} kPa, burned {6:0.0} t ({7:0.0} t by the girder's failure + 1 s), " +
                 "worst section lost {8:0.00} at {19:0.00} of her length (load {20:0.00} of what's left{21}), gunhouses vented {9} (lifted {10}){11}{12}, magazines {13}; vents {17:0.0} m² at the end, gave: {18}; " +
-                "killed {14}, wounded {15} ({16:0.0} ms)", c.RoomId(room), r.Tier,
+                "killed {14}, wounded {15} ({16:0.0} ms), bed {22:0} kPa", c.RoomId(room), r.Tier,
                 r.Charges, ch.MassKg, ch.Packaging, r.PeakKPa, r.BurnedKg / 1000, r.FastKg / 1000, r.D, r.Vented, r.Lifted,
                 double.IsNaN(r.VentS) ? "" : string.Format(Inv, " at {0:0.00} s", r.VentS),
                 double.IsNaN(r.StructureS) ? "" : string.Format(Inv, ", her hull at {0:0.00} s", r.StructureS), r.Magazines, r.Killed, r.Wounded, ms,
                 r.VentM2, r.Gave == 0 ? "nothing" : string.Join(", ", new[] { "bulkhead", "deck", "sides", "bottom", "weather deck" }.Where((_, i) => (r.Gave & (1 << i)) != 0)),
-                r.Station, r.GirderLoad, r.EndLost ? ", her end lost" : ""));
+                r.Station, r.GirderLoad, r.EndLost ? ", her end lost" : "", r.Gas.BedKPa));
         }
     }
 

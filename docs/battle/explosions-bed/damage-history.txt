@@ -1,0 +1,328 @@
+the battle anchors (docs/battle/shells-armour-damage.md E8): 20 runs a case, each hit from a range and target angle in the case's bands, at random over its minutes, through the world's damage system
+
+1890-1925
+  Jutland 1916: British APC on German armour (Lion's 13.5″, Revenge's 15″ on Seydlitz), the count on the plates
+    Seydlitz-like (echelon, cross-deck fire, 1913), 24 kn; closed up, 1916; 20 hits in 120 min at 10-17 km, 45-135° off the bow: 60% lion 0 ap + 40% revenge 0 ap
+    the hits (16 §2.1): burst inside 53%, passed through 22%, dud 3%, on armour 22%; on the upper works 18%
+    on plate over 9″: 115 (28.8% of hits): glanced 0%, not holed 66%, holed in pieces or burst in it 30%, through whole 0%, through and burst behind 4% (1 in 23)
+    on plate 6-9″: 17 (4.3% of hits): glanced 12%, not holed 29%, holed in pieces or burst in it 35%, through whole 12%, through and burst behind 12% (1 in 8.5)
+    the belt got through 0.25 a ship whole, 2.50 in pieces (1.3 and 12.5 per 100 hits), over 9″ 1.85 a ship; turret hits that held 3.3 per 100 hits, of those jammed 0%, a main mount out 8%
+    killed 1.12 and wounded 3.26 a hit, flashes aside; 15 flash(es), killing 38 each; killed a ship 35 (median), fires lit 2 a ship
+    over the case's 120 min: turret-minutes lost 264 per 100 hits; main battery silent in 0% of runs (median - min), every director out 25% (14 min), steering lost 0% (- min)
+    the most water aboard 296 t (median; 90th 685 t, all runs)
+    at 2 h afloat: water 281 t (median; 90th 685 t), worst list 0.0°, speed 90%, power 69%, main mounts 4 of 5, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 3.8 per 100 hits, 2.5 stations each
+    record: on plate over 9″ 17 hits: 3 ricochets, 1 HE; of 13, 1 through and burst, 5 holed with little effect, 7 not holed (1 in 13). On 6-9″ 17: 3 clean, 6 burst while penetrating, 8 failed
+    wanted: through over 9″ and burst near 1 in 13 (1 in 5 to 1 in 40 within the record's count); on 6-9″ clean and burst-in-plate both common
+    (5.4 s)
+  Seydlitz, Jutland 1916: 21 heavy hits (13.5″, 15″) over 4 h, no torpedo
+    Seydlitz-like (echelon, cross-deck fire, 1913), 24 kn; closed up, 1916; 21 hits in 240 min at 9-16 km, 45-135° off the bow: 45% lion 0 ap + 35% revenge 0 ap + 20% lion 0 he
+    the hits (16 §2.1): burst inside 55%, passed through 23%, dud 4%, on armour 18%; on the upper works 20%
+    on plate over 9″: 93 (22.1% of hits): glanced 0%, not holed 60%, holed in pieces or burst in it 34%, through whole 1%, through and burst behind 4% (1 in 23.3)
+    on plate 6-9″: 16 (3.8% of hits): glanced 13%, not holed 25%, holed in pieces or burst in it 44%, through whole 0%, through and burst behind 19% (1 in 5.3)
+    the belt got through 0.20 a ship whole, 2.40 in pieces (1 and 11.4 per 100 hits), over 9″ 1.75 a ship; turret hits that held 1.9 per 100 hits, of those jammed 0%, a main mount out 13%
+    killed 2.04 and wounded 5.17 a hit, flashes aside; 18 flash(es), killing 68 each; killed a ship 70 (median), fires lit 4 a ship
+    over the case's 240 min: turret-minutes lost 528 per 100 hits; main battery silent in 5% of runs (median 179 min), every director out 15% (149 min), steering lost 10% (208 min)
+    the most water aboard 167 t (median; 90th 3363 t, all runs)
+    at 5 h afloat: water 130 t (median; 90th 896 t), worst list 0.0°, speed 90%, power 69%, main mounts 4 of 5, directors 1 of 1
+    lost 5% (Foundered 1, median 234 min); a magazine set off by a hit in 5% of runs (Turret 1); runs 6:F@234
+    magazines: set off 0.24 per 100 hits (0.92 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 1, severed 0, two groups 0; charges lit in a train by 3.8 per 100 hits, 2.6 stations each
+    turret flashes by the part and the plate got through: Main Holed 138mm 1
+    record: 5 of 16-22 heavy hits pierced armour; 98 killed, 55 wounded; 5,308 t aboard with a torpedo hit, slowed, reached harbour
+    wanted: a few pierced; killed about 1-3 a hit; water in the thousands of tonnes only with the torpedo (here without)
+    (3.4 s)
+  Derfflinger, Jutland 1916: 17 heavy and 9 secondary hits over 3 h
+    Derfflinger-like (1914), 24 kn; closed up, 1916; 26 hits in 180 min at 8-15 km, 45-135° off the bow: 40% revenge 0 ap + 25% lion 0 ap + 35% iron_duke 1
+    the hits (16 §2.1): burst inside 58%, passed through 21%, dud 3%, on armour 17%; on the upper works 19%
+    on plate over 9″: 66 (13% of hits): glanced 0%, not holed 38%, holed in pieces or burst in it 52%, through whole 0%, through and burst behind 11% (1 in 9.4)
+    on plate 6-9″: 25 (4.9% of hits): glanced 8%, not holed 40%, holed in pieces or burst in it 48%, through whole 0%, through and burst behind 4% (1 in 25)
+    the belt got through 0.60 a ship whole, 2.60 in pieces (2.4 and 10.2 per 100 hits), over 9″ 1.90 a ship; turret hits that held 4.9 per 100 hits, of those jammed 8%, a main mount out 20%
+    killed 1.34 and wounded 4.34 a hit, flashes aside; 12 flash(es), killing 87 each; killed a ship 56 (median), fires lit 4 a ship
+    over the case's 180 min: turret-minutes lost 314 per 100 hits; main battery silent in 0% of runs (median - min), every director out 10% (10 min), steering lost 20% (128 min)
+    the most water aboard 295 t (median; 90th 19857 t, all runs)
+    at 5 h afloat: water 189 t (median; 90th 1417 t), worst list 0.0°, speed 96%, power 85%, main mounts 3 of 4, directors 1 of 1
+    lost 10% (BrokeInTwo 2, median 168 min); a magazine set off by a hit in 10% of runs (Turret 2); runs 2:B@110 5:B@168
+    magazines: set off 0.39 per 100 hits (2.2 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 2, severed 0, two groups 0; charges lit in a train by 2.2 per 100 hits, 2.8 stations each
+    turret flashes by the part and the plate got through: Barbette Holed 200mm 1, Main BurstInside 125mm 1
+    record: C and D turrets burned out by flash (73 of 78, 80 of 80 dead); 157 killed, 26 wounded; ~3,000 t; came home
+    wanted: a turret or two out for good; killed a few a hit, flash aside; tonnes in the hundreds to low thousands
+    (3.7 s)
+  Lion, Jutland 1916: 13 × 12″ (Lützow) over 2 h
+    Lion-like (1912), 26 kn; closed up, 1916; 13 hits in 120 min at 12-16 km, 45-135° off the bow: 100% derfflinger 0
+    the hits (16 §2.1): burst inside 49%, passed through 18%, dud 13%, on armour 20%; on the upper works 21%
+    on plate over 9″: 58 (22.3% of hits): glanced 0%, not holed 84%, holed in pieces or burst in it 3%, through whole 3%, through and burst behind 9% (1 in 11.6)
+    on plate 6-9″: 40 (15.4% of hits): glanced 0%, not holed 13%, holed in pieces or burst in it 20%, through whole 13%, through and burst behind 55% (1 in 1.8)
+    the belt got through 2.05 a ship whole, 0.30 in pieces (15.8 and 2.3 per 100 hits), over 9″ 0.35 a ship; turret hits that held 3.1 per 100 hits, of those jammed 13%, a main mount out 75%
+    killed 0.90 and wounded 2.71 a hit, flashes aside; 8 flash(es), killing 62 each; killed a ship 16 (median), fires lit 1 a ship
+    over the case's 120 min: turret-minutes lost 252 per 100 hits; main battery silent in 0% of runs (median - min), every director out 5% (107 min), steering lost 5% (116 min)
+    the most water aboard 241 t (median; 90th 1021 t, all runs)
+    at 4 h afloat: water 209 t (median; 90th 1021 t), worst list 0.0°, speed 96%, power 87%, main mounts 3 of 4, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 3.1 per 100 hits, 3 stations each
+    record: Q turret's face/roof joint holed, the flash reached the magazine trunk, magazine flooded in time; 99 killed, 51 wounded; came home
+    wanted: a turret out; killed 1-3 a hit flash aside; a magazine loss a few percent
+    (2.0 s)
+  Tiger, Jutland 1916: 18 × 11″ (Moltke) over 2 h
+    Tiger-like (1914), 27 kn; closed up, 1916 BCF; 18 hits in 120 min at 12-16 km, 45-135° off the bow: 100% moltke 0
+    the hits (16 §2.1): burst inside 44%, passed through 20%, dud 13%, on armour 24%; on the upper works 21%
+    on plate over 9″: 71 (22% of hits): glanced 0%, not holed 92%, holed in pieces or burst in it 7%, through whole 0%, through and burst behind 1% (1 in 71)
+    on plate 6-9″: 47 (14.6% of hits): glanced 0%, not holed 32%, holed in pieces or burst in it 23%, through whole 13%, through and burst behind 32% (1 in 3.1)
+    the belt got through 1.35 a ship whole, 0.70 in pieces (8.4 and 4.3 per 100 hits), over 9″ 0.30 a ship; turret hits that held 4.7 per 100 hits, of those jammed 0%, a main mount out 60%
+    killed 0.76 and wounded 2.13 a hit, flashes aside; 8 flash(es), killing 319 each; killed a ship 19 (median), fires lit 1 a ship
+    over the case's 120 min: turret-minutes lost 283 per 100 hits; main battery silent in 5% of runs (median 31 min), every director out 10% (114 min), steering lost 35% (47 min)
+    the most water aboard 1522 t (median; 90th 34632 t, all runs)
+    at 4 h afloat: water 94 t (median; 90th 32117 t), worst list 0.0°, speed 82%, power 70%, main mounts 4 of 4, directors 1 of 1
+    lost 25% (BrokeInTwo 4, median 103 min, Foundered 1, median 38 min); a magazine set off by a hit in 35% of runs (Turret 7); runs 10:B@67 12:F@38 13:B@54 14:B@107 15:B@103
+    magazines: set off 2.48 per 100 hits (6.78 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 8, severed 0, two groups 0; charges lit in a train by 2.5 per 100 hits, 3.9 stations each
+    turret flashes by the part and the plate got through: Barbette Holed 183mm 2, Main BurstInside 126mm 2, Main Holed 126mm 1, Main BrokeUp 114mm 1, Secondary LowOrder 84mm 1, Barbette LowOrder 183mm 1
+    record: Q turret's roof burst without piercing (out for a while), X barbette hit; 24 killed, 46 wounded; little water; fought on
+    wanted: killed about 1-1.5 a hit; turrets in and out; little water
+    (3.6 s)
+  British battlecruisers, Jutland 1916: Indefatigable, 5 × 11″ (Von der Tann) in 15 min
+    Indefatigable-like (1911), 25 kn; closed up, 1916 BCF; 5 hits in 15 min at 13-16 km, 45-135° off the bow: 100% von_der_tann 0
+    the hits (16 §2.1): burst inside 45%, passed through 22%, dud 15%, on armour 18%; on the upper works 47%
+    on plate over 9″: none
+    on plate 6-9″: 20 (21.5% of hits): glanced 0%, not holed 80%, holed in pieces or burst in it 0%, through whole 10%, through and burst behind 10% (1 in 10)
+    the belt got through 0.20 a ship whole, 0.05 in pieces (4.3 and 1.1 per 100 hits), over 9″ 0.00 a ship; turret hits that held 7.5 per 100 hits, of those jammed 14%, a main mount out 100%
+    killed 0.54 and wounded 1.88 a hit, flashes aside; 4 flash(es), killing 365 each; killed a ship 2 (median), fires lit 0 a ship
+    over the case's 15 min: turret-minutes lost 73 per 100 hits; main battery silent in 0% of runs (median - min), every director out 0% (- min), steering lost 0% (- min)
+    the most water aboard 0 t (median; 90th 89 t, all runs)
+    at 1 h afloat: water 0 t (median; 90th 82 t), worst list 0.0°, speed 100%, power 98%, main mounts 4 of 4, directors 1 of 1
+    lost 20% (Magazine 4, median 9 min); a magazine set off by a hit in 20% of runs (Spall 2, Turret 2); runs 2:M@8 4:M@9 18:M@6 19:M@14
+    magazines: set off 4.3 per 100 hits (20 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 4; charges lit in a train by 4.3 per 100 hits, 4 stations each
+    turret flashes by the part and the plate got through: Barbette BurstInside 142mm 1, Barbette Holed 142mm 1
+    record: blew up after 5 hits (Queen Mary after ~7, Invincible after ~5; Lion, Princess Royal, Tiger, New Zealand survived): ~3 in ~58 BC hits
+    wanted: a magazine loss a few percent a hit (record ~5%, 1-14% within the count)
+    (1.0 s)
+  Warspite, Jutland 1916: 15 × 12″ (König class) over 1 h
+    Revenge-like (1916), 21 kn; closed up, 1916; 15 hits in 60 min at 9-14 km, 45-135° off the bow: 100% konig 0
+    the hits (16 §2.1): burst inside 43%, passed through 19%, dud 14%, on armour 25%; on the upper works 22%
+    on plate over 9″: 73 (24.3% of hits): glanced 0%, not holed 99%, holed in pieces or burst in it 1%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    on plate 6-9″: 53 (17.7% of hits): glanced 4%, not holed 9%, holed in pieces or burst in it 11%, through whole 13%, through and burst behind 62% (1 in 1.6)
+    the belt got through 2.80 a ship whole, 0.30 in pieces (18.7 and 2 per 100 hits), over 9″ 0.05 a ship; turret hits that held 11.3 per 100 hits, of those jammed 15%, a main mount out 56%
+    killed 0.92 and wounded 3.25 a hit, flashes aside; 4 flash(es), killing 30 each; killed a ship 19 (median), fires lit 1 a ship
+    over the case's 60 min: turret-minutes lost 198 per 100 hits; main battery silent in 0% of runs (median - min), every director out 15% (11 min), steering lost 10% (139 min)
+    the most water aboard 187 t (median; 90th 2412 t, all runs)
+    at 4 h afloat: water 95 t (median; 90th 2412 t), worst list 0.0°, speed 98%, power 94%, main mounts 3 of 4, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 1.3 per 100 hits, 1.8 stations each
+    record: 14 killed, 32 wounded; steering jammed (debated); flooding aft, came home
+    wanted: killed about 1 a hit; tens to a few hundred tonnes
+    (1.6 s)
+  Lion, Dogger Bank 1915: 16 heavy hits (11″, 12″) over 2 h at 25 kn
+    Lion-like (1912), 25 kn; closed up, 1916; 16 hits in 120 min at 14-17 km, 30-110° off the bow: 50% derfflinger 0 + 50% moltke 0
+    the hits (16 §2.1): burst inside 43%, passed through 17%, dud 16%, on armour 24%; on the upper works 18%
+    on plate over 9″: 66 (20.6% of hits): glanced 0%, not holed 98%, holed in pieces or burst in it 2%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    on plate 6-9″: 33 (10.3% of hits): glanced 0%, not holed 52%, holed in pieces or burst in it 6%, through whole 15%, through and burst behind 27% (1 in 3.7)
+    the belt got through 0.95 a ship whole, 0.15 in pieces (5.9 and 0.9 per 100 hits), over 9″ 0.05 a ship; turret hits that held 4.7 per 100 hits, of those jammed 7%, a main mount out 87%
+    killed 0.65 and wounded 2.37 a hit, flashes aside; 2 flash(es), killing 191 each; killed a ship 11 (median), fires lit 1 a ship
+    over the case's 120 min: turret-minutes lost 204 per 100 hits; main battery silent in 0% of runs (median - min), every director out 5% (115 min), steering lost 10% (42 min)
+    the most water aboard 235 t (median; 90th 1698 t, all runs)
+    at 3 h afloat: water 203 t (median; 90th 1657 t), worst list 0.0°, speed 94%, power 80%, main mounts 4 of 4, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 5% of runs (Turret 1)
+    magazines: set off 0.31 per 100 hits (1.01 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 1, severed 0, two groups 0; charges lit in a train by 0.6 per 100 hits, 3.5 stations each
+    turret flashes by the part and the plate got through: Barbette BurstInside 114mm 1
+    record: a feed tank holed: port engine out, 15 kn; ~3,000 t, 10° list; 1 killed, 20 wounded
+    wanted: slowed in some runs; hundreds to thousands of tonnes; killed few
+    (2.1 s)
+  Chester, Jutland 1916: 17 × 15 cm (Wiesbaden class) at 6-8 km, open-backed shields
+    Chatham-like Town (1912), 26 kn; closed up, 1916; 17 hits in 20 min at 6-8 km, 45-135° off the bow: 100% wiesbaden 0
+    the hits (16 §2.1): burst inside 31%, passed through 45%, dud 15%, on armour 9%; on the upper works 27%
+    on plate over 9″: none
+    on plate 6-9″: none
+    the belt got through 3.45 a ship whole, 0.25 in pieces (20.3 and 1.5 per 100 hits), over 9″ 0.00 a ship; turret hits that held 0.3 per 100 hits, of those jammed 0%, a main mount out 100%
+    killed 0.40 and wounded 1.05 a hit, flashes aside; 0 flash(es), killing 0 each; killed a ship 7 (median), fires lit 0 a ship
+    over the case's 20 min: turret-minutes lost 49 per 100 hits; main battery silent in 0% of runs (median - min), every director out 5% (13 min), steering lost 0% (- min)
+    the most water aboard 48 t (median; 90th 373 t, all runs)
+    at 2 h afloat: water 48 t (median; 90th 373 t), worst list 0.0°, speed 87%, power 71%, main mounts 5 of 5, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 0 per 100 hits, 0 stations each
+    record: 29 killed, 49 wounded (16's G6b 2.0 / 2.4 a hit); 3 of 10 guns out; came home
+    wanted: killed about 2 a hit among the open crews
+    (0.9 s)
+  Kent at the Falklands 1914: 38 × 10.5 cm (Nürnberg), crews behind armour (Devonshire class)
+    Devonshire-like (1905), 22 kn; closed up, 1916; 38 hits in 90 min at 5-10 km, 45-135° off the bow: 100% stettin 0
+    the hits (16 §2.1): burst inside 28%, passed through 20%, dud 11%, on armour 41%; on the upper works 22%
+    on plate over 9″: none
+    on plate 6-9″: 72 (9.5% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 6.6 per 100 hits, of those jammed 0%, a main mount out 2%
+    killed 0.35 and wounded 1.32 a hit, flashes aside; 0 flash(es), killing 0 each; killed a ship 12 (median), fires lit 1 a ship
+    over the case's 90 min: turret-minutes lost 15 per 100 hits; main battery silent in 0% of runs (median - min), every director out 5% (57 min), steering lost 0% (- min)
+    the most water aboard 0 t (median; 90th 66 t, all runs)
+    at 2 h afloat: water 0 t (median; 90th 66 t), worst list 0.0°, speed 99%, power 98%, main mounts 6 of 6, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 0 per 100 hits, 0 stations each
+    record: 'did not cause significant damage'; 6 killed (Kent, 16's G6a 0.17 a hit; Cornwall 18 hits, none)
+    wanted: killed well under 1 a hit; little water
+    (0.7 s)
+  Medium HE on a battleship: 30 × 6″ HE (König's secondaries) over 1 h
+    Iron Duke-like (1914), 18 kn; closed up, 1916; 30 hits in 60 min at 6-10 km, 45-135° off the bow: 100% konig 1 he
+    the hits (16 §2.1): burst inside 43%, passed through 0%, dud 15%, on armour 43%; on the upper works 18%
+    on plate over 9″: 25 (4.2% of hits): glanced 0%, not holed 84%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 16% (1 in 6.3)
+    on plate 6-9″: 17 (2.8% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 14.7 per 100 hits, of those jammed 1%, a main mount out 13%
+    killed 1.58 and wounded 6.90 a hit, flashes aside; 3 flash(es), killing 65 each; killed a ship 54 (median), fires lit 4 a ship
+    over the case's 60 min: turret-minutes lost 23 per 100 hits; main battery silent in 0% of runs (median - min), every director out 35% (30 min), steering lost 0% (- min)
+    the most water aboard 0 t (median; 90th 210 t, all runs)
+    at 2 h afloat: water 0 t (median; 90th 210 t), worst list 0.0°, speed 92%, power 73%, main mounts 5 of 5, directors 1 of 1
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 0.5 per 100 hits, 3 stations each
+    record: (Malaya's 6″ battery fire came close)
+    wanted: a magazine lost rarely, not never: about 1.5% of ships (magazines.md, the user's)
+    (0.5 s)
+  Destroyer under shellfire: 10 × 6″ lyddite HE (a light cruiser's) in 10 min
+    Torpedo-boat destroyer (V-class-like, 1917), 25 kn; closed up, 1916; 10 hits in 10 min at 3-7 km, 30-150° off the bow: 100% arethusa 0 he
+    the hits (16 §2.1): burst inside 91%, passed through 0%, dud 10%, on armour 0%; on the upper works 28%
+    on plate over 9″: none
+    on plate 6-9″: none
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 0 per 100 hits, of those jammed -, a main mount out -
+    killed 1.92 and wounded 4.22 a hit, flashes aside; 2 flash(es), killing 5 each; killed a ship 21 (median), fires lit 3 a ship
+    over the case's 10 min: turret-minutes lost 78 per 100 hits; main battery silent in 65% of runs (median 26 min), every director out 0% (- min), steering lost 30% (6 min)
+    the most water aboard 284 t (median; 90th 1909 t, all runs)
+    at 2 h afloat: water 280 t (median; 90th 1506 t), worst list 0.1°, speed 64%, power 37%, main mounts 2 of 4, directors 0 of 0
+    lost 5% (Capsized 1, median 42 min); a magazine set off by a hit in 10% of runs (Gas 2); runs 4:C@42
+    magazines: set off 1 per 100 hits (200 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 2, severed 0, two groups 0; charges lit in a train by 1 per 100 hits, 1 stations each
+    record: (08 R3: one machinery hit cripples; hit count a poor predictor. Jutland's destroyers stopped by medium gunfire mostly went down (?))
+    wanted: crippled nearly always; lost in many runs
+    (4.7 s)
+  Tsushima 1905: Orel, 5 × 12″, 9 × 8″, 39 × 6″ (Japanese) over 4 h
+    Borodino-like (Knyaz Suvorov, Tsushima 1905), 9 kn; prepared, 1905; 53 hits in 240 min at 4.5-7.5 km, 45-135° off the bow: 6% mikasa 0 ap + 3% mikasa 0 common + 17% izumo 0 + 74% mikasa 1
+    the hits (16 §2.1): burst inside 34%, passed through 20%, dud 3%, on armour 43%; on the upper works 39%
+    on plate over 9″: 6 (0.6% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    on plate 6-9″: 277 (26.1% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 15.7 per 100 hits, of those jammed 1%, a main mount out 8%
+    killed 0.49 and wounded 1.77 a hit, flashes aside; 17 flash(es), killing 29 each; killed a ship 25 (median), fires lit 13 a ship
+    over the case's 240 min: turret-minutes lost 196 per 100 hits; main battery silent in 0% of runs (median - min), every director out 20% (167 min), steering lost 0% (- min)
+    the most water aboard 1 t (median; 90th 84 t, all runs)
+    at 5 h afloat: water 0 t (median; 90th 14 t), worst list 0.0°, speed 93%, power 78%, main mounts 8 of 8, directors 2 of 2
+    lost 0%; a magazine set off by a hit in 10% of runs (Turret 2)
+    magazines: set off 0.19 per 100 hits (0.71 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 2, severed 0, two groups 0; charges lit in a train by 1.6 per 100 hits, 1.7 stations each
+    turret flashes by the part and the plate got through: Superstructure BurstInside 0mm 2
+    record: 0 of 4 belt hits pierced; two 6″ turrets jammed by 8″ hits, one burnt out by its ready charges; 43 killed (16's G2a 0.58 a hit); 'only moderately damaged'
+    wanted: no belt holed; killed about 0.6 a hit; a turret or two jammed
+    (2.2 s)
+  Tsushima 1905: Mikasa, ~40 Russian hits (12″, 6″) over 2 h
+    Mikasa-like (pre-dreadnought), 15 kn; prepared, 1916; 40 hits in 120 min at 4.5-7 km, 45-135° off the bow: 25% borodino 0 ap + 75% borodino 1
+    the hits (16 §2.1): burst inside 26%, passed through 28%, dud 7%, on armour 38%; on the upper works 42%
+    on plate over 9″: 111 (14.3% of hits): glanced 0%, not holed 95%, holed in pieces or burst in it 5%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    on plate 6-9″: 95 (12.2% of hits): glanced 0%, not holed 86%, holed in pieces or burst in it 14%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.00 a ship whole, 1.35 in pieces (0 and 3.5 per 100 hits), over 9″ 0.25 a ship; turret hits that held 9.7 per 100 hits, of those jammed 1%, a main mount out 7%
+    killed 0.55 and wounded 1.83 a hit, flashes aside; 14 flash(es), killing 51 each; killed a ship 33 (median), fires lit 1 a ship
+    over the case's 120 min: turret-minutes lost 28 per 100 hits; main battery silent in 0% of runs (median - min), every director out 0% (- min), steering lost 10% (80 min)
+    the most water aboard 127 t (median; 90th 7324 t, all runs)
+    at 3 h afloat: water 68 t (median; 90th 687 t), worst list 0.0°, speed 90%, power 80%, main mounts 2 of 2, directors 2 of 2
+    lost 10% (Foundered 2, median 86 min); a magazine set off by a hit in 10% of runs (Turret 2); runs 3:F@86 6:F@83
+    magazines: set off 0.26 per 100 hits (0.97 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 2, severed 0, two groups 0; charges lit in a train by 1.8 per 100 hits, 1.9 stations each
+    turret flashes by the part and the plate got through: Main Holed 140mm 1, Secondary Holed 152mm 1
+    record: 'none seriously damaged her'; 113 killed and wounded (16's G2b 1.7 / 4.7 a hit)
+    wanted: no belt holed; killed 1-2 a hit
+    (1.3 s)
+  Yalu 1894: a central-citadel ironclad (Inflexible for Dingyuan), 200 × 6″ common at 2-4 km
+    Inflexible-like citadel ship (1881), 8 kn; unprepared, 1890; 200 hits in 240 min at 2-4 km, 45-135° off the bow: 100% mikasa 1 common (secondary:JP 1904 common (powder))
+    the hits (16 §2.1): burst inside 27%, passed through 29%, dud 2%, on armour 42%; on the upper works 26%
+    on plate over 9″: 1599 (40% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    on plate 6-9″: 107 (2.7% of hits): glanced 0%, not holed 100%, holed in pieces or burst in it 0%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 9.3 per 100 hits, of those jammed 0%, a main mount out 8%
+    killed 0.06 and wounded 0.30 a hit, flashes aside; 5 flash(es), killing 77 each; killed a ship 17 (median), fires lit 8 a ship
+    over the case's 240 min: turret-minutes lost 32 per 100 hits; main battery silent in 0% of runs (median - min), every director out 0% (- min), steering lost 20% (138 min)
+    the most water aboard 242 t (median; 90th 643 t, all runs)
+    at 4 h afloat: water 193 t (median; 90th 588 t), worst list 0.0°, speed 75%, power 62%, main mounts 2 of 2, directors 0 of 0
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 0.1 per 100 hits, 3 stations each
+    record: belts never pierced ('none deeper than 4 inches'); repeated fires; Dingyuan 14 killed in ~200 hits
+    wanted: no belt holed; killed well under 1 a hit; fires
+    (3.8 s)
+
+later cuts
+  Bismarck, 27 May 1941: ~80 heavy (16″, 14″) and ~300 medium (8″, 6″, 5.25″) in 90 min, 3-15 km
+    Bismarck-like (as completed, 1940), 8 kn; closed up, 1916; 380 hits in 90 min at 3-15 km, 30-150° off the bow: 13% nelson 0 + 8% kgv 0 + 45% kent 0 + 17% nelson 1 + 17% kgv 1
+    the hits (16 §2.1): burst inside 45%, passed through 19%, dud 9%, on armour 27%; on the upper works 37%
+    on plate over 9″: 845 (12% of hits): glanced 0%, not holed 79%, holed in pieces or burst in it 9%, through whole 2%, through and burst behind 10% (1 in 9.6)
+    on plate 6-9″: 216 (3.1% of hits): glanced 0%, not holed 50%, holed in pieces or burst in it 6%, through whole 9%, through and burst behind 35% (1 in 2.9)
+    the belt got through 27.90 a ship whole, 5.75 in pieces (8 and 1.6 per 100 hits), over 9″ 4.80 a ship; turret hits that held 7.5 per 100 hits, of those jammed 5%, a main mount out 7%
+    killed 0.39 and wounded 1.02 a hit, flashes aside; 173 flash(es), killing 39 each; killed a ship 477 (median), fires lit 29 a ship
+    over the case's 90 min: turret-minutes lost 61 per 100 hits; main battery silent in 75% of runs (median 42 min), every director out 45% (38 min), steering lost 90% (37 min)
+    the most water aboard 13706 t (median; 90th 27198 t, all runs)
+    at 1.5 h afloat: water 8834 t (median; 90th 15321 t), worst list 4.3°, speed 85%, power 56%, main mounts 0 of 4, directors 1 of 9
+    lost 35% (Foundered 2, median 77 min, Capsized 4, median 74 min, BrokeInTwo 1, median 77 min); a magazine set off by a hit in 55% of runs (Turret 11); runs 1:F@77 3:C@62 7:B@77 8:C@62 11:C@74 13:C@89 19:F@57
+    magazines: set off 0.21 per 100 hits (1.41 per 100 hits on plate over 6″); tiers: contained 3, burned out 5, breached 7, severed 0, two groups 0; charges lit in a train by 2.5 per 100 hits, 3.1 stations each
+    turret flashes by the part and the plate got through: Secondary BurstInside 20mm 3, Barbette Holed 80mm 2, Secondary BurstInside 8mm 2, Barbette BurstInside 288mm 2, Barbette LowOrder 180mm 1, Barbette BurstInside 50mm 1, Barbette LowOrder 80mm 1, Barbette BurstInside 80mm 1, Barbette BurstInside 145mm 1, Main BurstInside 180mm 1
+    record: fore director out at 09:02, all 4 turrets silent by ~44 min; belt ~3 holes, all above water; afloat until torpedoed and scuttled at ~110 min
+    wanted: turrets silent in 30-60 min; belt holes a handful; afloat after an hour
+    (6.6 s)
+  South Dakota, 1942: 18 × 8″ AP, 6 × 6″, 1 × 14″, 1 × 5″ at 5-8 km (Colorado for her)
+    Colorado-like (1923), 26 kn; closed up, 1942; 26 hits in 15 min at 5-8 km, 45-135° off the bow: 69% heavy_cruiser 0 ap (main:JP 1931 Type 91 AP (TNA)) + 23% kongo 3 (secondary:JP 1931 light common (TNA)) + 4% kongo 0 he (main:JP 1931 Type 0 HE (TNA)) + 4% yamato 3 he
+    the hits (16 §2.1): burst inside 34%, passed through 35%, dud 4%, on armour 27%; on the upper works 23%
+    on plate over 9″: 160 (30.8% of hits): glanced 0%, not holed 81%, holed in pieces or burst in it 9%, through whole 1%, through and burst behind 8% (1 in 12.3)
+    on plate 6-9″: 11 (2.1% of hits): glanced 0%, not holed 91%, holed in pieces or burst in it 9%, through whole 0%, through and burst behind 0% (1 in Infinity)
+    the belt got through 0.10 a ship whole, 0.15 in pieces (0.4 and 0.6 per 100 hits), over 9″ 0.25 a ship; turret hits that held 11.2 per 100 hits, of those jammed 3%, a main mount out 19%
+    killed 1.16 and wounded 4.00 a hit, flashes aside; 15 flash(es), killing 35 each; killed a ship 53 (median), fires lit 1 a ship
+    over the case's 15 min: turret-minutes lost 34 per 100 hits; main battery silent in 0% of runs (median - min), every director out 15% (14 min), steering lost 5% (14 min)
+    the most water aboard 296 t (median; 90th 1836 t, all runs)
+    at 2 h afloat: water 296 t (median; 90th 1353 t), worst list 0.0°, speed 95%, power 85%, main mounts 3 of 4, directors 3 of 3
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 2.9 per 100 hits, 1 stations each
+    record: 15-18 of 26 passed through (the 8″ AP's 0.4 s fuze [UNCERTAIN]); 6 belt hits, none pierced; 38-40 killed; flooding small, list 0.75°
+    wanted: more than half through unburst; no belt holed; under 100 t
+    (2.1 s)
+  Kirishima, 1942: 20 × 16″ at 8 km in 7 min (Kongo; Washington's Mk 8)
+    Kongo-like (as built, 1913), 20 kn; closed up, 1916; 20 hits in 7 min at 7.8-8.4 km, 45-135° off the bow: 100% colorado 0 ap (main:US 1941 AP Mk 8 (Explosive D))
+    the hits (16 §2.1): burst inside 44%, passed through 51%, dud 4%, on armour 1%; on the upper works 37%
+    on plate over 9″: 9 (2.3% of hits): glanced 0%, not holed 0%, holed in pieces or burst in it 0%, through whole 56%, through and burst behind 44% (1 in 2.3)
+    on plate 6-9″: 177 (44.3% of hits): glanced 1%, not holed 3%, holed in pieces or burst in it 2%, through whole 21%, through and burst behind 73% (1 in 1.4)
+    the belt got through 8.40 a ship whole, 0.20 in pieces (42 and 1 per 100 hits), over 9″ 0.00 a ship; turret hits that held 1.3 per 100 hits, of those jammed 0%, a main mount out 80%
+    killed 1.35 and wounded 2.18 a hit, flashes aside; 9 flash(es), killing 60 each; killed a ship 32 (median), fires lit 1 a ship
+    over the case's 7 min: turret-minutes lost 20 per 100 hits; main battery silent in 0% of runs (median - min), every director out 0% (- min), steering lost 25% (110 min)
+    the most water aboard 15195 t (median; 90th 32139 t, all runs)
+    at 3 h afloat: water 12783 t (median; 90th 17453 t), worst list 2.1°, speed 66%, power 40%, main mounts 3 of 4, directors 1 of 1
+    lost 20% (Foundered 4, median 148 min); a magazine set off by a hit in 0% of runs; runs 4:F@149 9:F@133 16:F@148 19:F@70
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 2.3 per 100 hits, 3 stations each
+    record: turrets 3-4 silenced (pump rooms), turret 1's magazine flooded; rudder jammed; capsized ~2¼ h later after counterflooding
+    wanted: ≥ 2 turrets out; steering lost likely; ≥ 2,000 t
+    (6.8 s)
+  Samar 1944: a destroyer, 3 × 46 cm AP at 15-18 km
+    Fleet Destroyer, 30 kn; closed up, 1944; 3 hits in 10 min at 15-18 km, 30-150° off the bow: 100% yamato 0 ap
+    the hits (16 §2.1): burst inside 15%, passed through 73%, dud 12%, on armour 0%; on the upper works 37%
+    on plate over 9″: none
+    on plate 6-9″: none
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 0 per 100 hits, of those jammed -, a main mount out -
+    killed 0.76 and wounded 1.24 a hit, flashes aside; 1 flash(es), killing 9 each; killed a ship 1 (median), fires lit 0 a ship
+    over the case's 10 min: turret-minutes lost 33 per 100 hits; main battery silent in 50% of runs (median 31 min), every director out 0% (- min), steering lost 30% (10 min)
+    the most water aboard 128 t (median; 90th 1521 t, all runs)
+    at 2 h afloat: water 66 t (median; 90th 1416 t), worst list 0.0°, speed 73%, power 63%, main mounts 2 of 5, directors 3 of 3
+    lost 5% (Capsized 1, median 113 min); a magazine set off by a hit in 5% of runs (Gas 1); runs 16:C@113
+    magazines: set off 1.67 per 100 hits (100 per 100 hits on plate over 6″); tiers: contained 0, burned out 1, breached 0, severed 0, two groups 0; charges lit in a train by 1.7 per 100 hits, 1 stations each
+    record: Johnston: hits in the machinery burst there, 17 kn; elsewhere heavy AP through unburst
+    wanted: most through unburst; slowed if the machinery is hit
+    (1.1 s)
+  WWII destroyer: 10 × 5″ AAC in 10 min
+    Fleet Destroyer, 30 kn; closed up, 1944; 10 hits in 10 min at 4-8 km, 30-150° off the bow: 100% heavy_cruiser 1 he
+    the hits (16 §2.1): burst inside 90%, passed through 0%, dud 10%, on armour 1%; on the upper works 38%
+    on plate over 9″: none
+    on plate 6-9″: none
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 0 per 100 hits, of those jammed -, a main mount out -
+    killed 2.97 and wounded 7.09 a hit, flashes aside; 5 flash(es), killing 6 each; killed a ship 31 (median), fires lit 2 a ship
+    over the case's 10 min: turret-minutes lost 131 per 100 hits; main battery silent in 100% of runs (median 26 min), every director out 5% (9 min), steering lost 15% (9 min)
+    the most water aboard 344 t (median; 90th 802 t, all runs)
+    at 2 h afloat: water 225 t (median; 90th 802 t), worst list 0.2°, speed 79%, power 51%, main mounts 0 of 5, directors 2 of 3
+    lost 0%; a magazine set off by a hit in 0% of runs
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 2.5 per 100 hits, 1 stations each
+    record: (08 7.4 #10)
+    wanted: mostly crippled, rarely lost
+    (1.3 s)
+  WWII destroyer: 40 × 5″ AAC in 20 min
+    Fleet Destroyer, 30 kn; closed up, 1944; 40 hits in 20 min at 4-8 km, 30-150° off the bow: 100% heavy_cruiser 1 he
+    the hits (16 §2.1): burst inside 93%, passed through 0%, dud 7%, on armour 1%; on the upper works 43%
+    on plate over 9″: none
+    on plate 6-9″: none
+    the belt got through 0.00 a ship whole, 0.00 in pieces (0 and 0 per 100 hits), over 9″ 0.00 a ship; turret hits that held 0 per 100 hits, of those jammed -, a main mount out -
+    killed 1.41 and wounded 3.58 a hit, flashes aside; 18 flash(es), killing 2 each; killed a ship 58 (median), fires lit 6 a ship
+    over the case's 20 min: turret-minutes lost 165 per 100 hits; main battery silent in 95% of runs (median 13 min), every director out 30% (13 min), steering lost 75% (8 min)
+    the most water aboard 1319 t (median; 90th 2666 t, all runs)
+    at 2 h afloat: water 1242 t (median; 90th 1777 t), worst list 11.8°, speed 23%, power 9%, main mounts 0 of 5, directors 1 of 3
+    lost 40% (Capsized 7, median 35 min, Foundered 1, median 71 min); a magazine set off by a hit in 0% of runs; runs 1:C@57 2:C@31 4:C@35 7:C@107 8:C@29 9:C@91 11:C@18 13:F@71
+    magazines: set off 0 per 100 hits (0 per 100 hits on plate over 6″); tiers: contained 0, burned out 0, breached 0, severed 0, two groups 0; charges lit in a train by 2.3 per 100 hits, 1 stations each
+    record: (08 7.4 #10)
+    wanted: usually lost
+    (1.6 s)

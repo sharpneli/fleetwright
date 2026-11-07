@@ -24,6 +24,38 @@ public class MagazineRaceTests(ITestOutputHelper output)
         return ShipClassCompiler.Compile(ShipDesign.Build(d));
     }
 
+    /// <summary>A bed's pressure: P·(P − room) = C·r(P)², above the room's, more the more it's driven, and the room's with no drag.</summary>
+    [Fact]
+    public void A_bed_burns_above_its_room_by_what_it_takes_to_drive_its_gas_out()
+    {
+        var pr = Fleet.Get("lion").Class!.Charges[Fleet.Get("lion").Class!.Mounts[0].Type].Propellant;
+        const double room = 500e3;
+        Assert.Equal(room, Magazines.BedPa(room, 0, pr, 0));
+        double last = room;
+        foreach (double c in new[] { 1e16, 1e17, 1e18, 1e19 })
+        {
+            double p = room;
+            for (int i = 0; i < 20; i++)
+                p = Magazines.BedPa(room, c, pr, p);   // as it goes in a run, from the step before
+            double r = Magazines.Rate(p, pr);
+            output.WriteLine($"C {c:0e0}: {p / 1000:0} kPa, {r * 1000:0.0} mm/s");
+            Assert.True(p > last, "more drag, more pressure");
+            Assert.InRange(p * (p - room) / (c * r * r), 0.999, 1.001);
+            last = p;
+        }
+    }
+
+    /// <summary>All alight at once a bed is far more confined than one lit a few at a time, and a small stow is less so than a big one.</summary>
+    [Fact]
+    public void A_bed_is_a_whole_stow_alight()
+    {
+        var lion = Packed("lion", "bag");
+        double bags = Race(lion, "Magazine Q").Gas.BedKPa, cases = Race(Packed("lion", null), "Magazine Q").Gas.BedKPa, small = Race(Fleet.Get("destroyer").Class!, "Magazine A").Gas.BedKPa;
+        output.WriteLine($"among the charges: bags {bags:0} kPa, Clarkson {cases:0}, a destroyer's {small:0}");
+        Assert.True(bags > 2 * cases, "every bag lit at once");
+        Assert.True(cases > 2 * small, "a big stack against a small one");
+    }
+
     [Fact]
     public void What_else_drove_her_is_read_with_the_magazine()
     {
@@ -94,19 +126,17 @@ public class MagazineRaceTests(ITestOutputHelper output)
         return r;
     }
 
-    /// <summary>Lids off: every bag lights at once and the gas wins (10 §6: tier 3 at ~1,000 kPa). On her own plating it takes a
-    /// seaway to finish her: explosions.md's first open item, and not tuned.</summary>
+    /// <summary>Lids off: every bag lights at once, the bed they lie in confining itself (explosions.md, "The stow's own
+    /// confinement"), and the gas wins (10 §6: tier 3 at ~1,000 kPa). Calm water doesn't save her now; before the bed it took a seaway.</summary>
     [Fact]
-    public void Bags_alone_break_a_battlecruiser_in_a_seaway()
+    public void Bags_alone_break_a_battlecruiser()
     {
         var c = Packed("lion", "bag");
-        var r = Race(c, "Magazine Q", sea: 1);
+        var r = Race(c, "Magazine Q");
         Assert.True(r.Lost);
         Assert.InRange(r.PeakKPa, 700, 3000);
         Assert.False(double.IsNaN(r.StructureS));
-        var calm = Race(c, "Magazine Q");
-        Assert.False(calm.Lost);
-        Assert.InRange(calm.GirderLoad, 0.6, 1);
+        Assert.True(Race(c, "Magazine Q", sea: 1).GirderLoad > r.GirderLoad);
     }
 
     [Fact]
@@ -307,14 +337,15 @@ public class MagazineRaceTests(ITestOutputHelper output)
         Assert.True(tested > 0);
     }
 
-    /// <summary>07 §3.1, on her own section: forward, where the gas takes the thin plate and the ship is narrow, she breaks in a
-    /// seaway; aft her charges are fewer and the section holds, breached and open to the sea.</summary>
+    /// <summary>07 §3.1, on her own section: where a magazine leaves her near the margin the sea decides (Iron Duke's Q); aft her
+    /// charges are fewer and the section holds, breached and open to the sea.</summary>
     [Fact]
     public void The_sea_decides_at_the_margin_and_an_aft_magazine_leaves_her_breached()
     {
+        var duke = Scenario("iron_duke");
+        Assert.True(Race(duke, "Magazine Q", sea: 1).Lost);
+        Assert.False(Race(duke, "Magazine Q").Lost);
         var c = Packed("lion", "bag");
-        Assert.True(Race(c, "Magazine B", sea: 1).Lost);
-        Assert.False(Race(c, "Magazine B").Lost);
         var aft = Race(c, "Magazine Y", out var k, sea: 1);
         Assert.False(aft.Lost);
         Assert.Equal(MagazineTier.Breached, aft.Tier);
