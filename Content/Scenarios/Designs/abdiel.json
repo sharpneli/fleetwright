@@ -1,5 +1,5 @@
 {
- "version": 20,
+ "version": 21,
  "id": "abdiel",
  "name": "Abdiel-like minelayer (1916)",
  "type": "DD",
@@ -395,7 +395,7 @@
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
    "black_powder_under_cal": 0,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  "torpedo_tech": {

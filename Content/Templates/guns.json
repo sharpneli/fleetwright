@@ -17,7 +17,7 @@
    "pattern_light_pct": 3.5,
    "propellant": "double-base",
    "black_powder_under_cal": 36,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  {
@@ -80,7 +80,7 @@
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
    "black_powder_under_cal": 0,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  {
@@ -143,7 +143,7 @@
    "pattern_light_pct": 1.8,
    "propellant": "double-base",
    "black_powder_under_cal": 0,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  {
@@ -227,7 +227,7 @@
    "pattern_light_pct": 1.8,
    "propellant": "double-base",
    "black_powder_under_cal": 0,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  {

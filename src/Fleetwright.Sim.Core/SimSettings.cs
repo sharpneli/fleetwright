@@ -1762,9 +1762,9 @@ public sealed record SimSettings
     /// simulation/damage-research/10 §6):
     /// <list type="bullet">
     /// <item>MagazineHeatKeep: the share of the impetus left as pressure in a cold steel room [EST: losses, mixing].</item>
-    /// <item>MagazinePackageR [bag, Clarkson case, brass case, tank]: how many neighbours one burning charge lights in its
+    /// <item>MagazinePackageR [bag, magazine case, brass case, tank]: how many neighbours one burning charge lights in its
     /// package before it burns out, a branching process, times its propellant's Sensitivity (docs/battle/magazines.md
-    /// "Too safe" [EST, until research/REQUESTS.md's 2026-11-05 answers]: Clarkson 32, brass 28, tank 24 on cordite, so
+    /// "Too safe" [EST, until research/REQUESTS.md's 2026-11-05 answers]: magazine case 32, brass 28, tank 24 on cordite, so
     /// 10 §1.3's fits of 1.4 and 1.2 for 1942's cool propellants at 10 §1.2's about 20 times less sensitive); bags alone
     /// light together, within MagazineBagSpreadS of the flash [EST: 0.2-1 s].</item>
     /// <item>The way out: the magazine's door or scuttle to its handling room gives at MagazineScuttleKPa [EST, 10 §6:
@@ -1832,7 +1832,7 @@ public sealed record SimSettings
     /// the flash into the passage, stopped at the shut door). About a charge a gun at each station [SRC: Brown, 8 in a twin
     /// turret's train in action].</item>
     /// <item><b>rate first:</b> doors propped or removed (the BCF, Seydlitz's connecting door), charges stacked at the
-    /// stations, the Clarkson cases' lids off in the magazine (10 §6.2's BCF anchor; whether the lids came off in the
+    /// stations, the magazine cases' lids off in the magazine (10 §6.2's BCF anchor; whether the lids came off in the
     /// magazine or only in the handing room is 10 §8's open question, Friedman against Brown) [EST]; the hoists hardly
     /// wait.</item>
     /// </list>

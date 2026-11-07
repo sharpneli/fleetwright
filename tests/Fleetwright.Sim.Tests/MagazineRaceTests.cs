@@ -110,7 +110,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Clarkson_cases_alight_beat_her_trunk()
+    public void Magazine_cases_alight_beat_her_trunk()
     {
         var r = Race(Packed("lion", null), "Magazine Q");
         Assert.True(r.Tier >= MagazineTier.Breached, "lids on, the trunk doesn't keep up: her plating gives");
@@ -119,7 +119,7 @@ public class MagazineRaceTests(ITestOutputHelper output)
     }
 
     /// <summary>What's in the stow decides how far it goes, on one plate and one gas: bags break her and cases don't, a stow
-    /// of cool propellant in brass vents and holds. Clarkson and brass read alike on cordite (explosions.md's third open item).</summary>
+    /// of cool propellant in brass vents and holds. Magazine cases and brass read alike on cordite (explosions.md's third open item).</summary>
     [Fact]
     public void The_propellant_and_its_packing_decide_what_she_lives_through()
     {

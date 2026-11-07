@@ -528,7 +528,7 @@ public sealed record TorpedoInput
 /// highest elevation, degrees, and a dual-purpose mount's; its full-salvo pattern, % of the range at 305 mm, the power of
 /// 305/d it goes by and a light gun's (under 280 mm); its charge's propellant (one of Propellants.Names), the length
 /// under which it fires black powder (0 none), and how its charges are packed in the magazine (GunTemplates.Packagings:
-/// silk bags alone, bags in Clarkson cases, a brass cartridge case, bags in airtight tanks; docs/battle/magazines.md
+/// silk bags alone, bags in metal magazine cases, a brass cartridge case, bags in airtight tanks; docs/battle/magazines.md
 /// decision 1).</summary>
 public sealed record GunTechInput
 {

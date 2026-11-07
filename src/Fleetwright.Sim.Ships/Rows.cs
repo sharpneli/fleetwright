@@ -216,12 +216,12 @@ public enum PropellantForm : byte
 }
 
 /// <summary>How a gun's charges are packed in the magazine (docs/battle/magazines.md decision 1; research 10 §1.3): silk
-/// bags alone (they light together), bags in Clarkson cases, a brass cartridge case (with the fore charge in a tin), bags
+/// bags alone (they light together), bags in metal magazine cases, a brass cartridge case (with the fore charge in a tin), bags
 /// in airtight tanks.</summary>
 public enum Packaging : byte
 {
     Bag,
-    Clarkson,
+    MagazineCase,
     Brass,
     Tank,
 }

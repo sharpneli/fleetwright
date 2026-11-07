@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 20;
+    public const int Current = 21;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -37,6 +37,7 @@ public static class DesignFormat
         Drives,                        // 17 → 18: what drives the gunhouses and auxiliaries (docs/battle/electrics.md EL4)
         (d, _) => Diesels(d),          // 18 → 19: the plant's diesels (docs/battle/electrics.md EL7)
         (d, _) => StabilisedSingleBase(d), // 19 → 20: the interwar single-base told from the early (docs/battle/magazines.md "Too safe")
+        (d, _) => MagazineCases(d),    // 20 → 21: packaging's "clarkson" named a metal magazine case (research 12-charge-bed.md §1)
     ];
 
     // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
@@ -167,6 +168,17 @@ public static class DesignFormat
         d["searchlights"] = JsonSerializer.SerializeToNode(template.Value, ShipgenJson.Default.SearchlightsInput);
     }
 
+    /// <summary>20 → 21: the heavy guns' metal case, lids at both ends, was called "clarkson", which was the transit case of the
+    /// smaller calibres. The same packing under its right name; nothing it does changes.</summary>
+    static void MagazineCases(JsonObject d)
+    {
+        if (d["gun_tech"] is not JsonObject table)
+            return;
+        foreach (var (_, b) in table)
+            if (b is JsonObject bo && bo["packaging"] is JsonValue p && p.TryGetValue(out string? ps) && ps == "clarkson")
+                bo["packaging"] = "magazine_case";
+    }
+
     /// <summary>19 → 20: a Treaty or Second War block on single-base fires the stabilised kind: as the catalogue's now do,
     /// and the only anchors for a slow magazine are of those years (Boise, 1942). The earlier blocks stay as they are.</summary>
     static void StabilisedSingleBase(JsonObject d)
@@ -180,7 +192,7 @@ public static class DesignFormat
     }
 
     /// <summary>12 → 13: a gun block says how its charges are packed (GunTemplates.Packagings); a block without gets its
-    /// propellant's usual (GunTemplates.PackagingOf: double-base in Clarkson cases, single-base in tanks, the later ones in
+    /// propellant's usual (GunTemplates.PackagingOf: double-base in metal magazine cases, single-base in tanks, the later ones in
     /// brass), as nothing read it before.</summary>
     static void Packaging(JsonObject d)
     {

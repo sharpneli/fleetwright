@@ -234,7 +234,7 @@ public static class Program
         shipgen burst [DESIGN --room KIND[:n] --filler KG --explosive NAME --calibre MM]
             a burst's gas in a closed space (docs/battle/shells-armour-damage.md E5): the cascade over the cell graph,
             what ruptured, the doors blown, the spaces reached and what each felt; with no charge, damage/11's cases
-        shipgen magazine [DESIGN...] [--runs N] [--doctrine NAME] [--race [--flooded SHARE] [--packaging bag|clarkson|brass|tank] [--sea SHARE] [--trace]]
+        shipgen magazine [DESIGN...] [--runs N] [--doctrine NAME] [--race [--flooded SHARE] [--packaging bag|magazine_case|brass|tank] [--sea SHARE] [--trace]]
             the magazines alone (docs/battle/magazines.md V0): each magazine's tonnes, place against the waterline and
             the mounts it feeds; each mount's ammunition train, the stations a flash runs along down to the magazine;
             --runs (V2): charges lit at each station N times, how often the flame reaches the magazine; --race (V3):

@@ -25,7 +25,7 @@ public static class WeaponBlocks
             Packaging = g.Packaging switch
             {
                 "bag" => Packaging.Bag,
-                "clarkson" => Packaging.Clarkson,
+                "magazine_case" => Packaging.MagazineCase,
                 "brass" => Packaging.Brass,
                 "tank" => Packaging.Tank,
                 _ => throw new ShipCompileException($"{at}: no packaging \"{g.Packaging}\""),

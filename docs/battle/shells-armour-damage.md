@@ -1326,7 +1326,7 @@ squadrons, and changes `Matchup.cs` with it.
       choice, 2026-10-17), a flash source for the magazine chain as E2's pieces are: in a magazine MagazineFlashChance,
       in a turret or handling room TurretFlashChance, × the side's propellant. `MagazineVia.Spall` names it. A first cut
       exempted the magazines (their charges cased and racked) and was reverted on review: how the charges are packed and
-      handled (bags, Clarkson cases opened before battle as the RN's at Jutland, brass; flash discipline) is the
+      handled (bags, magazine cases opened before battle as the RN's at Jutland, brass; flash discipline) is the
       magazine chain's session (`magazines.md`), not a rule here.
     - **Where the cloud lands, measured** (4,000 hits each, the space behind the plate by its rooms): KGV under
       Bismarck's 38 cm at 32 km, 294 clouds, behind her armour deck into accommodation 116, the torpedo protection 90,

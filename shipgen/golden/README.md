@@ -171,7 +171,7 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   cruisers' 3-4″. All 372 design cases change (the design echo); 18 shipped designs' SVGs and sprite.json (their guns
   drawn as shields on pedestals, no barbettes), and tb_destroyer's windage warning (67 to 66 kn). ShipDesign.Version 46.
 - 2026-10-20, the charges' packing (docs/battle/magazines.md V3), on purpose: design format 13 gives each gun block a
-  `packaging` (bag, clarkson, brass, tank), written into every design by its propellant (double-base in Clarkson cases,
+  `packaging` (bag, magazine_case, brass, tank), written into every design by its propellant (double-base in magazine cases,
   single-base in tanks, the later ones in brass); the German designs fire the catalogue's brass-cased blocks. All 372
   design cases change (the design echo only), no SVG or sprite.json. ShipDesign.Version 47.
 - 2026-10-20, magazine sprinklers (docs/battle/magazines.md V6), on purpose: the outfit block gains

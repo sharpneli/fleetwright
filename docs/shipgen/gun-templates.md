@@ -17,17 +17,17 @@ format 9 got the blocks their look's era and navy stood for, so they fight as be
 
 | Gun block | Reload | Slower at 300 mm (≥40 / <40 / <30 cal) | Training | DP | Elevation | DP | Pattern % (305 mm, power, light) | Propellant | Packed |
 |---|---|---|---|---|---|---|---|---|---|
-| Victorian, double-base | ×1.0 | ×1.3 / ×2.5 / ×4.0 | ×0.7 | ×1.0 | 13° | 13° | 3.5, 0, 3.5 | double-base, black powder under 36 cal | clarkson |
+| Victorian, double-base | ×1.0 | ×1.3 / ×2.5 / ×4.0 | ×0.7 | ×1.0 | 13° | 13° | 3.5, 0, 3.5 | double-base, black powder under 36 cal | magazine_case |
 | Victorian, double-base, brass-cased | ×1.0 | ×1.3 / ×2.5 / ×4.0 | ×0.7 | ×1.0 | 13° | 13° | 3.5, 0, 3.5 | double-base, black powder under 36 cal | brass |
 | Victorian, single-base | ×1.0 | ×1.3 / ×2.5 / ×4.0 | ×0.7 | ×1.0 | 13° | 13° | 3.5, 0, 3.5 | single-base, black powder under 36 cal | tank |
-| Great War, double-base | ×1.1 | ×1.0 / ×1.0 / ×1.0 | ×1.0 | ×1.0 | 18° | 18° | 3.3, 3, 2.5 | double-base | clarkson |
+| Great War, double-base | ×1.1 | ×1.0 / ×1.0 / ×1.0 | ×1.0 | ×1.0 | 18° | 18° | 3.3, 3, 2.5 | double-base | magazine_case |
 | Great War, double-base, brass-cased | ×1.1 | ×1.0 / ×1.0 / ×1.0 | ×1.0 | ×1.0 | 18° | 18° | 3.3, 3, 2.5 | double-base | brass |
 | Great War, single-base | ×1.1 | ×1.0 / ×1.0 / ×1.0 | ×1.0 | ×1.0 | 18° | 18° | 3.3, 3, 2.5 | single-base | tank |
-| Treaty, double-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | double-base | clarkson |
+| Treaty, double-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | double-base | magazine_case |
 | Treaty, double-base, brass-cased | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | double-base | brass |
 | Treaty, single-base | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | stabilised single-base | tank |
 | Treaty, diglycol | ×1.0 | ×1.0 / ×1.0 / ×1.0 | ×1.2 | ×1.6 | 30° | 45° | 1.9, 0, 1.8 | diglycol | brass |
-| Second War, double-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | double-base | clarkson |
+| Second War, double-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | double-base | magazine_case |
 | Second War, double-base, brass-cased | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | double-base | brass |
 | Second War, single-base | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | stabilised single-base | tank |
 | Second War, diglycol | ×0.9 | ×1.0 / ×1.0 / ×1.0 | ×1.5 | ×1.6 | 40° | 45° | 1.9, 0, 1.8 | diglycol | brass |

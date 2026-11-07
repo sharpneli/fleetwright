@@ -1,5 +1,5 @@
 {
- "version": 20,
+ "version": 21,
  "id": "finnish_tb",
  "name": "Finnish torpedo boat (1921)",
  "type": "DD",
@@ -422,24 +422,7 @@
   "growth": 1,
   "magazine_sprinklers": false
  },
- "gun_tech": {
-  "Great War, double-base": {
-   "reload_share": 1.1,
-   "heavy_slow": 1,
-   "heavy_slow_under_40_cal": 1,
-   "heavy_slow_under_30_cal": 1,
-   "train_share": 1,
-   "dp_train_share": 1,
-   "max_elevation_deg": 18,
-   "dp_max_elevation_deg": 18,
-   "pattern_pct": 3.3,
-   "pattern_exp": 3,
-   "pattern_light_pct": 2.5,
-   "propellant": "double-base",
-   "black_powder_under_cal": 0,
-   "packaging": "clarkson"
-  }
- },
+ "gun_tech": {"Great War, double-base": {"reload_share": 1.1, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1, "dp_train_share": 1, "max_elevation_deg": 18, "dp_max_elevation_deg": 18, "pattern_pct": 3.3, "pattern_exp": 3, "pattern_light_pct": 2.5, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "magazine_case"}},
  "torpedo_tech": {
   "Great War torpedo": {
    "fast_kn": 41,

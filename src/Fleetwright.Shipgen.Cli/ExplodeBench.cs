@@ -89,8 +89,8 @@ static class ExplodeBench
         Charge(battleship, s, "engine_room", 18.6, "Explosive D", 406, "4b. 16\" AP in an engine room: little beyond its near zone");
         Charge(sd, s, "accommodation", 58.6, "Black powder", 381, "6. black powder: a sixth to an eighth of TNT's pressure");
         Charge(sd, s, "accommodation", 58.6, "TNT", 381, null);
-        Console.WriteLine("\nthe magazines, Lion by her stow (research 10 §6: bags tier 3, Clarkson tier 1, brass tier 0-1, 95% flooded tier 0)");
-        foreach (var (pack, flooded, title) in new[] { ("bag", 0.0, "bags"), ("clarkson", 0.0, "Clarkson (R 32 today)"), ("brass", 0.0, "brass"), ("bag", 0.95, "bags, 95% flooded") })
+        Console.WriteLine("\nthe magazines, Lion by her stow (research 10 §6: bags tier 3, magazine cases tier 1, brass tier 0-1, 95% flooded tier 0)");
+        foreach (var (pack, flooded, title) in new[] { ("bag", 0.0, "bags"), ("magazine_case", 0.0, "magazine cases (R 32 today)"), ("brass", 0.0, "brass"), ("bag", 0.95, "bags, 95% flooded") })
         {
             Console.WriteLine($"  {title}:");
             Magazine(Compile(load("lion"), pack), s, "all", flooded, null, false);

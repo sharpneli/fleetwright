@@ -18,7 +18,7 @@ namespace Fleetwright.Shipgen;
 /// <item>The propellant: double-base cordite and its kin, single-base for the USN, France and Russia, diglycol for
 /// Germany from the treaty years, triple-base in the Cold War; black powder under 36 calibres before 1906.</item>
 /// <item>The packaging (docs/battle/magazines.md decision 1; research/simulation/damage-research/10 §1.3): double-base
-/// in silk bags in Clarkson cases (the RN's, and Japan's on its pattern), or a brass cartridge case with the fore charge
+/// in silk bags in metal magazine cases (the RN's, and Japan's on its pattern), or a brass cartridge case with the fore charge
 /// in a tin (the German blocks, "brass-cased"); single-base in airtight tanks (the USN's); diglycol and triple-base in
 /// brass. How readily a burning charge lights the next in its package decides the venting race; it costs in the
 /// campaign as any design choice does.</item>
@@ -31,15 +31,15 @@ public static class GunTemplates
     /// <summary>The propellants a block may give (the sim's Propellants by these names).</summary>
     public static readonly string[] Propellants = ["black powder", "single-base", "stabilised single-base", "double-base", "diglycol", "triple-base", "lova"];
 
-    /// <summary>How a block's charges are packed (the sim's Packaging by these names): silk bags alone, bags in Clarkson
+    /// <summary>How a block's charges are packed (the sim's Packaging by these names): silk bags alone, bags in metal magazine
     /// cases, a brass cartridge case, bags in airtight tanks.</summary>
-    public static readonly string[] Packagings = ["bag", "clarkson", "brass", "tank"];
+    public static readonly string[] Packagings = ["bag", "magazine_case", "brass", "tank"];
 
     /// <summary>A propellant's usual packing, the default for a block that doesn't say (design format 13).</summary>
     public static string PackagingOf(string? propellant) => propellant switch
     {
         "black powder" => "bag",
-        "double-base" => "clarkson",
+        "double-base" => "magazine_case",
         "single-base" or "stabilised single-base" => "tank",
         _ => "brass",
     };

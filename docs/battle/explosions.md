@@ -21,7 +21,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
 3. **The near field (EX4):** a Tallboy's charge in Lion's engine room still does almost nothing to her hull.
 4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
-5. **Clarkson and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
+5. **cases and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
 6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
 7. **A magazine's cost:** about 70-165 ms for a big ship's, against about 20 wanted (a shell's 10-230 µs is on budget). A longer step isn't the way: see "the solver". Threads are the option (the user). About 20 a Jutland, so 2-3 s in a 14-hour game, each a hitch on the sim thread.
 8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
@@ -254,7 +254,7 @@ goes on building, and a detonation tears them out, by one rule. That's why the o
 | 16″ AP in a battleship's spaces | little past its near zone | 56-107 kPa; nothing gave |
 | Black powder against TNT | a sixth to an eighth | 27 against 239 kPa, a ninth |
 | Lion's Q, 95% flooded | contained | 148 kPa, 1 t, nothing gave |
-| Lion's Q by stow | bags over Clarkson over brass | **peak 666, 487, 526; the hull at 1.3, ~8, ~9 s, all ending much alike: not separated** |
+| Lion's Q by stow | bags over cases over brass | **peak 666, 487, 526; the hull at 1.3, ~8, ~9 s, all ending much alike: not separated** |
 | A battleship's belt under nine 46 cm HE | holds | no side plate gave |
 | Nine 46 cm HE along a destroyer, one ship | she breaks or founders | **d 0.51: load 0.57 in calm water, 1.06 in a moderate gale** |
 
@@ -332,11 +332,11 @@ length): not a failure, but their weak place under damage.
 | Case | Calm | Seaway | Reading |
 |---|---:|---:|---|
 | Lion's Q, bags | 0.80 | **1.33** | breaks in a seaway, at 0.88 of her length |
-| Lion's Q, Clarkson | 0.30 | 0.58 | holds |
-| Lion's Q, brass | 0.29 | 0.56 | holds, like Clarkson: the known R 28 catch |
+| Lion's Q, cases | 0.30 | 0.58 | holds |
+| Lion's Q, brass | 0.29 | 0.56 | holds, like cases: the known R 28 catch |
 | Lion's Q, bags, 95% flooded | 0.16 | 0.43 | nothing happens |
 | Lion, any magazine, bags | 0.26-0.82 | 0.54-1.35 | aft ones hold, forward and midships ones break her in a seaway |
-| Iron Duke, each magazine (Clarkson) | 0.53-0.77 | 0.90-**1.20** | breaks in a seaway from some |
+| Iron Duke, each magazine (cases) | 0.53-0.77 | 0.90-**1.20** | breaks in a seaway from some |
 | Seydlitz, each magazine (brass) | 0.27-0.35 | 0.48-0.56 | **holds: burns out and fights on, as the record has her** |
 | Destroyer, V25, a magazine | 0.10-0.13 | 0.26-0.31 | stows of 0.3-0.9 t don't reach the hull; **check against the record** |
 | 5″, 8″ in a destroyer's compartment | 0.09-0.10 | 0.25-0.26 | no different from intact |
@@ -419,21 +419,21 @@ Nine hits' water is low because the ones that would have filled now break first.
 | | Peak, kPa | Load |
 |---|---:|---:|
 | Lion, bags, forward magazines | 1,000-1,565 | 0.77-0.82 / **1.25-1.32** |
-| Lion, Clarkson, forward | 680-1,190 | 0.30-0.54 / 0.57-0.95 |
+| Lion, cases, forward | 680-1,190 | 0.30-0.54 / 0.57-0.95 |
 | Lion, aft | ~1,000-1,230 | 0.25-0.27 / 0.52-0.54 |
 | Iron Duke, as designed | 950-1,680 | 0.56-**1.02** / 0.92-**1.52** |
 | Seydlitz, brass | 630-970 | 0.25-0.37 / 0.46-0.58: burns out, as the record has her |
 | Destroyer, V25 | 250-350 | 0.11-0.15 / 0.27-0.32: **check against the record** |
 
-Iron Duke reading worse than Lion on Clarkson is new, and unexplained so far.
+Iron Duke reading worse than Lion on cases is new, and unexplained so far.
 
-**The solver (a lesson twice over).** EX1's convergence check (666, 682, 684 kPa) was done before magazines' rooms shrank to their load, and it no longer held: Lion's Q with Clarkson read 473 kPa and 0.58 at the game's step, 813 and 0.93 at a tenth of it, enough to be wrong about which ships break. **Check again whenever the inputs move.** Three causes, none a tuning:
+**The solver (a lesson twice over).** EX1's convergence check (666, 682, 684 kPa) was done before magazines' rooms shrank to their load, and it no longer held: Lion's Q with cases read 473 kPa and 0.58 at the game's step, 813 and 0.93 at a tenth of it, enough to be wrong about which ships break. **Check again whenever the inputs move.** Three causes, none a tuning:
 
 1. The stow's gas went in before each step's flows, so a long step read what was left after they had relaxed, not what a burning stow holds against its vents. Now half before and half after (Strang splitting).
 2. The flame through a stow is a branching process, integrated by Euler while the pressure was too low to shorten the step. It now grows by its exact exponential.
 3. The step followed every cell's own share, so a far cell's few kPa held it down while the source wasn't watched at all when gas in and gas out balanced. Now it follows what's put in at the source and what's within a quarter of the peak.
 
-Down to 1/16 of the chosen step the loads settle (bags 0.80/1.29, Clarkson 0.51/0.95, Iron Duke 0.91/1.41, Seydlitz 0.37/0.59 in the limit; the game's within 7% on peak and 8% on the loads that decide anything, up to 19% on Seydlitz's, far from breaking; `MagazineRaceTests.What_a_magazine_does_doesnt_hang_on_the_step`). Detonations were and are converged, and don't move at all.
+Down to 1/16 of the chosen step the loads settle (bags 0.80/1.29, cases 0.51/0.95, Iron Duke 0.91/1.41, Seydlitz 0.37/0.59 in the limit; the game's within 7% on peak and 8% on the loads that decide anything, up to 19% on Seydlitz's, far from breaking; `MagazineRaceTests.What_a_magazine_does_doesnt_hang_on_the_step`). Detonations were and are converged, and don't move at all.
 
 **Found on the way:**
 
@@ -443,7 +443,7 @@ Down to 1/16 of the chosen step the loads settle (bags 0.80/1.29, Clarkson 0.51/
 - **A door left open** was no way for the gas, and what a burst tore could be torn again past its area; both fixed.
 - **A ship through her own torpedoes:** to `bugs.md`.
 
-**Anchors moved in the tests, on the user to check:** Lion's Q on bags is lost in a seaway and not in calm water (open 1); a Clarkson or brass Lion holds, in `The_propellant_and_its_packing_decide...`; a 16″ AP in a battleship's engine room felt 0.124 MPa against 11's under 0.1, with nothing ruptured.
+**Anchors moved in the tests, on the user to check:** Lion's Q on bags is lost in a seaway and not in calm water (open 1); a cases or brass Lion holds, in `The_propellant_and_its_packing_decide...`; a 16″ AP in a battleship's engine room felt 0.124 MPa against 11's under 0.1, with nothing ruptured.
 
 **Cost,** steady-state (DevRelease, `DOTNET_TieredCompilation=0`): a shell 10-230 µs, a big magazine 70-165 ms, a destroyer's a few ms. The panel took 655 s against 675 s: the whole game is no slower to play.
 
@@ -556,7 +556,7 @@ Seydlitz doesn't break at any setting, and destroyers stay at 0.10-0.19. 0.05 s 
 
 **So taking the bed out most likely puts the panel's magazine losses back to none, and open item 1 back where it was.** Bed 0 is the old model exactly, so nothing else has to change for it to come out. Also from the note, none of it acted on:
 - **Stowage:** bulk 500-630 kg/m³ cased, 340-500 USN tanks, 580-770 loose bags, so 600 is fair.
-- **Naming:** `Packaging.Clarkson` names the wrong thing. Clarkson's was the transit case of the smaller calibres; heavy guns used a metal magazine case with lids at both ends [SRC: Harley]. The `MagazinePackageR` fit stands for what it was fitted to.
+- **Naming:** `Packaging.Clarkson` named the wrong thing. Clarkson's was the transit case of the smaller calibres; heavy guns used a metal magazine case with lids at both ends [SRC: Harley]. Renamed `Packaging.MagazineCase` (design format 21; this document's older tables said "Clarkson" until then, and `explosions-*/` still do). The `MagazinePackageR` fit stands for what it was fitted to.
 - **A package's own mouth:** ×1-2 on the rate for RN cases and USN tanks, ×5 for a German brass case lit inside, about 60 ms. Not recommended until the record asks for it.
 - **Detonation:** no case for the propellant itself at a magazine's bulk and boundaries. The detonation tier stays with bursters and black powder, which points at shell rooms and EX4.
 - **Not found:** magazine plans for Lion, Queen Mary, Iron Duke or Seydlitz, the RN case's size, any stack trial of 1916-30.
@@ -576,7 +576,7 @@ Bed 0 is the old model, exactly (the table's every line). It only moves how fast
 
 **Peak among the charges, kPa (`GasResult.BedKPa`):**
 
-| Lion's Q on bags | Lion's Q on Clarkson | Seydlitz, brass | Iron Duke | Destroyer, V25 |
+| Lion's Q on bags | Lion's Q on cases | Seydlitz, brass | Iron Duke | Destroyer, V25 |
 |---:|---:|---:|---:|---:|
 | 16,800 | 4,600 | 3,800 | 4,400 | 380-440 |
 
@@ -586,8 +586,8 @@ Bed 0 is the old model, exactly (the table's every line). It only moves how fast
 |---|---:|---:|
 | Lion on bags, forward magazines | 0.76-0.82 to **1.05-1.10** | 1.24-1.32 to 1.64-1.71 |
 | Lion on bags, aft | 0.27 to 0.29 | 0.54 to 0.57 |
-| Lion on Clarkson, forward | 0.30-0.54 to 0.33-0.56 | 0.57-0.95 to 0.60-0.97 |
-| Tiger on Clarkson | 0.28-0.39 to 0.28-0.41 | 0.54-0.65 to 0.54-0.67 |
+| Lion on cases, forward | 0.30-0.54 to 0.33-0.56 | 0.57-0.95 to 0.60-0.97 |
+| Tiger on cases | 0.28-0.39 to 0.28-0.41 | 0.54-0.65 to 0.54-0.67 |
 | Iron Duke | 0.56-1.02 to 0.59-1.02 | 0.92-1.52 to 0.96-1.51 |
 | Seydlitz, brass | 0.32-0.38 to 0.35-0.40: **burns out, as the record has her** | 0.54-0.59 to 0.57-0.62 |
 | Destroyer, V25 | 0.11-0.15, unchanged | 0.27-0.33, unchanged |
@@ -622,9 +622,9 @@ So 1.5 m sits at the top of the rise: a smaller estimate wouldn't break her in c
 - **Jutland's heavy hits** read 1,544 a seed (2,320 in the review's run, 1,548 in EX2's), the review's rise "not looked into". Probably noise between runs of 4 seeds, as nothing near gunnery changed; not shown.
 - **`damage-history`, lost, 20 runs a case:** Indefatigable's own case still 20%, all by her magazine, as it was before the bed. Only three cases moved at all, each by a few runs: Derfflinger 5% to 10%, Tiger 20% to 25%, Bismarck 50% to 35%.
 
-**Convergence, checked again as the lesson says.** Lion's Q at 1, ¼ and 1/16 of the step: on bags load 1.05, 1.04, 1.04, peak 1,244, 1,140, 1,098 kPa; on Clarkson load 0.48, 0.53, 0.51, peak 964, 944, 947 kPa. The loads are settled; bags' peak at the game's step reads 13% over its limit.
+**Convergence, checked again as the lesson says.** Lion's Q at 1, ¼ and 1/16 of the step: on bags load 1.05, 1.04, 1.04, peak 1,244, 1,140, 1,098 kPa; on cases load 0.48, 0.53, 0.51, peak 964, 944, 947 kPa. The loads are settled; bags' peak at the game's step reads 13% over its limit.
 
-**Cost:** about what it was, 140 ms for Lion's Q on bags against 125, 105 on Clarkson against 105 (one run each).
+**Cost:** about what it was, 140 ms for Lion's Q on bags against 125, 105 on cases against 105 (one run each).
 
 **Anchors moved in the tests, on the user to check:** Lion's Q on bags is now lost in calm water (`Bags_alone_break_a_battlecruiser`); the sea's margin moved to Iron Duke's Q (`The_sea_decides_at_the_margin...`). Tests: `A_bed_burns_above_its_room...`, `A_bed_is_a_whole_stow_alight`.
 

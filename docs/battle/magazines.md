@@ -474,8 +474,8 @@ follows the dependencies: the fake turrets first, because the chain means nothin
     stand-ins (`PeakBar`, `PressureBar`, `MagazineFastShare`) read those instead (one model).
   - Closes E8a item 4.
   - **Done 2026-10-20.** What it came to:
-    - **The packing is gun-block data** (decision 1): `packaging` on `gun_tech` blocks (bag, clarkson, brass, tank),
-      design format 13 writing each block's by its propellant (double-base in Clarkson cases, single-base in tanks,
+    - **The packing is gun-block data** (decision 1): `packaging` on `gun_tech` blocks (bag, magazine_case, brass, tank),
+      design format 13 writing each block's by its propellant (double-base in magazine cases, single-base in tanks,
       diglycol and later in brass). The catalogue gains "…, double-base, brass-cased" blocks for the Victorian, Great
       War, Treaty and Second War periods, and the 21 German designs fire them. The charge's mass stays
       `DesignerPlaceholders.Charge`'s; it now carries the packing.
@@ -487,7 +487,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
     - **The race** (`Magazines.SetOff`, `MagazineRace.cs`): magazine_race_ref.py's mass balance on one gas volume.
       - The volume is the magazine's spaces, and its handling room's once the scuttle gives at 40 kPa.
       - Open charges light within 0.5 s; packaged ones light one from the next with R by packing (bag: all open;
-        Clarkson 4, brass 1.4, tank 1.2 [EST]). The flooded share never lights. Cohorts of lit charges are kept on
+        cases 4, brass 1.4, tank 1.2 [EST]). The flooded share never lights. Cohorts of lit charges are kept on
         the stack.
       - The ways out: the spaces' own vents; each enclosed mount's trunk (0.05 of the bore) once its roof gives at
         0.4 of the lift; a shield's or casemate's hoist (0.25 m²) at the scuttle's pressure; then the research's
@@ -521,7 +521,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
       | Lion's stow | Peak | Tier | Research (10 §6) |
       |---|---|---|---|
       | bags alone (lids off) | ~1,000 kPa | severed (two groups where a neighbour lit) | tier 3 at 1,003 kPa |
-      | Clarkson cases (as designed) | 340-560 kPa | burned out | tier 1 at 273 kPa |
+      | magazine cases (as designed) | 340-560 kPa | burned out | tier 1 at 273 kPa |
       | brass cases | 110-180 kPa | burned out | tier 0-1 (Gneisenau, Seydlitz) |
       | bags, 95% flooded | 40 kPa | contained, a twentieth burned | tier 0 from ~95% |
 
@@ -653,7 +653,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
     - **The bench** (`shipgen torpedo DESIGN --shooter v25 --n 400 --settle 60`), a magazine lit a hit, before -> after:
       super_dreadnought and iron_duke 0% -> 0% (their wings keep the reach off them); lion 0.5% -> 0.8%, dreadnought
       0.3% -> 0.8%; destroyer 1.5% -> 9.5%, light_cruiser 3.5% -> 11%. **None lost by it:** the destroyer's brass
-      charges burn out (41 kPa) and the light cruiser's Clarkson-cased 6" are contained (180-250 kPa; `shipgen magazine
+      charges burn out (41 kPa) and the light cruiser's magazine-cased 6" are contained (180-250 kPa; `shipgen magazine
       light_cruiser --race`). Pathfinder (1914, one torpedo, the forward magazine, gone in minutes) and Pommern want more
       than the race of the charges: V8's open item.
     - `dc-history` unchanged: none of its torpedoes reaches a magazine.
@@ -670,7 +670,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
       `SpallFlashChance`) and its gas in a handling room all read it.
     - **A bench bug:** `shipgen hits` read `damage_control`, so `--damage-control` never reached the ship (every run on
       the default doctrine). Fixed.
-    - **The propellants' β and α stay the research's** (10 §1.1), and Clarkson's R stays 4: the cases split as the
+    - **The propellants' β and α stay the research's** (10 §1.1), and the magazine case's R stays 4: the cases split as the
       record does without a refit (Lion's own lids-on burn out, the BCF's rate first severs, German brass burns out).
     - **The yardstick** (`damage-history`, 400 runs where noted):
 
@@ -748,7 +748,7 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 
 ## Too safe: why nothing blows up (2026-11-05)
 
-**Built at the user's word, 2026-11-05: recommendations 1-3 below.** A unit or ship entry's own `"damage_control"` (Jutland's three battlecruiser squadrons on "1916 BCF", Lion on "1916": her gunner kept the rules, 10 §3.1), drill's `DoorOpen` [1, 1, 0.02, 0.1], and Clarkson's `MagazinePackageR` 32 [EST, until the research answers]. The ladder below was measured before them, each rung by a settings file.
+**Built at the user's word, 2026-11-05: recommendations 1-3 below.** A unit or ship entry's own `"damage_control"` (Jutland's three battlecruiser squadrons on "1916 BCF", Lion on "1916": her gunner kept the rules, 10 §3.1), drill's `DoorOpen` [1, 1, 0.02, 0.1], and cases's `MagazinePackageR` 32 [EST, until the research answers]. The ladder below was measured before them, each rung by a settings file.
 
 **What they gave** (`losses`, 4 seeds): 7 of 340 losses to a magazine, from 0 of 348. All at Jutland (1.75 a seed), all battlecruisers on rate first: Queen Mary twice, Tiger twice, Indefatigable, New Zealand, Princess Royal. Lion, the 5th Battle Squadron, the Grand Fleet and the Germans lose none to one; the Dogger Bank none. Jutland's lost a seed: Britain 21 / Germany 47, within the noise. Heavy hits are 1,687 a seed, so against the record's 3 battlecruisers in about 220 heavy hits (from memory), the rate a hit on the BCF's ships stays the check, not this count.
 
@@ -760,9 +760,9 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 
 | | Ships set off | Taken by it | The races, 4 seeds |
 |---|---:|---:|---|
-| Britain, capital (Clarkson) | 6.3 | 1.8 | contained 12, burned out 8, breached 23, two groups 7 |
-| Britain, cruiser (Clarkson) | 0.8 | 0 | contained 4 |
-| Britain, destroyer (Clarkson) | 1.0 | 0 | contained 4 |
+| Britain, capital (cases) | 6.3 | 1.8 | contained 12, burned out 8, breached 23, two groups 7 |
+| Britain, cruiser (cases) | 0.8 | 0 | contained 4 |
+| Britain, destroyer (cases) | 1.0 | 0 | contained 4 |
 | Germany, capital (brass) | 4.0 | 0 | contained 1, burned out 42 |
 | Germany, cruiser (brass) | 2.8 | 0 | contained 13 |
 | Germany, destroyer (brass) | 2.3 | 0 | contained 10 |
@@ -770,14 +770,14 @@ follows the dependencies: the fake turrets first, because the chain means nothin
 A German capital ship set off burns out nearly 3 magazines and fights on, which nothing in the record supports. **Who survives, and on what:**
 
 1. **Brass and tanks** (R 1.4, 1.2). Their anchors are Gneisenau and Boise, both 1942 (10 §6.2), and both cooler propellants than the first game's. Seydlitz, Derfflinger and Lion are not cases of a magazine alight: the train burned and the magazine was flooded or shut first (10 §4.3). Against brass surviving in the Great War, from memory: Pommern and Frauenlob. So in 1890-1925 no case is known here of a dry magazine alight that left the ship afloat. Boise is also the one case of the sea stopping a fire already there, 1942, through her own shell hole.
-2. **Small stows,** Clarkson's too: `MagazineGiveKPa` is one table for every ship, so a light cruiser's 1-5 t stops at 250 kPa, "contained", with her hull untouched. This is cap 4 below.
+2. **Small stows,** magazine cases' too: `MagazineGiveKPa` is one table for every ship, so a light cruiser's 1-5 t stops at 250 kPa, "contained", with her hull untouched. This is cap 4 below.
 3. **A single midships magazine on a capital ship:** Lion's Q, Iron Duke's Q (27-29 t, 700-807 kPa, her deck gone, she floats).
 
 ### The physics built (the user, 2026-11-05: yes to both; "see where we end up in the physics side vs reality before tweaking the rate")
 
 **Built, not tuned.** No rate was set; every number below is what came out.
 
-1. **R is packing times the propellant's sensitivity** (`MagazinePackageR` 32, 28, 24 on cordite; `PropellantRow.Sensitivity`). Double-base and early single-base 1; diglycol, triple-base, LOVA and the new stabilised single-base 0.05 (10 §1.2's about 20 times), so 1942's fits stand: 28 x 0.05 = 1.4 Gneisenau, 24 x 0.05 = 1.2 Boise. Design format 20: Treaty and Second War blocks on single-base fire `stabilised single-base`. The catch: 10 §1.3 has German brass main charges surviving a fore charge beside them (Lützow's B), and 28 makes brass hardly better than Clarkson in a magazine alight. To the research (`REQUESTS.md`, 2026-11-05).
+1. **R is packing times the propellant's sensitivity** (`MagazinePackageR` 32, 28, 24 on cordite; `PropellantRow.Sensitivity`). Double-base and early single-base 1; diglycol, triple-base, LOVA and the new stabilised single-base 0.05 (10 §1.2's about 20 times), so 1942's fits stand: 28 x 0.05 = 1.4 Gneisenau, 24 x 0.05 = 1.2 Boise. Design format 20: Treaty and Second War blocks on single-base fire `stabilised single-base`. The catch: 10 §1.3 has German brass main charges surviving a fore charge beside them (Lützow's B), and 28 makes brass hardly better than cases in a magazine alight. To the research (`REQUESTS.md`, 2026-11-05).
 2. **A magazine's boundaries give at its own steel** (`Magazines.GiveMm`, `GiveKPa`): the table for Lion's main magazines, `MagazineGiveMm` [8, 27, 73, 39], scaled by plate, as E5's rupture is. `shipgen magazine --race` prints the steel. Decision 6's table stays the base.
 
 **Three follow-ons the measuring forced, none asked for by name:**
@@ -865,7 +865,7 @@ The user, from play: no magazine detonation in ages, even under silly debug shoo
 
 1. **Nobody has the other row.** "1916 BCF" is the only doctrine with rate first, and no scenario names it. Per-squadron doctrine was left as the scenarios' later step (V5). It's a side's `damage_control` today.
 2. **A shut door always holds.** The research's door ratings (10 §3.3, §7: pre-1916 flash doors fail at 20-40 kPa, "too weak to resist the pressure of a burning charge" [SRC: Brown]; a watertight magazine door about 100 kPa) were never built. `DoorOpen` is the only thing that passes a flame: 0.1 x 0.1 x 0.1 from a gunhouse.
-3. **A lids-on magazine can't reach the girder.** Severing needs the sides to give, at 1,000 kPa. `shipgen magazine --race` over `shipgen/designs`' 72 on drill, each magazine set off alone: 259 burned out, 88 contained, 27 breached (the deck only, about 700 kPa: Devastation, and Nagato to Yamato, the treaty ships and later) and 6 two groups (only the Duilio, the Inflexible and the Coastal Battleship of Doom), the same in calm water and a full seaway. Lion, Queen Mary, Indefatigable, Invincible, Iron Duke and Tiger all burn out, 285-562 kPa. Clarkson's R 4 decides it, and 10 §6.2 and §8 call R "the most uncertain constant here" (4-8), fitted to a "Lion dry" case it marks as debated.
+3. **A lids-on magazine can't reach the girder.** Severing needs the sides to give, at 1,000 kPa. `shipgen magazine --race` over `shipgen/designs`' 72 on drill, each magazine set off alone: 259 burned out, 88 contained, 27 breached (the deck only, about 700 kPa: Devastation, and Nagato to Yamato, the treaty ships and later) and 6 two groups (only the Duilio, the Inflexible and the Coastal Battleship of Doom), the same in calm water and a full seaway. Lion, Queen Mary, Indefatigable, Invincible, Iron Duke and Tiger all burn out, 285-562 kPa. the magazine case's R 4 decides it, and 10 §6.2 and §8 call R "the most uncertain constant here" (4-8), fitted to a "Lion dry" case it marks as debated.
 4. **A small stow can't either.** Armoured cruisers (Minotaur, Warrior, Duke of Edinburgh) burn 8-30 t, so even with every lid off most of their magazines stop at 700 kPa or less. The record's Defence went along her passages from magazine to magazine (10 §5), and shipgen emits no passages. The boundary table (decision 6) is one set of pressures for every ship, a destroyer's side the same 1,000 kPa as a battleship's.
 
 **And one that hides what does happen:** a race she survives leaves no record and no look. `Blew` is only called from tier 3 up, so a burned-out magazine, tonnes of propellant in a column, shows as an ordinary fire (the look's tiers 1 and 4 are still to do).
@@ -874,7 +874,7 @@ The user, from play: no magazine detonation in ages, even under silly debug shoo
 
 **A correction to `loss-stock-take.md`:** "a magazine reached 0 times" read the log's `HitEffect.Magazine`, which is set only when she's lost. In fact about 6 are set off a Jutland seed, and none takes the ship.
 
-**The ladder.** `damage-history` 40 runs a case and `hits`, 3,000 hits; `losses`, 4 seeds, whose new line counts the races by tier. "Whole train" is drill's `DoorOpen` at [1, 1, 0.02, 0.1]: only the magazine's own door, and a casemate's, stop a flame. R is Clarkson's `MagazinePackageR`. Both are settings, so each rung is a settings file. Only armour-side cases are listed.
+**The ladder.** `damage-history` 40 runs a case and `hits`, 3,000 hits; `losses`, 4 seeds, whose new line counts the races by tier. "Whole train" is drill's `DoorOpen` at [1, 1, 0.02, 0.1]: only the magazine's own door, and a casemate's, stop a flame. R is cases's `MagazinePackageR`. Both are settings, so each rung is a settings file. Only armour-side cases are listed.
 
 | A heavy hit, % lost to a magazine (set off) | Now | Whole train | Whole train + R 32 | Whole train + R 64 | Rate first, now |
 |---|---:|---:|---:|---:|---:|
@@ -907,7 +907,7 @@ All on whole train + R 32:
 - **The rung's worst miss: Kirishima,** 20 x 16" at 8 km: lost 20% -> 40% of runs, 4 of 40 to a magazine (record, from memory: no magazine explosion).
 - `fire-history`: one of its nine cases goes from none lost to 1 of 20, to a magazine by a hit; the fires themselves still don't set off a ship. `torpedo` doesn't move (no loss to a magazine on lion, dreadnought, light_cruiser or m_class; 10.8% of hits on a light cruiser still set one off, so V8's open item stands).
 
-**The evidence on R, from memory and to source (`research/REQUESTS.md`, 2026-11-05):** ships lost to a magazine alight with no enemy, presumably lids on: Natal, Vanguard, Mikasa 1905, Tsukuba, Kawachi; with single-base, Iéna and Liberté; Bulwark had charges lying out. Against that, no case is known here of a dry 1900-1918 cordite magazine alight that burned out with the ship afloat. Burned-out magazines in the notes are German brass (the train, in fact, not the magazine), Gneisenau 1942 and Boise 1942. If that holds, Clarkson's R is far above 4-8, and tanks of early single-base (Borodino at Tsushima, by our propellant "tank" R 1.2) may be too.
+**The evidence on R, from memory and to source (`research/REQUESTS.md`, 2026-11-05):** ships lost to a magazine alight with no enemy, presumably lids on: Natal, Vanguard, Mikasa 1905, Tsukuba, Kawachi; with single-base, Iéna and Liberté; Bulwark had charges lying out. Against that, no case is known here of a dry 1900-1918 cordite magazine alight that burned out with the ship afloat. Burned-out magazines in the notes are German brass (the train, in fact, not the magazine), Gneisenau 1942 and Boise 1942. If that holds, the magazine case's R is far above 4-8, and tanks of early single-base (Borodino at Tsushima, by our propellant "tank" R 1.2) may be too.
 
 **Recommended order, the user's call:**
 

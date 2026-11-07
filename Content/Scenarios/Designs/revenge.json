@@ -1,5 +1,5 @@
 {
- "version": 20,
+ "version": 21,
  "id": "revenge",
  "name": "Revenge-like (1916)",
  "type": "BB",
@@ -595,7 +595,7 @@
    "pattern_light_pct": 2.5,
    "propellant": "double-base",
    "black_powder_under_cal": 0,
-   "packaging": "clarkson"
+   "packaging": "magazine_case"
   }
  },
  "drainage": {
