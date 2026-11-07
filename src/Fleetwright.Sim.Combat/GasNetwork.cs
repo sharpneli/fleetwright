@@ -65,18 +65,19 @@ public sealed class GasNetwork
     }
 
     /// <summary>A class's edges as the gas sees them, shared: a pool entry's canonical entry (the lower cell's, what the flooding
-    /// reads), its shared area and its plate.</summary>
+    /// reads), its shared area, its plate, and what holds the gas between the two spaces: the plate and any slope or internal belt
+    /// standing between them, as spaces are boxes and those plates run through them.</summary>
     sealed class Edges
     {
         static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ShipClass, Edges> Table = new();
 
         public readonly int[] Canon;
-        public readonly double[] Area, Mm;
+        public readonly double[] Area, Mm, HeldMm;
 
         Edges(ShipClass c)
         {
             int ne = c.NeighbourCount;
-            (Canon, Area, Mm) = (new int[ne], new double[ne], new double[ne]);
+            (Canon, Area, Mm, HeldMm) = (new int[ne], new double[ne], new double[ne], new double[ne]);
             for (int i = 0; i < c.Cells.Length; i++)
             {
                 var nb = c.Cells[i].Neighbours;
@@ -86,16 +87,20 @@ public sealed class GasNetwork
                     Canon[j] = Leaks.Entry(c, i, j);
                     Area[j] = Blast.Area(c.Cells[i].Box, c.Cells[e.Cell].Box, e.Join);
                     Mm[j] = Blast.JoinMm(c, e, c.Cells[i].Box, c.Cells[e.Cell].Box);
+                    P3 a = Middle(c.Cells[i].Box), b = Middle(c.Cells[e.Cell].Box);
+                    HeldMm[j] = Mm[j] + (Math.Abs(a.Y) >= Math.Abs(b.Y) ? Blast.InclinedMm(c, a, b) : Blast.InclinedMm(c, b, a));
                 }
             }
         }
 
         public static Edges Of(ShipClass c) => Table.GetValue(c, static x => new Edges(x));
+
+        static P3 Middle(in Box b) => new((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
     }
 
     ShipClass c = null!;
     int[] canon = [];
-    double[] area = [], mm = [];
+    double[] area = [], mm = [], heldMm = [];
     HullFaces hull = null!;
     /// <summary>The space a burst in a part is: the node after her cells.</summary>
     int partNode;
@@ -172,7 +177,7 @@ public sealed class GasNetwork
             return;
         c = cls;
         var e = Edges.Of(cls);
-        (canon, area, mm) = (e.Canon, e.Area, e.Mm);
+        (canon, area, mm, heldMm) = (e.Canon, e.Area, e.Mm, e.HeldMm);
         hull = HullFaces.Of(cls);
         int nc = cls.Cells.Length, ne = cls.NeighbourCount, nm = cls.Mounts.Length;
         partNode = nc;
@@ -751,7 +756,7 @@ public sealed class GasNetwork
     {
         int q = canon[j];
         ref var b = ref edges[q];
-        double rupture = Blast.RuptureMPa(mm[j], c.InternalsJoint, s);
+        double rupture = Blast.RuptureMPa(heldMm[j], c.InternalsJoint, s);
         double more = b.Take(load, lag, rupture, c.InternalsJoint, area[j], s, out double d);
         if (more > 0)
         {
@@ -767,7 +772,7 @@ public sealed class GasNetwork
                 res.Bulkheads++;
             Gave(false, i, e.Join == JoinKind.Bulkhead, e.Cell);
             if (Trace != null)
-                Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(e.Cell), mm[j], b.Felt * 1000));
+                Say(string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0} {1} to {2} ({3:0} mm) at {4:0} kPa felt", e.Join == JoinKind.Deck ? "deck" : "bulkhead", c.CellId(i), c.CellId(e.Cell), heldMm[j], b.Felt * 1000));
             return true;
         }
         if (b.Fate != Blast.Fate.None || b.Felt < Math.Max(s.DoorMinMPa, s.DoorShare * rupture) || !Leaks.HasDoor(c, e, i) || (k.JoinMarks[q] & JoinMark.DoorBlown) != 0)
@@ -1030,7 +1035,7 @@ public sealed class GasNetwork
             else if (b.Fate == Blast.Fate.None && b.Peak > 0)
             {
                 b.Fate = Blast.Fate.Deformed;   // once, from whichever side
-                double d = b.PeakD(Blast.RuptureMPa(mm[j], c.InternalsJoint, s));
+                double d = b.PeakD(Blast.RuptureMPa(heldMm[j], c.InternalsJoint, s));
                 double leak = Blast.Leak(d, area[j], c.InternalsJoint, s, ref r);
                 leak += Leaks.Sprung(c, k, i, j, leak, d, area[j], s, ref r);   // its seams sprung and its closures loosened (DC1)
                 if (leak > 0)
