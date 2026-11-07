@@ -17,11 +17,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Context / relevant files: `docs/battle/explosions.md` EX6 ("the chain": what an explosion reaches goes off, each as its own explosion through the one path; flat rolls to go where physics replaces them); `docs/battle/magazines.md`; today a shell's burst lights a magazine by `MagazineFlashChance` [EST] and hot gas lights one above 470 K [EST]; `research/simulation/damage-research/07-magazine-explosions.md`, `10-magazine-flash-chain.md`, `03-small-vessels.md` §2.5 (the cruisers' torpedoes).
 - Wanted output: by store, the thresholds (overpressure or impulse at a distance, fragment speed and mass, temperature and time) with ranges and tags, and whether each goes off whole (detonation) or burns; the cases with what went off and what didn't.
 
-### 2026-11-07 - Torpedo protection walls: how much they held, and how far they bent
-- Question: (1) The holding bulkhead and the layer walls of torpedo protections, 1905-1945: their steel (grade, yield, elongation), joints (riveted, welded, special butt straps) and spans, and the pressure or charge each held in trials (Monarch 1923's 944 kg at 2.3 m, Job 74, the US and British caisson and full-scale tests, the KGV 1,000 lb trial, Pugliese's tests). (2) How far a holding bulkhead bent before it tore (permanent sets measured after trials and hits: North Carolina's to within 3 in of the turret stool), and the inner void's depth that was meant to give it room. (3) How long the protection's own compartments were (frame spacing of its transverse bulkheads) and how many flooded a hit: North Carolina's 22 voids and 12 tanks for 970 t, other hits with tonnes and compartments. (4) Whether a liquid layer against the holding bulkhead (no inner void) was known to pass the blast through, with cases.
-- Context / relevant files: `docs/battle/explosions.md` EX5; `src/Fleetwright.Sim.Combat/GasNetwork.cs` (a boundary's rupture: 0.06 MPa a mm for joints that fail, damage/11 §3.2; a protection's walls `SimSettings.TdsMembraneK` 2.2 times that [EST from a membrane at 280 MPa, 15% elongation, 4 m span]). With a contact torpedo's gas half inside, one torpedo on a layered WWII protection floods 3,900-5,000 t in the game against 01's 500-1,500 t; the protection's compartments are a section long (about 17 m) and the gas tears the plain transverse bulkheads between them.
-- Wanted output: the walls' holding pressure or charge by system and period (or the inputs to the membrane estimate), bend at tearing, the protection's compartment length, and flooded tonnes and compartments per hit, with tags.
-
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?
@@ -281,6 +276,20 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-07 - Torpedo protection walls: how much they held, and how far they bent
+- Done 2026-11-07 (draft): [simulation/damage-research/14-torpedo-protection-walls.md](simulation/damage-research/14-torpedo-protection-walls.md) with
+  [tds_walls_ref.py](simulation/damage-research/tds_walls_ref.py). **The walls aren't weaker in the code than in the record; the load looks
+  too high.** With real inputs (flow 345-680 MPa by grade, span = the wall's height between supports 5-9 m, riveted seams opening at
+  w/a ~0.10) a holding bulkhead holds 1.1-3.6 MPa, K 0.7-1.4 (continuous welded 1.1-2.1); `TdsMembraneK` 2.2 is at the top. The static
+  load that leaves the measured sets at design-level hits is 0.7-1.5 MPa (Job 74's 1,000 lb 18 in, Caisson H 22 in, Nevada, Tirpitz), so
+  walls at 2.2 giving in half the hits point at the gas held as pressure. Trials: Job 74 (ADM 324/4: #4 2 x 35 lb D.1 held at 18 in with
+  oil behind broken by its pulse; #5 60 lb D.1 torn where welded, a transverse bulkhead 4 ft off tight), Monarch 1923 (2,084 lb at 8 ft,
+  bulkhead "completely intact"), Nelson's 1,000 lb, Tosa 1924 (5 shots, 726-1,203 lt), Caissons F and H, Pugliese. Bend: weeps at w/a 0.03,
+  tight to 0.06, seams open or edges loose at 0.10, plate torn at 0.25 (Saratoga). Compartments 5-7 m (Ramillies 18-20 ft, PoW 24 ft, BB55
+  ~4.7 m inferred), damage length 1.43 W^1/3 destroyed and 2.6 W^1/3 flooded (Job 74). Tonnes a hit: held 250-1,066 (median ~540), leaked
+  ~970, breached 740-3,000 (median ~1,200). Liquid against the holding bulkhead passed it through: Saratoga 1942, Job 74 #4, the US 1/16
+  tests, Leipzig; PoW f.109 the one counter-case. Not reached: Brown's pages, the caisson reports, NC's inner void, US tank plans, Sprengziel.
 
 ### 2026-11-05 - Big explosions in and beside ships: gas, the girder and bombs
 - Done 2026-11-07 (draft): [simulation/damage-research/13-big-explosions.md](simulation/damage-research/13-big-explosions.md) with
