@@ -141,6 +141,7 @@ public static unsafe class Program
             else if (arg == "-frametimes")   // report the frame times at exit
             {
                 frameTimes = true;
+                Sim.SimHost.ReportGaps = true;   // and the sim's longest still (docs/battle/workers.md W16f)
             }
             else if (arg == "-gputime")   // each frame waits for its GPU work; -frametimes reports submit to done
             {

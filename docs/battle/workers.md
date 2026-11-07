@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
+Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07; W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -560,6 +560,38 @@ did (its splash and mark don't: they're the shell's). Fire control spots by the 
 | W16d | The thread: the batch worked out on the copy as soon as it closes, the sim waiting at land time if it must. 0 = 1 thread = shuffled, zero-allocation tests |
 | W16e | The map's clock leads through a stall: today it never runs more than a frame past the newest snapshot (plan.md 2.7c), so a sim stall is a freeze and a jump; it may run up to about 0.3 s of real time on at the speed the world kept, the ships extrapolated along their arcs as they are now. For high compressions, where a second of game time is milliseconds and the sim waits on the race anyway |
 | W16f | Measured in the game: the longest gap between snapshots and the map's longest still, a magazine race at 1x, 30x and 240x, before and after |
+
+### W16a-f built (2026-11-07)
+
+- **W16a** `ShipCondition.CopyFrom`; `ConditionCopyTests` fills every field by reflection.
+- **On the way:** a raced magazine drew by the next hit's count (`hits++`), moving every later hit's draws on every ship; now
+  its own hit's index.
+- **W16b** `Strike` = `Capture` + `Work` (pure) + `Land`; bit for bit as before (hits of every source, damage-history, two
+  scenarios with their hashes).
+- **W16c** the rule, worked on the copy at landing. A batch's explosions are worked in order first, then each lands, so a loss
+  is on her condition in `Work`. Copies and batches pooled per class from when it comes in (the class's electric load, built
+  lazily on its first read, now then too: a race with the thread, and an allocation in play). The panel (`balance --fc-runs
+  0`): 8 of 14 sides within twice the record, as at EX6; the record's loser lost more in 29 of 44 seeds (26); capsized 51%,
+  broke in two 28%, foundered 21%; scenario by scenario within the seeds' spread (Dogger Bank's Germany 11.8 lost against 7.5,
+  Åland's Sweden 1.4 against 3.5).
+- **W16d** `DamageSystem.Threaded` (the host's; `SimHost` turns it on): the same hash with it and without (`DeferredHitTests`,
+  squadrons minute by minute).
+- **W16e** the map's clock leads up to 0.3 s of real time while no snapshot comes.
+- **W16f** `-frametimes` prints the sim's longest gap between snapshots and the map's longest still. A 2000 mm HE salvo on
+  Bismarck (`-ships=big:1:0@56.5,4.0,0,0 -ships=bismarck:1:1@... -fire=1:0:he:...`):
+
+  | | the sim's longest gap | the map's longest still |
+  |---|---|---|
+  | 3 km, 1x, at once | 253 ms at the hit | 37 stale frames |
+  | 3 km, 1x, W16 | none at the hit (92 ms at the load) | 10 |
+  | 3 km, 10x, at once / W16 | 240 / 112 ms | |
+  | 18 km, 30x, at once / W16 | 1,159 ms / none at the hit | 102 frames / 1 |
+  | 18 km, 100x, at once / W16 | 1,198 / 1,089 ms | 107 / 93 frames |
+
+**Open:** at high speeds a race longer than its slack still stalls the sim: at 100x a second of game time is 10 ms, and
+Bismarck's races at 18 km run 1.1-1.2 s (several magazines, slow burns). The lead hides up to 0.3 s. Left: a longer lead
+(the ships drawn further past the world), or a cheaper race (explosions.md item 7: the step's count, the cells a step
+visits). The delay can't grow with the speed (`same-at-any-compression`).
 
 ## What to expect
 

@@ -404,8 +404,9 @@ public sealed class WorldSession : IDisposable
     /// <summary>The world time the map draws at this frame, ms (docs/battle/plan.md step 2.7c): the newest snapshot's
     /// time, smoothed. The sim publishes on its own beat (every few ms while behind), so a frame gets one snapshot's
     /// worth of motion or two; drawn at its snapshot's time, a ship at 1,000x lurched. This clock runs on at the speed
-    /// the world is keeping and leans a tenth of the way to the newest snapshot each frame; it never runs back, never
-    /// gets more than a frame's step ahead of the snapshot, and jumps to it after a pause, a load or a stall. Its rate is
+    /// the world is keeping and leans a tenth of the way to each new snapshot; it never runs back, gets no more than a
+    /// frame's step ahead of a new snapshot, runs on up to <see cref="LeadS"/> of real time past one while no new one
+    /// comes (a sim stall: workers.md W16e), and jumps to it after a pause, a load or a longer stall. Its rate is
     /// the achieved speed, never above the asked: a drop from a run or the flat-out fine tier (docs/map-ui/input.md) is
     /// in the snapshot at once, while the achieved speed is measured over a window and lags; and a clock left far ahead
     /// by the old rate jumps back to the world. Poses are extrapolated to it along their arcs (ShipsView.PoseAt).</summary>
@@ -413,22 +414,32 @@ public sealed class WorldSession : IDisposable
 
     double drawMs = double.NaN;
     int drawGeneration = -1;
+    long drawSequence = -1;
+
+    /// <summary>How far past the newest snapshot the clock may run on while no new one comes, s of real time (docs/battle/workers.md
+    /// W16e): a stall of the sim's (at a high speed it waits on a magazine's race) shows as the ships going on along their arcs, not a
+    /// freeze and a jump.</summary>
+    const double LeadS = 0.3;
 
     void Clock(double dt)
     {
         var s = Current;
         double latest = s.Time.Ms;
         double rate = s.Paused ? 0 : Math.Clamp(s.AchievedSpeed, 0, s.Speed);
-        double step = rate * dt * 1000;
-        if (double.IsNaN(drawMs) || drawGeneration != Generation || s.Paused || Math.Abs(latest - drawMs) > Math.Max(4 * step, 1) * 4)
+        double step = rate * dt * 1000, lead = rate * LeadS * 1000, far = Math.Max(4 * step, 1) * 4;
+        bool fresh = s.Sequence != drawSequence;
+        if (double.IsNaN(drawMs) || drawGeneration != Generation || s.Paused || latest - drawMs > far || drawMs - latest > Math.Max(far, lead + step))
             drawMs = latest;   // a new world, a pause, a stall, or ahead from a faster clock: where the world is
         else
         {
+            // on at the speed the world kept; a new snapshot leaned towards, and the clock never more than a frame past it; between
+            // snapshots on as far as the lead
             double next = drawMs + step;
-            next += (latest - next) * 0.1;
-            drawMs = Math.Clamp(next, drawMs, Math.Max(latest + step, drawMs));
+            if (fresh)
+                next += (latest - next) * 0.1;
+            drawMs = Math.Clamp(next, drawMs, Math.Max(latest + (fresh ? step : lead), drawMs));
         }
-        drawGeneration = Generation;
+        (drawGeneration, drawSequence) = (Generation, s.Sequence);
         DrawMs = (long)Math.Round(drawMs);
     }
 

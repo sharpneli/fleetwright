@@ -32,11 +32,14 @@ public sealed partial class DamageSystem
         public long StepGen, ClearGen;
         public int Ops;
         public WaitOp[] Waiting = new WaitOp[16];
+        /// <summary>With the thread (W16d): handed to it, done (written by it under the batch's lock), and what it threw.</summary>
+        public bool Submitted, Done;
+        public System.Runtime.ExceptionServices.ExceptionDispatchInfo? Error;
 
         public void Start(int entity, int generation, int ticket)
         {
             (Entity, Generation, Ticket, LandMs, Closed, Worked, Count, Ops) = (entity, generation, ticket, -1, false, false, 0, 0);
-            (StepWaits, ClearWaits) = (false, false);
+            (StepWaits, ClearWaits, Submitted, Done, Error) = (false, false, false, false, null);
         }
 
         /// <summary>Room for n explosions of a class of so many mounts.</summary>
@@ -187,6 +190,11 @@ public sealed partial class DamageSystem
     /// <summary>A batch done with (landed, or left by a ship gone): its copy back to her class's pool, it to the spares.</summary>
     void Release(Batch b)
     {
+        if (b.Submitted)
+        {
+            BatchWorker.Wait(b);   // never back in the pool while the thread has it
+            (b.Submitted, b.Error) = (false, null);
+        }
         if (b.Closed)
             Copies(b.Copy.Class).Push(b.Copy);
         (b.Copy, b.Closed) = (null!, false);
@@ -264,6 +272,7 @@ public sealed partial class DamageSystem
         k.Warheads.CopyTo(b.Warheads, 0);
         b.Hash = HashOf(k);
         b.Closed = true;
+        Submit(b);   // worked from now, off the sim thread, if there's a thread
     }
 
     static ulong HashOf(ShipCondition k)
@@ -318,6 +327,7 @@ public sealed partial class DamageSystem
     void LandBatch(World world, int slot, ShipCondition k, ShipClass cls, Batch b)
     {
         Guard(k, b);
+        Await(b);   // the thread's work, if it has it: waited for only if it isn't done
         if (!b.Worked)
             WorkBatch(b, cls, scratch);
         int n = k.Warheads.Length;

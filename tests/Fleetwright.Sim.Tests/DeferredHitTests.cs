@@ -1,5 +1,6 @@
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Missions;
 using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Tests;
@@ -109,9 +110,10 @@ public class DeferredHitTests
     [Fact]
     public void Deferred_hits_replay_and_hash_alike()
     {
-        ulong Play()
+        ulong Play(bool threaded)
         {
             var w = Make(out var cls);
+            w.Damage.Threaded = threaded;
             w.Apply(DamageSystem.SideHole(1, HoleAt.Bow, 0, -1, 1));
             var rng = RandomStream.Named(9, "replay");
             ulong h = 0;
@@ -122,8 +124,37 @@ public class DeferredHitTests
                 w.AdvanceTo(w.Time + 170 + (i % 7) * 90);
                 h = RandomStream.Mix(h, w.ComputeHash());
             }
+            w.Damage.Threaded = false;
             return h;
         }
-        Assert.Equal(Play(), Play());
+        ulong inline = Play(false);
+        Assert.Equal(inline, Play(false));
+        Assert.Equal(inline, Play(true));   // the thread works it out early; the world is the same (W16d)
+    }
+
+    /// <summary>The squadrons fight with their explosions worked on the damage thread and on the sim thread: the same world, minute by
+    /// minute (W16d).</summary>
+    [Fact]
+    public void The_squadrons_fight_the_same_with_the_damage_thread()
+    {
+        ulong[] Play(bool threaded)
+        {
+            var s = Scenario.Load(Path.Combine(Fleet.Repo, "Content", "Scenarios", "squadrons.json"));
+            var w = new World(s.Start, s.Seed, Settings);
+            var ai = new Ai.AiSystem(w);
+            var classes = ScenarioLoader.RequestClasses(s, w.Ships.Registry, [Path.Combine(Fleet.Shipgen, "designs")]);
+            ScenarioLoader.Apply(s, w, ai, classes);
+            w.Damage.Threaded = threaded;
+            var hashes = new ulong[20];
+            for (int m = 0; m < hashes.Length; m++)
+            {
+                w.AdvanceTo(s.Start + (m + 6) * 60_000);
+                hashes[m] = w.ComputeHash();
+            }
+            Assert.True(w.Shells.Hits > 0);
+            w.Damage.Threaded = false;
+            return hashes;
+        }
+        Assert.Equal(Play(false), Play(true));
     }
 }

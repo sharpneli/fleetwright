@@ -227,6 +227,12 @@ public sealed class WorldPerf
             sb.AppendLine($"  game time a frame over the achieved speed's: p1 {ratio[ratio.Length / 100]:F2}, p50 {ratio[ratio.Length / 2]:F2}, " +
                           $"p99 {ratio[ratio.Length * 99 / 100]:F2}, max {ratio[^1]:F2}; {moving.Count(r => r.Stale)} stale frames; " +
                           $"{100.0 * ratio.Count(r => Math.Abs(r - 1) < 0.25) / ratio.Length:F0}% within 25%");
+        // the map's longest still: frames in a row the world should have moved in and the drawn clock didn't (a sim stall shown as a
+        // freeze; docs/battle/workers.md W16e-f)
+        int still = 0, longest = 0;
+        foreach (var r in moving)
+            (still, longest) = r.GameMs <= 0 ? (still + 1, Math.Max(longest, still + 1)) : (0, longest);
+        sb.AppendLine($"  the map's longest still while the world ran: {longest} frames");
         sb.AppendLine($"  snapshot age when drawn: p50 {age[age.Length / 2]:F1}, p99 {age[age.Length * 99 / 100]:F1}, max {age[^1]:F1} ms");
         sb.AppendLine($"  GC: gen0 {GC.CollectionCount(0) - runG0}, gen1 {GC.CollectionCount(1) - runG1}, gen2 {GC.CollectionCount(2) - runG2}");
         sb.AppendLine($"  ship art: {art.Uploaded} classes, {art.Bytes / 1048576.0:F0} MB of textures, longest upload frame {art.MaxUploadMs:F1} ms");

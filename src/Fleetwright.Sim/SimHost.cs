@@ -67,7 +67,13 @@ public sealed class SimHost : IDisposable
         thread = new Thread(Run) { Name = "Sim", IsBackground = true };
     }
 
-    public void Start() => thread.Start();
+    /// <summary>Starts the sim thread, and the damage system's thread for explosions (docs/battle/workers.md W16d: a magazine's race
+    /// off the sim thread; the world the same without it).</summary>
+    public void Start()
+    {
+        world.Damage.Threaded = true;
+        thread.Start();
+    }
 
     /// <summary>Real time passed, seconds; the world turns it into game time at its asked speed.</summary>
     public void Elapse(double realSeconds)
@@ -97,6 +103,9 @@ public sealed class SimHost : IDisposable
         if (thread.IsAlive)
             thread.Join();
         wake.Dispose();
+        world.Damage.Threaded = false;
+        if (ReportGaps)
+            Console.WriteLine($"sim: the longest gap between snapshots while running {LongestGapMs:F0} ms, at {LongestGapAt}");
     }
 
     void Run()
@@ -157,9 +166,23 @@ public sealed class SimHost : IDisposable
         world.Elapse(real);
     }
 
+    /// <summary>A diagnostic, the host's (-frametimes reports it): the longest wall-clock time between two snapshots while the world
+    /// ran, ms, and the game time it ended at; the map stands still that long (docs/battle/workers.md W16f).</summary>
+    public double LongestGapMs { get; private set; }
+    public WorldTime LongestGapAt { get; private set; }
+
+    /// <summary>The game's -frametimes: the longest gap printed when the host is disposed.</summary>
+    public static bool ReportGaps { get; set; }
+
+    double lastPublishS = double.NaN;
+    long lastPublishGameMs;
+
     void Publish()
     {
         double now = wall.Elapsed.TotalSeconds;
+        if (!double.IsNaN(lastPublishS) && world.Time.Ms != lastPublishGameMs && (now - lastPublishS) * 1000 > LongestGapMs)
+            (LongestGapMs, LongestGapAt) = ((now - lastPublishS) * 1000, world.Time);
+        (lastPublishS, lastPublishGameMs) = (now, world.Time.Ms);
         if (now - windowStart >= AchievedWindowSeconds)
         {
             achieved = (world.Time.Ms - windowGameMs) / 1000.0 / (now - windowStart);
