@@ -804,8 +804,8 @@ public readonly record struct LauncherRow
     public int Torpedo { get; init; }
     /// <summary>Its warheads as a store aboard (docs/battle/explosions.md EX6c): side by side at its tubes' muzzle ends as it rests,
     /// their box and its centre, the tubes' axis; the cell they're in (-1: on deck or in the upper works), the cell under them on
-    /// deck (-1: none, or in the hull), the part they're in (a deck mount's component; -1: a tube's) and the fire space that heats
-    /// them (-1: none).</summary>
+    /// deck (-1: none, or in the hull), the part they're in (a deck mount's component; -1: a tube's) and the fire spaces that heat
+    /// them (-1: none): their own (the mount's, the room's) and, on deck, the weather deck round them.</summary>
     public Box StoreBox { get; init; }
     public P3 StoreAt { get; init; }
     public P3 StoreAxis { get; init; }
@@ -813,6 +813,7 @@ public readonly record struct LauncherRow
     public int StoreDeck { get; init; }
     public int StorePart { get; init; }
     public int StoreFire { get; init; }
+    public int StoreDeckFire { get; init; }
 }
 
 /// <summary>A class's drainage (docs/battle/damage-control.md DC4; the design's block, DrainageTemplates), scaled to her:

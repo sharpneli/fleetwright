@@ -138,15 +138,14 @@ public static class Stores
             ref readonly var tp = ref c.Torpedoes[row.Torpedo];
             if (k.Warheads[l] <= 0 || k.StoreLit[l] || tp.CookK <= 0)
                 continue;
-            int fs = row.StoreFire;
             bool wet = row.StoreCell >= 0 && f.Capacity[row.StoreCell] > 0 && k.WaterM3[row.StoreCell] >= s.MagazineFullShare * f.Capacity[row.StoreCell];
-            if (fs < 0 || wet || !k.Fire[fs].Burning || k.FireFlow[fs].Lpm > 0)
+            // the hottest of the fires on them: their own space's, and on deck the weather deck's round them
+            int kind = wet ? -1 : Math.Min(Kind(c, k, row.StoreFire), Kind(c, k, row.StoreDeckFire));
+            if (kind is < 0 or > 2)
             {
                 k.StoreHeat[l] = Math.Max(0, k.StoreHeat[l] - dt / s.CookOffCoolS);
                 continue;
             }
-            ref readonly var x = ref k.Fire[fs];
-            int kind = x.Charges > 0 ? 0 : !c.FireSpaces[fs].OpenAir && x.Phase is BurnPhase.Developed or BurnPhase.Decay ? 1 : 2;
             double t = CookS(tp, kind, s);
             if (!double.IsFinite(t))
                 continue;
@@ -168,6 +167,16 @@ public static class Stores
             }
         }
         return (lit, burned);
+    }
+
+    /// <summary>A fire space's class of fire on a store in it (0 engulfing: charges burning there; 1 a compartment's: developed or
+    /// decaying, under a deck; 2 hot smoke: growing, local, starved, or in the open), 3 none (no space, not burning, or water on it).</summary>
+    static int Kind(ShipClass c, ShipCondition k, int fs)
+    {
+        if (fs < 0 || !k.Fire[fs].Burning || k.FireFlow[fs].Lpm > 0)
+            return 3;
+        ref readonly var x = ref k.Fire[fs];
+        return x.Charges > 0 ? 0 : !c.FireSpaces[fs].OpenAir && x.Phase is BurnPhase.Developed or BurnPhase.Decay ? 1 : 2;
     }
 
     /// <summary>A store's cook-off in a fire of a class, s: <see cref="SimSettings.CookOffMin"/> (a 5 mm case of TNT at 561 K) by its

@@ -16,7 +16,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 **EX5 is built and merged (2026-11-07, "EX5: the water"): torpedoes on the one path, the bubble's whip by research 13's law, a
 boundary's mass, liquid that passes its push on and runs out, a protection's walls that stretch. Open there: a held protection
 floods about three times the record; a destroyer is lost to one torpedo about half the time; research asked on protection walls.
-Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a, EX6b and EX6c are built (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it", "EX6c: high-explosive stores"). Next: EX6d, the anchors (research 15's table, `magazine --runs`/`--race`, `losses`, the panel).**
+Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6 is done (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it", "EX6c: high-explosive stores", "EX6d: the anchors"): nothing silly in the panel. Next: EX7, the whole game (`damage-history`, `dc-history`, `fire-history`, `coarse-parity`, the AI's estimates).**
 **EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
@@ -879,6 +879,36 @@ it set off in turn.
   her quarters does (`explode light_cruiser --kg 364`, 80% of her section lost at 0.48 of her length), the near field's and the
   girder's, not the store's. A warhead in Lion's torpedo room floods her 3,200 t and she lives.
 - **Fire:** a 6 mm TNT case cooks off in 1.6/4.2/19 min by the class of fire; in the test's developed fire, 4.5 min on average.
+
+## EX6d: the anchors (2026-11-07)
+
+Read for silliness, not for the record's numbers (the user, 2026-11-07: "the panel results are not strict, we just need to know
+if the result is silly or not"). Nothing silly.
+
+- **The panel** (`balance --fc-runs 0`, kept in `explosions-ex6/balance.txt` beside `explosions-ex4/`): 8 of 14 sides within about
+  twice the record (EX4: 5); the record's loser lost more in 26 of 44 seeds (23); losses capsized 50%, foundered 26%, broke in two
+  24% (33%), magazine about 0 (Jutland 1%, the Dover Strait 7%). Jutland's Germany still loses about half her ships, as at EX4:
+  the gunnery's gap (`error-sources.md`), not the explosions.
+- **Lion's magazines** (`magazine lion --race`): each set off leaves her breached, every magazine going; her cases' race as EX6b
+  left it (A 0.34, Q 0.30 of what breaks her calm), her bags' A 0.57 and B 0.83. The trains (`--runs`) light their magazine about
+  10% of the time from any station, as before.
+- **Research 15's table:**
+
+  | Case | Wanted | Now |
+  |---|---|---|
+  | Defence, Invincible | shells left whole | yes: shell rooms aren't stores |
+  | Brownson | a burst at the after mount takes its warheads and her | a mount going off breaks the destroyer in two, every time |
+  | Chōkai, Furutaka, Ralph Talbot | shell hits on mounts: fires, no detonation | 5,000 HE hits on destroyers, no warhead went |
+  | Kalk, Stormes | in a fire the flasks burst, the warheads hold | an air flask's warhead burns 90% of the time it cooks off; a deck fire by a mount burns out first (6 min, 0.26 of the way) |
+  | Suzuya | a near miss sets off a mount; a fire takes the rest in an hour | the mount by a neighbour's pieces, yes; by a near miss, no bombs yet; the hour-long fire, no: her deck fires burn out in minutes |
+  | Mikuma | oxygen torpedoes go within about an hour of fires | the same: an oxygen flask goes when it cooks off, but no fire of hers lasts |
+  | Rowan, Isherwood, Mullany, Franklin | depth charges, bombs | not stores yet |
+  | Glatton | a burning 6 in magazine doesn't set off the next within two hours | not run: her after magazines lay far aft; a magazine's race lights only what its gas reaches |
+
+- **Fixed on the way:** a deck mount's warheads took their heat only from the mount's own fire space (lit only by a burst in the
+  mount); they take the weather deck's round them too, and a store still warm keeps her steps going until it cools.
+- **Open:** deck fires burn out in minutes, so no store aboard sees an hour-long fire (Suzuya's, Mikuma's: bombs and aviation fuel,
+  which aren't in the game); the fire model's, when bombs come.
 
 ## What stays out
 

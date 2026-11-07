@@ -1168,7 +1168,7 @@ public static class ShipClassCompiler
                     RestDeg = m.RestDeg, Tubes = tubes, Torpedoes = m.Torpedoes, ReloadS = m.ReloadS, Torpedo = k,
                     StoreBox = StoreBox(at, axis, torpedoes[k].WarheadM, tubes * Math.Max(tt.Spacing, torpedoes[k].CalibreMm / 1000), torpedoes[k].CalibreMm / 1000),
                     StoreAt = at, StoreAxis = axis, StoreCell = -1, StoreDeck = CellUnder(c, m.X, m.Y, b.Base), StorePart = m.Component,
-                    StoreFire = c.FireOfPart(m.Component) is int f and >= 0 ? f : c.FireOfDeck(c.SectionAt(at.X)),
+                    StoreFire = c.FireOfPart(m.Component), StoreDeckFire = c.FireOfDeck(c.SectionAt(at.X)),
                 });
             }
             for (int i = 0; i < c.tubes.Length; i++)
@@ -1195,7 +1195,7 @@ public static class ShipClassCompiler
                     Kind = LauncherKind.Tube, Index = i, Component = t.Component, X = t.P1.X, Y = t.P1.Y, Z = t.P1.Z, Arcs = t.Arcs, Trains = t.Rotating,
                     RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, tech), Torpedo = k,
                     StoreBox = StoreBox(at, axis, torpedoes[k].WarheadM, t.Torpedoes * dia, dia), StoreAt = at, StoreAxis = axis, StoreCell = cell, StoreDeck = -1,
-                    StorePart = -1, StoreFire = cell,
+                    StorePart = -1, StoreFire = cell, StoreDeckFire = -1,
                 });
             }
             c.launchers = launchers.ToArray();

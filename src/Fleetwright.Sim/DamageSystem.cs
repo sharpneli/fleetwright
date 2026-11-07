@@ -803,6 +803,9 @@ public sealed class DamageSystem : IWorldSystem
     /// <summary>Stores set off and run: how many, each its own explosion (docs/battle/explosions.md EX6c).</summary>
     public int StoresSetOff { get; private set; }
 
+    /// <summary>Stores a fire took that burned without going off (their flasks first: Kalk, Stormes).</summary>
+    public int StoresBurned { get; private set; }
+
     bool goingOff;
 
     /// <summary>The high-explosive stores what went before set off (docs/battle/explosions.md EX6c), each its own explosion after it,
@@ -1355,6 +1358,7 @@ public sealed class DamageSystem : IWorldSystem
         if (k.Fires > 0 || Hot(k.StoreHeat))
         {
             var (cooked, burned) = Stores.Cook(cls, f, k, dt, settings, ref rng);
+            StoresBurned += burned;
             if (burned > 0)
                 for (int l = 0; l < k.Warheads.Length; l++)
                     if (k.Warheads[l] == 0)
@@ -1388,7 +1392,7 @@ public sealed class DamageSystem : IWorldSystem
         if (fs.Abandoned > 0 || k.Smoked.AsSpan().Contains(true))
             Remind(world, slot, k);   // smoke's outages (B2) end on the clear event
         Hold(world, slot, k, force: false);
-        if (k.Fires > 0 || Fires.Hot(k) || k.FloodDueMs - now <= settings.FloodMs)
+        if (k.Fires > 0 || Fires.Hot(k) || Hot(k.StoreHeat) || k.FloodDueMs - now <= settings.FloodMs)
             return settings.FloodMs;
         if (k.ScuttleMs != 0)
             return k.ScuttleMs - now <= k.FloodEveryMs ? settings.FloodMs : k.FloodEveryMs;   // her charges set: stepping till they go

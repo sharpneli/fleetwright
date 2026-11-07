@@ -200,9 +200,9 @@ static class HitsBench
         if (r.Magazines > 0)
             Console.WriteLine("  magazines set off by: " + string.Join(", ", Enum.GetValues<MagazineVia>().Where(v => r.MagazinesBy[(int)v] > 0)
                 .Select(v => string.Format(Inv, "{0} {1:0.##}%", Via(v), 100.0 * r.MagazinesBy[(int)v] / r.Hits))) + " of hits");
-        if (r.StoresGone > 0)
-            Console.WriteLine(string.Format(Inv, "  warheads aboard set off by {0:0.##}% of hits; stores gone {1} in all (by hits, one another and fire)",
-                100.0 * r.Stores / r.Hits, r.StoresGone));
+        if (r.StoresGone + r.StoresBurned > 0)
+            Console.WriteLine(string.Format(Inv, "  warheads aboard set off by {0:0.##}% of hits; stores gone off {1} in all (by hits, one another and fire), burned {2}",
+                100.0 * r.Stores / r.Hits, r.StoresGone, r.StoresBurned));
         Console.WriteLine("  put out of action (per 100 hits):");
         foreach (var (node, count) in r.PartsOut.Select((c, i) => (i, c)).Where(x => x.c > 0).OrderByDescending(x => x.c).Take(15))
             Console.WriteLine(string.Format(Inv, "    {0,6:0.0}  {1}", 100.0 * count / r.Hits, Node(tc, node)));

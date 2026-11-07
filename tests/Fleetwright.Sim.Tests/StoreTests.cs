@@ -97,7 +97,7 @@ public class StoreTests(ITestOutputHelper output)
         {
             var (w, _, _, k) = Ship("destroyer", seed, s);
             var f = w.Damage.Flood(cls);
-            int fs = cls.Launchers[0].StoreFire;
+            int fs = cls.Launchers[0].StoreFire >= 0 ? cls.Launchers[0].StoreFire : cls.Launchers[0].StoreDeckFire;
             var r = RandomStream.FromSeed(seed);
             double t = 0;
             while (!k.StoreLit[0] && t < 4 * 3600)
@@ -111,6 +111,30 @@ public class StoreTests(ITestOutputHelper output)
         }
         output.WriteLine($"mean cook-off {sum / n / 60:0.0} min");
         Assert.InRange(sum / n / 60, 2, 30);
+    }
+
+    [Fact]
+    public void A_deck_fire_by_a_mount_heats_its_warheads_but_burns_out_first()
+    {
+        // research 15 §3.2: TNT warheads in deck fires held (Kalk, Stormes: "no positive case ... by prolonged roasting"); the fire's
+        // heat reaches them in her own steps, a fire in the open is hot smoke to them, and a destroyer's deck burns out in minutes
+        var cls = Fleet.Get("destroyer").Class!;
+        ref readonly var row = ref cls.Launchers[0];
+        var s = Settings with { CookOffHighShare = 1 };
+        int fs = row.StoreDeckFire;
+        foreach (double settle in (double[])[300, 7200])
+        {
+            var (w, entity, _, k) = Ship("destroyer", 1, s);
+            Assert.True(Fires.Ignite(cls, k, fs, 2, s));
+            w.Damage.Settle(w, entity, settle);
+            output.WriteLine($"after {settle / 60:0} min: fire {k.Fire[fs].Phase}; heat {k.StoreHeat[0]:0.00}, warheads {k.Warheads[0]}");
+            if (settle < 600)
+                Assert.True(k.StoreHeat[0] > 0.1);   // heating while it burns
+            else
+                Assert.Equal(0, k.StoreHeat[0]);    // cooled since
+            Assert.Equal(cls.Launchers[0].Torpedoes, k.Warheads[0]);
+            Assert.Equal(0, w.Damage.StoresSetOff + w.Damage.StoresBurned);
+        }
     }
 
     [Fact]

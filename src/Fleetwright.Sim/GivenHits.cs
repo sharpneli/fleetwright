@@ -27,7 +27,7 @@ public static class GivenHits
         public int Fires, Magazines, Jams;
         /// <summary>The hits that set off a high-explosive store, and the stores that went off in all, by hits, one another and fire
         /// (docs/battle/explosions.md EX6c).</summary>
-        public int Stores, StoresGone;
+        public int Stores, StoresGone, StoresBurned;
         /// <summary>E4: the hits a turret or barbette held (stopped, glanced off, burst on), what they did to its mount (by
         /// <see cref="TurretBlow"/>), the jams by cause (<see cref="JamCause"/>) and how many lasted the battle; the hits that
         /// stunned the struck structure's crew.</summary>
@@ -261,7 +261,7 @@ public static class GivenHits
             }
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
-        rep.StoresGone = w.Damage.StoresSetOff;
+        (rep.StoresGone, rep.StoresBurned) = (w.Damage.StoresSetOff, w.Damage.StoresBurned);
         return rep;
     }
 
@@ -408,7 +408,7 @@ public static class GivenHits
             }
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
-        rep.StoresGone = w.Damage.StoresSetOff;
+        (rep.StoresGone, rep.StoresBurned) = (w.Damage.StoresSetOff, w.Damage.StoresBurned);
         return rep;
     }
 
