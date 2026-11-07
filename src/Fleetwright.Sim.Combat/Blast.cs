@@ -98,6 +98,21 @@ public static class Blast
         return true;
     }
 
+    /// <summary>How much of a space's side another of her spaces stands outboard of, m²: to port on face 0, to starboard on 1.</summary>
+    static double Outboard(ShipClass c, int cell, int face)
+    {
+        var b = c.Cells[cell].Box;
+        double covered = 0;
+        foreach (ref readonly var e in c.Neighbours(c.Cells[cell].Neighbours))
+        {
+            var o = c.Cells[e.Cell].Box;
+            if (face == 0 ? o.Y1 > b.Y0 + 0.05 : o.Y0 < b.Y1 - 0.05)
+                continue;
+            covered += Math.Max(Math.Min(b.X1, o.X1) - Math.Max(b.X0, o.X0), 0) * Math.Max(Math.Min(b.Top, o.Top) - Math.Max(b.Base, o.Base), 0);
+        }
+        return covered;
+    }
+
     /// <summary>The marks a boundary gets in a run.</summary>
     internal static class Fate
     {
@@ -212,7 +227,7 @@ public static class Blast
     }
 
     /// <summary>A space's outside face (port side, starboard side, the weather deck over it, the bottom under it): its
-    /// area (0: not outside), the plate there (mm of steel: the shell plating and a belt over it, the strength deck, the
+    /// area (0: not outside; a side, what no other space stands outboard of), the plate there (mm of steel: the shell plating and a belt over it, the strength deck, the
     /// bottom) and its middle. Her bottom is under the keel's tier, and past the double bottom's end under any lowest cell, where
     /// the cell is a box and her bottom rises: there it's where the hull first has breadth inside the box, as wide as the hull
     /// is there (docs/battle/explosions.md EX3).</summary>
@@ -231,9 +246,12 @@ public static class Blast
                 double hw = c.Hull.HalfWidth(xm, zm);
                 if (!(hw > 0.5) || (face == 0 ? -b.Y0 : b.Y1) < hw - 0.6)
                     return 0;
+                double open = len * (b.Top - b.Base) - Outboard(c, cell, face);   // the side is the outermost space's: a thin wing's, not what's behind it
+                if (!(open > 1e-3))
+                    return 0;
                 mm = (mid ? pl.ShellMm : pl.ShellEndMm) + (x.BeltMm > 0 ? c.MaterialOf(x.BeltMaterial).SteelMm(x.BeltMm) : 0);
                 point = new P3(xm, face == 0 ? -hw : hw, zm);
-                return len * (b.Top - b.Base);
+                return open;
             case 2:
                 if (!Weather(c, cell))
                     return 0;

@@ -101,7 +101,7 @@ public sealed class HullGirder
             if (!(fa > 0))
                 continue;
             if (f < 2)
-                list.Add(new Element((b.Top - b.Base) * Math.Max(hull.HeldMm[x], 0) / 1000, (b.Top + b.Base) / 2, -1, x, Kind.Side));
+                list.Add(new Element(fa / Math.Max(b.X1 - b.X0, 1e-6) * Math.Max(hull.HeldMm[x], 0) / 1000, (b.Top + b.Base) / 2, -1, x, Kind.Side));
             else if (f == 2)
                 list.Add(new Element((b.Y1 - b.Y0) * hull.Mm[x] / 1000, b.Top, -1, x, Kind.Deck));
             else

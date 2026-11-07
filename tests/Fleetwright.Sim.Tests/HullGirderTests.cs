@@ -35,6 +35,32 @@ public class HullGirderTests
     }
 
     [Fact]
+    public void A_side_belongs_to_one_space_at_a_height()
+    {
+        var over = new List<string>();
+        foreach (var b in Fleet.All.Where(b => b.Class is not null))
+        {
+            var c = b.Class!;
+            var hull = HullFaces.Of(c);
+            for (int sec = 0; sec < c.Sections.Length; sec++)
+                for (int f = 0; f < 2; f++)
+                {
+                    double sum = 0, top = double.NegativeInfinity, bottom = double.PositiveInfinity;
+                    for (int i = 0; i < c.Cells.Length; i++)
+                        if (c.Cells[i].Section == sec && hull.Area[i * 4 + f] > 0)
+                        {
+                            var box = c.Cells[i].Box;
+                            sum += hull.Area[i * 4 + f] / (box.X1 - box.X0);
+                            (top, bottom) = (Math.Max(top, box.Top), Math.Min(bottom, box.Base));
+                        }
+                    if (sum > 0 && sum > top - bottom + 0.1)
+                        over.Add($"{b.Case.Name} section {sec}: {sum:0.0} m of side in {top - bottom:0.0} m");
+                }
+        }
+        Assert.True(over.Count == 0, $"{over.Count}: " + string.Join("; ", over.Take(12)));
+    }
+
+    [Fact]
     public void Intact_she_stands_in_a_seaway()
     {
         foreach (var name in new[] { "destroyer", "v25", "lion", "iron_duke", "dreadnought", "yamato", "littorio", "bismarck", "kgv", "battleship" })
