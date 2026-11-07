@@ -748,7 +748,8 @@ public sealed class DamageSystem : IWorldSystem
         (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
 
         Prepare(cls);
-        var rng = stream.Derive((ulong)hits++);
+        ulong index = (ulong)hits++;
+        var rng = stream.Derive(index);
         var net = GasNetwork.For(cls);
         net.Arm(ships.Store.Combat.Mounts(slot));   // a magazine the hit's gas lights stows what's left (EX6a)
         var e = WhatItDoes(hit, slot, cls, k, now, out var t, ref rng);
@@ -756,7 +757,7 @@ public sealed class DamageSystem : IWorldSystem
         var race = default(RaceResult);
         if (e.Magazine && k.Status == ShipStatus.Afloat)
         {
-            race = e.Raced ? Raced(world, slot, k, e.Blast) : SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
+            race = e.Raced ? Raced(world, slot, k, e.Blast, index) : SetOff(world, slot, k, e.MagazineRoom, e.Blast.WhipEM, MagazineCounts.ByHit, ref rng);
             if (race.Magazines > 0)
                 Join(ref e, race);
         }
@@ -1154,10 +1155,11 @@ public sealed class DamageSystem : IWorldSystem
         return Counted(world, slot, k, Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM), counts);
     }
 
-    /// <summary>A hit's own gas lit a magazine (EX6a): its race ran there; what follows.</summary>
-    RaceResult Raced(World world, int slot, ShipCondition k, in GasResult gas)
+    /// <summary>A hit's own gas lit a magazine (EX6a): its race ran there; what follows. Its draws are the hit's own (by its
+    /// index), not the next hit's: a shared count here moved every later hit's draws on every ship (workers.md: keyed streams).</summary>
+    RaceResult Raced(World world, int slot, ShipCondition k, in GasResult gas, ulong hit)
     {
-        var rng = stream.Derive((ulong)hits++);
+        var rng = stream.Derive(hit).Derive(0x8ACEDu);
         return Counted(world, slot, k, Magazines.Raced(k.Class, k, gas, settings, world.Time.Ms, ref rng, Sea(world, slot)), MagazineCounts.ByHit);
     }
 
