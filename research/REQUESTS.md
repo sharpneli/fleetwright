@@ -12,11 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-07 - A magazine's charges as a packed bed: how they were stacked, how confined they burn
-- Question: (1) How charges were actually stacked, by navy and period: bins, racks or tiers, how deep from a passage or the overhead, how far apart, the case's size, kg of propellant a m³ of the stack (separately from the shells; bags in Clarkson cases, brass, tanks). Magazine plans for Lion, Queen Mary, Iron Duke, Seydlitz if any survive. (2) Burning inside a packed charge bed: the pressure among the charges against the room's, from gun interior ballistics (flame spread through a bed, Ergun or two-phase drag, pressure waves; Gough, Krier, Kuo) and from magazine trials (MSIAC O-213's loading density, Hemus, any burning-cordite stack trials 1916-1930). Does a bed of cord in bags or cases follow Ergun's inertial term, and with what obstacle size? (3) At what loading density and confinement does a propellant stack go over to detonation, by type?
-- Context / relevant files: `docs/battle/explosions.md` "The stow's own confinement"; `GasNetwork.BedPressure`, `Magazines.BedPa`. Pressure among the charges goes as depth^6.8 by the algebra, so `MagazineBedM` 1.5 m [EST] and `MagazineBedKgM3` 600 [EST] matter; the girder's load settles past about 1.5 m. The obstacle is a charge's own size, the drag Ergun's for spheres: both from me, unsourced.
-- Wanted output: stack depth and bulk by type and period, as ranges with tags; a drag law with its range; a statement of how far a cool bed's pressure can run ahead of its room's.
-
 ### 2026-11-05 - Big explosions in and beside ships: gas, the girder and bombs
 - Question: (1) Gas through a ship: how fast and how far did pressure from an internal explosion spread through a hull, and did the structure far from it fail? Trials and wrecks (RN Job 74 on Monarch, ex-Washington's 400 lb, Baden 1921; Arizona, Vanguard, Mutsu, Roma), above all any evidence of pressure stayed local against equal through the hull. (2) How does a belt behave when pushed from inside: frames and bolts first, the plate coming off whole? Hood's "curled outward" plates, Queen Mary's and Invincible's wrecks. (3) Destroyers and cruisers broken by gunfire or bombs: Friedrich Eckoldt and other cases with the cause (hits along the side, a magazine, or torpedoes?), section lost, time to break; the USN report's 6 structural losses of 30, one by one if possible. (4) Whipping: bubble period and charge against the hull's period, what moment it put on the girder, by keel distance and depth; contact against under-keel, a usable law from charge, depth and ship. (5) Large charges at the top of the range: Tallboy, Grand Slam and heavy AP on Tirpitz and Lützow; 2-tonne air and water bursts near ships; what the near misses did. Do the blast fits hold above 1 kg/m³? (6) For later: bombs as projectiles: cases, W/D³, fuzes and delays, fall speeds by type and period (armour-and-damage.md says this document was due).
 - Context / relevant files: `docs/battle/explosions.md` (the plan, its candidates under "The exception this retires"), `docs/battle/damage/11_blast_confinement.md` §6, `research/simulation/damage-research/07-magazine-explosions.md` §2.3-3.1, `03-small-vessels.md` (its hull-girder pool), `src/Fleetwright.Sim.Combat/Blast.cs`, `MagazineRace.cs`. Not blocking: EX0-EX1 go ahead on what's here.
@@ -281,6 +276,20 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-07 - A magazine's charges as a packed bed: how they were stacked, how confined they burn
+- Done 2026-11-07 (draft): [simulation/damage-research/12-charge-bed.md](simulation/damage-research/12-charge-bed.md) with
+  [charge_bed_ref.py](simulation/damage-research/charge_bed_ref.py). **A stack with a free face can't stay ahead of its
+  room:** the bed throws itself into the aisle in 10-20 ms (racks hold nothing against MPa). Lit at once, a 1.5 m pile of bags
+  peaks 5.5 MPa over its room (its face choked), burns 2.5% extra and throws the stack at ~150 m/s; lit over 0.2 s, 0.2-0.4 MPa
+  and 0.5-1%. Inertia alone holds 0.4-120 Pa over a burn. So `BedPressure`'s steady bed (3-17 MPa for the whole burn) doesn't
+  exist outside strong walls; proposed: a one-off kick (~0.016·L^1.3 of a pile lit together) or the ref's lumped bed, loose
+  charges only. Stowage: RN two cartridges to a metal case, lids both ends, racked (Clarkson's was the small calibres' transit
+  case: rename `Packaging.Clarkson`); German brass 305 x 1,271 mm with 91 kg; USN tanks in tiers, no racks. Bulk 500-630 kg/m3
+  cased, 340-500 USN tanks, 580-770 loose bags (600 kept). Ergun's inertial term holds (Re 1e7), obstacle a cartridge's 6V/S
+  (0.34 m), voids 0.35-0.45 from the bag's density; the face chokes first. A lit package's own mouth: x1-2 on the rate (RN case,
+  USN tank), x5 for a German brass case lit inside, for ~60 ms. No DDT of the propellant at magazine bulks and walls. Not found:
+  magazine plans, case sizes, any 1916-30 stack trial, "Hemus".
 
 ### 2026-11-05 - Flooding a magazine: how long it took, and who gave the order
 - Done 2026-11-05 (draft): [simulation/damage-research/11-magazine-flooding.md](simulation/damage-research/11-magazine-flooding.md)
