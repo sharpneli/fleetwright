@@ -443,7 +443,7 @@
   "OpenVentRatio": 0.6,
   "RuptureMPaMm": 0.06,
   "PanelTearM": 0.3,
-  "TdsMembraneK": 2.2,
+  "TdsMembraneK": [1.0, 1.5],
   "RivetedK": 0.85,
   "DoorShare": 0.5,
   "DoorMinMPa": 0.08,

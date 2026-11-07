@@ -156,6 +156,9 @@ public sealed class GasNetwork
     bool moving;
     /// <summary>Whether the rounds are the ship's (<see cref="Arm"/>); each magazine's trains linked this run, by room.</summary>
     bool armed;
+    /// <summary>Whether the near field's holes in her hull open into the charge's own bubble (a contact burst from the sea): the gas that
+    /// came in leaves by them as the bubble grows, where a hole under the sea otherwise lets in water, not gas out.</summary>
+    bool intoBubble;
     int[] trainStamp = [];
     GasResult res;
 
@@ -264,7 +267,8 @@ public sealed class GasNetwork
 
     /// <summary>A plate between two cells, its rupture pressure, MPa: its plate and joint (damage/11's joints that fail), or as a
     /// torpedo protection's wall, built to stretch, a membrane's (<see cref="SimSettings.TdsMembraneK"/>).</summary>
-    double EdgeRupture(int j) => Blast.RuptureMPa(heldMm[j], c.InternalsJoint, s) * (ductile[j] ? s.TdsMembraneK : 1);
+    double EdgeRupture(int j) => ductile[j] ? s.RuptureMPaMm * heldMm[j] * s.TdsMembraneK[c.InternalsJoint == Joint.Welded ? 1 : 0]
+        : Blast.RuptureMPa(heldMm[j], c.InternalsJoint, s);
 
     /// <summary>A sine bulge's mean over its peak, (2/π)².</summary>
     const double BulgeK = 4 / (Math.PI * Math.PI);
@@ -377,7 +381,9 @@ public sealed class GasNetwork
         double gas = 0, vents = 0;
         for (int i = 0; i < n; i++)
             (gas, vents) = (gas + v[region[i]], vents + vent[region[i]]);
+        intoBubble = true;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
         Near(at, near);
+        intoBubble = false;
         if (!(w > 0))
         {
             res.Open = true;
@@ -603,7 +609,7 @@ public sealed class GasNetwork
             k.FaceTornM2[x] = b.Torn;
             res.HoleM2 += hole;
             res.Holed++;
-            vent[i] += hole * (f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
+            vent[i] += hole * (intoBubble || f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
         }
     }
 

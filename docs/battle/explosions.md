@@ -760,6 +760,45 @@ height. A destroyer is lost to one torpedo about half the time (49-56% by depth)
 one generated ship's figure (the 1913 super-dreadnought's water, Seydlitz's blackout rate, Lion's B in calm water at 0.99-1.00 of
 her girder, a destroyer's heel with three machinery spaces flooded); rewritten to the behaviour by type, the user's call.
 
+## EX6a, and research 14 (2026-11-07)
+
+**EX6a built:** hot gas lights a magazine in any run (a shell's, a torpedo's), the run becoming that magazine's race
+(`Magazines.Raced`; `DamageSystem` arms the network with the ship's rounds); a magazine's scuttles and trunks join every run with
+its space. The gas route's `MagazineFlashChance` is gone. Derfflinger's 11″ on Lion at 14 km: a magazine set off by 6% of hits,
+against 2.35% before, mostly the gas.
+
+**What EX6a showed, and what it wasn't:** a torpedo's gas lit a magazine in 70% of hits on a destroyer and lost the 1913
+super-dreadnought in 39%. Two candidates were measured:
+- **The gas's heat to the steel** (h 300 W/m²K [EST]) moved the converged answer under 5%: the gas reaches the next spaces in
+  tenths of a second and takes seconds to cool (the user's expectation). Operator-split with the flows it made the game's step
+  wrong, so it was taken out.
+- **Mixing** is already in: each space's gas one well-mixed mass. What it leaves out (afterburn with the air met, a hot front
+  ahead of the mixing) would make the gas hotter, not cooler.
+
+**Research 14 (torpedo protection walls) answered it:** the walls were at the top of the real range and **the load was too high**,
+the half of the products that comes in held as pressure where in a real hit it leaves through the hole into the bubble within
+milliseconds. Applied:
+- **A contact charge's own holes in her hull open into its bubble** (`GasNetwork.Strike`): the gas that came in leaves by them.
+- **The protection's walls:** `TdsMembraneK` 1.0 riveted, 1.5 continuous welded, on `RuptureMPaMm` (its joint in it), from 14's
+  membrane with real steels, spans and seam strains.
+
+One torpedo (the destroyer's), 60 min after:
+
+| Class | Protection held | Water | Lost | A magazine set off by the hit |
+|---|---|---|---|---|
+| Destroyer | | 634 t | 41% | 59% |
+| Light cruiser | | 1,344 t | 7% | 60% |
+| 1913 super-dreadnought | | 6,136 t | 1% | 17% |
+| Lion-like | | 6,863 t | 0% | 30% |
+| KGV-like | 41.5% | 3,069 t | 2% | 1.5% |
+| Fast battleship | 35% | 2,310 t | 0% | 0% |
+| Bismarck-like | 55% | 3,018 t | 0% | 1.5% |
+| Yamato-like | 49% | 4,187 t | 0% | 0% |
+
+The protections now hold as often as with no gas in them; what a held one floods is its coarse compartments (shipgen's, later:
+research 14 recommendation 4). 14's other recommendations wait: the holding bulkhead failing as a leak first (3), the scatter on
+its tearing set (7).
+
 ## What stays out
 
 - Aircraft, bomb sights, a bomb's flight.

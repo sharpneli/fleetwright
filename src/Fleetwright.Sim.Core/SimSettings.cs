@@ -1373,11 +1373,11 @@ public sealed record SimSettings
     /// yield its bulge takes room from the space in front [EST: research 13 §2's joint "well open" at 0.3 m; a bare plate's membrane
     /// would go past 1 m, its joints first]. How fast it bends is its mass's (<see cref="PanelMs"/>).</summary>
     public double PanelTearM { get; init; } = 0.3;
-    /// <summary>A torpedo protection's walls (the holding bulkhead, its layers, the walls between its own spaces) against a pressure, as many times an ordinary
-    /// bulkhead's (<see cref="RuptureMPaMm"/>, joints that fail): built of ductile high-elongation steel to stretch into the space
-    /// behind (research 01 §3.1), they hold a membrane's σ·t·√(24ε)/a (docs/battle/explosions.md EX5) [EST: σ 280 MPa, ε 0.15, a 4 m:
-    /// 0.13 MPa a mm; research asked, REQUESTS.md "Torpedo protection walls"].</summary>
-    public double TdsMembraneK { get; init; } = 2.2;
+    /// <summary>A torpedo protection's walls (the holding bulkhead, its layers, the walls between its own spaces) against a pressure, as many
+    /// times <see cref="RuptureMPaMm"/> (its joint in it, in place of <see cref="RivetedK"/>), riveted and continuous welded: built to
+    /// stretch into the space behind, they hold a membrane's σ_f·t·√(24ε)/a, a their height between supports (docs/battle/explosions.md
+    /// EX5) [EST from research 14 §2, recommendation 1: K 0.7-1.4 riveted, seams opening at a tenth of the span; 1.1-2.1 welded].</summary>
+    public double[] TdsMembraneK { get; init; } = [1.0, 1.5];
     public double RivetedK { get; init; } = 0.85;
     public double DoorShare { get; init; } = 0.5;
     public double DoorMinMPa { get; init; } = 0.08;
