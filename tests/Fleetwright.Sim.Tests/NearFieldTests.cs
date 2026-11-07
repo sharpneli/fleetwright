@@ -191,4 +191,29 @@ public class NearFieldTests(ITestOutputHelper output)
         Assert.True(g.WhipEM > 0);
         Assert.True(calm.Broken);
     }
+
+    /// <summary>An armoured bulkhead's armour by height: none outside its band, the lower strake's under its top.</summary>
+    [Fact]
+    public void A_bulkheads_armour_goes_by_its_band_and_strakes()
+    {
+        var h = new BulkheadRow { PlateMm = 10, ArmourMm = 200, ArmourBottom = -8, ArmourTop = 2, ArmourLowerMm = 100, ArmourLowerTop = -4, PlateLowTop = double.NaN };
+        Assert.Equal(200, h.ArmourAt(0));
+        Assert.Equal(100, h.ArmourAt(-6));
+        Assert.Equal(0, h.ArmourAt(3));
+        Assert.Equal(0, h.ArmourAt(-9));
+        Assert.Equal(200, (h with { ArmourLowerMm = double.NaN, ArmourLowerTop = double.NaN }).ArmourAt(-6));
+    }
+
+    /// <summary>A slope stands between a point outboard of it and one inboard: its armour, as steel; none between two on one side.</summary>
+    [Fact]
+    public void A_slope_between_a_charge_and_a_plate_is_armour_too()
+    {
+        var c = Fleet.Get("lion").Class!;
+        var p = c.Inclined[0];
+        double x = (p.X0 + p.X1) / 2, z = (p.Z0 + p.Z1) / 2, y = p.YAt(c.Hull, x, z);
+        double across = Blast.InclinedMm(c, new P3(x, y + 0.5, z), new P3(x, y - 0.5, z));
+        output.WriteLine($"{p.Kind} {p.ThicknessMm:0} mm at z {z:0.0}: {across:0} mm between");
+        Assert.Equal(c.MaterialOf(p.Material).SteelMm(p.MmAt(z)), across, 6);
+        Assert.Equal(0, Blast.InclinedMm(c, new P3(x, y + 0.5, z), new P3(x, y + 0.9, z)));
+    }
 }

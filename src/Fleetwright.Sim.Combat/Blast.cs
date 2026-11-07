@@ -179,10 +179,8 @@ public static class Blast
         if (e.Join == JoinKind.Bulkhead)
         {
             ref readonly var h = ref c.Bulkheads[e.Through];
-            double mm = h.PlateAt(z);
-            if (h.ArmourMm > 0 && z >= h.ArmourBottom && z <= h.ArmourTop)
-                mm += c.MaterialOf(h.ArmourMaterial).SteelMm(h.ArmourMm);
-            return Math.Max(mm, 1);
+            double armour = h.ArmourAt(z);
+            return Math.Max(h.PlateAt(z) + (armour > 0 ? c.MaterialOf(h.ArmourMaterial).SteelMm(armour) : 0), 1);
         }
         if (e.Join == JoinKind.Deck)
         {
@@ -207,22 +205,49 @@ public static class Blast
     }
 
     /// <summary>The plate two spaces share against a point: how far the point is from its plane (the return), where the point
-    /// falls in that plane (u, w), and the plate's rectangle there.</summary>
-    internal static double Shared(in Box a, in Box b, JoinKind join, P3 p, out double u, out double w, out double u0, out double u1, out double w0, out double w1)
+    /// falls in that plane (u, w), the plate's rectangle there, and the plate's point nearest it.</summary>
+    internal static double Shared(in Box a, in Box b, JoinKind join, P3 p, out double u, out double w, out double u0, out double u1, out double w0, out double w1, out P3 on)
     {
         double x0 = Math.Max(a.X0, b.X0), x1 = Math.Min(a.X1, b.X1), y0 = Math.Max(a.Y0, b.Y0), y1 = Math.Min(a.Y1, b.Y1), z0 = Math.Max(a.Base, b.Base), z1 = Math.Min(a.Top, b.Top);
+        double cx = Math.Clamp(p.X, x0, x1), cy = Math.Clamp(p.Y, y0, y1), cz = Math.Clamp(p.Z, z0, z1);
         if (join == JoinKind.Deck)
         {
-            (u, w, u0, u1, w0, w1) = (p.X, p.Y, x0, x1, y0, y1);
-            return Math.Abs(p.Z - (b.Base >= a.Top - 0.05 ? a.Top : a.Base));
+            double plane = b.Base >= a.Top - 0.05 ? a.Top : a.Base;
+            (u, w, u0, u1, w0, w1, on) = (p.X, p.Y, x0, x1, y0, y1, new P3(cx, cy, plane));
+            return Math.Abs(p.Z - plane);
         }
         if (y1 - y0 < 0.05)   // side by side across the ship
         {
-            (u, w, u0, u1, w0, w1) = (p.X, p.Z, x0, x1, z0, z1);
-            return Math.Abs(p.Y - (b.Y0 >= a.Y1 - 0.05 ? a.Y1 : a.Y0));
+            double plane = b.Y0 >= a.Y1 - 0.05 ? a.Y1 : a.Y0;
+            (u, w, u0, u1, w0, w1, on) = (p.X, p.Z, x0, x1, z0, z1, new P3(cx, plane, cz));
+            return Math.Abs(p.Y - plane);
         }
-        (u, w, u0, u1, w0, w1) = (p.Y, p.Z, y0, y1, z0, z1);
-        return Math.Abs(p.X - (b.X0 >= a.X1 - 0.05 ? a.X1 : a.X0));
+        double across = b.X0 >= a.X1 - 0.05 ? a.X1 : a.X0;
+        (u, w, u0, u1, w0, w1, on) = (p.Y, p.Z, y0, y1, z0, z1, new P3(across, cy, cz));
+        return Math.Abs(p.X - across);
+    }
+
+    /// <summary>The inclined plates (a deck's slopes, an internal belt) between two points, mm: those whose surface the line between
+    /// them crosses, on the first point's side of the ship, as steel, or as the mild steel that stops fragments as they do.
+    /// Spaces are boxes and these plates run through them, so whatever crosses a ship reads them here.</summary>
+    public static double InclinedMm(ShipClass c, P3 a, P3 b, bool fragments = false)
+    {
+        double mm = 0;
+        int sgn = a.Y < 0 ? -1 : 1;
+        foreach (ref readonly var p in c.Inclined)
+        {
+            // the plate's surface where the side is: G = sgn·y - (hw - u), its sign each end
+            double ga = sgn * a.Y - p.YAt(c.Hull, a.X, a.Z), gb = sgn * b.Y - p.YAt(c.Hull, b.X, b.Z);
+            if (ga * gb >= 0)
+                continue;
+            double f = ga / (ga - gb), x = a.X + f * (b.X - a.X), z = a.Z + f * (b.Z - a.Z);
+            if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && sgn * (a.Y + f * (b.Y - a.Y)) >= 0)
+            {
+                ref readonly var m = ref c.MaterialOf(p.Material);
+                mm += fragments ? m.FragmentMildMm(p.MmAt(z)) : m.SteelMm(p.MmAt(z));
+            }
+        }
+        return mm;
     }
 
     /// <summary>A space's outside face, from the class's table.</summary>

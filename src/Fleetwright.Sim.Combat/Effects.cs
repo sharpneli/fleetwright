@@ -692,9 +692,18 @@ public static class Effects
     static double JoinMild(ShipClass c, in Neighbour n, in Box here, in Box there, P3 p) => n.Join switch
     {
         JoinKind.Deck => DeckMild(c, n.Through, here, there),
-        JoinKind.Bulkhead => c.Bulkheads[n.Through].PlateMm + Fragments.MildMm(c.Bulkheads[n.Through].ArmourMm, FragmentClass.Ductile),
+        JoinKind.Bulkhead => BulkheadMild(c, n.Through, here, there),
         _ => 0,
-    } + InclinedMild(c, p, Nearest(there, p));
+    } + Blast.InclinedMm(c, p, Nearest(there, p), fragments: true);
+
+    /// <summary>A bulkhead between two cells, where they meet, as the mild steel that stops fragments as it does: its plate and its
+    /// armour there by its material (none outside its band, the lower strake's under its top).</summary>
+    static double BulkheadMild(ShipClass c, int bulkhead, in Box here, in Box beyond)
+    {
+        ref readonly var h = ref c.Bulkheads[bulkhead];
+        double z = (Math.Max(here.Base, beyond.Base) + Math.Min(here.Top, beyond.Top)) / 2, armour = h.ArmourAt(z);
+        return h.PlateAt(z) + (armour > 0 ? c.MaterialOf(h.ArmourMaterial).FragmentMildMm(armour) : 0);
+    }
 
     static P3 JoinNormal(in Neighbour n, in Box here, in Box there) =>
         n.Join == JoinKind.Deck ? new P3(0, 0, 1) : Touch(here, there) ? new P3(0, 1, 0) : new P3(1, 0, 0);
@@ -1021,7 +1030,7 @@ public static class Effects
                 double join = nb.Join switch
                 {
                     JoinKind.Deck => DeckMild(c, nb.Through, box, c.Cells[nb.Cell].Box),
-                    JoinKind.Bulkhead => c.Bulkheads[nb.Through].PlateMm + Fragments.MildMm(c.Bulkheads[nb.Through].ArmourMm, FragmentClass.Ductile),
+                    JoinKind.Bulkhead => BulkheadMild(c, nb.Through, box, c.Cells[nb.Cell].Box),
                     _ => 0,
                 };
                 if (join >= s.SpallStopMm && Fragments.LimitMs(cloud.FlakeKg, join) >= cloud.AxialMs)
@@ -1195,7 +1204,7 @@ public static class Effects
 
     /// <summary>A deck between two cells, where they meet, as the mild steel that stops fragments as it does (E1): its
     /// plate, and the armour on it there by its material (each piece of a deck armoured in several, a magazine box's
-    /// crown or floor; none over a sloped deck's slopes, which InclinedMild finds).</summary>
+    /// crown or floor; none over a sloped deck's slopes, which Blast.InclinedMm finds).</summary>
     static double DeckMild(ShipClass c, int deck, in Box here, in Box beyond)
     {
         double mm = c.Decks[deck].PlateMm;
@@ -1224,25 +1233,6 @@ public static class Effects
 
     /// <summary>Whether two boxes meet side by side across the ship (a longitudinal bulkhead between them).</summary>
     static bool Touch(in Box a, in Box b) => Math.Min(a.Y1, b.Y1) - Math.Max(a.Y0, b.Y0) < 0.05 && Math.Min(a.X1, b.X1) - Math.Max(a.X0, b.X0) > 0.05;
-
-    /// <summary>The inclined plates (a deck's slopes) between two points, as mild steel against fragments: those whose
-    /// surface the line between them crosses, on the first point's side of the ship.</summary>
-    static double InclinedMild(ShipClass c, P3 a, P3 b)
-    {
-        double mm = 0;
-        int sgn = a.Y < 0 ? -1 : 1;
-        foreach (ref readonly var p in c.Inclined)
-        {
-            // the plate's surface where the side is: G = sgn·y - (hw - u), its sign each end
-            double ga = sgn * a.Y - p.YAt(c.Hull, a.X, a.Z), gb = sgn * b.Y - p.YAt(c.Hull, b.X, b.Z);
-            if (ga * gb >= 0)
-                continue;
-            double f = ga / (ga - gb), x = a.X + f * (b.X - a.X), z = a.Z + f * (b.Z - a.Z);
-            if (x >= p.X0 && x <= p.X1 && z >= p.Z0 && z <= p.Z1 && sgn * (a.Y + f * (b.Y - a.Y)) >= 0)
-                mm += c.MaterialOf(p.Material).FragmentMildMm(p.MmAt(z));
-        }
-        return mm;
-    }
 
     /// <summary>The point of a box nearest p.</summary>
     /// <summary>What a burst's fragments go through in its own space from p to a point there (docs/battle/shell-contents.md

@@ -375,8 +375,9 @@ public sealed class GasNetwork
             int q = canon[j];
             if (e.Join != JoinKind.Open && edges[q].Fate != Blast.Fate.Holed)
             {
-                double standoff = Blast.Shared(box, there, e.Join, at, out double u, out double w, out double u0, out double u1, out double w0, out double w1);
-                double hole = Math.Min(NearField.Disc(NearField.HoleM(near, mm[j], standoff, s), u, w, u0, u1, w0, w1), area[j] - open[q]);
+                double standoff = Blast.Shared(box, there, e.Join, at, out double u, out double w, out double u0, out double u1, out double w0, out double w1, out var on);
+                double plate = mm[j] + Blast.InclinedMm(c, at, on);   // a slope between it and the charge is its armour too
+                double hole = Math.Min(NearField.Disc(NearField.HoleM(near, plate, standoff, s), u, w, u0, u1, w0, w1), area[j] - open[q]);
                 if (hole > 0)
                 {
                     (open[q], opened[q], edges[q].Fate) = (open[q] + hole, opened[q] + hole, Blast.Fate.Holed);
@@ -401,7 +402,9 @@ public sealed class GasNetwork
             if (!(fa > 0))
                 continue;
             var pt = hull.Point[x];
-            double r = NearField.HoleM(near, hull.Mm[x], f < 2 ? Math.Abs(at.Y - pt.Y) : Math.Abs(at.Z - pt.Z), s);
+            var on = f < 2 ? new P3(Math.Clamp(at.X, box.X0, box.X1), pt.Y, Math.Clamp(at.Z, box.Base, box.Top))
+                : new P3(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Y, box.Y0, box.Y1), pt.Z);
+            double r = NearField.HoleM(near, hull.Mm[x] + Blast.InclinedMm(c, at, on), f < 2 ? Math.Abs(at.Y - pt.Y) : Math.Abs(at.Z - pt.Z), s);
             if (!(r > 0))
                 continue;
             if (faceStamp[x] != id)
@@ -410,14 +413,12 @@ public sealed class GasNetwork
             double hole = Math.Min(f < 2 ? NearField.Disc(r, at.X, at.Z, box.X0, box.X1, box.Base, box.Top) : NearField.Disc(r, at.X, at.Y, box.X0, box.X1, box.Y0, box.Y1), fa - b.Torn);
             if (!(hole > 0))
                 continue;
-            var there = f < 2 ? new P3(Math.Clamp(at.X, box.X0, box.X1), pt.Y, Math.Clamp(at.Z, box.Base, box.Top))
-                : new P3(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Y, box.Y0, box.Y1), pt.Z);
             (b.Torn, b.Fate) = (b.Torn + hole, Blast.Fate.Holed);
-            k.Hole(i, hole, there);
+            k.Hole(i, hole, on);
             k.FaceTornM2[x] = b.Torn;
             res.HoleM2 += hole;
             res.Holed++;
-            vent[i] += hole * (f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((there.Z + r - water.At(there.X, there.Y)) / (2 * r), 0, 1));
+            vent[i] += hole * (f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
         }
     }
 

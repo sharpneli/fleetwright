@@ -936,6 +936,10 @@ public readonly record struct BulkheadRow
 
     /// <summary>The plate at a height.</summary>
     public double PlateAt(double z) => z < PlateLowTop ? PlateLowMm : PlateMm;
+
+    /// <summary>Its armour at a height, mm of its own material: none outside its band, the lower strake's under its top.</summary>
+    public double ArmourAt(double z) =>
+        !(ArmourMm > 0) || z < ArmourBottom || z > ArmourTop ? 0 : z < ArmourLowerTop && ArmourLowerMm >= 0 ? ArmourLowerMm : ArmourMm;
 }
 
 public readonly record struct DeckRow
