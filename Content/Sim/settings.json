@@ -627,8 +627,6 @@
   "MagazineSprinkleS": 60,
   "MagazineSprinkleShare": 0.95,
   "MagazineHeatKeep": 0.5,
-  "MagazineBedM": 1.5,
-  "MagazineBedKgM3": 600,
   "GasVentCd": 0.7,
   "GasIgniteK": 470,
   "MagazinePackageR": [0, 32, 28, 24],

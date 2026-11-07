@@ -118,24 +118,6 @@ public static partial class Magazines
         return pr.BetaMmS * Math.Pow(pr.KneeMPa, pr.AlphaHi) * Math.Pow(pm / pr.KneeMPa, pr.AlphaLo) / 1000;
     }
 
-    /// <summary>The pressure the lit charges of a stow burn at, Pa: above the room's by what it takes to drive their gas out through
-    /// the gaps between them, a packed bed's inertial drop (Ergun), ΔP = K·G²/ρ, with G the kg a m² a second through the bed and ρ = P/RT.
-    /// As G goes with r(P), P·(P − room) = C·r(P)², where C is K·RT·(G/r)²: one root above the room's, found by Newton's from the last
-    /// (it moves little in a step). C 0: the room's.</summary>
-    internal static double BedPa(double roomPa, double c, in PropellantRow pr, double guess)
-    {
-        if (!(c > 0))
-            return roomPa;
-        double p = Math.Max(guess, roomPa);
-        for (int i = 0; i < 3; i++)
-        {
-            double r = Rate(p, pr), rhs = 4 * c * r * r, root = Math.Sqrt(roomPa * roomPa + rhs);
-            double alpha = p / 1e6 >= pr.KneeMPa ? pr.AlphaHi : pr.AlphaLo;
-            p = Math.Max(p - (p - (roomPa + root) / 2) / Math.Max(1 - rhs * alpha / (2 * p * root), 0.05), roomPa);
-        }
-        return p;
-    }
-
     /// <summary>What the fire left (a lost ship's too: her men in the trains): the magazines alight spent, the gunhouses it threw and
     /// those it vented destroyed and burning with their barbettes, the trains' men flashed (a contained fire, the magazine's own), and
     /// the men and gear in the spaces the gas reached.</summary>
