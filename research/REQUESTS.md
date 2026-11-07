@@ -12,11 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-05 - Big explosions in and beside ships: gas, the girder and bombs
-- Question: (1) Gas through a ship: how fast and how far did pressure from an internal explosion spread through a hull, and did the structure far from it fail? Trials and wrecks (RN Job 74 on Monarch, ex-Washington's 400 lb, Baden 1921; Arizona, Vanguard, Mutsu, Roma), above all any evidence of pressure stayed local against equal through the hull. (2) How does a belt behave when pushed from inside: frames and bolts first, the plate coming off whole? Hood's "curled outward" plates, Queen Mary's and Invincible's wrecks. (3) Destroyers and cruisers broken by gunfire or bombs: Friedrich Eckoldt and other cases with the cause (hits along the side, a magazine, or torpedoes?), section lost, time to break; the USN report's 6 structural losses of 30, one by one if possible. (4) Whipping: bubble period and charge against the hull's period, what moment it put on the girder, by keel distance and depth; contact against under-keel, a usable law from charge, depth and ship. (5) Large charges at the top of the range: Tallboy, Grand Slam and heavy AP on Tirpitz and Lützow; 2-tonne air and water bursts near ships; what the near misses did. Do the blast fits hold above 1 kg/m³? (6) For later: bombs as projectiles: cases, W/D³, fuzes and delays, fall speeds by type and period (armour-and-damage.md says this document was due).
-- Context / relevant files: `docs/battle/explosions.md` (the plan, its candidates under "The exception this retires"), `docs/battle/damage/11_blast_confinement.md` §6, `research/simulation/damage-research/07-magazine-explosions.md` §2.3-3.1, `03-small-vessels.md` (its hull-girder pool), `src/Fleetwright.Sim.Combat/Blast.cs`, `MagazineRace.cs`. Not blocking: EX0-EX1 go ahead on what's here.
-- Wanted output: cases with charge, place, what failed and how far off; a whipping law with its range; a statement of whether pressure stayed local in a hull; a bomb table by type and period. Ranges with tags.
-
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?
@@ -276,6 +271,26 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-05 - Big explosions in and beside ships: gas, the girder and bombs
+- Done 2026-11-07 (draft): [simulation/damage-research/13-big-explosions.md](simulation/damage-research/13-big-explosions.md) with
+  [big_explosions_ref.py](simulation/damage-research/big_explosions_ref.py). **Pressure stayed local, gas didn't:** in every wreck and
+  trial found, what failed lay within one or two spaces (20-60 m) of the seat (Arizona, Defence, Invincible, Indefatigable, Mutsu, Hood),
+  while flame and low pressure went 30-100 m by passages and vents (Baden 1921: a 15 in CPC smashed a bulkhead 100 ft off). The wave
+  crosses 200 m in 0.25-0.6 s but the gas fills beyond only in V/(Cd A c*), 0.1-80 s; a fast release stays local (the far side 0-7%),
+  a burn of seconds through a wide tear equalises: the network, not a merge. **A belt is a heavy door:** held by its riveted edges at
+  about twice its backing's membrane value (2.7-4.4 MPa, EST), its 2-3 t/m2 a wall to a shell's pulse for 20-70 ms, opening a whole
+  strake when it goes (Hood's side gone to the fuel tanks' inner wall, curled out; Arizona's belt sent it up; Baden's plate displaced).
+  **Destroyers:** the USN's 6 structural losses of 30 were all bombs or kamikazes on the upper flange or her own warheads (Brownson,
+  Bush, Abele, Pringle, Little, Colhoun), 1 min to hours; "no instance" of gunfire weakening the girder. S35 broke to two 13.5 in;
+  Eckoldt's cause unrecorded; V44's 6 in HE burst inside tore 6 m2 of side (open item 6). **Whipping:** Cole's period checks to Cheonan
+  (0.985 vs 0.990 s); two-node f from a free-free beam with Kumai's virtual mass (destroyer 1.2 Hz, Lion 1.0, Yamato 0.46); a one-cycle
+  law M = EI k rho w Vmax T g(wT) Infl/(4 pi M*), valid from gamma ~1 (closer the bubble vents into her: Shubrick, Uganda, Roma);
+  Cheonan 18 and a Mk 48 frigate 13 design moments (broke), Ostfriesland 1.3 and Lützow 0.9 (held); uncertain x2-3. **Tallboys:** Tirpitz's
+  wing-tank hit tore frames 98-132 of skin, no break, capsized by 17,000 t; Lützow's 18 m near miss a 1 x 10 m tear (the shock's, past
+  NearField's reach). Fits above 1 kg/m3 hold to ~10 (afterburn oxygen-limited past 0.37 kg/m3); a bomb table (W/D3, filler, fuzes) and
+  fall speeds checked to Tallboy's 336 m/s. Not reached: Job 74's details (Brown pp. 20-24, ADM 324/4), Washington's charge place, the
+  Jutland wrecks' belt plates, fuze delays in seconds, British SAP/AP and WWI bombs.
 
 ### 2026-11-07 - A magazine's charges as a packed bed: how they were stacked, how confined they burn
 - Done 2026-11-07 (draft): [simulation/damage-research/12-charge-bed.md](simulation/damage-research/12-charge-bed.md) with
