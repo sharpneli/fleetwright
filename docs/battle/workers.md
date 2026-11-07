@@ -520,6 +520,47 @@ different battle. The Jutland's German torpedo hits 6 -> 18 a run after W11.
 - The captain's latitude under orders, item by item, against the player's overrule (the player's
   orders beat the AI's; by-hand orders hold).
 
+## Explosions off the sim thread (W16) - agreed 2026-11-07
+
+A magazine's race costs 60-700 ms (explosions.md "Cost and convergence"), run inside the event that set it off, so the sim
+publishes nothing while it runs and the map freezes, then jumps. Not a cost to cut (the model needs its steps): a cost to move.
+The user, 2026-11-07: "What about tossing hits to a separate thread and processing them a tick or two later? That should not
+have material impact on gameplay. On coarse tier it can be instant." And: "Second of gametime is peanuts at these scales. And
+it's fine if it doesn't save anything for the benches, we want the game to feel interactive. Though we probably still need
+some smoothing for high time compressions."
+
+### The rule
+
+1. **In the fine tier an explosion on a ship lands on the damage lattice at least a second after it happened**
+   (`HitDelayMs`, 1000, `FloodMs`'s multiple): a hit at T lands at the first lattice moment at or after T + 1 s, every hit
+   that lands then in the order they came. An explosion is any hit (shell, near miss, torpedo, her own store) and a magazine
+   a fire step sets off (W7: that's where the cost was). In the coarse tier, as the world is when it happens, it lands at
+   once, as today. 0 lands everything at once (the benches that hit a ship and read what it did keep `Strike`, which is
+   immediate).
+2. **The world never waits on a thread to decide anything:** what lands, and when, is the rule's alone; the thread only
+   works it out early. Land time comes and it isn't done: the sim thread waits for it. Same hash with the thread and without,
+   on any number of workers, and a replay is a replay.
+3. **The ship's damage is the batch's until it lands.** The batch is worked out on a copy of her condition taken when it
+   closes; her live condition, which everything else reads (gunnery, motion, the AI, the snapshot), stands as it was until the
+   batch lands. What would change her condition meanwhile waits behind it, in order: her flood and fire step, her timed
+   outages' clear, a straddle's or her own guns' blast on her men; a command on her (dev, giving up, posture) lands the batch
+   first, then runs. A Debug and test guard: her condition's hash when the copy was taken, checked when it lands.
+4. **Further hits on her while a batch is out** go in the next batch, so at most about two seconds late under heavy fire.
+
+What moves: a hit's damage, the log's line for it and what the screens show of it land up to two seconds after the shell
+did (its splash and mark don't: they're the shell's). Fire control spots by the fall, so nothing there.
+
+### The steps
+
+| | |
+|---|---|
+| W16a | `ShipCondition.CopyFrom` (pooled, no allocation in play) and a reflection test that every field, private ones too, is copied |
+| W16b | `Strike` split: what a hit does to her condition (pure: the condition, the class, the settings, and what the hit captured from the world at T: turret bearings, rounds, experience, the sea) and the world's part after it (log, recompute's holds, losses, blasts, wakes, stores going off). Still landed at once: the output bit for bit as before |
+| W16c | The rule (1, 3, 4) in the world, worked out on the sim thread when the batch lands: the output moves (timing), the panel and the parity bench read it |
+| W16d | The thread: the batch worked out on the copy as soon as it closes, the sim waiting at land time if it must. 0 = 1 thread = shuffled, zero-allocation tests |
+| W16e | The map's clock leads through a stall: today it never runs more than a frame past the newest snapshot (plan.md 2.7c), so a sim stall is a freeze and a jump; it may run up to about 0.3 s of real time on at the speed the world kept, the ships extrapolated along their arcs as they are now. For high compressions, where a second of game time is milliseconds and the sim waits on the race anyway |
+| W16f | Measured in the game: the longest gap between snapshots and the map's longest still, a magazine race at 1x, 30x and 240x, before and after |
+
 ## What to expect
 
 Of the 139 s, roughly 95 s is in passes these steps split (the step, most of sighting, the smoke's states and queries,

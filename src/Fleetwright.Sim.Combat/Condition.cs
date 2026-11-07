@@ -708,6 +708,163 @@ public sealed class ShipCondition
         Version++;
     }
 
+    /// <summary>This condition made another's, every field (docs/battle/workers.md W16a): the copy a batch of explosions on her is
+    /// worked out on off the sim thread, and what it hands back. Between two of one class it allocates nothing.
+    /// <c>ConditionCopyTests</c> fills every field and checks each came across, so a field added here and not copied fails there.</summary>
+    public void CopyFrom(ShipCondition from)
+    {
+        if (!ReferenceEquals(Class, from.Class))
+            Reset(from.Class);
+        Copy(from.State, ref State);
+        Copy(from.Flags, ref Flags);
+        Copy(from.WaterM3, ref WaterM3);
+        Copy(from.BreachM2, ref BreachM2);
+        Copy(from.BreachY, ref BreachY);
+        Copy(from.BreachZ, ref BreachZ);
+        Copy(from.Drained, ref Drained);
+        Copy(from.HoleOpenM2, ref HoleOpenM2);
+        Copy(from.HoleZ, ref HoleZ);
+        Copy(from.HoleDoneM2, ref HoleDoneM2);
+        Copy(from.HoleLeft, ref HoleLeft);
+        Copy(from.HoleOpenN, ref HoleOpenN);
+        Copy(from.Level, ref Level);
+        LevelsFuel = from.LevelsFuel;
+        Copy(from.CellFire, ref CellFire);
+        Copy(from.CellOpened, ref CellOpened);
+        Copy(from.Fire, ref Fire);
+        Copy(from.FireFlow, ref FireFlow);
+        (Readiness, DamageControl, Flash, OwnDamageControl) = (from.Readiness, from.DamageControl, from.Flash, from.OwnDamageControl);
+        Array.Copy(from.Parties, Parties, MaxParties);
+        (PartyCount, PartiesMade, TurnedTo) = (from.PartyCount, from.PartiesMade, from.TurnedTo);
+        Copy(from.MainCutMs, ref MainCutMs);
+        (LastHitMs, NextPlanMs) = (from.LastHitMs, from.NextPlanMs);
+        Copy(from.MagazineHeat, ref MagazineHeat);
+        Copy(from.MagazineLimit, ref MagazineLimit);
+        Copy(from.MagazineThreatS, ref MagazineThreatS);
+        Copy(from.MagazineFlood, ref MagazineFlood);
+        Copy(from.Warheads, ref Warheads);
+        Copy(from.StoreHeat, ref StoreHeat);
+        Copy(from.StoreLimit, ref StoreLimit);
+        Copy(from.StoreLit, ref StoreLit);
+        Copy(from.MagazineOrderMs, ref MagazineOrderMs);
+        Copy(from.MagazineWet, ref MagazineWet);
+        Copy(from.MagazineSpent, ref MagazineSpent);
+        Copy(from.MagazineValve, ref MagazineValve);
+        Copy(from.Smoked, ref Smoked);
+        FireShowMW = from.FireShowMW;
+        Copy(from.MountWorks, ref MountWorks);
+        Copy(from.DirectorWorks, ref DirectorWorks);
+        Copy(from.EyeWorks, ref EyeWorks);
+        Copy(from.TubeWorks, ref TubeWorks);
+        Copy(from.SearchlightWorks, ref SearchlightWorks);
+        Copy(from.MountCrew, ref MountCrew);
+        Copy(from.MountSupply, ref MountSupply);
+        Copy(from.EyeCrew, ref EyeCrew);
+        Copy(from.MountLasts, ref MountLasts);
+        Copy(from.MountSound, ref MountSound);
+        (PowerCapLasts, LastingMs) = (from.PowerCapLasts, from.LastingMs);
+        Copy(from.Mount, ref Mount);
+        Copy(from.DownUntil, ref DownUntil);
+        Copy(from.DownWhy, ref DownWhy);
+        Copy(from.DirectorDown, ref DirectorDown);
+        Copy(from.EyeDown, ref EyeDown);
+        Copy(from.SearchlightDown, ref SearchlightDown);
+        Copy(from.DirectorPower, ref DirectorPower);
+        (BlackoutUntil, GyroUntil) = (from.BlackoutUntil, from.GyroUntil);
+        Copy(from.JoinOpenM2, ref JoinOpenM2);
+        Copy(from.JoinSeamM2, ref JoinSeamM2);
+        Copy(from.JoinClosureM2, ref JoinClosureM2);
+        Copy(from.JoinWork, ref JoinWork);
+        Copy(from.JoinWorkAcc, ref JoinWorkAcc);
+        Copy(from.JoinWorkAt, ref JoinWorkAt);
+        Copy(from.JoinD, ref JoinD);
+        Copy(from.JoinMarks, ref JoinMarks);
+        Copy(from.JoinFlow, ref JoinFlow);
+        Copy(from.CellInflow, ref CellInflow);
+        Copy(from.PumpsIn, ref PumpsIn);
+        (PumpsRigged, SteerCause, SteerSinceMs) = (from.PumpsRigged, from.SteerCause, from.SteerSinceMs);
+        Array.Copy(from.Notes, Notes, NoteSlots);
+        (NoteCount, CounterOut) = (from.NoteCount, from.CounterOut);
+        Copy(from.Fix, ref Fix);
+        Copy(from.FixManMin, ref FixManMin);
+        Copy(from.Drowned, ref Drowned);
+        (SafeSpeedKn, EaseKn, SafeSinceMs, HoldsSpeed) = (from.SafeSpeedKn, from.EaseKn, from.SafeSinceMs, from.HoldsSpeed);
+        Copy(from.Counterflooded, ref Counterflooded);
+        (CounterTank, CounterfloodT, CounterHandMs) = (from.CounterTank, from.CounterfloodT, from.CounterHandMs);
+        Copy(from.JoinWetMs, ref JoinWetMs);
+        (DoorsDrawn, Faces) = (from.DoorsDrawn, from.Faces);   // the class's faces, shared
+        Copy(from.EdgeLost, ref EdgeLost);
+        Copy(from.FaceLost, ref FaceLost);
+        Copy(from.FaceTornM2, ref FaceTornM2);
+        Copy(from.GirderZ, ref GirderZ);
+        (GirderStale, WhipSq, WhipMs, CutBowX, CutSternX) = (from.GirderStale, from.WhipSq, from.WhipMs, from.CutBowX, from.CutSternX);
+        (NextClearMs, ClearAtMs, ClearGen) = (from.NextClearMs, from.ClearAtMs, from.ClearGen);
+        Array.Copy(from.LeakRow, LeakRow, LeakMarks);
+        Array.Copy(from.LeakAt, LeakAt, LeakMarks);
+        Leaks = from.Leaks;
+        (CrewLost, Killed, Wounded) = (from.CrewLost, from.Killed, from.Wounded);
+        Copy(from.Gone, ref Gone);
+        Copy(from.Away, ref Away);
+        Copy(from.In, ref In);
+        Copy(from.ClosedUp, ref ClosedUp);
+        Copy(from.Covered, ref Covered);
+        Copy(from.MountShelter, ref MountShelter);
+        Array.Copy(from.PartyLent, PartyLent, MaxParties);
+        Array.Copy(from.PartyLentTo, PartyLentTo, MaxParties);
+        Experience = from.Experience;
+        Copy(from.StationOf, ref StationOf);
+        Copy(from.StationGroup, ref StationGroup);
+        Copy(from.StationOpen, ref StationOpen);
+        Copy(from.StationCover, ref StationCover);
+        Copy(from.Duress, ref Duress);
+        Copy(from.DuressMs, ref DuressMs);
+        Copy(from.CalmMs, ref CalmMs);
+        Copy(from.OfficerAt, ref OfficerAt);
+        Copy(from.BurnMs, ref BurnMs);
+        Copy(from.Shaken, ref Shaken);
+        Copy(from.Frozen, ref Frozen);
+        Copy(from.NerveKept, ref NerveKept);
+        Copy(from.Over, ref Over);
+        Copy(from.InsideStamp, ref InsideStamp);
+        Copy(from.NearStamp, ref NearStamp);
+        Copy(from.OpenByX, ref OpenByX);
+        Copy(from.Active, ref Active);
+        Copy(from.IsActive, ref IsActive);
+        (ActiveN, StirredId, SpareOfficers, NerveDueMs) = (from.ActiveN, from.StirredId, from.SpareOfficers, from.NerveDueMs);
+        Array.Copy(from.MoveMs, MoveMs, MoveSlots);
+        Array.Copy(from.MoveTo, MoveTo, MoveSlots);
+        Array.Copy(from.MoveMen, MoveMen, MoveSlots);
+        Moves = from.Moves;
+        Array.Copy(from.ReturnMs, ReturnMs, ReturnSlots);
+        Array.Copy(from.ReturnGroup, ReturnGroup, ReturnSlots);
+        Array.Copy(from.ReturnMen, ReturnMen, ReturnSlots);
+        Returns = from.Returns;
+        Copy(from.RiskK, ref RiskK);
+        Copy(from.RiskC, ref RiskC);
+        Copy(from.RiskStamp, ref RiskStamp);
+        Copy(from.Touched, ref Touched);
+        (RiskId, TouchedN, RiskMs) = (from.RiskId, from.TouchedN, from.RiskMs);
+        (Status, GivenUp, ColoursMs, AbandonMs, OffMs, ScuttleMs) = (from.Status, from.GivenUp, from.ColoursMs, from.AbandonMs, from.OffMs, from.ScuttleMs);
+        (Loss, LossMs, GoneMs, Attitude, WaterT, GmM) = (from.Loss, from.LossMs, from.GoneMs, from.Attitude, from.WaterT, from.GmM);
+        (PowerCap, SupplyKw, PlantOut, NoSteam, Shed, PumpShare, Dark) = (from.PowerCap, from.SupplyKw, from.PlantOut, from.NoSteam, from.Shed, from.PumpShare, from.Dark);
+        (Steering, JamRudderRad, Conned, ConnAt, ConnShiftMs) = (from.Steering, from.JamRudderRad, from.Conned, from.ConnAt, from.ConnShiftMs);
+        Copy(from.Stoke, ref Stoke);
+        Copy(from.StokeUntilMs, ref StokeUntilMs);
+        Copy(from.PartSpace, ref PartSpace);
+        Copy(from.CellSpace, ref CellSpace);
+        (Hits, LastShooter, LastBattery, Damaged, Version) = (from.Hits, from.LastShooter, from.LastBattery, from.Damaged, from.Version);
+        (StepMs, NextStepMs, StepGen, HeldCap) = (from.StepMs, from.NextStepMs, from.StepGen, from.HeldCap);
+        (FloodStepMs, FloodDueMs, FloodEveryMs, FireWaterM3) = (from.FloodStepMs, from.FloodDueMs, from.FloodEveryMs, from.FireWaterM3);
+    }
+
+    /// <summary>An array's contents into another's, sized to it first if it isn't (only between classes, or before setup).</summary>
+    static void Copy<T>(T[] from, ref T[] to)
+    {
+        if (to.Length != from.Length)
+            to = new T[from.Length];
+        Array.Copy(from, to, from.Length);
+    }
+
     /// <summary>A part made worse (never better): the worse of its state and the new one.</summary>
     public bool Worsen(int node, PartState s)
     {
