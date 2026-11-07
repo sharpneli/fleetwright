@@ -228,6 +228,16 @@ public static class NearMiss
                 Behind(c, k, hit, frag, ci, sg, cellLambda, Mild(c, plating, pl, (b.X0 + b.X1) / 2), surface, s, ref res, ref r);
         }
 
+        // the high-explosive stores on deck, as far as the hull doesn't hide them (docs/battle/explosions.md EX6c: Suzuya's No. 1 mount)
+        double w = Math.Max(hit.Shell.FillerKg * hit.Shell.FillerRe * hit.Force, 0);
+        for (int l = 0; l < c.Launchers.Length; l++)
+        {
+            ref readonly var row = ref c.Launchers[l];
+            if (row.StoreCell >= 0 || !Stores.Live(c, k, l) || !Seen(c, row.StoreBox, p, water, out var box) || Effects.BoxDistance(box, p) > reach)
+                continue;
+            res.Stores += Stores.Try(c, k, l, p, d, v, frag, 1, w, Effects.BoxDistance(row.StoreBox, p), 0, s, ref r, WaterDragM(p, surface, Nearest(box, p), s));
+        }
+
         // the parts above the side, as far as the hull doesn't hide them
         for (int i = 0; i < comps.Length; i++)
         {

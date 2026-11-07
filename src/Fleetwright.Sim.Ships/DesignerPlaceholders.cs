@@ -187,19 +187,38 @@ public static class DesignerPlaceholders
     /// <item>the charge, TNT's worth: shipgen's warhead (2·10⁻⁶·d³ kg, ~300 kg for a 21", the Second War's) times the
     /// block's share (0.45 before 1906, wet guncotton; 0.6 in the Great War, the G/7's 195 kg of hexanite, the 21" Mk II's
     /// ~110-130 kg; 0.85 between the wars, 1 after);</item>
-    /// <item>its gyro's angle, its failures on the run and its duds, the block's.</item>
+    /// <item>its gyro's angle, its failures on the run and its duds, the block's;</item>
+    /// <item>its warhead as a store aboard (docs/battle/explosions.md EX6c): the block's filler, as much of it as gives the charge
+    /// (the charge over its re), in a cylinder of the calibre with the block's wall, as long as that bore needs to hold it, a nose
+    /// and an after end of a tenth and a twentieth of its case [EST]; its pieces by Gurney and Mott as a shell's (13 §2).</item>
     /// </list>
     /// The designer should give the torpedo by type and year: its settings, warhead and explosive.</summary>
     public static TorpedoRow Torpedo(double calibreMm, double warheadKg, in TorpedoTechRow t)
     {
         double d = calibreMm > 0 ? calibreMm / 533 : 1, range = d * d * d, speed = Math.Pow(d, 0.3);
-        double warhead = warheadKg > 0 ? warheadKg : 2e-6 * Math.Pow(calibreMm > 0 ? calibreMm : 533, 3);
+        double cal = calibreMm > 0 ? calibreMm : 533;
+        double warhead = warheadKg > 0 ? warheadKg : 2e-6 * Math.Pow(cal, 3), charge = warhead * t.ChargeShare;
+        // the warhead: the filler in the bore its wall leaves, the case round it (the body's 0.85 of the case, the nose 0.1, the end 0.05)
+        var f = t.Filler;
+        double filler = f.Re > 0 ? charge / f.Re : charge, outer = cal / 1000, bore = Math.Max(outer - 2 * t.CaseMm / 1000, 0.01);
+        double lengthM = filler / Fragments.FillerKgM3 / (Math.PI / 4 * bore * bore);
+        double body = Fragments.SteelKgM3 * Math.PI / 4 * (outer * outer - bore * bore) * lengthM, casing = body / 0.85;
+        var head = new ShellTypeRow
+        {
+            CalibreMm = cal, MassKg = filler + casing, Kind = ShellKind.He, FillerKg = filler, FillerRe = f.Re, FillerQDet = f.QDet, FillerQComb = f.QComb,
+            FillerAirM3Kg = f.AirM3Kg, FillerEta = f.Eta, FillerFire = f.Fire, FillerFull = 1,
+            Fragments = Fragments.Of(new FragmentInputs(cal, filler + casing, filler, ShellKind.He, f.GurneyMs, f.Brisance, 1, 1, 0.10, 0, 0.85, 0, 0.05, 1)),
+        };
         return new TorpedoRow
         {
-            CalibreMm = calibreMm > 0 ? calibreMm : 533, ChargeKg = warhead * t.ChargeShare, FastKn = t.FastKn * speed, FastRangeM = t.FastRangeM * range,
+            CalibreMm = cal, ChargeKg = charge, FastKn = t.FastKn * speed, FastRangeM = t.FastRangeM * range,
             SlowKn = t.SlowKn * speed, SlowRangeM = t.SlowRangeM * range, GyroDeg = t.GyroDeg, FailShare = t.FailShare, DudShare = t.DudShare,
+            Warhead = head, CaseMm = t.CaseMm, HeldK = f.HeldK, CookK = f.CookK, Oxygen = t.Oxygen, WarheadM = lengthM + WarheadNoseM,
         };
     }
+
+    /// <summary>A warhead's nose and pistol beyond its filler's length, m [EST].</summary>
+    const double WarheadNoseM = 0.25;
 
     /// <summary>PLACEHOLDER: a torpedo mount's training rate, °/s, the block's: trained by hand before the Second War (3),
     /// by power in it (6). Shipgen gives the arcs, not the gear.</summary>

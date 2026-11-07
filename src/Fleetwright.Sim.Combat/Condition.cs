@@ -16,6 +16,9 @@ public enum HitSource : byte
     /// <summary>A shell that missed, bursting in the water close by (docs/battle/shells-armour-damage.md E7): the hit's
     /// point is the burst's, outside the hull.</summary>
     NearMiss,
+    /// <summary>An explosive store of hers going off (docs/battle/explosions.md EX6c): a launcher's warheads (<see cref="Hit.Store"/>),
+    /// set off by what went before; the hit's point is theirs, its shell their charge.</summary>
+    Store,
 }
 
 /// <summary>A hit (docs/battle/fighting.md 4.3a; the architecture's "damage takes a hit, not a shell flight"): the ship
@@ -45,6 +48,8 @@ public readonly record struct Hit
     public int ShellType { get; init; }
     public int Shooter { get; init; }
     public int Battery { get; init; }
+    /// <summary>A store going off (<see cref="HitSource.Store"/>): its launcher (the class's Launchers).</summary>
+    public int Store { get; init; }
 }
 
 /// <summary>A part's state (a component or a room): working, damaged (working, a room at half), out of action, or
@@ -230,6 +235,12 @@ public sealed class ShipCondition
     /// at (drawn when it first heats, 0 before), how long it's been threatened (s), and whether it's being flooded.</summary>
     public double[] MagazineHeat = [], MagazineLimit = [], MagazineThreatS = [];
     public bool[] MagazineFlood = [];
+    /// <summary>Each launcher's warheads as a store aboard (docs/battle/explosions.md EX6c; by launcher): how many are aboard (its
+    /// tubes' and its spares; fired ones gone), the heat its fires have given their cases (a share of the cook-off: 1 goes) and the
+    /// limit drawn for it when it first heats (0 before), and whether something set them off, waiting for their own explosion.</summary>
+    public int[] Warheads = [];
+    public double[] StoreHeat = [], StoreLimit = [];
+    public bool[] StoreLit = [];
     /// <summary>A magazine's flood order (docs/battle/magazines.md V6): world ms its valves open (0: none), and the share of
     /// its stow its sprinklers have wetted.</summary>
     public long[] MagazineOrderMs = [];
@@ -547,6 +558,8 @@ public sealed class ShipCondition
                 (new double[c.Rooms.Length], new double[c.Rooms.Length], new double[c.Rooms.Length], new bool[c.Rooms.Length]);
             (MagazineOrderMs, MagazineWet, MagazineValve) = (new long[c.Rooms.Length], new double[c.Rooms.Length], new ValveStage[c.Rooms.Length]);
             MagazineSpent = new bool[c.Rooms.Length];
+            (Warheads, StoreHeat, StoreLimit, StoreLit) = (new int[c.Launchers.Length], new double[c.Launchers.Length], new double[c.Launchers.Length],
+                new bool[c.Launchers.Length]);
             Smoked = new bool[c.Rooms.Length];
             (Stoke, StokeUntilMs) = (new double[c.Rooms.Length], new long[c.Rooms.Length]);
             (PartSpace, CellSpace) = (new int[c.Components.Length], new int[c.Cells.Length]);
@@ -651,8 +664,13 @@ public sealed class ShipCondition
             Array.Clear(MagazineWet);
             Array.Clear(MagazineSpent);
             Array.Clear(MagazineValve);
+            Array.Clear(StoreHeat);
+            Array.Clear(StoreLimit);
+            Array.Clear(StoreLit);
             Array.Clear(Smoked);
         }
+        for (int l = 0; l < Warheads.Length; l++)
+            Warheads[l] = c.Launchers[l].Torpedoes;
         Array.Fill(HoleLeft, 1.0);
         Array.Fill(MountWorks, true);
         Array.Fill(MountSound, true);
@@ -1375,6 +1393,14 @@ public sealed class ShipCondition
                 h.Add(MagazineWet[i]);
                 h.Add(MagazineSpent[i] ? 1 : 0);
                 h.Add((int)MagazineValve[i]);
+            }
+        for (int i = 0; i < Warheads.Length; i++)
+            if (StoreHeat[i] != 0 || StoreLit[i] || Warheads[i] != Class.Launchers[i].Torpedoes)
+            {
+                h.Add(i + 6500);
+                h.Add(Warheads[i]);
+                h.Add(StoreHeat[i]);
+                h.Add(StoreLit[i] ? 1 : 0);
             }
         for (int i = 0; i < Fire.Length; i++)
             if (Fire[i].Phase != BurnPhase.None)

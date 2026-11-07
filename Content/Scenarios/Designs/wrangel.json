@@ -1,5 +1,5 @@
 {
- "version": 21,
+ "version": 22,
  "id": "wrangel",
  "name": "Wrangel-like (1917)",
  "type": "DD",
@@ -423,21 +423,7 @@
   "magazine_sprinklers": false
  },
  "gun_tech": {"Great War, double-base": {"reload_share": 1.1, "heavy_slow": 1, "heavy_slow_under_40_cal": 1, "heavy_slow_under_30_cal": 1, "train_share": 1, "dp_train_share": 1, "max_elevation_deg": 18, "dp_max_elevation_deg": 18, "pattern_pct": 3.3, "pattern_exp": 3, "pattern_light_pct": 2.5, "propellant": "double-base", "black_powder_under_cal": 0, "packaging": "magazine_case"}},
- "torpedo_tech": {
-  "Great War torpedo": {
-   "fast_kn": 41,
-   "fast_range_m": 3900,
-   "slow_kn": 28,
-   "slow_range_m": 9200,
-   "charge_share": 0.6,
-   "mount_train_deg_s": 3,
-   "mount_reload_s": 600,
-   "tube_reload_s": 180,
-   "gyro_deg": 20,
-   "fail": 0.12,
-   "dud": 0.1
-  }
- },
+ "torpedo_tech": {"Great War torpedo": {"fast_kn": 41, "fast_range_m": 3900, "slow_kn": 28, "slow_range_m": 9200, "charge_share": 0.6, "mount_train_deg_s": 3, "mount_reload_s": 600, "tube_reload_s": 180, "gyro_deg": 20, "fail": 0.12, "dud": 0.1, "filler": "TNT", "case_mm": 6, "oxygen": false}},
  "drainage": {
   "name": "German Great War (1914)",
   "pumps_tph_per_1000t": 50,

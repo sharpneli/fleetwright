@@ -14,13 +14,16 @@
    "tube_reload_s": 180,
    "gyro_deg": 5,
    "fail": 0.25,
-   "dud": 0.15
+   "dud": 0.15,
+   "filler": "Wet guncotton",
+   "case_mm": 6,
+   "oxygen": false
   }
  },
  {
   "name": "Great War torpedo",
   "group": "",
-  "note": "1906-1921: the RN's 21\" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300 and its 195 kg of hexanite.",
+  "note": "1906-1921: the RN's 21\" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300 and its 195 kg of hexanite (TNT/HND).",
   "value": {
    "fast_kn": 41,
    "fast_range_m": 3900,
@@ -32,7 +35,10 @@
    "tube_reload_s": 180,
    "gyro_deg": 20,
    "fail": 0.12,
-   "dud": 0.1
+   "dud": 0.1,
+   "filler": "TNT",
+   "case_mm": 6,
+   "oxygen": false
   }
  },
  {
@@ -50,13 +56,16 @@
    "tube_reload_s": 180,
    "gyro_deg": 90,
    "fail": 0.1,
-   "dud": 0.08
+   "dud": 0.08,
+   "filler": "TNT",
+   "case_mm": 6,
+   "oxygen": false
   }
  },
  {
   "name": "Second War torpedo",
   "group": "",
-  "note": "1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. Oxygen torpedoes (the Type 93's 20 km at 48 kn) aren't told apart.",
+  "note": "1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. TNT (the RN's and USN's Torpex from 1943, Germany's hexanite: blocks of their own).",
   "value": {
    "fast_kn": 45,
    "fast_range_m": 6000,
@@ -68,7 +77,31 @@
    "tube_reload_s": 180,
    "gyro_deg": 90,
    "fail": 0.08,
-   "dud": 0.1
+   "dud": 0.1,
+   "filler": "TNT",
+   "case_mm": 6,
+   "oxygen": false
+  }
+ },
+ {
+  "name": "Oxygen torpedo",
+  "group": "",
+  "note": "1933-1945, the IJN's: the 21\" Type 95's 49-51 kn for 9,000 m or 45-47 for 12,000 (the 24\" Type 93's 48 kn for 20 km), Type 97 in the warhead. Its flask holds oxygen: a fire aboard takes the warhead high order (15 §3.2: Mikuma, Suzuya).",
+  "value": {
+   "fast_kn": 50,
+   "fast_range_m": 9000,
+   "slow_kn": 46,
+   "slow_range_m": 12000,
+   "charge_share": 1,
+   "mount_train_deg_s": 6,
+   "mount_reload_s": 300,
+   "tube_reload_s": 180,
+   "gyro_deg": 90,
+   "fail": 0.08,
+   "dud": 0.1,
+   "filler": "TNT/HND",
+   "case_mm": 6,
+   "oxygen": true
   }
  },
  {
@@ -86,7 +119,10 @@
    "tube_reload_s": 180,
    "gyro_deg": 90,
    "fail": 0.05,
-   "dud": 0.05
+   "dud": 0.05,
+   "filler": "Torpex",
+   "case_mm": 6,
+   "oxygen": false
   }
  }
 ]

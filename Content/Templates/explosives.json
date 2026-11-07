@@ -18,13 +18,15 @@
     "ce": 1
    },
    "fire": 1,
-   "from": 1860
+   "from": 1860,
+   "held_k": 0,
+   "cook_k": 0
   }
  },
  {
   "name": "Wet guncotton",
   "group": "1890",
-  "note": "Nitrocellulose at 25-30% water (Russia 1890s-1905). Heats and air [EST]: dry NC's less the water. Under-initiated by weak primers: many duds.",
+  "note": "Nitrocellulose at 25-30% water (Russia 1890s-1905; warheads and mines to ~1915). Heats and air [EST]: dry NC's less the water. Under-initiated by weak primers: many duds. As a store nothing sets it off from outside, nor lights it while wet (15 §1.1: only its dry primer goes).",
   "value": {
    "name": "Wet guncotton",
    "re": 0.85,
@@ -40,13 +42,15 @@
     "ce": 0.85
    },
    "fire": 0.2,
-   "from": 1890
+   "from": 1890,
+   "held_k": 0,
+   "cook_k": 0
   }
  },
  {
   "name": "Lyddite",
   "group": "1888",
-  "note": "Picric acid (also Melinite). in_plate 0.35 sourced (armor/04 §6, Jutland). Fine splinters.",
+  "note": "Picric acid (also Melinite). in_plate 0.35 sourced (armor/04 §6, Jutland). Fine splinters. Held 26 [INFERRED], cook-off 530 K [EST].",
   "value": {
    "name": "Lyddite",
    "re": 1.17,
@@ -62,13 +66,15 @@
     "ce": 0.97
    },
    "fire": 0.4,
-   "from": 1888
+   "from": 1888,
+   "held_k": 26,
+   "cook_k": 530
   }
  },
  {
   "name": "Shimose",
   "group": "1893",
-  "note": "Picric acid undiluted, lacquer and wax lined (Japan). Bore prematures and bursts on the water are 12's hidden stats, not modelled.",
+  "note": "Picric acid undiluted, lacquer and wax lined (Japan). Bore prematures and bursts on the water are 12's hidden stats, not modelled. Held and cook-off as lyddite's.",
   "value": {
    "name": "Shimose",
    "re": 1.17,
@@ -84,13 +90,15 @@
     "ce": 0.97
    },
    "fire": 0.5,
-   "from": 1893
+   "from": 1893,
+   "held_k": 26,
+   "cook_k": 530
   }
  },
  {
   "name": "TNT",
   "group": "1902",
-  "note": "Trotyl, Fp 02. Heats measured (LLNL 4.57, 14.96 MJ/kg), Gurney IATG 01.80. Needs a strong booster.",
+  "note": "Trotyl, Fp 02. Heats measured (LLNL 4.57, 14.96 MJ/kg), Gurney IATG 01.80. Needs a strong booster. Held 52 (cast) [INFERRED], cook-off 561 K [SRC recalled].",
   "value": {
    "name": "TNT",
    "re": 1,
@@ -106,13 +114,15 @@
     "ce": 0.95
    },
    "fire": 0.25,
-   "from": 1902
+   "from": 1902,
+   "held_k": 52,
+   "cook_k": 561
   }
  },
  {
   "name": "TNT/wax",
   "group": "1905",
-  "note": "TNT with ~10% wax (Germany's Fp 5-20, the RN's post-war TNT/beeswax). Heats and air [EST]: TNT's with the wax's combustion.",
+  "note": "TNT with ~10% wax (Germany's Fp 5-20, the RN's post-war TNT/beeswax). Heats and air [EST]: TNT's with the wax's combustion. Held and cook-off TNT's [EST].",
   "value": {
    "name": "TNT/wax",
    "re": 0.9,
@@ -128,13 +138,15 @@
     "ce": 0.93
    },
    "fire": 0.25,
-   "from": 1905
+   "from": 1905,
+   "held_k": 52,
+   "cook_k": 561
   }
  },
  {
   "name": "Explosive D",
   "group": "1911",
-  "note": "Ammonium picrate (Dunnite, USN). re [EST, unsourced]; 11 has 0.90. The most impact-insensitive filler in quantity.",
+  "note": "Ammonium picrate (Dunnite, USN). re [EST, unsourced]; 11 has 0.90. The most impact-insensitive filler in quantity. Held 115, cook-off 530 K [EST].",
   "value": {
    "name": "Explosive D",
    "re": 0.95,
@@ -150,13 +162,39 @@
     "ce": 0.92
    },
    "fire": 0.2,
-   "from": 1911
+   "from": 1911,
+   "held_k": 115,
+   "cook_k": 530
+  }
+ },
+ {
+  "name": "TNT/HND",
+  "group": "1912",
+  "note": "TNT 60, hexanitrodiphenylamine 40: Germany's hexanite (torpedoes and mines from about 1912) and the IJN's Type 97 (from 1937). Between TNT and tetryl: re, heats, Gurney and brisance [EST]; Held 34 and cook-off 540 K [EST] (15 §1.1: the IJN's own sources disagree on its sensitivity).",
+  "value": {
+   "name": "TNT/HND",
+   "re": 1.1,
+   "q_det": 4.6,
+   "q_comb": 13.5,
+   "air_m3_kg": 2.3,
+   "eta": 1,
+   "gurney_ms": 2500,
+   "brisance": 1.1,
+   "in_plate": 0.1,
+   "full": {
+    "basic": 0.6,
+    "ce": 0.95
+   },
+   "fire": 0.25,
+   "from": 1912,
+   "held_k": 34,
+   "cook_k": 540
   }
  },
  {
   "name": "Shellite",
   "group": "1918",
-  "note": "Picric acid with dinitrophenol (RN Greenboy on). Full 0.90 with CE sourced; low-order without it until the late 1920s.",
+  "note": "Picric acid with dinitrophenol (RN Greenboy on). Full 0.90 with CE sourced; low-order without it until the late 1920s. Held 38 (\"less sensitive\" than lyddite), cook-off 530 K [EST].",
   "value": {
    "name": "Shellite",
    "re": 1,
@@ -172,13 +210,15 @@
     "ce": 0.9
    },
    "fire": 0.35,
-   "from": 1918
+   "from": 1918,
+   "held_k": 38,
+   "cook_k": 530
   }
  },
  {
   "name": "TNA",
   "group": "1931",
-  "note": "Trinitroanisole, Type 91 bakuyaku (IJN). re [EST, unsourced]. Needed a liner of 1/3-1/2 of the cavity.",
+  "note": "Trinitroanisole, Type 91 bakuyaku (IJN). re [EST, unsourced]. Needed a liner of 1/3-1/2 of the cavity. Held and cook-off TNT's [EST].",
   "value": {
    "name": "TNA",
    "re": 1,
@@ -194,13 +234,15 @@
     "ce": 0.93
    },
    "fire": 0.25,
-   "from": 1931
+   "from": 1931,
+   "held_k": 52,
+   "cook_k": 561
   }
  },
  {
   "name": "Amatol 60/40",
   "group": "1915",
-  "note": "TNT 60, ammonium nitrate 40: the shortage filler. Heats and air [EST] between TNT and 80/20.",
+  "note": "TNT 60, ammonium nitrate 40: the shortage filler. Heats and air [EST] between TNT and 80/20. Held 95, cook-off 530 K [EST].",
   "value": {
    "name": "Amatol 60/40",
    "re": 1,
@@ -216,13 +258,15 @@
     "ce": 0.93
    },
    "fire": 0.15,
-   "from": 1915
+   "from": 1915,
+   "held_k": 95,
+   "cook_k": 530
   }
  },
  {
   "name": "Amatol 80/20",
   "group": "1915",
-  "note": "Ammonium nitrate 80, TNT 20: about five times the shells per ton of TNT. Oxygen-balanced: no afterburn. Brisance 0.62 from NOL's fragments.",
+  "note": "Ammonium nitrate 80, TNT 20: about five times the shells per ton of TNT. Oxygen-balanced: no afterburn. Brisance 0.62 from NOL's fragments. Held 95, cook-off 530 K [EST].",
   "value": {
    "name": "Amatol 80/20",
    "re": 0.95,
@@ -238,13 +282,39 @@
     "ce": 0.9
    },
    "fire": 0.1,
-   "from": 1915
+   "from": 1915,
+   "held_k": 95,
+   "cook_k": 530
+  }
+ },
+ {
+  "name": "Torpex",
+  "group": "1942",
+  "note": "RDX 42, TNT 40, aluminium 18: the RN's and USN's torpedoes, mines and depth charges from 1942-43. re 1.5 under water; heats, Gurney and brisance [EST]. Held 16 and cook-off 487 K as Comp B's [SRC].",
+  "value": {
+   "name": "Torpex",
+   "re": 1.5,
+   "q_det": 5.6,
+   "q_comb": 16,
+   "air_m3_kg": 2,
+   "eta": 1,
+   "gurney_ms": 2650,
+   "brisance": 1.3,
+   "in_plate": 0.3,
+   "full": {
+    "basic": 0.65,
+    "ce": 0.97
+   },
+   "fire": 0.3,
+   "from": 1942,
+   "held_k": 16,
+   "cook_k": 487
   }
  },
  {
   "name": "RDX/TNT",
   "group": "1943",
-  "note": "Late-war HE (the RN's 15\" HE Mk VII TNT/RDX). Gurney, brisance, in_plate and full [EST]; too sensitive for AP unless phlegmatised.",
+  "note": "Late-war HE (the RN's 15\" HE Mk VII TNT/RDX). Gurney, brisance, in_plate and full [EST]; too sensitive for AP unless phlegmatised. Held and cook-off Comp B's.",
   "value": {
    "name": "RDX/TNT",
    "re": 1.35,
@@ -260,13 +330,15 @@
     "ce": 0.97
    },
    "fire": 0.25,
-   "from": 1943
+   "from": 1943,
+   "held_k": 16,
+   "cook_k": 487
   }
  },
  {
   "name": "Comp B",
   "group": "1943",
-  "note": "RDX 60, TNT 40. Gurney 2,774 and brisance 1.41 (IATG) sourced; heats [EST] as RDX/TNT.",
+  "note": "RDX 60, TNT 40. Gurney 2,774 and brisance 1.41 (IATG) sourced; heats [EST] as RDX/TNT. Held 16 [SRC], cook-off 487 K [SRC recalled].",
   "value": {
    "name": "Comp B",
    "re": 1.33,
@@ -282,7 +354,9 @@
     "ce": 0.97
    },
    "fire": 0.25,
-   "from": 1943
+   "from": 1943,
+   "held_k": 16,
+   "cook_k": 487
   }
  }
 ]

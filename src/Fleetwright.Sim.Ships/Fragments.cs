@@ -218,8 +218,43 @@ public sealed class FragmentBurst
     const double P = Fragments.ThorA * 2 / 3 + Fragments.ThorB;
 
     /// <summary><see cref="ThroughCount"/> with the plate as e^0.906 (e in inches of mild steel): Mott's count above the
-    /// lightest fragment that gets through (<see cref="ThresholdKg"/>), since a heavier one always does.</summary>
-    double Through(double rM, double v, double e) => v <= 0 ? 0 : CountAbove(Math.Max(ThresholdKg(rM, v, e), Fragments.MinKg));
+    /// lightest fragment that gets through (<see cref="ThresholdKg"/>), since a heavier one always does; with Held's constant
+    /// (heldK > 0), above the lightest that sets off what's behind it (<see cref="HeldKg"/>).</summary>
+    double Through(double rM, double v, double e, double heldK = 0) =>
+        v <= 0 ? 0 : CountAbove(Math.Max(heldK > 0 ? HeldKg(rM, v, e, heldK) : ThresholdKg(rM, v, e), Fragments.MinKg));
+
+    /// <summary>The lightest fragment thrown at v that still sets off a high explosive rM off behind a plate (e^0.906, e in inches
+    /// of mild steel: what's between and the store's own case; research 15 §2.1): what it keeps through the plate, v_r² = v² −
+    /// V₅₀² (Lambert-Jonas, p 2 [EST]), by its size d (a steel cube's edge, mm), at Held's v_r²·d ≥ K (mm³/µs²). Heavier pieces
+    /// slow less, need less over the plate's limit and are bigger, so the line rises in mass: found by halving in ln m.
+    /// +∞ when none up to 100 kg does.</summary>
+    public static double HeldKg(double rM, double v, double e, double heldK)
+    {
+        if (!(v > 0))
+            return double.PositiveInfinity;
+        double lo = Math.Log(1e-6), hi = Math.Log(100);
+        if (Held(Math.Exp(hi), rM, v, e, heldK) < 0)
+            return double.PositiveInfinity;
+        if (Held(Math.Exp(lo), rM, v, e, heldK) >= 0)
+            return Math.Exp(lo);
+        for (int i = 0; i < 40 && hi - lo > 1e-4; i++)
+        {
+            double mid = (lo + hi) / 2;
+            if (Held(Math.Exp(mid), rM, v, e, heldK) >= 0)
+                hi = mid;
+            else
+                lo = mid;
+        }
+        return Math.Exp(hi);
+    }
+
+    /// <summary>Held's margin for a fragment of m kg: v_r²·d − K, in mm³/µs² (v in km/s, d in mm).</summary>
+    static double Held(double m, double rM, double v, double e, double heldK)
+    {
+        double at = Fragments.Speed(v, m, rM) / 1000, limit = e > 0 ? Fragments.LimitK(m) * e / 1000 : 0;
+        double left = at * at - limit * limit, d = 1000 * Math.Cbrt(m / Fragments.SteelKgM3);
+        return left * d - heldK;
+    }
 
     /// <summary>The lightest fragment thrown at v that still beats a plate (e^0.906, e in inches of mild steel; 0 for none)
     /// rM off: v·e^(−R/(L₁m^⅓)) = K₁·m^p·e^0.906, solved in ln m by Newton (the left side less the right is concave and
@@ -334,8 +369,10 @@ public sealed class FragmentBurst
     /// point (and dragM more of it: the water a burst under the sea throws them through, as the air that slows them as
     /// much; E7); those over the plate's limit get in. The plate is mild steel mildMm thick at normal (<see
     /// cref="Fragments.MildMm"/>), at its obliquity on the box's face square to the fragments, or on the face whose
-    /// normal is <paramref name="normal"/> when one is given (a deck's, a bulkhead's). Allocation-free.</summary>
-    public double Hits(P3 at, P3 dir, double v, in Box box, double mildMm, P3 normal = default, double dragM = 0)
+    /// normal is <paramref name="normal"/> when one is given (a deck's, a bulkhead's). With Held's constant (heldK > 0), those
+    /// that set off the high explosive in the box, the plate its case and what's between (<see cref="HeldKg"/>; research 15
+    /// §2.1). Allocation-free.</summary>
+    public double Hits(P3 at, P3 dir, double v, in Box box, double mildMm, P3 normal = default, double dragM = 0, double heldK = 0)
     {
         if (SideCount <= 0)
             return 0;
@@ -369,14 +406,14 @@ public sealed class FragmentBurst
         double side = Math.Atan2(SideMs, v), band = double.DegreesToRadians(Fragments.BandHalfDeg);
         double inBand = Overlap(psi, alpha, side - band, side + band);
         double bandOmega = Cone(side - band, side + band), sideV = Math.Sqrt(SideMs * SideMs + v * v);
-        double thru = Through(near, sideV, e);
+        double thru = Through(near, sideV, e, heldK);
         hits += thru * ((1 - Fragments.OutsideShare) * inBand * omega / bandOmega
                         + Fragments.OutsideShare * (1 - inBand) * omega / Math.Max(4 * Math.PI - bandOmega, 1e-6));
         // the ogive's forward cone and the tail's backward one, each the side spray's classes scaled to its metal
         if (OgiveKg > 0 && BodyKg > 0)
-            hits += Spray(psi, alpha, omega, near, e, v, OgiveMs, OgiveFromDeg, OgiveToDeg, OgiveKg / BodyKg);
+            hits += Spray(psi, alpha, omega, near, e, v, OgiveMs, OgiveFromDeg, OgiveToDeg, OgiveKg / BodyKg, heldK);
         if (TailKg > 0 && BodyKg > 0)
-            hits += Spray(psi, alpha, omega, near, e, v, TailMs, TailFromDeg, TailToDeg, TailKg / BodyKg);
+            hits += Spray(psi, alpha, omega, near, e, v, TailMs, TailFromDeg, TailToDeg, TailKg / BodyKg, heldK);
         return hits;
     }
 
@@ -392,7 +429,7 @@ public sealed class FragmentBurst
     }
 
     /// <summary>A cone of spray's hits on a box: its share of the box's polar extent, the classes scaled to its metal.</summary>
-    double Spray(double psi, double alpha, double omega, double near, double e, double v, double kick, double fromDeg, double toDeg, double scale)
+    double Spray(double psi, double alpha, double omega, double near, double e, double v, double kick, double fromDeg, double toDeg, double scale, double heldK)
     {
         double a0 = Lean(kick, v, fromDeg), a1 = Lean(kick, v, toDeg);
         if (a0 > a1)
@@ -402,7 +439,7 @@ public sealed class FragmentBurst
             return 0;
         double mid = double.DegreesToRadians((fromDeg + toDeg) / 2);
         double speed = Math.Sqrt(Math.Max(kick * kick + v * v + 2 * kick * v * Math.Cos(mid), 0));
-        return scale * Through(near, speed, e) * f * omega / Math.Max(Cone(a0, a1), 1e-6);
+        return scale * Through(near, speed, e, heldK) * f * omega / Math.Max(Cone(a0, a1), 1e-6);
     }
 
     /// <summary>A piece thrown psi off the nose at kick, with the shell's v added: its angle off the shell's line.</summary>

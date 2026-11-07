@@ -393,7 +393,10 @@ public sealed record FillerInput
 /// detonation and combustion, MJ/kg, the air it burns, m³/kg, and the afterburn's efficiency (eta) for a closed space,
 /// the Gurney constant, m/s, and brisance (B_TNT/B_Mott) for the fragments, the in-plate rate at the limit, the
 /// full-detonation rates by booster, the fire start's multiplier, and the year it came in (a label; the sim never reads
-/// it). As a filler's `explosive`, its name picks the design's or the catalogue's block and what it gives overrides.</summary>
+/// it). As a filler's `explosive`, its name picks the design's or the catalogue's block and what it gives overrides. As a
+/// store's (a torpedo's warhead; docs/battle/explosions.md EX6c): Held's constant, mm³/µs², what a fragment through its case
+/// must keep (v²d) to set it off (0: nothing from outside does: wet guncotton), and its cook-off temperature, K (0: it
+/// doesn't cook off); a block without them takes its catalogue namesake's, else TNT's.</summary>
 public sealed record ExplosiveInput
 {
     public string? Name { get; init; }
@@ -408,6 +411,8 @@ public sealed record ExplosiveInput
     public FullInput? Full { get; init; }
     public double? Fire { get; init; }
     public int? From { get; init; }
+    public double? HeldK { get; init; }
+    public double? CookK { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
@@ -552,7 +557,8 @@ public sealed record GunTechInput
 /// <summary>torpedo_tech.NAME: a torpedo block (TorpedoTemplates; DesignerPlaceholders.Torpedo reads it), calibre-free: a
 /// 21"'s fast and slow settings (kn, m), the share of the warhead that's TNT's worth, a deck mount's training (°/s) and
 /// reload (s), a submerged tube's reload (s), its gyro's angle (degrees), and its shares that fail on the run and that
-/// don't go off.</summary>
+/// don't go off. Its warhead as a store aboard (docs/battle/explosions.md EX6c): the filler (an explosive's name, the
+/// design's or the catalogue's), the case's wall, mm, and whether its flask holds oxygen (a fire takes it high order).</summary>
 public sealed record TorpedoTechInput
 {
     public double? FastKn { get; init; }
@@ -566,6 +572,9 @@ public sealed record TorpedoTechInput
     public double? GyroDeg { get; init; }
     public double? Fail { get; init; }
     public double? Dud { get; init; }
+    public string? Filler { get; init; }
+    public double? CaseMm { get; init; }
+    public bool? Oxygen { get; init; }
     [JsonExtensionData] public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 

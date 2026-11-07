@@ -47,6 +47,9 @@ public struct EffectsResult
     /// <summary>The stations of an ammunition train whose charges this hit lit, the magazine's own among them
     /// (docs/battle/magazines.md V2).</summary>
     public int Stations;
+    /// <summary>The high-explosive stores this explosion set off (docs/battle/explosions.md EX6c; <see cref="Stores"/>): each goes off
+    /// as its own explosion after it.</summary>
+    public int Stores;
     /// <summary>The hull girder cut through (an underwater explosion's, 4.6): the ship breaks in two.</summary>
     /// <summary>E3: a plate that held threw spall off its back.</summary>
     public bool Spall;
@@ -65,7 +68,7 @@ public struct EffectsResult
     /// at the hull's nearest wetted point, and the seams and plating its shock opened to the sea (m², in BreachM2).</summary>
     public double SideThrough, UpperThrough, Nsf, ShockM2;
 
-    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine ||
+    public readonly bool Changed => Destroyed + Disabled + Damaged > 0 || BreachM2 > 0 || Jammed || Fire || Magazine || Stores > 0 ||
         Turret.Blow != TurretBlow.None || Stunned || Feed || Shock ||
         Blast.OpenM2 + Blast.LeakM2 > 0;
 }
@@ -449,6 +452,61 @@ public static class Effects
     {
         var shell = hit.Shell;
         var b = Locate(c, k, shell, path, t, s, size, broken);
+        double vent = b.Part >= 0 ? NearWall(c, path.Crossings, t.BurstT, size, s) : 0;
+        // the men its pieces reach see it as it flew: a burst on a plate throws half its pieces into it, and one on the hull's
+        // plating outside her those of them that get through into the space behind
+        var xs = path.Crossings;
+        var crew = new CrewSight(t.BurstMs, b.Share * (t.Burst is BurstKind.Outside or BurstKind.InPlate ? s.ContactShare : 1), -1, 0, default);
+        if (t.Burst == BurstKind.Outside && t.Plate >= 0 && xs[t.Plate].Kind == CrossingKind.HullIn && CellAt(xs, t.Plate, true) is int behind and >= 0)
+            crew = crew with { Behind = behind, BehindMild = c.MaterialOf(xs[t.Plate].Material).FragmentMildMm(xs[t.Plate].Mm), BehindNormal = xs[t.Plate].Normal };
+        Site(ref b, shell, hit.Ms, w, vent, crew, -1, ref res, ref r);
+    }
+
+    /// <summary>A store of hers going off where it is (docs/battle/explosions.md EX6c): a launcher's warheads still aboard, all of them
+    /// together, as a burst at rest at their place through the steps a shell's burst takes (<see cref="Site"/>): its near field and
+    /// gas in the space it's in, or from the deck it stands on into the space under it (half its products down, the rest the air's:
+    /// <see cref="SimSettings.ContactGasShare"/>), its cases' pieces along the tubes' ring, the men, fires, magazines and the other
+    /// stores they reach. Pure and allocation-free.</summary>
+    public static EffectsResult Detonate(ShipClass c, ShipCondition k, int launcher, long now, SimSettings s, ref RandomStream r)
+    {
+        var res = new EffectsResult { Part = -1, MagazineRoom = -1 };
+        ref readonly var row = ref c.Launchers[launcher];
+        ref readonly var tp = ref c.Torpedoes[row.Torpedo];
+        int n = Math.Max(k.Warheads[launcher], 0);
+        if (n == 0 || !(tp.Warhead.FillerKg > 0))
+            return res;
+        var charge = tp.Warhead with { FillerKg = tp.Warhead.FillerKg * n, MassKg = tp.Warhead.MassKg * n };
+        double w = charge.FillerKg * charge.FillerRe, size = Math.Cbrt(w);
+        int cell = row.StoreCell;
+        Casualties.Begin(k, now);
+        var b = new BurstSite
+        {
+            C = c, K = k, S = s, At = row.StoreAt, Dir = row.StoreAxis, V = 0, Force = 1, Share = n,
+            Charge = NearField.Charge(size, 1, cell >= 0 ? NearField.TampIn(c, k, cell, row.StoreAt, size, s) : 0, s),
+            Cell = cell, Part = row.StorePart, Deck = row.StoreDeck, CellBox = cell >= 0 ? c.Cells[cell].Box : default,
+            Frag = tp.Warhead.Fragments?.High, Inside = true,
+            Magazine = -1, Turret = -1, TurretSt = -1, ReadyMount = -1, ReadySt = -1, Via = MagazineVia.None,
+        };
+        res.Part = row.StorePart >= 0 ? row.StorePart : cell >= 0 && c.Cells[cell].Room >= 0 ? c.RoomNode(c.Cells[cell].Room) : -1;
+        Site(ref b, charge, now, w, 0, new CrewSight(0, n, -1, 0, default), launcher, ref res, ref r);
+        if (res.Magazine)
+            res.Flash = true;
+        Casualties.Draw(c, k, now, s, ref res, ref r);
+        return res;
+    }
+
+    /// <summary>How a burst's pieces meet the men (<see cref="Crew"/>): the speed it flew at, their multiple of its pieces (a contact
+    /// burst's half into the plate, a store's warheads), and the hull's plating it burst on outside her, with the space behind it.</summary>
+    readonly record struct CrewSight(double V, double Share, int Behind, double BehindMild, P3 BehindNormal);
+
+    /// <summary>A burst where it is, whatever it was (a shell's along its path, a store's at rest): the part and space it's in, the
+    /// parts and spaces around, its gas (in a closed space it stays until it vents or the walls give way; on deck, in an open mount
+    /// or vented as fast as it forms there's only the shock and the fragments; on a deck over her hull, its near field from above),
+    /// the men, fires, magazines and the high-explosive stores it reaches. self: a store going off, not to count.</summary>
+    static void Site(ref BurstSite b, in ShellTypeRow shell, long ms, double w, double vent, in CrewSight crew, int self, ref EffectsResult res,
+        ref RandomStream r)
+    {
+        var (c, k, s) = (b.C, b.K, b.S);
         if (b.Part >= 0)
             PartBurstIn(ref b, ref res, ref r);
         PartsAround(ref b, ref res, ref r);
@@ -457,31 +515,44 @@ public static class Effects
             SpaceBurstIn(ref b, ref res, ref r);
             SpacesNextDoor(ref b, ref res, ref r);
         }
-        // the gas (E5): in a closed space it stays until it vents or the walls give way; on deck, in an open mount or
-        // vented as fast as it forms there's only the shock and the fragments above
         GasNetwork? net = null;
-        int gasHandling = -1;
+        int gasHandling = -1, gasPart = b.Part;
         bool inHandling = false;
-        if (!broken && b.Inside && shell.FillerKg > 0 && (b.Part >= 0 || b.Cell >= 0))
+        if (!b.Broken && b.Inside && shell.FillerKg > 0)
         {
-            net = GasNetwork.For(c);
             double fill = shell.FillerKg * b.Force;
-            if (b.Part >= 0)
-                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, NearWall(c, path.Crossings, t.BurstT, size, s), s, ref r);
-            else
+            if (b.Deck >= 0)
             {
+                // on the deck: its near field down through it from the space under it, at its own height over it (the plate's
+                // standoff), the hemisphere of its products facing it after
+                net = GasNetwork.For(c);
+                res.Blast = net.Strike(k, b.Deck, b.At, b.Charge, s, ref r, fill * s.ContactGasShare, shell);
+                res.BreachM2 += res.Blast.HoleM2;
+                Flashed(c, net, b.Deck, ref gasHandling, ref inHandling);
+                gasPart = -1;
+            }
+            else if (b.Part >= 0)
+            {
+                net = GasNetwork.For(c);
+                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, vent, s, ref r);
+            }
+            else if (b.Cell >= 0)
+            {
+                net = GasNetwork.For(c);
                 res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, b.Charge, s, ref r);
                 res.BreachM2 += res.Blast.HoleM2;
                 Flashed(c, net, b.Cell, ref gasHandling, ref inHandling);
             }
         }
         // the people its pieces reach (E6), and what its gas does to them and the gear wherever it went
-        Crew(c, k, path, t, b.Part, b.Cell, b.At, b.Dir, b.Frag, b.Share, b.Around, broken ? 0 : w * b.Force, broken, res.Blast, s);
+        Crew(c, k, b.Part, b.Cell, b.At, b.Dir, b.Frag, crew, b.Around, b.Broken ? 0 : w * b.Force, b.Broken, res.Blast, s);
         if (net is not null)
-            GasFelt(c, k, net, b.Part, s, ref res);
-        if (!broken)
+            GasFelt(c, k, net, gasPart, s, ref res);
+        if (!b.Broken)
             StartFires(ref b, shell, w, ref res, ref r);
-        MagazineLit(ref b, hit.Ms, gasHandling, inHandling, ref res, ref r);
+        MagazineLit(ref b, ms, gasHandling, inHandling, ref res, ref r);
+        // the high-explosive stores it touches or its pieces set off (EX6c), each its own explosion after this one
+        res.Stores += Stores.Burst(c, k, b.At, b.Dir, b.V, b.Frag, b.Share, b.Broken ? 0 : w * b.Force, b.Cell, b.Part, b.Around, self, s, ref r);
     }
 
     /// <summary>A burst where it is, as <see cref="Burst"/>'s steps read it, and what its fragments lit on the way to the
@@ -500,6 +571,8 @@ public static class Effects
         public double V, Force, Share, Around;
         public readonly double WreckM => Charge.ReachM;
         public int Cell, Part;
+        /// <summary>A store's burst on a deck over her hull: the space under it, which its near field comes down into (-1: none).</summary>
+        public int Deck;
         public Box CellBox;
         public FragmentBurst? Frag;
         /// <summary>Holed in pieces (E2): a weak burst of its fragments. Inside: not outside the ship's plates.</summary>
@@ -527,6 +600,7 @@ public static class Effects
             Around = part >= 0 ? PartMild(c, part, Armour(c, part)) : 0,
             Cell = cell,
             Part = part,
+            Deck = -1,
             CellBox = cell >= 0 ? c.Cells[cell].Box : default,
             Frag = shell.Fragments?.Of(t.Outcome == Outcome.LowOrder),
             Broken = broken,
@@ -692,7 +766,7 @@ public static class Effects
     }
 
     /// <summary>What a join stops of a burst's fragments, as mild steel, with any inclined plate on the way.</summary>
-    static double JoinMild(ShipClass c, in Neighbour n, in Box here, in Box there, P3 p) => n.Join switch
+    internal static double JoinMild(ShipClass c, in Neighbour n, in Box here, in Box there, P3 p) => n.Join switch
     {
         JoinKind.Deck => DeckMild(c, n.Through, here, there),
         JoinKind.Bulkhead => BulkheadMild(c, n.Through, here, there),
@@ -784,12 +858,11 @@ public static class Effects
     /// deck), each through what's between: a part's own plates and armour (an open or shielded mount's men stand open,
     /// their cover says how much the shield hides them). A burst on a plate throws half its pieces into it. In the open, its
     /// blast by distance (TNT kg w); in a closed space its gas, which is <see cref="GasFelt"/>'s.</summary>
-    static void Crew(ShipClass c, ShipCondition k, HitPath path, in TerminalResult t, int part, int cell, P3 p, P3 fdir, FragmentBurst? frag,
-        double share, double around, double w, bool broken, in GasResult bl, SimSettings s)
+    static void Crew(ShipClass c, ShipCondition k, int part, int cell, P3 p, P3 fdir, FragmentBurst? frag, in CrewSight seen, double around, double w,
+        bool broken, in GasResult bl, SimSettings s)
     {
-        var xs = path.Crossings;
         bool inHull = cell >= 0;
-        double v = t.BurstMs, sh = share * (t.Burst is BurstKind.Outside or BurstKind.InPlate ? s.ContactShare : 1);
+        double v = seen.V, sh = seen.Share;
         double openW = broken || !(bl.Spaces == 0 || bl.Open) ? 0 : w;
         if (frag is not null)
         {
@@ -806,12 +879,8 @@ public static class Effects
                         n.Join == JoinKind.Open && part < 0 ? openW : 0, s);
                 }
             }
-            else if (t.Burst == BurstKind.Outside && t.Plate >= 0 && xs[t.Plate].Kind == CrossingKind.HullIn && CellAt(xs, t.Plate, true) is int behind and >= 0)
-            {
-                // on the hull's plating: of the half going into it, those that get through into the space behind
-                ref readonly var x = ref xs[t.Plate];
-                Casualties.Pieces(c, k, Casualties.Cell(c, behind), frag, p, fdir, v, sh, c.MaterialOf(x.Material).FragmentMildMm(x.Mm), x.Normal, 0, s);
-            }
+            else if (seen.Behind >= 0)   // on the hull's plating: of the half going into it, those that get through into the space behind
+                Casualties.Pieces(c, k, Casualties.Cell(c, seen.Behind), frag, p, fdir, v, sh, seen.BehindMild, seen.BehindNormal, 0, s);
             var comps = c.Components;
             var cellBox = inHull ? c.Cells[cell].Box : default;
             for (int i = 0; i < comps.Length; i++)

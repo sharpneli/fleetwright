@@ -16,7 +16,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 **EX5 is built and merged (2026-11-07, "EX5: the water"): torpedoes on the one path, the bubble's whip by research 13's law, a
 boundary's mass, liquid that passes its push on and runs out, a protection's walls that stretch. Open there: a held protection
 floods about three times the record; a destroyer is lost to one torpedo about half the time; research asked on protection walls.
-Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a and EX6b are built (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it"). Next: EX6c, high-explosive stores (research 15).**
+Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a, EX6b and EX6c are built (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it", "EX6c: high-explosive stores"). Next: EX6d, the anchors (research 15's table, `magazine --runs`/`--race`, `losses`, the panel).**
 **EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
@@ -218,7 +218,7 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
     13,900 (kW/m²)²·s with q onto a surface at 480 K, in place of `GasIgniteK` read as the gas's temperature: a burst's own products
     light them in tens of ms, gas mixed down to 600-700 K takes minutes. A burst's fragments, its spall or a near field reaching the
     charges light them: their packaging stops nothing a burst throws. `MagazineFlashChance` goes everywhere.
-  - **EX6c. High-explosive stores** (15, recommendations 1, 3-5). Torpedo warheads first (on deck, in torpedo rooms), by filler and
+  - **EX6c. High-explosive stores** (15, recommendations 1, 3-5; built 2026-11-07, "EX6c: high-explosive stores"). Torpedo warheads first (on deck, in torpedo rooms), by filler and
     case: set off by contact (R ≤ 0.06·W^⅓) or by a fragment that keeps v²d ≥ K through its case (Held), never by blast; cooked off
     by a timer by its wall and the fire. Each goes off as its own detonation through the one path. Shell rooms stay out: the record
     has them whole beside magazines that went (15 §4). Depth charges, mines and bombs then need only a row.
@@ -829,6 +829,56 @@ up with their magazines.
 - **Tests:** the step test checks what converges (peak, propellant burned, magazines lit), not the girder: late in Lion Q's run
   her side plates sit within about 2% of tearing, a knife-edge, not the step. Lion A across the bulkhead lights the next magazine
   and leaves her broken or breached.
+
+## EX6c: high-explosive stores (2026-11-07)
+
+From research 15 (recommendations 1, 3-5). The stores are a torpedo launcher's warheads, in its tubes and its spares beside them
+(`Stores`; their place is `LauncherRow.StoreBox`): a deck mount's at its tubes' muzzle ends as it rests, over the cell under the
+deck; a submerged tube's in its room. Shell rooms stay out (15 §4: whole beside magazines that went). Depth charges, mines and
+bombs need only a row of the same kind when they come.
+
+**The data** (design format 22, `ShipDesign.Version` 61):
+- **An explosive says how it behaves as a store:** Held's constant (`held_k`, mm³/µs²: Comp B 16 [SRC], cast TNT 52 [INFERRED],
+  Explosive D 115 [EST]...; 0, nothing from outside sets it off: wet guncotton) and its cook-off temperature (`cook_k`: TNT 561 K,
+  Comp B 487 K). Two catalogue rows are new: TNT/HND (hexanite, Type 97) and Torpex. A design's own copy without them takes its
+  catalogue namesake's.
+- **A torpedo block names its warhead:** `filler`, `case_mm` (6 [EST]) and `oxygen` (its flask's). The catalogue's: Victorian wet
+  guncotton; Great War, Treaty and Second War TNT; Cold War Torpex; a new "Oxygen torpedo" (the IJN's, Type 97, oxygen). Format 22
+  gives a block of a template's name its template's, else TNT, 6 mm, air (with a warning).
+- **The warhead is a charge like a shell's** (`TorpedoRow.Warhead`): its filler, as much as gives the charge over its re, in a
+  cylinder of the calibre with the block's wall, its pieces by Gurney and Mott (`DesignerPlaceholders.Torpedo`).
+
+**What sets one off** (each marks it, `ShipCondition.StoreLit`, for its own explosion after the one that did):
+- **Contact:** a detonation within `ContactReachK` (0.06)·W^⅓ m of the store [SRC Mk 82s]. Blast beyond it never does.
+- **Fragments, by Held through the case:** the pieces of any burst (a shell's, a store's own, a near miss's over the side, a
+  torpedo's through her plating into what its near field walked into) that keep v_r²·d ≥ K, v_r² = v² − V₅₀² through what's between
+  and the case (`FragmentBurst.HeldKg`, the same Mott count and THOR limit as every other fragment). Against 15 §2.1's table: a
+  neighbour warhead's 30 g at 2,800 m/s sets off TNT; a 6 in HE's 25 g at 900 m/s doesn't; Torpex's line for a 200 g piece is at
+  800 m/s (the table's 1.01).
+- **Fire:** a store in a burning space heats toward its filler's cook-off temperature, `CookOffMin` [1.3, 3.5, 16] min for a 5 mm TNT
+  case in an engulfing fire (charges burning there), a compartment's (developed) and hot smoke (growing, starved, in the open), by its
+  own wall and filler as a lumped wall heats: t ∝ wall·ln((T_f − 300)/(T_f − T_c)), within 10% of H2's Torpex row; each store's limit
+  drawn ×e^(0.6·N); water on the fire or the space flooded cools it (`CookOffCoolS` 600 s). When it goes, an oxygen flask's warhead
+  detonates; an air flask's only `CookOffHighShare` (0.1) of the time, else it burns, its flask bursting first (Kalk, Stormes).
+
+**How it goes off:** all the launcher's warheads still aboard together, as a burst at rest at their place through the steps a shell's
+burst takes (`Effects.Detonate`, sharing `Effects.Site` with the shell's): in a room, its near field and gas there; on a deck, its near
+field down through the deck at its own height over it and half its products into what that opened (`ContactGasShare`, the old
+`UnderwaterGasShare`); its cases' pieces round the tubes' ring; the men, fires, magazines and other stores they reach. The damage
+system runs it as a hit of its own (`HitSource.Store`, logged as `CombatEvent.Store`, not counted as a hit on her), then any store
+it set off in turn.
+
+**What it did:**
+- **Shells:** in 5,000 hits of light HE and Lion's 13.5 in on destroyers, no warhead went: shell pieces through a 6 mm case fall short
+  of Held's line (Chōkai, Furutaka, Ralph Talbot), and contact needs the burst on the warheads themselves. **Open:** a torpedo
+  mount's hitbox is its 1.9 m body; the tubes, and the warheads at their muzzle ends 2.5-3.8 m out, aren't in it, so a shell can't
+  strike them. That's shipgen's hitbox, later.
+- **Torpedoes:** none of 200 on the destroyer set her warheads off (the near field rarely walks up to the deck under her mounts).
+- **A mount going off** (`torpedo DESIGN --store L`): breaks the destroyer and Fubuki in two every time (Brownson's), and sets off the
+  next mount by its pieces (10 of 10 on the destroyer). The light cruiser's 2 × 182 kg breaks her too: as the same 364 kg burst in
+  her quarters does (`explode light_cruiser --kg 364`, 80% of her section lost at 0.48 of her length), the near field's and the
+  girder's, not the store's. A warhead in Lion's torpedo room floods her 3,200 t and she lives.
+- **Fire:** a 6 mm TNT case cooks off in 1.6/4.2/19 min by the class of fire; in the test's developed fire, 4.5 min on average.
 
 ## What stays out
 

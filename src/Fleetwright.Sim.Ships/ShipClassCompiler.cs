@@ -1153,11 +1153,22 @@ public static class ShipClassCompiler
                 ref readonly var m = ref c.mounts[i];
                 if (m.Kind != ComponentKind.Torpedo || m.Torpedoes <= 0)
                     continue;
+                int k = TorpedoOf(m.CalibreMm, m.WarheadKg);
+                var tt = c.turretTypes[m.Type];
+                int tubes = Math.Max(tt.Barrels, 1);
+                // its warheads at its tubes' muzzle ends (the tubes centred on the pivot), at rest; on the deck the mount stands on
+                var b = c.components[m.Component].Bounds;
+                double head = torpedoes[k].WarheadM, out_ = Math.Max(tt.BarrelLen / 2, head) - head / 2, rest = double.DegreesToRadians(m.RestDeg);
+                var axis = new P3(Math.Cos(rest), Math.Sin(rest), 0);
+                // the tubes' axis halfway up the mount (shipgen's height for a torpedo mount, half its radius)
+                var at = new P3(m.X + axis.X * out_, m.Y + axis.Y * out_, b.Base + Math.Clamp(tt.R / 4, 0.3, Math.Max(b.Top - b.Base, 0.3)));
                 launchers.Add(new LauncherRow
                 {
                     Kind = LauncherKind.Mount, Index = i, Component = m.Component, X = m.X, Y = m.Y, Z = wl, Arcs = m.Arcs, Trains = m.Rotating,
-                    RestDeg = m.RestDeg, Tubes = Math.Max(c.turretTypes[m.Type].Barrels, 1), Torpedoes = m.Torpedoes, ReloadS = m.ReloadS,
-                    Torpedo = TorpedoOf(m.CalibreMm, m.WarheadKg),
+                    RestDeg = m.RestDeg, Tubes = tubes, Torpedoes = m.Torpedoes, ReloadS = m.ReloadS, Torpedo = k,
+                    StoreBox = StoreBox(at, axis, torpedoes[k].WarheadM, tubes * Math.Max(tt.Spacing, torpedoes[k].CalibreMm / 1000), torpedoes[k].CalibreMm / 1000),
+                    StoreAt = at, StoreAxis = axis, StoreCell = -1, StoreDeck = CellUnder(c, m.X, m.Y, b.Base), StorePart = m.Component,
+                    StoreFire = c.FireOfPart(m.Component) is int f and >= 0 ? f : c.FireOfDeck(c.SectionAt(at.X)),
                 });
             }
             for (int i = 0; i < c.tubes.Length; i++)
@@ -1165,15 +1176,64 @@ public static class ShipClassCompiler
                 ref readonly var t = ref c.tubes[i];
                 if (t.Torpedoes <= 0)
                     continue;
+                int k = TorpedoOf(t.CalibreMm, t.WarheadKg);
+                // the warhead of the one in it at the muzzle's end, its reloads in the room beside it
+                double len = Math.Sqrt((t.P1.X - t.P0.X) * (t.P1.X - t.P0.X) + (t.P1.Y - t.P0.Y) * (t.P1.Y - t.P0.Y) + (t.P1.Z - t.P0.Z) * (t.P1.Z - t.P0.Z));
+                var axis = len > 1e-6 ? new P3((t.P1.X - t.P0.X) / len, (t.P1.Y - t.P0.Y) / len, (t.P1.Z - t.P0.Z) / len) : new P3(1, 0, 0);
+                double back = Math.Min(torpedoes[k].WarheadM / 2, len / 2);
+                var at = new P3(t.P1.X - axis.X * back, t.P1.Y - axis.Y * back, t.P1.Z - axis.Z * back);
+                int cell = CellHolding(c, at.X, at.Y, at.Z);
+                if (cell < 0)
+                {
+                    // its muzzle's end in the side: the warhead a little further in
+                    at = new P3(t.P1.X - axis.X * 2 * back, t.P1.Y - axis.Y * 2 * back, t.P1.Z - axis.Z * 2 * back);
+                    cell = CellHolding(c, at.X, at.Y, at.Z);
+                }
+                double dia = torpedoes[k].CalibreMm / 1000;
                 launchers.Add(new LauncherRow
                 {
                     Kind = LauncherKind.Tube, Index = i, Component = t.Component, X = t.P1.X, Y = t.P1.Y, Z = t.P1.Z, Arcs = t.Arcs, Trains = t.Rotating,
-                    RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, tech),
-                    Torpedo = TorpedoOf(t.CalibreMm, t.WarheadKg),
+                    RestDeg = t.RestDeg, Tubes = 1, Torpedoes = t.Torpedoes, ReloadS = DesignerPlaceholders.TorpedoReloadS(LauncherKind.Tube, tech), Torpedo = k,
+                    StoreBox = StoreBox(at, axis, torpedoes[k].WarheadM, t.Torpedoes * dia, dia), StoreAt = at, StoreAxis = axis, StoreCell = cell, StoreDeck = -1,
+                    StorePart = -1, StoreFire = cell,
                 });
             }
             c.launchers = launchers.ToArray();
             c.torpedoes = torpedoes.ToArray();
+        }
+
+        /// <summary>A store's box: warheads side by side, each so long along the axis, the row so wide across it and so high,
+        /// about its centre, as the box square to the ship that holds it.</summary>
+        static Box StoreBox(P3 at, P3 axis, double longM, double wideM, double highM)
+        {
+            double ax = Math.Abs(axis.X), ay = Math.Abs(axis.Y);
+            double hx = (ax * longM + ay * wideM) / 2, hy = (ay * longM + ax * wideM) / 2, hz = (Math.Abs(axis.Z) * longM + highM) / 2;
+            return new Box(at.X - hx, at.X + hx, at.Y - hy, at.Y + hy, at.Z - hz, at.Z + hz);
+        }
+
+        /// <summary>The hull's cell right under a point on a deck: the highest whose plan holds it and whose top is at or a little under
+        /// it (a deckhouse's floor, a raised deck: within 3 m), or -1 (in the upper works, over no cell).</summary>
+        static int CellUnder(ShipClass c, double x, double y, double z)
+        {
+            int best = -1;
+            for (int i = 0; i < c.cells.Length; i++)
+            {
+                var b = c.cells[i].Box;
+                if (x < b.X0 || x > b.X1 || y < b.Y0 || y > b.Y1 || b.Top > z + 0.05 || b.Top < z - 3)
+                    continue;
+                if (best < 0 || b.Top > c.cells[best].Box.Top)
+                    best = i;
+            }
+            return best;
+        }
+
+        /// <summary>The cell holding a point, or -1.</summary>
+        static int CellHolding(ShipClass c, double x, double y, double z)
+        {
+            for (int i = 0; i < c.cells.Length; i++)
+                if (c.cells[i].Box.Contains(x, y, z))
+                    return i;
+            return -1;
         }
 
         /// <summary>Within this of the centreline, a mount or director stands on it, m.</summary>

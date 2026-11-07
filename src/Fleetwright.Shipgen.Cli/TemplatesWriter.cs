@@ -131,15 +131,16 @@ static class TemplatesWriter
             sb.Append("- **").Append(g.Name).Append(":** ").Append(g.Note).Append('\n');
         sb.Append("""
 
-            | Torpedo block | Fast (21") | Slow (21") | Warhead TNT share | Mount training | Reload (mount / tube) | Gyro | Fail | Dud |
-            |---|---|---|---|---|---|---|---|---|
+            | Torpedo block | Fast (21") | Slow (21") | Warhead TNT share | Mount training | Reload (mount / tube) | Gyro | Fail | Dud | Warhead (filler, case, flask) |
+            |---|---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
         foreach (var t in TorpedoTemplates.All)
         {
             var v = t.Value;
             sb.Append(Inv, $"| {t.Name} | {v.FastKn:0} kn, {v.FastRangeM:#,0} m | {v.SlowKn:0} kn, {v.SlowRangeM:#,0} m | {v.ChargeShare:0.0#} | " +
-                           $"{v.MountTrainDegS:0} °/s | {v.MountReloadS:0} / {v.TubeReloadS:0} s | {v.GyroDeg:0}° | {v.Fail:0.0#} | {v.Dud:0.0#} |\n");
+                           $"{v.MountTrainDegS:0} °/s | {v.MountReloadS:0} / {v.TubeReloadS:0} s | {v.GyroDeg:0}° | {v.Fail:0.0#} | {v.Dud:0.0#} | " +
+                           $"{v.Filler}, {v.CaseMm:0} mm, {(v.Oxygen == true ? "oxygen" : "air")} |\n");
         }
         sb.Append('\n');
         foreach (var t in TorpedoTemplates.All)
@@ -519,17 +520,20 @@ static class TemplatesWriter
             A shell's `filler.explosive` names one; a design copies the ones it names into its `explosives`, and a filler can
             override any number inline. Sources: `docs/battle/damage/12_explosive_fillers.md` §4.1 (re, in-plate, full
             detonation, fire), `11_blast_confinement.md` §2.4 (heats, air, eta), `13_fragmentation.md` §2.1 and §3.1 (Gurney,
-            brisance). The sim reads `re` (the blast: W = filler kg × re) from S1 on; the rest ride along for P3 and phase E.
+            brisance). The sim reads `re` (the blast: W = filler kg × re) from S1 on; the rest ride along for P3 and phase E. As a
+            store (a torpedo's warhead; docs/battle/explosions.md EX6c), research 15 §1.1 and §3.2: Held's constant, what a fragment
+            must keep through the case (v²d, mm³/µs²; 0: nothing from outside sets it off), and its cook-off temperature.
 
-            | Explosive | From | re | Q det / comb MJ/kg | Air m³/kg | eta | Gurney m/s | Brisance | In plate | Full basic / CE | Fire |
-            |---|---|---|---|---|---|---|---|---|---|---|
+            | Explosive | From | re | Q det / comb MJ/kg | Air m³/kg | eta | Gurney m/s | Brisance | In plate | Full basic / CE | Fire | Held K | Cook-off K |
+            |---|---|---|---|---|---|---|---|---|---|---|---|---|
 
             """.Replace("\r\n", "\n"));
         foreach (var e in Explosives.All)
         {
             var x = e.Value;
             sb.Append(CultureInfo.InvariantCulture, $"| {x.Name} | {x.From} | {N(x.Re, "0.00")} | {N(x.QDet, "0.0")} / {N(x.QComb, "0.0")} | {N(x.AirM3Kg, "0.00")} | " +
-                $"{N(x.Eta, "0.00")} | {N(x.GurneyMs, "0")} | {N(x.Brisance, "0.00")} | {N(x.InPlate, "0.00")} | {N(x.Full?.Basic, "0.00")} / {N(x.Full?.Ce, "0.00")} | {N(x.Fire, "0.00")} |\n");
+                $"{N(x.Eta, "0.00")} | {N(x.GurneyMs, "0")} | {N(x.Brisance, "0.00")} | {N(x.InPlate, "0.00")} | {N(x.Full?.Basic, "0.00")} / {N(x.Full?.Ce, "0.00")} | {N(x.Fire, "0.00")} | " +
+                $"{N(x.HeldK, "0")} | {N(x.CookK, "0")} |\n");
         }
         sb.Append('\n');
         foreach (var e in Explosives.All)

@@ -30,6 +30,9 @@ public enum CombatEvent : byte
     /// <summary>A ship's (Target) people gave her up (docs/battle/striking.md SK1): Count her <see cref="GivenUp"/> now
     /// (her colours down, her men ordered off, her charges set); Shooter and Battery hit her last.</summary>
     GaveUp,
+    /// <summary>An explosive store of a ship's (Target) went off (docs/battle/explosions.md EX6c): as a hit's line, Count its
+    /// launcher, its source <see cref="HitSource.Store"/>; Shooter and Battery hit her last.</summary>
+    Store,
 }
 
 /// <summary>What a hit did, as the log tells it.</summary>

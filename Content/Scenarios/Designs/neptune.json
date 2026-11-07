@@ -1,5 +1,5 @@
 {
- "version": 21,
+ "version": 22,
  "id": "neptune",
  "name": "Neptune-like (1911)",
  "type": "BB",
@@ -581,7 +581,10 @@
    "tube_reload_s": 180,
    "gyro_deg": 20,
    "fail": 0.12,
-   "dud": 0.1
+   "dud": 0.1,
+   "filler": "TNT",
+   "case_mm": 6,
+   "oxygen": false
   }
  },
  "drainage": {

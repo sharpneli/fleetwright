@@ -264,8 +264,19 @@ public sealed class CombatStore
         (l.Loaded, l.FiredMs) = (Math.Max(l.Loaded - n, 0), ms);
         if (l.Spare > 0)
             l.LoadedMs = ms + (long)Math.Round(row.ReloadS * 1000);
+        var w = conditions[slot]!.Warheads;
+        w[launcher] = Math.Min(w[launcher], l.Loaded + l.Spare);   // the warheads aboard go with them (docs/battle/explosions.md EX6c)
         Touched = true;
         moved[slot] = true;
+    }
+
+    /// <summary>A launcher's warheads went off or burned aboard (docs/battle/explosions.md EX6c): nothing left to fire.</summary>
+    public void Spent(int slot, int launcher)
+    {
+        ref var l = ref launchers[slot]![launcher];
+        (l.Loaded, l.Spare) = (0, 0);
+        conditions[slot]!.Warheads[launcher] = 0;
+        Touched = true;
     }
 
     /// <summary>How many of a ship's batteries are engaged (the rails' rule reads it: an engaged ship stays off rails).</summary>

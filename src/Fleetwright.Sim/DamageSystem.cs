@@ -39,6 +39,8 @@ public enum BlastCause : byte
     Torpedo,
     Fire,
     Dev,
+    /// <summary>An explosive store of hers going off (docs/battle/explosions.md EX6c).</summary>
+    Store,
 }
 
 /// <summary>Where along a ship a dev's side hole is (<see cref="DamageSystem.SideHole"/>): x in metres, the centre of
@@ -737,11 +739,11 @@ public sealed class DamageSystem : IWorldSystem
         var cls = ship.Handling.Class;
         var k = store.Combat.Condition(slot);
         long now = world.Time.Ms;
-        bool near = hit.Source == HitSource.NearMiss;
+        bool near = hit.Source == HitSource.NearMiss, own = hit.Source == HitSource.Store;
         k.Damaged = touched = true;
         Ready(slot, k);
         k.Experience = world.Gunnery.Experience(ship.Side);   // her men's nerve (docs/battle/crew.md N3b)
-        if (!near)
+        if (!near && !own)
             k.Hits++;
         (k.LastShooter, k.LastBattery) = (hit.Shooter, hit.Battery);
 
@@ -785,14 +787,54 @@ public sealed class DamageSystem : IWorldSystem
         if (hit.Source is HitSource.Shell or HitSource.Coarse)
             Record(ship, cls, hit, t, e);
         if (!near || fx != HitEffect.None || e.Killed + e.Wounded > 0)   // a near miss that did nothing isn't news
-            log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship, hit.ShellType, e.Part, t.Outcome,
-                fx, hit.Shell.Kind, (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
+            log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : own ? CombatEvent.Store : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship,
+                own ? hit.Store : hit.ShellType, e.Part, t.Outcome, fx, hit.Shell.Kind,
+                (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
         if (blew)
-            Blew(world, slot, k, e.MagazineRoom, hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : BlastCause.Shell, hit.Point, race);
+            Blew(world, slot, k, e.MagazineRoom, hit.Source switch { HitSource.Torpedo => BlastCause.Torpedo, HitSource.Store => BlastCause.Store, _ => BlastCause.Shell },
+                hit.Point, race);
         else if (broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || girder.EndOff || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)
+        GoOff(world, slot, k);
+    }
+
+    /// <summary>Stores set off and run: how many, each its own explosion (docs/battle/explosions.md EX6c).</summary>
+    public int StoresSetOff { get; private set; }
+
+    bool goingOff;
+
+    /// <summary>The high-explosive stores what went before set off (docs/battle/explosions.md EX6c), each its own explosion after it,
+    /// as a hit of its own (<see cref="HitSource.Store"/>) through the one path; one may set off another, which goes after it.</summary>
+    void GoOff(World world, int slot, ShipCondition k)
+    {
+        if (goingOff)
+            return;   // the stores going off now take any they set off in turn
+        goingOff = true;
+        var cls = k.Class;
+        int entity = ships.Store[slot].Entity;
+        var (lt, le, lf, lr) = (LastTerminal, LastEffects, LastEffect, LastRace);   // what the hit did, as its caller reads it
+        for (int l = Lit(k); l >= 0 && k.Status == ShipStatus.Afloat; l = Lit(k))
+        {
+            ref readonly var row = ref cls.Launchers[l];
+            StoresSetOff++;
+            Strike(world, new Hit
+            {
+                Ship = entity, Ms = world.Time.Ms, Point = row.StoreAt, Direction = row.StoreAxis, Source = HitSource.Store, Store = l,
+                Shell = cls.Torpedoes[row.Torpedo].Warhead, ShellType = -1, Shooter = k.LastShooter, Battery = k.LastBattery,
+            });
+        }
+        (LastTerminal, LastEffects, LastEffect, LastRace) = (lt, le, lf, lr);
+        goingOff = false;
+
+        static int Lit(ShipCondition k)
+        {
+            for (int l = 0; l < k.StoreLit.Length; l++)
+                if (k.StoreLit[l])
+                    return l;
+            return -1;
+        }
     }
 
     /// <summary>What a hit does, by what it is: a shell's walk through her and its burst, or an explosion in the water beside her.</summary>
@@ -803,6 +845,15 @@ public sealed class DamageSystem : IWorldSystem
             // an underwater explosion against the hull (4.6): no path of its own
             var e = Underwater.Apply(cls, k, hit, settings, ref rng, out var outcome);
             t = new TerminalResult { Outcome = outcome, Plate = -1 };
+            return e;
+        }
+        if (hit.Source == HitSource.Store)
+        {
+            // a store of hers going off where it is (EX6c): a burst at rest, no path; her launcher's warheads gone with it
+            t = new TerminalResult { Outcome = Outcome.Exploded, Burst = BurstKind.Inside, Plate = -1, Glance = -1, Spall = double.NaN, PlateU = double.NaN };
+            var e = Effects.Detonate(cls, k, hit.Store, now, settings, ref rng);
+            k.StoreLit[hit.Store] = false;
+            ships.Store.Combat.Spent(slot, hit.Store);
             return e;
         }
         if (hit.Source == HitSource.NearMiss)
@@ -1300,6 +1351,21 @@ public sealed class DamageSystem : IWorldSystem
                 Recompute(world, slot, k, ref rng);
             }
         }
+        // the high-explosive stores' cases in her fires (docs/battle/explosions.md EX6c): cooked off, or burned
+        if (k.Fires > 0 || Hot(k.StoreHeat))
+        {
+            var (cooked, burned) = Stores.Cook(cls, f, k, dt, settings, ref rng);
+            if (burned > 0)
+                for (int l = 0; l < k.Warheads.Length; l++)
+                    if (k.Warheads[l] == 0)
+                        ships.Store.Combat.Spent(slot, l);
+            if (cooked > 0)
+            {
+                GoOff(world, slot, k);
+                if (k.Status != ShipStatus.Afloat)
+                    return -1;
+            }
+        }
         // her girder as the water goes in: she can break later, and in a seaway (docs/battle/explosions.md: Bristol, Strong, Beatty)
         var girder = default(GirderReading);
         if (flooding && how == LossKind.None && k.WaterT > 0)
@@ -1327,6 +1393,14 @@ public sealed class DamageSystem : IWorldSystem
         if (k.ScuttleMs != 0)
             return k.ScuttleMs - now <= k.FloodEveryMs ? settings.FloodMs : k.FloodEveryMs;   // her charges set: stepping till they go
         return k.WaterT > 0 || Holed(cls, k) || Repairs.Busy(cls, k) || Magazines.Busy(cls, f, k, settings) ? k.FloodEveryMs : -1;
+    }
+
+    static bool Hot(double[] heat)
+    {
+        foreach (double h in heat)
+            if (h > 0)
+                return true;
+        return false;
     }
 
     /// <summary>The water's step: her repair parties, the magazines' valves, the sea in and across her, and how she settles (a way

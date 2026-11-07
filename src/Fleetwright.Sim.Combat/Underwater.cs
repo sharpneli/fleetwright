@@ -52,7 +52,7 @@ public static class Underwater
         var b0 = cells[first].Box;
         var at = new P3(Math.Clamp(p.X, b0.X0, b0.X1), Math.Clamp(p.Y, b0.Y0, b0.Y1), Math.Clamp(p.Z, b0.Base, b0.Top));
         var net = GasNetwork.For(c);
-        res.Blast = net.Strike(k, first, at, near, s, ref r, w * s.UnderwaterGasShare, Products);
+        res.Blast = net.Strike(k, first, at, near, s, ref r, w * s.ContactGasShare, Products);
         res.BubbleWhip = HullGirder.Of(c).Bubble(w, p, Math.Sqrt((p.X - at.X) * (p.X - at.X) + (p.Y - at.Y) * (p.Y - at.Y) + (p.Z - at.Z) * (p.Z - at.Z)),
             HitQuery.WaterOf(c, k.Attitude), s);   // none at her plate: its bubble vents into what it opened
         res.BreachM2 += res.Blast.HoleM2;
@@ -61,6 +61,8 @@ public static class Underwater
         outcome = Outboard(c, first) && !Inside(c, net) ? Outcome.Held : Outcome.Exploded;
 
         Reach(c, k, net, p, near.ReachM, s, ref res, ref r);
+        // the high-explosive stores in what it opened: its own case's pieces through her plating, or touching (EX6c; Rowan's)
+        res.Stores += Stores.Outside(c, k, net, p, hit.Direction, hit.Torpedo.Warhead.Fragments?.High, w, s, ref r);
         Effects.GasFelt(c, k, net, -1, s, ref res);
         NearMiss.Shock(c, k, hit, w, s, ref res, ref r);
         Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);

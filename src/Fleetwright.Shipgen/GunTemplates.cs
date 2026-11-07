@@ -175,25 +175,31 @@ public static class TorpedoTemplates
     public sealed record Template(string Name, string Note, TorpedoTechInput Value);
 
     static Template T(string name, double fastKn, double fastM, double slowKn, double slowM, double share, double train, double mountReload, double gyro,
-        double fail, double dud, string note) =>
+        double fail, double dud, string filler, bool oxygen, string note) =>
         new(name, note, new TorpedoTechInput
         {
             FastKn = fastKn, FastRangeM = fastM, SlowKn = slowKn, SlowRangeM = slowM, ChargeShare = share, MountTrainDegS = train,
-            MountReloadS = mountReload, TubeReloadS = 180, GyroDeg = gyro, Fail = fail, Dud = dud,
+            MountReloadS = mountReload, TubeReloadS = 180, GyroDeg = gyro, Fail = fail, Dud = dud, Filler = filler, CaseMm = CaseMm, Oxygen = oxygen,
         });
+
+    /// <summary>A warhead's wall, mm (research 15 §2.1 [EST]: 5-6 mm for warheads and depth charges).</summary>
+    const double CaseMm = 6;
 
     public static readonly IReadOnlyList<Template> All =
     [
-        T("Victorian torpedo", 30, 1_000, 24, 2_700, 0.45, 3, 600, 5, 0.25, 0.15,
+        T("Victorian torpedo", 30, 1_000, 24, 2_700, 0.45, 3, 600, 5, 0.25, 0.15, "Wet guncotton", false,
             "Before 1906: the 1890s' Whiteheads, wet guncotton; no gyro angling to speak of."),
-        T("Great War torpedo", 41, 3_900, 28, 9_200, 0.6, 3, 600, 20, 0.12, 0.1,
+        T("Great War torpedo", 41, 3_900, 28, 9_200, 0.6, 3, 600, 20, 0.12, 0.1, "TNT", false,
             "1906-1921: the RN's 21\" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for " +
-            "9,300 and its 195 kg of hexanite."),
-        T("Treaty torpedo", 43, 5_000, 30, 11_000, 0.85, 3, 600, 90, 0.1, 0.08, "1922-1936."),
-        T("Second War torpedo", 45, 6_000, 32, 12_500, 1, 6, 300, 90, 0.08, 0.1,
-            "1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. Oxygen " +
-            "torpedoes (the Type 93's 20 km at 48 kn) aren't told apart."),
-        T("Cold War torpedo", 45, 9_000, 35, 18_000, 1, 6, 300, 90, 0.05, 0.05, "From 1950."),
+            "9,300 and its 195 kg of hexanite (TNT/HND)."),
+        T("Treaty torpedo", 43, 5_000, 30, 11_000, 0.85, 3, 600, 90, 0.1, 0.08, "TNT", false, "1922-1936."),
+        T("Second War torpedo", 45, 6_000, 32, 12_500, 1, 6, 300, 90, 0.08, 0.1, "TNT", false,
+            "1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. TNT (the RN's and " +
+            "USN's Torpex from 1943, Germany's hexanite: blocks of their own)."),
+        T("Oxygen torpedo", 50, 9_000, 46, 12_000, 1, 6, 300, 90, 0.08, 0.1, "TNT/HND", true,
+            "1933-1945, the IJN's: the 21\" Type 95's 49-51 kn for 9,000 m or 45-47 for 12,000 (the 24\" Type 93's 48 kn for 20 km), " +
+            "Type 97 in the warhead. Its flask holds oxygen: a fire aboard takes the warhead high order (15 §3.2: Mikuma, Suzuya)."),
+        T("Cold War torpedo", 45, 9_000, 35, 18_000, 1, 6, 300, 90, 0.05, 0.05, "Torpex", false, "From 1950."),
     ];
 
     static readonly Dictionary<string, Template> byName = All.ToDictionary(t => t.Name);
@@ -215,10 +221,12 @@ public static class TorpedoTemplates
     };
 
     static readonly string[] Fields =
-        ["fast_kn", "fast_range_m", "slow_kn", "slow_range_m", "charge_share", "mount_train_deg_s", "mount_reload_s", "tube_reload_s", "gyro_deg", "fail", "dud"];
+        ["fast_kn", "fast_range_m", "slow_kn", "slow_range_m", "charge_share", "mount_train_deg_s", "mount_reload_s", "tube_reload_s", "gyro_deg", "fail", "dud",
+         "filler", "case_mm", "oxygen"];
 
-    /// <summary>The design's torpedo blocks and the name its torpedoes give: every field given, the settings and gear over
-    /// 0, the shares within 0-1; the name in torpedo_tech or the catalogue.</summary>
+    /// <summary>The design's torpedo blocks and the name its torpedoes give: every field given, the settings, gear and case
+    /// over 0, the shares within 0-1, the filler an explosive of the design's or the catalogue's; the name in torpedo_tech or
+    /// the catalogue.</summary>
     public static List<string> Validate(Design design)
     {
         var errs = new List<string>();
@@ -231,9 +239,14 @@ public static class TorpedoTemplates
                      {
                          ("fast_kn", b.FastKn), ("fast_range_m", b.FastRangeM), ("slow_kn", b.SlowKn), ("slow_range_m", b.SlowRangeM),
                          ("mount_train_deg_s", b.MountTrainDegS), ("mount_reload_s", b.MountReloadS), ("tube_reload_s", b.TubeReloadS), ("gyro_deg", b.GyroDeg),
+                         ("case_mm", b.CaseMm),
                      })
                 if (v is not > 0)
                     errs.Add($"{at}.{k}: give it, more than 0");
+            if (b.Filler is not { } f || Explosives.Resolve(design, new ExplosiveInput { Name = f }) is null)
+                errs.Add($"{at}.filler: give it, an explosive in the design's explosives or the catalogue");
+            if (b.Oxygen is null)
+                errs.Add($"{at}.oxygen: give it, true or false");
             foreach (var (k, v) in new (string, double?)[] { ("charge_share", b.ChargeShare), ("fail", b.Fail), ("dud", b.Dud) })
                 if (v is not (>= 0 and <= 1))
                     errs.Add($"{at}.{k}: give it, a share from 0 to 1");

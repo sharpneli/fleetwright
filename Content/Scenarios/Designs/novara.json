@@ -1,5 +1,5 @@
 {
- "version": 21,
+ "version": 22,
  "id": "novara",
  "name": "Novara-like scout cruiser (1915)",
  "type": "CL",
@@ -343,21 +343,7 @@
    "packaging": "brass"
   }
  },
- "torpedo_tech": {
-  "Great War torpedo": {
-   "fast_kn": 41,
-   "fast_range_m": 3900,
-   "slow_kn": 28,
-   "slow_range_m": 9200,
-   "charge_share": 0.6,
-   "mount_train_deg_s": 3,
-   "mount_reload_s": 600,
-   "tube_reload_s": 180,
-   "gyro_deg": 20,
-   "fail": 0.12,
-   "dud": 0.1
-  }
- },
+ "torpedo_tech": {"Great War torpedo": {"fast_kn": 41, "fast_range_m": 3900, "slow_kn": 28, "slow_range_m": 9200, "charge_share": 0.6, "mount_train_deg_s": 3, "mount_reload_s": 600, "tube_reload_s": 180, "gyro_deg": 20, "fail": 0.12, "dud": 0.1, "filler": "TNT", "case_mm": 6, "oxygen": false}},
  "drainage": {
   "name": "German Great War (1914)",
   "pumps_tph_per_1000t": 50,

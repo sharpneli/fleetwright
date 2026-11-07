@@ -51,16 +51,18 @@ Shares of the rules' reload, 7·(d/102 mm)^1.5 s (at most 36), and training, 2·
 - **Second War, diglycol:** 1937-1949: USN 16" training 4 °/s, 38 cm 5; the 5"/38 25 and 1.7%. Diglycol, cool double-base: the German RPC/38.
 - **Cold War, triple-base:** From 1950: automatic guns, power-worked mounts. Triple-base: Cordite N/NQ, SPCG, M30/M31.
 
-| Torpedo block | Fast (21") | Slow (21") | Warhead TNT share | Mount training | Reload (mount / tube) | Gyro | Fail | Dud |
-|---|---|---|---|---|---|---|---|---|
-| Victorian torpedo | 30 kn, 1,000 m | 24 kn, 2,700 m | 0.45 | 3 °/s | 600 / 180 s | 5° | 0.25 | 0.15 |
-| Great War torpedo | 41 kn, 3,900 m | 28 kn, 9,200 m | 0.6 | 3 °/s | 600 / 180 s | 20° | 0.12 | 0.1 |
-| Treaty torpedo | 43 kn, 5,000 m | 30 kn, 11,000 m | 0.85 | 3 °/s | 600 / 180 s | 90° | 0.1 | 0.08 |
-| Second War torpedo | 45 kn, 6,000 m | 32 kn, 12,500 m | 1.0 | 6 °/s | 300 / 180 s | 90° | 0.08 | 0.1 |
-| Cold War torpedo | 45 kn, 9,000 m | 35 kn, 18,000 m | 1.0 | 6 °/s | 300 / 180 s | 90° | 0.05 | 0.05 |
+| Torpedo block | Fast (21") | Slow (21") | Warhead TNT share | Mount training | Reload (mount / tube) | Gyro | Fail | Dud | Warhead (filler, case, flask) |
+|---|---|---|---|---|---|---|---|---|---|
+| Victorian torpedo | 30 kn, 1,000 m | 24 kn, 2,700 m | 0.45 | 3 °/s | 600 / 180 s | 5° | 0.25 | 0.15 | Wet guncotton, 6 mm, air |
+| Great War torpedo | 41 kn, 3,900 m | 28 kn, 9,200 m | 0.6 | 3 °/s | 600 / 180 s | 20° | 0.12 | 0.1 | TNT, 6 mm, air |
+| Treaty torpedo | 43 kn, 5,000 m | 30 kn, 11,000 m | 0.85 | 3 °/s | 600 / 180 s | 90° | 0.1 | 0.08 | TNT, 6 mm, air |
+| Second War torpedo | 45 kn, 6,000 m | 32 kn, 12,500 m | 1.0 | 6 °/s | 300 / 180 s | 90° | 0.08 | 0.1 | TNT, 6 mm, air |
+| Oxygen torpedo | 50 kn, 9,000 m | 46 kn, 12,000 m | 1.0 | 6 °/s | 300 / 180 s | 90° | 0.08 | 0.1 | TNT/HND, 6 mm, oxygen |
+| Cold War torpedo | 45 kn, 9,000 m | 35 kn, 18,000 m | 1.0 | 6 °/s | 300 / 180 s | 90° | 0.05 | 0.05 | Torpex, 6 mm, air |
 
 - **Victorian torpedo:** Before 1906: the 1890s' Whiteheads, wet guncotton; no gyro angling to speak of.
-- **Great War torpedo:** 1906-1921: the RN's 21" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300 and its 195 kg of hexanite.
+- **Great War torpedo:** 1906-1921: the RN's 21" Mk II 45 kn for 3,840 m or 29 kn for 9,100; the German G/7 37 kn for 4,000 m or 27 kn for 9,300 and its 195 kg of hexanite (TNT/HND).
 - **Treaty torpedo:** 1922-1936.
-- **Second War torpedo:** 1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. Oxygen torpedoes (the Type 93's 20 km at 48 kn) aren't told apart.
+- **Second War torpedo:** 1937-1949: Mk 15 45 kn for 5,500 m, G7a 44 for 5,000; power-trained mounts, the IJN's reload gear. TNT (the RN's and USN's Torpex from 1943, Germany's hexanite: blocks of their own).
+- **Oxygen torpedo:** 1933-1945, the IJN's: the 21" Type 95's 49-51 kn for 9,000 m or 45-47 for 12,000 (the 24" Type 93's 48 kn for 20 km), Type 97 in the warhead. Its flask holds oxygen: a fire aboard takes the warhead high order (15 §3.2: Mikuma, Suzuya).
 - **Cold War torpedo:** From 1950.

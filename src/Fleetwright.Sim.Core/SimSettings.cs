@@ -2516,10 +2516,25 @@ public sealed record SimSettings
     /// near field's (<see cref="TampedReachK"/>), its shock a near miss's: this share of the battle crew in the spaces it got into is
     /// lost, falling to none at the reach.</summary>
     public double TorpedoCasualtyShare { get; init; } = 0.5;
-    /// <summary>The share of a charge's products at her plate that comes into her through what it opened, the rest the bubble's in
-    /// the sea (docs/battle/explosions.md EX5): the hemisphere facing her [INFERRED: research 13 §4.3 gives a contact burst "the near
-    /// field and the gas"; the user's choice, 2026-11-07].</summary>
-    public double UnderwaterGasShare { get; init; } = 0.5;
+    /// <summary>The share of a contact charge's products at her plate that comes into her through what it opened, the rest the
+    /// bubble's in the sea, or the air's on a deck (docs/battle/explosions.md EX5, EX6c): the hemisphere facing her [INFERRED: research
+    /// 13 §4.3 gives a contact burst "the near field and the gas"; the user's choice, 2026-11-07].</summary>
+    public double ContactGasShare { get; init; } = 0.5;
+
+    /// <summary>High-explosive stores (docs/battle/explosions.md EX6c; research 15): a detonation sets one off within this × W^⅓ m of
+    /// it, W kg of TNT (a cased donor's contact [SRC Mk 82s: 0.044 went, 0.066 didn't]); beyond, only fragments through its case do,
+    /// by Held's v²d (the explosive's held_k). In a fire its case heats to its filler's cook-off temperature in CookOffMin minutes
+    /// for a 5 mm case of TNT (561 K) in an engulfing fire, a compartment's and hot smoke, at CookOffFireK [ref H2's wall model,
+    /// checked against Forrestal and Franklin], by its wall and its filler's own temperature as a lumped wall heats
+    /// (t ∝ wall·ln((T_f − 300)/(T_f − T_c)), within 10% of H2's Torpex row); each store's draw ×e^(σ·N) [EST: 15's ×0.5-3]; it
+    /// cools over CookOffCoolS without a fire. Gone off in a fire, an air flask's warhead detonates only this share of the time,
+    /// else it burns (its flask bursts first: Kalk, Stormes; 15 §3.2 [EST ≤ 10%]); an oxygen flask's always does.</summary>
+    public double ContactReachK { get; init; } = 0.06;
+    public double[] CookOffMin { get; init; } = [1.3, 3.5, 16];
+    public double[] CookOffFireK { get; init; } = [1100, 900, 700];
+    public double CookOffSigma { get; init; } = 0.6;
+    public double CookOffCoolS { get; init; } = 600;
+    public double CookOffHighShare { get; init; } = 0.1;
 
     /// <summary>An underwater burst's bubble (HullGirder.Bubble; docs/battle/explosions.md EX5; research 13 §4.1) [SRC Cole, Reid, Swisdak;
     /// Cheonan's 0.985 s against 0.990 observed]: its largest radius, m, this × (W/Z)^⅓, and its first period, s, this × W^⅓/Z^⅚, W kg

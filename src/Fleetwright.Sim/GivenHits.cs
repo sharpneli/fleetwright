@@ -25,6 +25,9 @@ public static class GivenHits
         public readonly int[] Outcomes = new int[Enum.GetValues<Outcome>().Length];
         public readonly Dictionary<string, int> Struck = [];
         public int Fires, Magazines, Jams;
+        /// <summary>The hits that set off a high-explosive store, and the stores that went off in all, by hits, one another and fire
+        /// (docs/battle/explosions.md EX6c).</summary>
+        public int Stores, StoresGone;
         /// <summary>E4: the hits a turret or barbette held (stopped, glanced off, burst on), what they did to its mount (by
         /// <see cref="TurretBlow"/>), the jams by cause (<see cref="JamCause"/>) and how many lasted the battle; the hits that
         /// stunned the struck structure's crew.</summary>
@@ -202,6 +205,7 @@ public static class GivenHits
                     (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
                 rep.Fires += fx.Fire ? 1 : 0;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.Stores += fx.Stores > 0 ? 1 : 0;
                 rep.Spalls += fx.Spall ? 1 : 0;
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
                 hitMagazine |= fx.Magazine;
@@ -257,6 +261,7 @@ public static class GivenHits
             }
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
+        rep.StoresGone = w.Damage.StoresSetOff;
         return rep;
     }
 
@@ -333,10 +338,13 @@ public static class GivenHits
 
     /// <summary>Torpedo hits (docs/battle/fighting.md 4.6): n of a torpedo on a class, at its set depth on its side, along
     /// the waterline (at a share of its length from the stern, 0-1, or anywhere on it: NaN), to starboard, in runs of
-    /// perShip hits on one ship, each through the world's own damage system.</summary>
+    /// perShip hits on one ship, each through the world's own damage system. With store (a launcher of hers), her own warheads there go
+    /// off in place of the torpedo (docs/battle/explosions.md EX6c: Brownson's mount).</summary>
     public static Report Torpedoes(ShipClass target, TorpedoRow torpedo, double depthM, double atShare, int n, int perShip, ulong seed, SimSettings settings,
-        double settleS = 0, FallOutRule? fallOut = null)
+        double settleS = 0, FallOutRule? fallOut = null, int store = -1)
     {
+        if (store >= target.Launchers.Length)
+            throw new ArgumentException($"{target.Name} has {target.Launchers.Length} launcher(s): no store {store}");
         var rep = new Report { PartsOut = new int[target.NodeCount] };
         var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), seed, settings);
         int cls = w.Ships.AddClass(target);
@@ -369,15 +377,23 @@ public static class GivenHits
                     throw new ArgumentException($"no hull at {x:0.0} m, {depthM:0.0} m down on {target.Name}");
                 var k0 = w.Ships.Store.Combat.Condition(slot);
                 var before = (PartState[])k0.State.Clone();
-                w.Damage.Strike(w, new Hit
-                {
-                    Ship = entity, Ms = w.Time.Ms, Point = new P3(x, y, z), Direction = new P3(0, -1, 0), SpeedMs = 20, Source = HitSource.Torpedo,
-                    Torpedo = torpedo, ShellType = -1,
-                });
+                var own = store >= 0 ? target.Launchers[store] : default;
+                w.Damage.Strike(w, store >= 0 && k0.Warheads[store] > 0
+                    ? new Hit
+                    {
+                        Ship = entity, Ms = w.Time.Ms, Point = own.StoreAt, Direction = own.StoreAxis, Source = HitSource.Store, Store = store,
+                        Shell = target.Torpedoes[own.Torpedo].Warhead, ShellType = -1,
+                    }
+                    : new Hit
+                    {
+                        Ship = entity, Ms = w.Time.Ms, Point = new P3(x, y, z), Direction = new P3(0, -1, 0), SpeedMs = 20, Source = HitSource.Torpedo,
+                        Torpedo = torpedo, ShellType = -1,
+                    });
                 var fx = w.Damage.LastEffects;
                 rep.Hits++;
                 rep.Outcomes[(int)w.Damage.LastTerminal.Outcome]++;
                 rep.Magazines += fx.Magazine ? 1 : 0;
+                rep.Stores += fx.Stores > 0 ? 1 : 0;
                 rep.Spalls += fx.Spall ? 1 : 0;
                 (rep.Shocks, rep.Blackouts) = (rep.Shocks + (fx.Shock ? 1 : 0), rep.Blackouts + (fx.Blackout ? 1 : 0));
                 rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
@@ -392,6 +408,7 @@ public static class GivenHits
             }
             After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
         }
+        rep.StoresGone = w.Damage.StoresSetOff;
         return rep;
     }
 

@@ -46,8 +46,19 @@ public static class WeaponBlocks
             SlowRangeM = N(t.SlowRangeM, at, "slow_range_m"), ChargeShare = N(t.ChargeShare, at, "charge_share"),
             MountTrainDegS = N(t.MountTrainDegS, at, "mount_train_deg_s"), MountReloadS = N(t.MountReloadS, at, "mount_reload_s"),
             TubeReloadS = N(t.TubeReloadS, at, "tube_reload_s"), GyroDeg = N(t.GyroDeg, at, "gyro_deg"), FailShare = N(t.Fail, at, "fail"),
-            DudShare = N(t.Dud, at, "dud"),
+            DudShare = N(t.Dud, at, "dud"), Filler = Filler(design, t.Filler, at), CaseMm = N(t.CaseMm, at, "case_mm"),
+            Oxygen = t.Oxygen ?? throw new ShipCompileException($"{at}: no oxygen"),
         };
+    }
+
+    /// <summary>A store's filler by its explosive's name (the design's explosives, else the catalogue's).</summary>
+    static FillerRow Filler(Design design, string? name, string at)
+    {
+        var x = Explosives.Resolve(design, new ExplosiveInput { Name = name ?? throw new ShipCompileException($"{at}: no filler") })
+            ?? throw new ShipCompileException($"{at}: no explosive \"{name}\" in the design's explosives or the catalogue");
+        string of = $"{at}'s filler \"{name}\"";
+        return new FillerRow(N(x.Re, of, "re"), N(x.QDet, of, "q_det"), N(x.QComb, of, "q_comb"), N(x.AirM3Kg, of, "air_m3_kg"), N(x.Eta, of, "eta"),
+            N(x.GurneyMs, of, "gurney_ms"), N(x.Brisance, of, "brisance"), N(x.Fire, of, "fire"), N(x.HeldK, of, "held_k"), N(x.CookK, of, "cook_k"));
     }
 
     static double N(double? v, string at, string what) => v ?? throw new ShipCompileException($"{at}: no {what}");

@@ -1,5 +1,5 @@
 {
- "version": 21,
+ "version": 22,
  "id": "sverige",
  "name": "Sverige-like (1917)",
  "look": {
@@ -555,20 +555,6 @@
    "per_side": 1
   }
  },
- "torpedo_tech": {
-  "Great War torpedo": {
-   "fast_kn": 41,
-   "fast_range_m": 3900,
-   "slow_kn": 28,
-   "slow_range_m": 9200,
-   "charge_share": 0.6,
-   "mount_train_deg_s": 3,
-   "mount_reload_s": 600,
-   "tube_reload_s": 180,
-   "gyro_deg": 20,
-   "fail": 0.12,
-   "dud": 0.1
-  }
- },
+ "torpedo_tech": {"Great War torpedo": {"fast_kn": 41, "fast_range_m": 3900, "slow_kn": 28, "slow_range_m": 9200, "charge_share": 0.6, "mount_train_deg_s": 3, "mount_reload_s": 600, "tube_reload_s": 180, "gyro_deg": 20, "fail": 0.12, "dud": 0.1, "filler": "TNT", "case_mm": 6, "oxygen": false}},
  "searchlights": {"name": "Great War (1914)", "capital_count": 8, "mirror_cm": 91, "small_mirror_cm": 61, "lamp_cd_cm2": 16000, "spread_deg": 3, "control": "local"}
 }

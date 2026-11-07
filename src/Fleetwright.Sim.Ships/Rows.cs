@@ -711,7 +711,24 @@ public readonly record struct TorpedoRow
     public double GyroDeg { get; init; }
     public double FailShare { get; init; }
     public double DudShare { get; init; }
+    /// <summary>Its warhead as a store aboard (docs/battle/explosions.md EX6c): the charge as a burst sees it (its filler, kg and
+    /// explosive, and its case's pieces: <see cref="ShellTypeRow.Fragments"/>), its case's wall, mm, its filler's Held constant
+    /// (mm³/µs²: what a fragment must keep through the case, v²d, to set it off; 0, nothing from outside does) and cook-off
+    /// temperature (K; 0, none), and whether its flask holds oxygen.</summary>
+    public ShellTypeRow Warhead { get; init; }
+    public double CaseMm { get; init; }
+    public double HeldK { get; init; }
+    public double CookK { get; init; }
+    public bool Oxygen { get; init; }
+    /// <summary>One warhead's length, m: its filler in the bore its case leaves.</summary>
+    public double WarheadM { get; init; }
 }
+
+/// <summary>A filler's explosive as the sim reads it (Shipgen's Explosives, docs/shipgen/explosive-templates.md): its TNT
+/// equivalent, heats (MJ/kg), air (m³/kg) and gas share for its gas; Gurney (m/s) and brisance for its pieces; its fire; and as a
+/// store, Held's constant (mm³/µs²) and its cook-off temperature (K).</summary>
+public readonly record struct FillerRow(double Re, double QDet, double QComb, double AirM3Kg, double Eta, double GurneyMs, double Brisance, double Fire,
+    double HeldK, double CookK);
 
 /// <summary>A design's torpedo block (torpedo_tech; Shipgen's TorpedoTemplates), calibre-free: a 21"'s settings (the fast
 /// and slow speeds, kn, and ranges, m: <see cref="DesignerPlaceholders.Torpedo"/> scales them by calibre), the share of
@@ -730,6 +747,10 @@ public readonly record struct TorpedoTechRow
     public double GyroDeg { get; init; }
     public double FailShare { get; init; }
     public double DudShare { get; init; }
+    /// <summary>Its warhead's filler, case wall (mm) and whether its flask holds oxygen (docs/battle/explosions.md EX6c).</summary>
+    public FillerRow Filler { get; init; }
+    public double CaseMm { get; init; }
+    public bool Oxygen { get; init; }
 }
 
 /// <summary>A design's gun block (gun_tech; Shipgen's GunTemplates), calibre-free: how its guns are worked as shares of the
@@ -781,6 +802,17 @@ public readonly record struct LauncherRow
     public int Torpedoes { get; init; }
     public double ReloadS { get; init; }
     public int Torpedo { get; init; }
+    /// <summary>Its warheads as a store aboard (docs/battle/explosions.md EX6c): side by side at its tubes' muzzle ends as it rests,
+    /// their box and its centre, the tubes' axis; the cell they're in (-1: on deck or in the upper works), the cell under them on
+    /// deck (-1: none, or in the hull), the part they're in (a deck mount's component; -1: a tube's) and the fire space that heats
+    /// them (-1: none).</summary>
+    public Box StoreBox { get; init; }
+    public P3 StoreAt { get; init; }
+    public P3 StoreAxis { get; init; }
+    public int StoreCell { get; init; }
+    public int StoreDeck { get; init; }
+    public int StorePart { get; init; }
+    public int StoreFire { get; init; }
 }
 
 /// <summary>A class's drainage (docs/battle/damage-control.md DC4; the design's block, DrainageTemplates), scaled to her:

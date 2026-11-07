@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 21;
+    public const int Current = 22;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -38,7 +38,28 @@ public static class DesignFormat
         (d, _) => Diesels(d),          // 18 → 19: the plant's diesels (docs/battle/electrics.md EL7)
         (d, _) => StabilisedSingleBase(d), // 19 → 20: the interwar single-base told from the early (docs/battle/magazines.md "Too safe")
         (d, _) => MagazineCases(d),    // 20 → 21: packaging's "clarkson" named a metal magazine case (research 12-charge-bed.md §1)
+        Warheads,                      // 21 → 22: a torpedo's warhead as a store aboard (docs/battle/explosions.md EX6c)
     ];
+
+    /// <summary>21 → 22: a torpedo block says its warhead's filler, its case's wall and whether its flask holds oxygen (a store
+    /// aboard: docs/battle/explosions.md EX6c). A block named as a template takes the template's; another TNT's in a 6 mm case,
+    /// air, with a warning. Nothing read them before.</summary>
+    static void Warheads(JsonObject d, List<string> warnings)
+    {
+        if (d["torpedo_tech"] is not JsonObject table)
+            return;
+        foreach (var (name, b) in table)
+        {
+            if (b is not JsonObject bo || bo.ContainsKey("filler"))
+                continue;
+            var t = TorpedoTemplates.Get(name)?.Value;
+            if (t is null)
+                warnings.Add($"torpedo_tech.{Style.Quote(name)}: no template of its name to give its warhead; TNT in a 6 mm case, air, assumed (format 22)");
+            bo["filler"] = t?.Filler ?? "TNT";
+            bo["case_mm"] = t?.CaseMm ?? 6;
+            bo["oxygen"] = t?.Oxygen ?? false;
+        }
+    }
 
     // the star shells format 15 copied into the ammunition tables (name: candle share, cd a kg, burn, fall), and the share
     // it gave a light gun's battery

@@ -17,13 +17,14 @@ namespace Fleetwright.Shipgen.Cli;
 /// a spread of n fired through the torpedo system once its navy has the target in sight, run after run: hits, and how
 /// long the torpedoes ran.</item>
 /// </list>
-/// --trace: each hit's gas, as it went (best with a small --n).</summary>
+/// --trace: each hit's gas, as it went (best with a small --n). --store L: the target's own warheads at launcher L go off in place of
+/// the torpedo (docs/battle/explosions.md EX6c; her stores are listed first).</summary>
 static class TorpedoBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Shooter, double AtShare, double DepthM, int N, int PerShip, int Seed, double SettleMin, double RangeM, double AspectDeg,
-        double TargetKn, int Spread, int Runs, bool Trace = false);
+        double TargetKn, int Spread, int Runs, bool Trace = false, int Store = -1);
 
     public static int Run(string target, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -36,7 +37,25 @@ static class TorpedoBench
         Console.WriteLine(string.Format(Inv, "{0}'s torpedo: {1:0} mm, {2:0} kg charge; {3:0} kn for {4:0} m or {5:0} kn for {6:0} m; {7} launcher(s), {8} torpedoes",
             sc.Name, torpedo.CalibreMm, torpedo.ChargeKg, torpedo.FastKn, torpedo.FastRangeM, torpedo.SlowKn, torpedo.SlowRangeM, sc.Launchers.Length,
             sc.Launchers.ToArray().Sum(l => l.Torpedoes)));
+        Stores(tc, settings);
         return o.RangeM > 0 ? Attack(sc, tc, settings, o) : Given(tc, torpedo, settings, o, HitsBench.FallOut(settingsPath));
+    }
+
+    /// <summary>The target's warheads as stores aboard (docs/battle/explosions.md EX6c): where each launcher's lie, what's under them,
+    /// their filler and case, what sets them off by fragments, and their cook-off in each class of fire.</summary>
+    static void Stores(ShipClass c, SimSettings s)
+    {
+        for (int l = 0; l < c.Launchers.Length; l++)
+        {
+            ref readonly var row = ref c.Launchers[l];
+            var tp = c.Torpedoes[row.Torpedo];
+            var b = row.StoreBox;
+            string where = row.StoreCell >= 0 ? $"in {c.CellId(row.StoreCell)}" : row.StoreDeck >= 0 ? $"on deck over {c.CellId(row.StoreDeck)}" : "in the upper works";
+            string cook = string.Join("/", Enumerable.Range(0, s.CookOffMin.Length).Select(i => Fleetwright.Sim.Combat.Stores.CookS(tp, i, s) is var t && double.IsFinite(t) ? (t / 60).ToString("0.0", Inv) : "never"));
+            Console.WriteLine(string.Format(Inv, "  store {0} ({1} {2}): {3} x {4:0} kg of filler, {5}; at {6:0.0},{7:0.0},{8:0.0} ({9:0.0} x {10:0.0} x {11:0.0} m); case {12:0} mm, Held {13:0}, cook-off {14} min (engulfing/compartment/smoke){15}",
+                l, row.Kind, row.Index, row.Torpedoes, tp.Warhead.FillerKg, where, row.StoreAt.X, row.StoreAt.Y, row.StoreAt.Z, b.X1 - b.X0, b.Y1 - b.Y0,
+                b.Top - b.Base, tp.CaseMm, tp.HeldK, cook, tp.Oxygen ? ", oxygen" : ""));
+        }
     }
 
     static int Given(ShipClass tc, TorpedoRow torpedo, SimSettings settings, Options o, FallOutRule fallOut)
@@ -62,7 +81,8 @@ static class TorpedoBench
             .Select(x => string.Format(Inv, "{0} {1:0.#}%", x, 100 * r.Share(x)))));
         Console.WriteLine("  the space struck: " + string.Join(", ", r.Struck.OrderByDescending(kv => kv.Value)
             .Select(kv => string.Format(Inv, "{0} {1:0}%", kv.Key, 100.0 * kv.Value / r.Hits))));
-        Console.WriteLine(string.Format(Inv, "  a hit: holes {0:0} m², crew {1:0.0}, magazine {2:0.#}%", r.BreachM2 / r.Hits, r.CrewLost / r.Hits, 100.0 * r.Magazines / r.Hits));
+        Console.WriteLine(string.Format(Inv, "  a hit: holes {0:0} m², crew {1:0.0}, magazine {2:0.#}%, warheads aboard set off {3:0.#}% (stores gone {4} in all)",
+            r.BreachM2 / r.Hits, r.CrewLost / r.Hits, 100.0 * r.Magazines / r.Hits, 100.0 * r.Stores / r.Hits, r.StoresGone));
         Console.WriteLine("  put out of action (per 100 hits):");
         foreach (var (node, count) in r.PartsOut.Select((c, i) => (i, c)).Where(x => x.c > 0).OrderByDescending(x => x.c).Take(10))
             Console.WriteLine(string.Format(Inv, "    {0,6:0.0}  {1}", 100.0 * count / r.Hits, Node(tc, node)));
@@ -76,7 +96,7 @@ static class TorpedoBench
     }
 
     static GivenHits.Report GivenTorpedoes(ShipClass tc, TorpedoRow torpedo, double depth, Options o, SimSettings settings, FallOutRule fallOut) =>
-        GivenHits.Torpedoes(tc, torpedo, depth, o.AtShare, o.N, Math.Max(o.PerShip, 1), (ulong)o.Seed, settings, o.SettleMin * 60, fallOut);
+        GivenHits.Torpedoes(tc, torpedo, depth, o.AtShare, o.N, Math.Max(o.PerShip, 1), (ulong)o.Seed, settings, o.SettleMin * 60, fallOut, o.Store);
 
     static int Attack(ShipClass sc, ShipClass tc, SimSettings settings, Options o)
     {
