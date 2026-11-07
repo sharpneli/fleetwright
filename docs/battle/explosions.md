@@ -16,7 +16,7 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 **EX5 is built and merged (2026-11-07, "EX5: the water"): torpedoes on the one path, the bubble's whip by research 13's law, a
 boundary's mass, liquid that passes its push on and runs out, a protection's walls that stretch. Open there: a held protection
 floods about three times the record; a destroyer is lost to one torpedo about half the time; research asked on protection walls.
-Not yet run: the panel, `damage-history`, `dc-history` (EX7's, or before EX6 if the user wants them). Next: EX6, the chain.**
+Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6a is built (2026-11-07, "EX6a, and research 14"), with research 14 applied; EX6b-c wait on the research "What sets an explosive store off".**
 **EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
 
 **Open, in order of what they decide:**
