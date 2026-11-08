@@ -1,6 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). EX0-EX3 are built and EX2 wires the network and girder into the game (2026-11-06); reviewed the same day, its bugs fixed and its code unified ("The review"). **Pick up at "Where to pick up", next.**
+Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **EX7, the whole game, is next:** "Where to pick up".
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -13,11 +13,28 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 ## Where to pick up
 
-**EX5 is built and merged (2026-11-07, "EX5: the water"): torpedoes on the one path, the bubble's whip by research 13's law, a
-boundary's mass, liquid that passes its push on and runs out, a protection's walls that stretch. Open there: a held protection
-floods about three times the record; a destroyer is lost to one torpedo about half the time; research asked on protection walls.
-Not yet run: the panel, `damage-history`, `dc-history` (EX7's). **EX6 is done (2026-11-07, "EX6a, and research 14", "EX6b: propellant by what reaches it", "EX6c: high-explosive stores", "EX6d: the anchors"): nothing silly in the panel. Next: EX7, the whole game (`damage-history`, `dc-history`, `fire-history`, `coarse-parity`, the AI's estimates).**
-**EX4 is built (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, walking outwards through what it opens, hull holes in her section. The stow's bed is out (the research said it isn't physical; the user agreed), so magazines are back to breaking no ship in the panel, as the user expected, to be seen after EX4. Next: the user reads EX4's panel, then EX5.** See also "EX2: what it showed". **The destroyer the plan began with no longer sits on the "research" figures:** part of that match was a bug (the review's first finding), and she now reads worse than them at 5 and 9 hits, nothing fitted. **The user accepted that, 2026-11-06: those figures aren't a research result but an educated guess,** so they're no target. The two rules still keyed on the source wait for EX6 ("The review").
+**Done, newest last** (each step's numbers in its own section below):
+
+- **EX0-EX3** (2026-11-05/06): the bench and baseline, the gas network (the gate passed), one gas path for shells and
+  magazines in the game, one hull girder. Then "The review": its bugs fixed, its code unified. The destroyer the plan began
+  with no longer sits on the "research" figures (part of that match was a bug); **the user accepted that, 2026-11-06: those
+  figures were an educated guess,** so they're no target.
+- **The stow's bed** (2026-11-07): tried and taken out (the research said it isn't physical; the user agreed).
+- **EX4** (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, hull holes in her section.
+- **EX5** (2026-11-07, "EX5: the water", EX5a-e): torpedoes on the one path, the bubble's whip by research 13's law, a
+  boundary's mass, liquid in spaces, the protections as built. Open there: a held protection floods about three times the
+  record; a destroyer is lost to one torpedo about half the time.
+- **EX6** (2026-11-07, "EX6a, and research 14", "EX6b", "EX6c", "EX6d"): the two source-keyed rules gone, propellant lit by
+  its heat dose, high-explosive stores (torpedo warheads), the anchors read: nothing silly in the panel.
+- **Cost** (2026-11-07, "Cost and convergence"; workers.md W16, then "Explosions in time" ET0-ET6, 2026-11-08): her gas runs
+  in 100 ms slices of game time, so no race stalls the sim at any speed. ET4's panel: 6 of 14 sides within about twice the
+  record, broke in two 25%, magazine 0%, within the seeds' spread; Indefatigable now breaks 2-5 min after her magazine lights.
+- **The look** (2026-11-08, `docs/visuals/destruction.md` D0-D7): what the gas does recorded and drawn; D8 by eye next. That's
+  EX7's last line ("the look reads an explosion's energy and place"), done there.
+
+**Next: EX7, the whole game:** `losses`, `balance`, `damage-history`, `dc-history`, `fire-history` against EX0's baseline,
+the standard `coarse-parity` panel, the `Matchup`'s and AI's estimates refit to what's measured. Item 10 (the step's
+convergence) first, as "Cost and convergence" asks, since threshold races move with the step. Then EX8.
 
 **Open, in order of what they decide:**
 
@@ -182,20 +199,22 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
   any charge anywhere, through what exists today, printing what gave. The anchors written down with today's numbers: 11
   §5.5's seven tests, 15's near misses, the table above, Lion's four magazine cases (`magazines.md` V3), `magazines.md`
   "Where it ends up", one torpedo on a destroyer and on a capital ship, `damage-history`, `dc-history`, `losses`. No change
-  to the sim.
+  to the sim. **Built 2026-11-05.**
 - **EX1. The network, on the bench only: the gate.** The solver, run on the ship's own plating with no table. The ladder
   of candidates above, each alone. **Reported to the user whatever it shows:** does Lion with bags reach her girder, does
   brass burn out, does a 5″ HE stay in one space? If it can't get there we look for the physics and decide together; the
-  game keeps today's model until it can.
+  game keeps today's model until it can. **Built 2026-11-05; it passed.**
 - **EX2. One gas path.** Shell bursts and magazines through the network. Going: `Cascade`, the race's own loop,
   `PartGas`, `Felt`, `MagazineGiveKPa/Mm/M2/FaceM2`, decision 6. `Magazines` keeps the stow and the burn law, as a source.
+  **Built 2026-11-06** ("EX2: what it showed", "The review").
 - **EX3. One girder.** Section elements per station, losses adding up, flooding's moment. Shells can break a ship.
-  `Magazines.Girder`, `MagazineD`, `MagazineEnd*` go. **This step answers the destroyer above.**
+  `Magazines.Girder`, `MagazineD`, `MagazineEnd*` go. **This step answers the destroyer above.** **Built 2026-11-05** (on the
+  bench before EX2, "EX3: what it showed").
 - **EX4. One near field.** The wreck reach and the holes as one rule for all sources, tamped by water by where it is. **Built 2026-11-07** ("EX4: one near field").
 - **EX5. One water.** Contact and non-contact underwater as one model: the shock factor, the tamped hole, the bubble's
   whip, a TDS from its own volumes and plates through the network. `Underwater`'s separate rules, `TorpedoBreakShare` and
   the `Held` switch go. Its anchors are the hard ones (one torpedo usually sinks a destroyer, 7 of 31 lived; capital ships
-  take several; 4.6's broken back). Mines (4.7) then need only a row.
+  take several; 4.6's broken back). Mines (4.7) then need only a row. **Built 2026-11-07** ("EX5: the water"), EX5a-e.
   Worked in sub-steps (the user, 2026-11-07, after research 13 and "EX5: the water", below):
   - **EX5a.** The gas held by slopes between spaces. Built.
   - **EX5b. A boundary moves by its mass.** Every plate the gas loads is a panel: its mass (the plate, its armour, half the
@@ -230,10 +249,12 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
     Rowan, Brownson, Suzuya, Chōkai, Kalk).
 - **EX6. The chain.** What's reached goes off: charges, warheads, depth charges, shell rooms' bursters, each its own
   `Explosion` (Hood's 4″ to her 15″, Defence's passages). Flat rolls left over from before go where physics replaces them;
-  the flash chain's doors stay `magazines.md`'s.
+  the flash chain's doors stay `magazines.md`'s. **Built 2026-11-07**, EX6a-d (shell rooms' bursters left out: the record
+  has them whole, 15 §4; depth charges and mines wait for their rows).
 - **EX7. The whole game.** `losses`, `balance`, `damage-history`, `dc-history`, `fire-history` against the baseline,
   reported as they come out. The standard `coarse-parity` panel. The `Matchup`'s and AI's estimates refit to what's measured
-  (`ai-expectation-not-optimism`). The look reads an explosion's energy and place, in the world view's own step.
+  (`ai-expectation-not-optimism`). The look reads an explosion's energy and place, in the world view's own step. **Next.**
+  The look is built (`docs/visuals/destruction.md` D0-D7), and ET4 has already run `balance` and `damage-history` once on the sliced gas.
 - **EX8. The acceptance bench.** A Tallboy, a mine, an aircraft torpedo, a depth charge, a 250 kg SAP in a destroyer (11's
   test 3), by data alone. The bombs themselves stay out of this plan.
 
