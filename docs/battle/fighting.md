@@ -396,8 +396,10 @@ between cells), its thickness, material and normal.
   - **At the end,** a splash or a hit goes into a ring the snapshot carries for `SplashLifeMs`.
   - **Tables** are built when a class first goes to sea (`ShipSystem.ClassAdded`), not at its first salvo.
 - **The dev's "fire at":** the strip's Fire row (battery, "at (right-click)") and `-fire=ship[:battery]:lat,lon`.
-  Each shell's error is drawn from the stream "fire" by salvo and shell (`DevFirePatternPct`, a placeholder until
-  4.2b's chain).
+  It fires past fire control: each mount laid on the point at once (wherever it pointed, inside its traverse), each
+  shell with the guns' own dispersion as the gunnery's salvos have it about their centre (`FireControl.Dispersion`:
+  the battery's pattern by the flight, scaled by `GunneryErrors.Dispersion`), drawn from the stream "fire" by salvo
+  and shell (2026-11-08; until then a flat 0.8% of the range for every gun, `DevFirePatternPct`).
 - **Drawn:** each shell from its table at the frame's time, a dot and a short tracer. Splashes are rings that widen
   and fade; hits are orange.
 - **The bench:** `shipgen ballistics DESIGN [--research]` prints each battery's range table, the research's 16"/50

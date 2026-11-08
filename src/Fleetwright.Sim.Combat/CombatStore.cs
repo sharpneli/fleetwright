@@ -378,6 +378,17 @@ public sealed class CombatStore
         return Within(m, to, bearingDeg);
     }
 
+    /// <summary>A mount laid on a bearing (degrees from ahead) and an elevation at once, inside its traverse (the dev's
+    /// salvo: the guns fired where they're told, not where they pointed), its train and elevation held there.</summary>
+    public void LayNow(int slot, int mount, in MountRow m, long ms, double bearingDeg, double elevationDeg)
+    {
+        ref var s = ref mounts[slot]![mount];
+        double to = Into(m, bearingDeg, BearingAt(s, m, ms)), e = Math.Clamp(elevationDeg, -5, m.MaxElevationDeg);
+        (s.TrainMs, s.TrainFrom, s.TrainTo) = (ms, to, to);
+        (s.ElevMs, s.ElevFrom, s.ElevTo) = (ms, e, e);
+        moved[slot] = Touched = true;
+    }
+
     /// <summary>Orders a torpedo mount to a bearing now (it trains, it doesn't elevate): when it gets there, ms (the
     /// nearer end of its traverse if the bearing is outside it), and whether it's inside it.</summary>
     public bool Train(int slot, int mount, in MountRow m, long ms, double bearingDeg, out long laidMs)

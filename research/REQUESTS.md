@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-08 - sigma_D's n: the pattern's own salvo, not the guns firing (a fix to fire_control_ref.py)
+- Question: `fire_control_ref.py` `Gun.sigma_D(R, n)` (and `evasion_ref.py`'s calls) turns the gun's quoted full-salvo
+  pattern into a shell's σ through the USNI ratio at the n *firing*, so the fewer guns fire the wider each shell
+  scatters (one gun: σ = 3.3% / 1.6 / 0.798 · 0.85 ≈ 2.2% of the range; a 4-gun half salvo 1.4x an 8-gun one). The
+  game now takes the ratio at the quoted pattern's own salvo (`PatternReferenceGuns`, 8 [EST]) and keeps each shell's
+  σ the gun's, as the USN's 1944 expected patterns have it (3 guns 1.0%, 9 guns 1.9%). (1) Please confirm and carry
+  the fix into the reference and any figures built on it. (2) What salvo were the Great War patterns in
+  dispersion-and-hits.md §1.2 quoted for (navalgazing's 12", 13.5" and 15": full broadsides of 8? 10?), and do
+  sources give a gun's round-to-round σ directly anywhere, so the conversion isn't needed?
+- Context / relevant files: `src/Fleetwright.Sim.Combat/FireControl.cs` `Dispersion`, `docs/battle/error-sources.md`
+  ES7, `research/simulation/fire-control-research/dispersion-and-hits.md` §1.1-1.2.
+- Wanted output: the reference fixed; the reference salvo by source, with tags.
+
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?

@@ -68,7 +68,7 @@ public class ShellSystemTests(ITestOutputHelper output)
     [InlineData(16000)]
     public void A_splash_knows_how_it_fell_and_whose_dye_it_carries(double range)
     {
-        var (w, shooter, _) = Make(Settings with { DevFirePatternPct = 0 });
+        var (w, shooter, _) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } });
         w.Apply(ShipSystem.Dye(shooter, Ships.Dye.Orange));
         var from = Ship(w, shooter).Position;
         var aim = Destination(from, 0, range);   // north, away from the target
@@ -100,7 +100,7 @@ public class ShellSystemTests(ITestOutputHelper output)
     [Fact]
     public void A_salvo_records_each_mount_that_fired()
     {
-        var (w, shooter, _) = Make(Settings with { DevFirePatternPct = 0 });
+        var (w, shooter, _) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } });
         var from = Ship(w, shooter).Position;
         var aim = Destination(from, 0, 9000);   // north, away from the target
         var (lat, lon) = Earth.LatLon(aim);
@@ -182,11 +182,15 @@ public class ShellSystemTests(ITestOutputHelper output)
         Assert.Equal(3 * guns, splashes.Count);
         Assert.All(splashes, s => Assert.Equal(-1, s.Ship));
         double mean = splashes.Average(s => Earth.Distance(s.Point, aim));
-        output.WriteLine($"{splashes.Count} splashes, {mean:F0} m from the aim on average (the pattern's sigma {Settings.DevFirePatternPct / 100 * 7000:F0} m)");
-        Assert.InRange(mean, 10, 3 * Settings.DevFirePatternPct / 100 * 7000);
+        // the guns' own dispersion there (the battery's pattern by the flight)
+        var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
+        var table = w.Shells.Ballistics[w.Shells.TableOf(cls.Loadout, 0)];
+        double sigma = FireControl.Dispersion(table, cls.Batteries[0].PatternPct, 7000, table.ElevationFor(7000, 8), 8, Settings).Range;
+        output.WriteLine($"{splashes.Count} splashes, {mean:F0} m from the aim on average (the guns' sigma in range {sigma:F0} m)");
+        Assert.InRange(mean, 10, 3 * sigma);
 
         // at the target itself, no spread: every shell meets it
-        var (w2, s2, t2) = Make(Settings with { DevFirePatternPct = 0 });
+        var (w2, s2, t2) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } });
         var hits = Fire(w2, s2, Ship(w2, t2).Position, 1);
         Assert.All(hits, h => Assert.Equal(t2, h.Ship));
         Assert.Equal(guns, w2.Shells.Hits);
@@ -201,7 +205,7 @@ public class ShellSystemTests(ITestOutputHelper output)
     {
         // the water's fuze off: this is the shell system's splash, and a 0.003 s fuze started on the water fires before
         // the hull 5 m on (P3)
-        var (w, shooter, target) = Make(Settings with { DevFirePatternPct = 0, FuzeStartsOnWater = false });
+        var (w, shooter, target) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 }, FuzeStartsOnWater = false });
         var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
         int guns = cls.Batteries[0].Guns;
         var from = Ship(w, shooter).Position;
@@ -279,7 +283,7 @@ public class ShellSystemTests(ITestOutputHelper output)
     [Fact]
     public void A_ship_gone_under_is_not_hit()
     {
-        var s = Settings with { DevFirePatternPct = 0 };
+        var s = Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } };
         int guns = 0;
         int HitsOn(long beforeGoneMs)
         {

@@ -1842,7 +1842,7 @@ public sealed class GunnerySystem : IWorldSystem
             dr += errs.Own * Vec3d.Dot(tilt, u) * perRad;
             dl += errs.Own * Vec3d.Dot(tilt, w) * Math.Tan(double.DegreesToRadians(e0)) * range;
         }
-        var (sr, sd) = FireControl.Dispersion(table, row.PatternPct, range + dr, n, e0, h0, settings, flight.PerMvPct, perRad);
+        var (sr, sd) = FireControl.Dispersion(table, row.PatternPct, range + dr, e0, h0, settings, flight.PerMvPct, perRad);
         if (!mount.DirectorFiring)
             (sr, sd) = (Math.Sqrt(sr * sr + Math.Pow(layRad * perRad, 2)), Math.Sqrt(sd * sd + Math.Pow(layRad * range, 2)));
         if (fc.Roll.AmplitudeRad > 0 || fc.Pitch.AmplitudeRad > 0 || cond.Attitude.HeelDeg != 0 || ship.YawRate != 0)
@@ -2335,7 +2335,7 @@ public sealed class GunnerySystem : IWorldSystem
             return (0, 0, 0);
         double fall = table.Fall(e, h0).FallDeg, perRad = table.RangePerDeg(e, h0) * 180 / Math.PI;
         double perMv = FireControl.PerMvPct(table, e, h0);
-        var (sr, sd) = FireControl.Dispersion(table, row.PatternPct, range, guns, e, h0, settings, perMv, perRad);
+        var (sr, sd) = FireControl.Dispersion(table, row.PatternPct, range, e, h0, settings, perMv, perRad);
         sr = Math.Sqrt(sr * sr + Sq(settings.SalvoMvPct * perMv));   // the salvo's charges (ES7) as he knows them
         var computer = fc.Fit.Computer;
         var mount = fc.Fit.Mount;

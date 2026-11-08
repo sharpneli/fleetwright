@@ -112,7 +112,7 @@ public class LoadoutTests(ITestOutputHelper output)
     [Fact]
     public void A_ship_fires_her_loadout_and_takes_one_only_before_firing()
     {
-        var w = new World(Start, 7, Settings with { DevFirePatternPct = 0 });
+        var w = new World(Start, 7, Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } });
         _ = new AiSystem(w);
         var c = Dreadnought;
         int ci = w.Ships.AddClass(c);

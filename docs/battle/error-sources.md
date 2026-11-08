@@ -451,6 +451,21 @@ fewer lost (the Jutland 24.0 v 51.0 → 15.2 v 41.5, Heligoland 2.8 v 17.8 → 1
 more of their guns from further out judge and break off differently, and the record's loser no longer reliably loses
 more. For the revisit with the gap.
 
+**A shell's scatter is its gun's** (2026-11-08, the user: "go ahead"; found checking the dev salvo's spread).
+`FireControl.Dispersion` took the USNI ratio at the guns *firing*, so the fewer fired the wider each shell went: one gun
+σ = 3.3% / 1.6 / 0.798 · 0.85 ≈ 2.2% of the range, a 4-gun ranging or half salvo 1.4x an 8-gun one, one twin mount in
+independent fire 2x (the research's `sigma_D(R, n)` does the same: research/REQUESTS.md). The ratio is now taken at the
+quoted pattern's own salvo, `PatternReferenceGuns` 8 [EST], and each shell's σ is its gun's whatever the salvo (the
+USN's 1944 expected patterns: 3 guns 1.0% of the range, 9 guns 1.9%). The salvo's `PatternM` (4σ: the bracket's floor,
+the straddle's half) follows. The dev's "fire at" now fires the guns too (`FireControl.Dispersion` by its flight, the
+mounts laid on the point at once; fighting.md), where it had a flat 0.8% of the range for every gun.
+**The panel** (`balance/pattern-n-before.json`, `pattern-n.json`, the two run side by side): fc-history 5 of 23 in
+their bands (7), the orderings 3 of 7 (4); most cases hit more, ranging and half salvos no longer widened: Santiago
+43.1 → 58.9%, Dogger Bank's British 8.9 → 13.5, Jutland's 3rd BCS 27.0 → 35.9, German battleships 10.8 → 13.7, Denmark
+Strait 18.1 → 21.7; full salvos alike (the USN 1944 study 55.5 → 55.4, Rodney 49.7 both). The scenarios: 5 of 14 sides
+within twice the record (5); the record's loser lost more in 25 of 44 seeds (30). The gap to the record widens a little
+further: for the revisit with the rest.
+
 ## Decided (the user, 2026-11-03)
 
 1. **The order** as above.

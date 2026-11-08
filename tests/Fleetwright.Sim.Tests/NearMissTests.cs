@@ -138,7 +138,7 @@ public class NearMissTests(ITestOutputHelper output)
 
     static (World W, ulong Hash) Run()
     {
-        var w = new World(Start, 11, Settings with { DevFirePatternPct = 0.15 });
+        var w = new World(Start, 11, Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0.13 } });
         _ = new AiSystem(w);
         int shooter = w.Ships.AddClass(Class("dreadnought")), target = w.Ships.AddClass(Class("destroyer"));
         w.Apply(ShipSystem.Spawn(shooter, 56.5, 4.0, 0, 0));

@@ -123,10 +123,12 @@ public sealed class ShellSystem : IWorldSystem
 
     // ------------------------------------------------------------------ commands
 
-    /// <summary>The dev's "fire at" (until fire control, 4.2b): a ship's battery fires a salvo at a point on the sea, each
-    /// gun's elevation from its shell's range table, each shell with its own error (<see cref="SimSettings.DevFirePatternPct"/>),
-    /// drawn from the stream "fire" by salvo and shell. Each mount fires its next load in the magazine order, or with a
-    /// kind its first load of that kind; a mount with no rounds of it fires nothing. The rounds are spent (no reload).</summary>
+    /// <summary>The dev's "fire at": a ship's battery fires a salvo at a point on the sea past fire control, each mount
+    /// laid on it at once (wherever it pointed, inside its traverse), each gun's elevation from its shell's range table,
+    /// each shell with its guns' own dispersion (<see cref="FireControl.Dispersion(BallisticTable, double, double, double, double, SimSettings, double, double)"/>,
+    /// the battery's pattern by the flight, scaled by <see cref="GunneryErrorScale.Dispersion"/>), drawn from the stream
+    /// "fire" by salvo and shell. Each mount fires its next load in the magazine order, or with a kind its first load of
+    /// that kind; a mount with no rounds of it fires nothing. The rounds are spent (no reload).</summary>
     public static Command FireAt(int shooter, int battery, double latDeg, double lonDeg, ShellKind? kind = null) =>
         new(Id, (ushort)ShellCommand.FireAt, shooter, A: Earth.PackLatLon(latDeg, lonDeg), B: battery, X: kind is { } k ? (int)k + 1 : 0);
 
@@ -215,11 +217,17 @@ public sealed class ShellSystem : IWorldSystem
             var up = muzzle.Normalized();
             var toward = (target - up * Vec3d.Dot(target, up)).Normalized();
             double range = Earth.Distance(muzzle, target), h0 = muzzle.Length - Earth.Radius;
+            // the guns' own dispersion, as the gunnery's salvos have it about their centre (the battery's pattern by the
+            // flight, ES7), and nothing of fire control's; the mount laid on the line at once, wherever it pointed
+            double e0 = t.ElevationFor(range, h0);
+            var (sr, sd) = FireControl.Dispersion(t, b.PatternPct, range, e0, h0, settings);
+            double ks = settings.GunneryErrors.Dispersion;
+            combat.LayNow(slot, m, mount, world.Time.Ms, ((Earth.Bearing(ship.Position, target) - ship.HeadingDeg) % 360 + 360) % 360,
+                double.IsNaN(e0) ? mount.MaxElevationDeg : e0);
             for (int g = 0; g < cls.TurretTypes[mount.Type].Barrels; g++, k++)
             {
                 var rng = stream.Derive((ulong)k);
-                double sigma = settings.DevFirePatternPct / 100 * range;
-                double aim = range + rng.NextGaussian() * sigma, across = rng.NextGaussian() * sigma * settings.DevFireDeflectionShare / Math.Max(range, 1);
+                double aim = range + rng.NextGaussian() * ks * sr, across = rng.NextGaussian() * ks * sd / Math.Max(range, 1);
                 double e = t.ElevationFor(aim, h0);
                 if (double.IsNaN(e))
                     e = Math.Min(t.Key.MaxElevationDeg, t.MaxElevationDeg - 2 * BallisticTable.ElevationStep);

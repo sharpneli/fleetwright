@@ -649,11 +649,6 @@ public sealed record SimSettings
     public double ShipIndexCellM { get; init; } = 5000;
     public int ShipIndexMaxAgeMs { get; init; } = 2000;
 
-    /// <summary>The dev's "fire at" (until fire control, 4.2b): each shell's error in range, 1 sigma, as a percentage of
-    /// the range, and across it as a share of that.</summary>
-    public double DevFirePatternPct { get; init; } = 0.8;
-    public double DevFireDeflectionShare { get; init; } = 0.4;
-
     // ------------------------------------------------------------------ fire control (docs/battle/fighting.md 4.2b)
 
     /// <summary>The engaged batteries' fire-control tick, ms, on a grid of world time: readings taken and taken in, the
@@ -750,6 +745,10 @@ public sealed record SimSettings
     /// holds at, degrees (the battle ranges the quoted patterns are of [EST]).</summary>
     public double DispersionJumpMil { get; init; } = 0.5;
     public double DispersionReferenceDeg { get; init; } = 10;
+    /// <summary>The salvo a design's pattern is quoted for, shells (FireControl.Dispersion): the full salvos of the
+    /// sources' patterns, the Great War's 8-gun broadsides [EST] (fire-control-research/dispersion-and-hits.md §1.2). Each
+    /// shell's own scatter is set by it, whatever the salvo fired.</summary>
+    public double PatternReferenceGuns { get; init; } = 8;
 
     /// <summary>A salvo's charges' common departure from the muzzle velocity its machine has, 1σ, % (docs/battle/
     /// error-sources.md ES7): one salvo's charges share their lot, their magazine's and hoist's warmth and the guns' heat

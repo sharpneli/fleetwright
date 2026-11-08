@@ -249,10 +249,11 @@ public class GunneryTests(ITestOutputHelper output)
     /// sights till the next plot, where the Dumaresq makes the rate from her course and speed at once and the clock runs
     /// the range on; on a target closing across (her course 225°, the shooter's 0°) the plot ranges longer and hits less
     /// (readings' rung, measured 32 duels: 59.2 v 69.0%), on a parallel one alike (70.8 v 70.0: its steady range is right
-    /// there). Here both at 25 kn, 24 duels: 50.2 v 55.9% closing across, 69.3 v 68.2 parallel, every error on 10.5 v 12.5.
+    /// there). Here both at 25 kn, 96 duels: 50.6 v 60.3% closing across, 68.4 v 67.8 parallel, every error on 11.9 v 16.5 (2026-11-08,
+    /// each shell's scatter its gun's whatever the salvo: 24 duels put the closing pair within the noise).
     /// The rangefinder, FA to FQ/FT: the first salvo nearer (the readings alone, 15 and 18 kn: 151 v 103 m rms). The sights,
     /// the early telescope's 0.73 mil to 0.35: some 56 against 27 m in range a gun at the range beside a pattern of some
-    /// 200 m, so a little (14.0 v 15.5% here).</summary>
+    /// 200 m, so a little (22.0 v 23.6% here).</summary>
     [Fact]
     public void Where_the_levels_differ_level_2_runs_the_range_on()
     {
@@ -263,7 +264,7 @@ public class GunneryTests(ITestOutputHelper output)
         const string fq = "Barr & Stroud FQ/FT (O2)", plot = "Hand plot", clock = "Dumaresq and Vickers clock";
         double Pct(ShipClass c, double course, SimSettings? s = null)
         {
-            var (h, sh, _, _) = Duels(c, target, 11_000, 90, -1, 24, minutes: 10, with: s, courseDeg: course);
+            var (h, sh, _, _) = Duels(c, target, 11_000, 90, -1, 96, minutes: 10, with: s, courseDeg: course);
             return 100.0 * h / sh;
         }
         var byPlot = Refit("dreadnought", fq, plot, "Telescopic sights");
@@ -654,7 +655,8 @@ public class GunneryTests(ITestOutputHelper output)
     /// her speed (computing.md §3), a constant-rate clock, so on a fast crossing it drifts where the AFCT's true course
     /// follows; elsewhere near the table (the research's model: 8.4 against 9.4% on a zigzagging target at 16 kyd, 3.2 and
     /// 3.2 steady at 25 kyd). Measured, 24 duels, the readings' rung: steady at 14 km, the AFCT 75.1%, the Type 92 72.8; her own zigzag 79.4, 78.7;
-    /// every error on, a destroyer passing at 4 km at 30 kn 58.9 against 47.1. Her zigzag (20°/75 s at 14 km) alike (48 duels:
+    /// every error on, a destroyer passing at 4 km at 30 kn 58.9 against 47.1 (2026-11-08, each shell's scatter its gun's whatever
+    /// the salvo: 96 duels 51.4 against 46.6, the drift 9%). Her zigzag (20°/75 s at 14 km) alike (48 duels:
     /// 18.6, 19.6), the 15 s latency against 8 moving it under three points either way.</summary>
     [Fact]
     public void The_Japanese_plot_hits_near_the_table_and_drifts_on_a_fast_crossing()
@@ -675,7 +677,7 @@ public class GunneryTests(ITestOutputHelper output)
                          $"a destroyer passing at 4 km {passA:F1}, {passJ:F1}");
         Assert.InRange(steadyJ, 0.95 * steadyA, 1.03 * steadyA);
         Assert.InRange(ownJ, 0.95 * ownA, 1.05 * ownA);
-        Assert.True(passJ < 0.9 * passA, "the constant-rate clock drifts on a fast crossing");
+        Assert.True(passJ < 0.93 * passA, "the constant-rate clock drifts on a fast crossing");
     }
 
     [Fact]
@@ -946,15 +948,16 @@ public class GunneryTests(ITestOutputHelper output)
     /// <summary>The splash columns (docs/battle/error-sources.md ES2): a WWI boat's guns laid by their own layers on a boat
     /// 4 km off. At their own size her masts show over a 4-inch short's column (some 10 m at that flat fall) and the shorts
     /// scatter tens of metres across the line, so nothing hides her (generous to the gunner); forty times the size, the
-    /// columns hide her from the layers some of the time and the guns fire less and hit less.</summary>
+    /// columns hide her from the layers some of the time and the guns fire less and hit less (32 runs: 1710 hits of 6284 shells
+    /// off, 1647 of 6252 at forty times; 8 runs were within the noise).</summary>
     [Fact]
     public void Splash_columns_hide_her_from_the_layers_only_when_they_cover_her()
     {
         var b97 = Fleet.Scenario("b97");
         var v25 = Fleet.Scenario("v25");
-        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 8);
-        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 8);
-        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 8);
+        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 32);
+        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 32);
+        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 32);
         output.WriteLine($"masking off {off.Hits} hits of {off.Shells}, at size {real.Hits} of {real.Shells}, forty times {strong.Hits} of {strong.Shells}");
         // at their own size the run follows masking off but for the falls' chaos (a column now and then over her end on)
         Assert.InRange(real.Shells, 0.97 * off.Shells, 1.03 * off.Shells);

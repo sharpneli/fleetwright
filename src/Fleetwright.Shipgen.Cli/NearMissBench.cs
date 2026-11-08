@@ -75,8 +75,11 @@ static class NearMissBench
         else
         {
             int guns = o.Guns > 0 ? o.Guns : sc.Links(b.Mounts).Length * sc.TurretTypes[sc.Mounts[sc.Links(b.Mounts)[0]].Type].Barrels;
-            double sr = !double.IsNaN(o.SigmaRangeM) ? o.SigmaRangeM : settings.DevFirePatternPct / 100 * o.RangeM;
-            double sd = !double.IsNaN(o.SigmaDeflM) ? o.SigmaDeflM : sr * settings.DevFireDeflectionShare;
+            // the guns' own dispersion by default, as the gunnery's (the battery's pattern by the flight)
+            var table = new BallisticTable(BallisticKey.Of(shell, maxElev));
+            var own = Sim.Combat.FireControl.Dispersion(table, b.PatternPct, o.RangeM, table.ElevationFor(o.RangeM, settings.MatchupMuzzleM), settings.MatchupMuzzleM, settings);
+            double sr = !double.IsNaN(o.SigmaRangeM) ? o.SigmaRangeM : own.Range;
+            double sd = !double.IsNaN(o.SigmaDeflM) ? o.SigmaDeflM : own.Across;
             var r = GivenHits.NearSalvos(tc, shell, maxElev, o.RangeM, o.AspectDeg, guns, o.Salvos, sr, sd, o.FcRangeM, o.FcDeflM, (ulong)o.Seed, settings);
             double n = Math.Max(r.Salvos, 1);
             Console.WriteLine(string.Format(Inv, "  {0} salvos of {1} (σ {2:0} m along, {3:0} m across; fire control σ {4:0} m, {5:0} m), falling {6:0.0}°, {7:0} m/s:",

@@ -86,12 +86,15 @@ public static class FireControl
     /// _REF_NORM, 0.835).</summary>
     static readonly double MagnificationNorm = 1 / Math.Sqrt(1 + Math.Pow(28 * Math.Sqrt(1.0 / (AirMagnification * AirMagnification) + 1.0 / (60 * 60)), 2));
 
-    /// <summary>A salvo of n guns' own dispersion, 1 sigma in range and across, metres: the pattern (its 100% spread,
-    /// % of the range) is ratio(n)·D, D = 0.798σ (USNI 1917), times 0.85 for the gun-to-gun scatter in quoted
-    /// patterns (Gun.sigma_D).</summary>
-    public static (double Range, double Across) Dispersion(double patternPct, double rangeM, int guns, double deflectionRatio)
+    /// <summary>A shell's own dispersion about its salvo's centre, 1 sigma in range and across, metres, from its gun's
+    /// pattern (its 100% spread, % of the range) as quoted for a salvo of <paramref name="patternGuns"/> shells
+    /// (<see cref="SimSettings.PatternReferenceGuns"/>): that pattern is ratio(n)·D, D = 0.798σ (USNI 1917), times 0.85
+    /// for the gun-to-gun scatter in quoted patterns (Gun.sigma_D). The n is the quoted salvo's, never the guns firing
+    /// now: a shell's scatter is its gun's, and a salvo's pattern grows with the shells in it (the USN's 1944 expected
+    /// patterns, 1.0% of the range for 3 guns, 1.9% for 9; fire-control-research/dispersion-and-hits.md §1.2).</summary>
+    public static (double Range, double Across) Dispersion(double patternPct, double rangeM, double patternGuns, double deflectionRatio)
     {
-        double ratio = Interp(guns, PatternGuns, PatternRatio);
+        double ratio = Interp(patternGuns, PatternGuns, PatternRatio);
         double sr = patternPct / 100 * rangeM / ratio / 0.798 * 0.85;
         return (sr, deflectionRatio * sr);
     }
@@ -104,25 +107,26 @@ public static class FireControl
     /// pattern is a larger share of the range than at the battle ranges it's quoted at. The design's pattern
     /// (<see cref="Dispersion"/>) holds at a reference flight (<paramref name="refRangeM"/>, its sensitivities), its share there
     /// not the jump's (<paramref name="jumpMil"/>, 1σ) the velocity's; across the line, as before (an angle, the trainer's).</summary>
-    public static (double Range, double Across) Dispersion(double patternPct, double rangeM, int guns, double deflectionRatio,
+    public static (double Range, double Across) Dispersion(double patternPct, double rangeM, double patternGuns, double deflectionRatio,
         double perMvPct, double perRad, double refRangeM, double refPerMvPct, double refPerRad, double jumpMil)
     {
-        var (sr, sd) = Dispersion(patternPct, rangeM, guns, deflectionRatio);
+        var (sr, sd) = Dispersion(patternPct, rangeM, patternGuns, deflectionRatio);
         if (!(refRangeM > 0) || !(refPerMvPct > 0) || !(refPerRad > 0) || !(perRad > 0))
             return (sr, sd);
-        double reference = Dispersion(patternPct, refRangeM, guns, deflectionRatio).Range, jumpRad = jumpMil * Mil;
+        double reference = Dispersion(patternPct, refRangeM, patternGuns, deflectionRatio).Range, jumpRad = jumpMil * Mil;
         double mv = Math.Sqrt(Math.Max(reference * reference - Math.Pow(jumpRad * refPerRad, 2), 0)) / refPerMvPct;
         return (Math.Sqrt(Math.Pow(mv * perMvPct, 2) + Math.Pow(jumpRad * perRad, 2)), sd);
     }
 
-    /// <summary>A salvo's own dispersion by its flight (ES7), from the guns' table at the elevation it's fired at (from a
-    /// muzzle h0 over the sea), and the design's pattern at the settings' reference elevation; the fixed share of the
-    /// range where the guns can't reach the reference. The gunnery's and the matchup's one rule. The sensitivities at the
-    /// salvo's own flight may be given (the gunnery has them already).</summary>
-    public static (double Range, double Across) Dispersion(BallisticTable table, double patternPct, double rangeM, int guns, double elevationDeg, double h0,
+    /// <summary>A shell's own dispersion by its flight (ES7), from the guns' table at the elevation it's fired at (from a
+    /// muzzle h0 over the sea), and the design's pattern at the settings' reference elevation and salvo
+    /// (<see cref="SimSettings.PatternReferenceGuns"/>); the fixed share of the range where the guns can't reach the
+    /// reference. The gunnery's, the dev's salvo's and the matchup's one rule. The sensitivities at the salvo's own flight
+    /// may be given (the gunnery has them already).</summary>
+    public static (double Range, double Across) Dispersion(BallisticTable table, double patternPct, double rangeM, double elevationDeg, double h0,
         SimSettings s, double perMvPct = double.NaN, double perRad = double.NaN)
     {
-        double eRef = Math.Min(s.DispersionReferenceDeg, table.MaxElevationDeg - 1);
+        double eRef = Math.Min(s.DispersionReferenceDeg, table.MaxElevationDeg - 1), guns = s.PatternReferenceGuns;
         var reference = table.Fall(eRef, h0);
         if (double.IsNaN(reference.Range) || double.IsNaN(elevationDeg))
             return Dispersion(patternPct, rangeM, guns, s.DispersionDeflectionRatio);
