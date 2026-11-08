@@ -688,9 +688,11 @@ public sealed partial class ShipSystem : IWorldSystem
     }
 
     /// <summary>Where a showing fire's flames come out, in the ship's frame, and how wide the opening or the burning area
-    /// is, m: a space's through a hole in her side above the water (the holes' mean), else up through the deck over it
-    /// (its hatches); a part's at its top; a weather deck's on the deck at its section's middle. Where the world view draws
-    /// it and the smoke field lays its smoke from (docs/battle/smoke.md Z4).</summary>
+    /// is, m: a space's up through its weather deck where that's torn open wider than its hatches (the whole tear: a fire
+    /// under a deck blown away burns low and wide, not up a hatch; docs/visuals/destruction.md), else through a hole in her
+    /// side above the water (the holes' mean), else up through the deck over it (its hatches); a part's at its top; a
+    /// weather deck's on the deck at its section's middle. Where the world view draws it and the smoke field lays its smoke
+    /// from (docs/battle/smoke.md Z4).</summary>
     internal static (P3 At, double WidthM) FireOpening(ShipClass c, ShipCondition k, int space)
     {
         ref readonly var row = ref c.FireSpaces[space];
@@ -713,6 +715,9 @@ public sealed partial class ShipSystem : IWorldSystem
             {
                 var b = c.Cells[row.Index].Box;
                 double xm = (b.X0 + b.X1) / 2, hole = k.BreachM2[row.Index];
+                double torn = k.FaceTornM2.Length > 0 ? k.FaceTornM2[row.Index * 4 + 2] : 0;
+                if (Math.Sqrt(torn) > FireHatchM)
+                    return (new P3(xm, (b.Y0 + b.Y1) / 2, Math.Max(b.Top, c.Hull.DeckTop(xm))), Math.Min(Math.Sqrt(torn), Math.Max(burning, FireHatchM)));
                 if (hole > 0 && k.BreachZ[row.Index] > c.Vertical.Waterline)
                     return (new P3(xm, k.BreachY[row.Index], k.BreachZ[row.Index]), Math.Clamp(Math.Sqrt(hole), 0.5, burning));
                 return (new P3(xm, (b.Y0 + b.Y1) / 2, Math.Max(b.Top, c.Hull.DeckTop(xm))), Math.Min(FireHatchM, burning));

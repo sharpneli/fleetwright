@@ -53,19 +53,30 @@ public static class FireEffects
                 {
                     if (!Wreck.Shows(c, v, k, v.ShowAt[j], drawMs))
                         continue;   // gone under with her, or with the end that came off (docs/visuals/destruction.md)
-                    Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k]);
+                    Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k], ChargesLeft(v, k, drawMs));
                     if (smoke != null && trails != null && (FireLook.Parts & 4) != 0)
-                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, SmokeAir.Of(s.Weather), v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k]);
+                        Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, SmokeAir.Of(s.Weather), v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k],
+                            ChargesLeft(v, k, drawMs));
                 }
             }
         lights.Finish(view);
     }
 
+    /// <summary>How long burning charges go on once she's lost, s [EST: a gun's ready-use stack, a cordite charge burning in
+    /// seconds]. The sim stops stepping a ship when she's lost (her fires stay as they were: nothing in the battle reads them),
+    /// so a charges' flare would stand as it was until she's gone; here what burns fast burns out (docs/visuals/destruction.md).
+    /// The space's own fire burns on, as a wreck's did, until its opening goes under.</summary>
+    public const double ChargesOutS = 15;
+
+    /// <summary>The share of her charges' flare still burning: all of it afloat; dying away from her loss.</summary>
+    static double ChargesLeft(ShipsView v, int k, long drawMs) =>
+        v.Loss[k] == LossKind.None ? 1 : Math.Exp(-Math.Max(drawMs - v.LossMs[k], 0) / 1000.0 / ChargesOutS);
+
     static void Fire(in MapView view, ShipsView v, int j, Vec3d p, Vec3d f, Vec3d stbd, double wl, Vector2 wind, double world, double clock,
-        MagazineRenderer bodies, FlashLights lights, double span, int entity)
+        MagazineRenderer bodies, FlashLights lights, double span, int entity, double chargesLeft)
     {
         var at = v.ShowAt[j];
-        double z = at.Z - wl, d = Math.Max(v.ShowWidthM[j], 0.5), q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0);
+        double z = at.Z - wl, d = Math.Max(v.ShowWidthM[j], 0.5), q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0) * chargesLeft;
         var sea = p + f * at.X + stbd * at.Y;
         double l = MagazineBlast.Heskestad(q * 1000, d) * FireLook.Height;
         // a fire too small to stand a flame over its opening still shows its glow there
@@ -124,10 +135,10 @@ public static class FireEffects
     /// out).</item>
     /// </list></summary>
     static void Smoke(ShipsView v, int j, Vec3d p, Vec3d f, Vec3d stbd, double wl, double windMs, in SmokeAir air, double speedMs, double now,
-        SmokeBook book, SmokeTrails trails, int entity)
+        SmokeBook book, SmokeTrails trails, int entity, double chargesLeft)
     {
         var at = v.ShowAt[j];
-        double q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0), d = Math.Max(v.ShowWidthM[j], 0.5);
+        double q = Math.Max(v.ShowMW[j], 0), qc = Math.Max(v.ShowChargesMW[j], 0) * chargesLeft, d = Math.Max(v.ShowWidthM[j], 0.5);
         var phase = v.ShowPhase[j];
         var plume = SmokeSources.Fire(q, qc, phase, d, windMs, air);
         double aRate = plume.RateM2s * FireLook.SmokeGain;

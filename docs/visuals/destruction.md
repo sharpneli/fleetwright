@@ -84,7 +84,17 @@ of D2 below, which are attached.
 - **D4, thrown parts.** Every component a run throws (the sim, decision 2), on its arc, gone from the sprite.
 - **D5, the end blown off.** Her sprite clipped at the cut, the ragged edge, the piece going down by itself.
 - **D6, broken in two.** The two pieces (decision 1), drawn and sunk apart.
-- **D7, cost.** The Jutland at 60x, the 2000 mm bench, a melee of destroyers under 15" fire: frame time, pieces,
+- **The flame that stood too long (the user, 2026-11-08).** "Is the main vent still visible for such a long time after all
+the panels are out and the ship has been broken in two? There should be nothing to keep the pressure in." It wasn't a
+vent: the gas's jets end with her gas run, which ends at her loss. It was her forward gun's ready charges burning (a
+fire's charges' flare): when a ship is lost the sim stops stepping her, so her fires stay as they were, and a flare that
+burns out in seconds stood for the five minutes she took to go down. The map now lets her charges burn out over
+`FireEffects.ChargesOutS` 15 s from her loss; the space's own fire burns on, as a wreck's did, until its opening goes
+under. And a fire under a weather deck torn open wider than its hatches now burns out of the whole tear, low and wide,
+not up a hatch as a narrow jet (`ShipSystem.FireOpening`, the smoke field's too: the squadrons' hash unchanged; a big
+fight's smoke may move a little where fires burn under torn decks).
+
+**D7, cost.** The Jutland at 60x, the 2000 mm bench, a melee of destroyers under 15" fire: frame time, pieces,
   jets, lights, as I8 did.
 - **D8, by eye.** Side-by-side captures, day and night: the 2000 mm shell on a destroyer at 0, 1, 5, 30 s and 2 min;
   bismarck's `-ignite` through its race; a torpedo breaking a destroyer's back; a cruiser losing her bow.
