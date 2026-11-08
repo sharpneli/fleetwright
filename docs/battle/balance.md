@@ -763,6 +763,7 @@ answered today; the rest are best answered when their step has measured.
 | P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | decided (5) |
 | P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | decided (5) |
 | P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | decided (5) |
+| P11 | `explosions.md` EX7 | Light forces now stand off by day: once the matchup expected a torpedo to put a light cruiser out about 60% of the time (not 85%) and the guns at 8 km to grind slowly, the prizes' war fought at 7.8 km for 90 minutes before its boats ran in (0:39 before); PM eased it (6.6 km). How should light forces judge a run in under fire? | BL5's: measure the run-in's own exchange as the flotilla's day attack now is (`FlotillaAttacks.Worth`), then decide | with BL5 |
 
 ## The balance log
 

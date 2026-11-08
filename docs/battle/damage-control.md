@@ -974,6 +974,9 @@ on the yardstick bench.
   - **Audacious doesn't capsize.** Ours takes ~5,900 t with no list. The record's list came from water spreading aft
     through unclosed fittings on one side; our mine stand-in (a 303 kg torpedo 7.5 m down) and an unorganised crew
     aren't her case. A mine model and the 1914 RN's damage-control doctrine are the first suspects.
+  - **Two torpedoes sink the pre-dreadnought under way in about 25 min** since the one explosion (`explosions.md` EX7: 95% lost,
+    median 25 min; 136 min at EX0): inside the group's "minutes to hours" (Majestic and Triumph minutes), faster than the
+    case's Formidable (about 2¾ h). Not tuned; read with the research request below.
   - **One torpedo doesn't capsize a pre-dreadnought, and the Oslyabya case doesn't sink** (both (?) until the research
     request is back). Their subdivision (no longitudinal bulkheads in the Victorian ships) is shipgen's.
   - **Lützow** reaches two-thirds of the record's water at 8 h: the bow walks aft, but her crew's failures (jammed
