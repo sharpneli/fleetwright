@@ -102,7 +102,7 @@ public static unsafe class Pieces
     {
         var b = a + size;
         dl.AddRectFilled(a, b, U(T.Panel));
-        dl.AddRectFilledMultiColor(a, a + new Vector2(size.X, TitleH), U(T.TitleTop), U(T.TitleTop), U(T.TitleBottom), U(T.TitleBottom));
+        dl.AddRectFilled(a, a + new Vector2(size.X, TitleH), U(T.TitleStrip));
         dl.HLine(a.X + 1, b.X - 1, a.Y + 1, T.Bevel);
         dl.HLine(a.X, b.X, a.Y + TitleH, T.Edge);
         dl.HLine(a.X + 1, b.X - 1, a.Y + TitleH + 1, T.Bevel);
@@ -543,18 +543,17 @@ public static unsafe class Pieces
         ImGui.SetCursorScreenPos(at);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h)) && enabled;
         bool hover = enabled && ImGui.IsItemHovered();
-        var top = primary ? (hover ? T.PrimaryHover : T.PrimaryTop) : hover ? T.ButtonHover : T.Button;
-        var fill = primary ? T.PrimaryBottom : hover ? T.Button : T.ToggleBottom;
+        var fill = primary ? (hover ? T.PrimaryHover : T.Primary) : hover ? T.ButtonHover : T.Button;
         var edge = primary ? T.BrassDark : T.ButtonEdge;
         var ink = primary ? T.PrimaryInk : T.Text;
         Vector4? keyEdge = primary ? T.BrassDark : null, keyInk = primary ? T.PrimaryInk : null;
         if (!enabled)
-            (top, fill, edge, ink, keyEdge, keyInk) = (T.Panel2, T.Panel2, T.Line, T.Muted, T.Line, T.Faint);
+            (fill, edge, ink, keyEdge, keyInk) = (T.Panel2, T.Line, T.Muted, T.Line, T.Faint);
         else if (lit == Lit.On)
-            (top, fill, edge, ink, keyEdge, keyInk) = (hover ? T.BrassHover : T.BrassDarker, T.BrassDarker, T.Brass, T.Brass, T.BrassDark, T.Brass);
+            (fill, edge, ink, keyEdge, keyInk) = (hover ? T.BrassHover : T.BrassDarker, T.Brass, T.Brass, T.BrassDark, T.Brass);
         else if (lit == Lit.Armed)
-            (top, fill, edge, ink, keyEdge, keyInk) = (T.AmberTint, T.AmberTint, T.Amber, T.Amber, T.AmberEdge, T.Amber);
-        dl.AddRectFilledMultiColor(at, at + new Vector2(w, h), U(top), U(top), U(fill), U(fill));
+            (fill, edge, ink, keyEdge, keyInk) = (T.AmberTint, T.Amber, T.Amber, T.AmberEdge, T.Amber);
+        dl.AddRectFilled(at, at + new Vector2(w, h), U(fill));
         dl.AddRect(at, at + new Vector2(w, h), U(edge));
         var font = primary ? UiFonts.SansBold : UiFonts.SansSmall;
         float content = Width(font, label) + (key != null ? KbdWidth(key) + P(6) : 0) + (menu ? CaretW : 0);
@@ -667,10 +666,8 @@ public static unsafe class Pieces
         ImGui.SetCursorScreenPos(a);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h));
         bool hover = ImGui.IsItemHovered();
-        var top0 = on ? T.BrassDark : T.ToggleTop;
-        var bottom = on ? T.BrassDarker : T.ToggleBottom;
-        dl.AddRectFilledMultiColor(a, a + new Vector2(w, h), U(top0), U(top0), U(bottom), U(bottom));
-        dl.AddRect(a, a + new Vector2(w, h), U(T.Edge));
+        dl.AddRectFilled(a, a + new Vector2(w, h), U(on ? T.BrassDarker : hover ? T.ButtonHover : T.Toggle));
+        dl.AddRect(a, a + new Vector2(w, h), U(on ? T.Brass : T.Edge));
         var fg = on ? T.BrassLight : hover ? T.Text : T.Muted;
         dl.AddRect(a + new Vector2(P(3), P(2)), a + new Vector2(P(14), P(13)), U(fg), P(2));
         dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(5), Mid(UiFonts.SansSmall, a.Y, h)), fg, key);
@@ -696,9 +693,7 @@ public static unsafe class Pieces
                 hit = i;
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            var top = sel ? T.TitleTop : hover ? T.TabHover : T.TabTop;
-            var bottom = sel ? T.Panel : T.TabBottom;
-            dl.AddRectFilledMultiColor(ta, ta + new Vector2(w, h), U(top), U(top), U(bottom), U(bottom));
+            dl.AddRectFilled(ta, ta + new Vector2(w, h), U(sel ? T.TitleStrip : hover ? T.TabHover : T.Tab));
             dl.AddLine(ta, ta + new Vector2(w, 0), U(T.Edge));
             dl.AddLine(ta, ta + new Vector2(0, h), U(T.Edge));
             dl.AddLine(ta + new Vector2(w, 0), ta + new Vector2(w, h), U(T.Edge));
@@ -736,7 +731,7 @@ public static unsafe class Pieces
     /// <summary>The resource bar's ground across <paramref name="w"/>.</summary>
     public static void ResourceBarBg(this ImDrawListPtr dl, Vector2 a, float w, float h)
     {
-        dl.AddRectFilledMultiColor(a, a + new Vector2(w, h), U(T.ResourceTop), U(T.ResourceTop), U(T.ResourceBottom), U(T.ResourceBottom));
+        dl.AddRectFilled(a, a + new Vector2(w, h), U(T.ResourceBar));
         dl.HLine(a.X, a.X + w, a.Y + h - 1, T.Edge);
     }
 

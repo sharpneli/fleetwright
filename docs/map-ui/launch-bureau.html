@@ -5,7 +5,7 @@
      docked panels with title strips, an outliner, ledgers, numbered tabs, a status bar. A mockup, not code to port.
      #orders, #conditions, #japan open a state. -->
 <style>
-/* Gunmetal, natural map (docs/ui-themes/ui-style-gunmetal-natural.md, gunmetal-natural.css): warm graphite chrome,
+/* Dunkelgrau (docs/ui-language.md "Colour", Ui/Theme.cs; 2026-11-08): flat naval-paint grey chrome, no gradients,
    one orange accent (still named brass), Saira headers, Barlow text, Red Hat Mono figures; the map a plain atlas. */
 @font-face{font-family:'Saira Extra Condensed';font-weight:500;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-500-normal.woff2)}
 @font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(../designer-ui/assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
@@ -15,11 +15,11 @@
 @font-face{font-family:'Red Hat Mono';font-weight:400;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-400-normal.woff2)}
 @font-face{font-family:'Red Hat Mono';font-weight:500;src:url(../designer-ui/assets/fonts/red-hat-mono-latin-500-normal.woff2)}
 :root{
-  --ground:#0F0F0E;--panel:#1B1B19;--panel2:#22221F;--inset:#0B0B0A;--line:#272724;--edge:#050505;--bevel:#2E2E2A;
-  --title-top:#3A3934;--title-bot:#2A2A26;--header:#141412;--text:#D3CFC4;--bright:#F6F3EA;--muted:#8A867B;--faint:#55524B;
+  --ground:#181B1C;--panel:#242728;--panel2:#2B2F31;--inset:#141616;--line:#303536;--edge:#0A0B0C;--bevel:#33383A;
+  --title-top:#2D3133;--title-bot:#2D3133;--header:#1E2122;--text:#D5D6D7;--bright:#F5F5F5;--muted:#919597;--faint:#586164;
   --brass:#E8772E;--brass-dark:#5C3416;--brass-darker:rgba(232,119,46,.16);--brassl:#FFC79A;--ok:#8DBE6B;--amber:#E8B64A;
   --fr:#F1ECDD;--red:#E04A3C;
-  --plan:#262724;--planline:#A29F95;--btn:#2E2D29;--btn2:#232220;--border:#3A3934;--key:#45443E;
+  --plan:#282C2E;--planline:#B0B3B4;--btn:#333839;--btn2:#333839;--border:#3D4345;--key:#444A4C;
   --sea:#2E5269;--shoal:#3D6880;--land:#A3AD86;--landedge:#6F7A57;--grid:rgba(235,240,242,.09);--maplab:#B7C7CF;
   --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;
   --font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
@@ -50,7 +50,7 @@ b{font-weight:600}
 
 /* panes: square corners, a bevel instead of a shadow */
 .pane{position:absolute;background:var(--panel);border:1px solid var(--edge);border-radius:1px;display:flex;flex-direction:column;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05),inset 0 -1px 0 rgba(0,0,0,.6)}
-.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:linear-gradient(var(--title-top),var(--title-bot));border-bottom:1px solid var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+.title{height:20px;flex:none;display:flex;align-items:center;gap:8px;padding:0 6px;background:var(--title-top);border-bottom:1px solid var(--edge);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);color:var(--brass);font-family:var(--font-head);font-weight:700;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
 .title::before{content:'';flex:none;width:5px;height:5px;border-radius:50%;background:var(--faint);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);margin-right:-3px}
 .title .note{color:var(--muted);font-family:var(--font-ui);font-weight:400;text-transform:none;letter-spacing:0;font-size:12px}
 .title .r{margin-left:auto;display:flex;gap:3px;align-items:center}
@@ -70,10 +70,10 @@ th.n{text-align:right}
 td{height:20px;padding:0 6px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
 tr.alt td{background:rgba(255,255,255,.018)}
 tr.grp td{background:var(--panel2);color:var(--bright);font-weight:600}
-tr.sel td{background:rgba(232,119,46,.10)}
+tr.sel td{background:rgba(232,119,46,.11)}
 tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--brass)}
 tr.hit{cursor:pointer}
-tr.hit:hover td{background:#2A2A26}
+tr.hit:hover td{background:#323738}
 .tw{display:inline-block;width:10px;color:var(--muted);font-size:9px}
 .sw{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:0}
 
@@ -85,15 +85,15 @@ tr.hit:hover td{background:#2A2A26}
 .dd span{flex:1}
 .dd i{font-style:normal;width:15px;height:14px;display:flex;align-items:center;justify-content:center;background:var(--key);color:var(--bright);font-size:8px}
 .seg{display:inline-flex}
-.seg i{font-style:normal;padding:0 7px;height:16px;line-height:15px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);margin-left:-1px;color:var(--text);cursor:pointer}
+.seg i{font-style:normal;padding:0 7px;height:16px;line-height:15px;background:var(--btn);border:1px solid var(--border);margin-left:-1px;color:var(--text);cursor:pointer}
 .seg i.on{background:var(--brass-darker);border-color:var(--brass);color:var(--brass);position:relative;z-index:1}
 tr td.mut{color:var(--muted)}
 #scn{table-layout:fixed}
 #scn td{overflow:hidden;text-overflow:ellipsis}
-.btn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;background:linear-gradient(var(--btn),var(--btn2));border:1px solid var(--border);border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--text);cursor:pointer;white-space:nowrap}
-.btn:hover{background:linear-gradient(#3A3934,#2E2D29)}
-.btn.go{background:linear-gradient(#E8772E,#B85A1E);border-color:var(--brass);color:#140800;font-weight:600}
-.btn.go:hover{background:linear-gradient(#F08A45,#C4642A)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:20px;padding:0 8px;background:var(--btn);border:1px solid var(--border);border-radius:1px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:var(--text);cursor:pointer;white-space:nowrap}
+.btn:hover{background:#3D4345}
+.btn.go{background:#E8772E;border-color:var(--brass);color:#140800;font-weight:600}
+.btn.go:hover{background:#F28A45}
 .kbd{display:inline-block;min-width:10px;padding:0 3px;border:1px solid var(--key);border-bottom-width:2px;border-radius:1px;font-size:9.5px;line-height:11px;color:var(--text);text-align:center;font-family:var(--font-data);font-weight:400}
 .chip{display:inline-block;padding:0 4px;font-size:11px;line-height:13px;border:1px solid}
 .chip.amb{border-color:#7A5E26;background:#2E2410}
@@ -112,7 +112,7 @@ tr td.mut{color:var(--muted)}
 .para{padding:6px 8px;line-height:1.45}
 .bul{padding:4px 8px 4px 20px;position:relative;line-height:1.4}
 .bul:before{content:'•';position:absolute;left:8px;color:var(--muted)}
-.tag{position:absolute;padding:0 3px;background:rgba(15,15,14,.82);border:1px solid var(--key);font-family:var(--font-data);font-size:10px;color:var(--text);white-space:nowrap}
+.tag{position:absolute;padding:0 3px;background:rgba(17,19,19,.82);border:1px solid var(--key);font-family:var(--font-data);font-size:10px;color:var(--text);white-space:nowrap}
 #map .tag{color:var(--maplab)}
 #status{position:absolute;left:0;top:1060px;width:1920px;height:20px;background:var(--header);border-top:1px solid var(--edge);display:flex;align-items:center;gap:14px;padding:0 8px;color:var(--muted);font-size:12px}
 #status .r{margin-left:auto}
@@ -304,7 +304,7 @@ const ENS = {
   1: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#F2F2F2"/><g stroke="#C8322B" stroke-width="1.1">' +
      Array.from({ length: 8 }, (_, i) => { const a = i * Math.PI / 4; return `<line x1="7" y1="6" x2="${7 + 14 * Math.cos(a)}" y2="${6 + 14 * Math.sin(a)}"/>`; }).join('') +
      '</g><circle cx="7" cy="6" r="3" fill="#C8322B"/></svg>',
-  w: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#2E2D29"/><circle cx="9" cy="6" r="3" fill="none" stroke="#8A867B"/><circle cx="9" cy="6" r="1" fill="#8A867B"/></svg>',
+  w: '<svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-2px"><rect width="18" height="12" fill="#333839"/><circle cx="9" cy="6" r="3" fill="none" stroke="#919597"/><circle cx="9" cy="6" r="1" fill="#919597"/></svg>',
 };
 
 // ------------------------------------------------------------------ scenarios (the outliner)
@@ -315,7 +315,7 @@ const SCN = [
     ['The prizes’ war, 1920', 'FR IT', '1920', '6 : 6'], ['The battle for Åland', 'FI SE', '1921', '9 : 7']]],
   ['Tests', [['Squadrons', 'GB DE', '1916', '4 : 5'], ['Flotilla', 'GB DE', '1916', '6 : 11'], ['Ladder 1 … 5', 'dev', '—', '—']]],
 ];
-const GRPC = ['#8A6A48', '#B7A27A', '#55524B'];
+const GRPC = ['#8A6A48', '#B7A27A', '#586164'];
 $('scn').innerHTML = '<tr><th style="width:150px">Name</th><th style="width:44px">Sides</th><th style="width:44px">Year</th><th class="n">Ships</th></tr>' + SCN.map(([g, rows], gi) =>
   `<tr class="grp"><td colspan="3"><span class="tw">▼</span><span class="sw" style="background:${GRPC[gi]}"></span>${g}</td><td class="num mut">${rows.length}</td></tr>` +
   rows.map(([n, s, d, k, sel], i) => `<tr class="hit ${sel ? 'sel' : i % 2 ? 'alt' : ''}"><td style="padding-left:24px" class="${sel ? 'brass' : ''}">${n}</td><td class="mut mono" style="font-size:10px">${s}</td><td class="mut">${d}</td><td class="num" style="font-size:10.5px">${k.replace(/ : /, ':')}</td></tr>`).join('')).join('');

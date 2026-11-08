@@ -50,7 +50,7 @@ The rules that hold it together:
   on a background, no drop shadows, no rounded corners (rounding 0; popups 1 px).
 - **The screen is full.** No centred column with margins, no empty breathing room. A pane with little to say is
   smaller; it is never padded out. Long content scrolls inside its pane, never the screen.
-- **Every pane has a title strip**: 20 px, a `TitleTop`→`TitleBottom` gradient, a rivet, the name in the accent's
+- **Every pane has a title strip**: 20 px, flat `TitleStrip`, a rivet, the name in the accent's
   engraved capitals (`UiFonts.Head`), at most one muted note after it ("trim sheet", "the sides as written"), and the pane's toggles or count on
   the right.
 - **Sub-headers** split a pane: 20 px on `HeaderBg`, a small uppercase label, a muted note, controls on the right.
@@ -66,13 +66,13 @@ The rules that hold it together:
 |---|---|---|
 | Table | header row 18 px, uppercase 10 px muted on `HeaderBg`; rows 20 px, a `Line` rule under each, every other row 1.8 % lighter; figures right-aligned mono | nearly everything: levers, rules, conditions, particulars, ledgers |
 | Group row | `Panel2`, bright semibold, a ▼ twisty, a weight-group swatch where there is one | an outliner's sections, a unit in an order of battle |
-| Selected row | a warm tint and a 3 px brass bar on its left edge; its name in brass | the current section, scenario, class |
+| Selected row | the accent's tint (`Selected`) and a 3 px brass bar on its left edge; its name in brass | the current section, scenario, class |
 | Stepper | ◀ inset value ▶: small dark arrow boxes, the value right-aligned mono in an `Inset` well | any number the player sets: speed, belt, ships in a row, a temper |
 | Drop-down | an `Inset` field and a square grey ▼ button at its end | a pick from a list: templates, crews, doctrine |
 | Segmented | joined grey buttons, the chosen one `BrassDarker` with a brass border and brass text | two to four exclusive options: coverage, fight/carry on, presets |
 | Filter flag | one segment on its own, brass when on | an on/off filter beside others (the design picker's sources, up to the year) |
 | Button | 20 px, `Button` grey, a 1 px border, its key in a `kbd` chip after the word; lit (the order in force) brass on its tint, armed (waiting for a click on the map) amber; a menu's with a caret after it; exclusive ones joined, sharing their edges | actions: Change design… C, Save setup… Ctrl+S; the map's orders (the strip) |
-| Primary button | the same size, filled with the accent (`PrimaryTop`→`PrimaryBottom`), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
+| Primary button | the same size, filled flat with the accent (`Primary`), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
 | `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom; `Shift+` drawn as an outlined arrow up, ← → as drawn arrows | every key binding shown next to its control |
 | Overlay toggle | a small boxed letter and a word; brass when on | what the work surface draws |
 | Status chip | 10 px text in a 1 px border on a dark tint of its colour (ok, amber, plain, hostile; quiet, muted on `Panel2`, for the usual state beside a plain one) | a state on a row: `bold +0.20`, `in action`, `you`; hostile for the enemy and a ship going down; `AI` quiet beside `you`, `conn` ok (the rail) |
@@ -83,26 +83,30 @@ The rules that hold it together:
 
 ## Colour: what each one means
 
-Colour says **state**, never decoration. The skin is **Gunmetal, natural map** (`docs/ui-themes/ui-style-gunmetal-natural.md`,
-taken in 2026-10-26): warm graphite instruments with no blue in the chrome, one cadmium-orange accent, cream for friends,
-over a plain physical atlas. The tokens are `Theme`'s (the accent keeps the old name `Brass`):
+Colour says **state**, never decoration. The skin is **Dunkelgrau** (taken 2026-11-08 from the trials in
+`docs/ui-themes/navy-trials.html`, key 6): a naval paint grey with a faint cool cast, every fill flat (no gradients on
+strips, tabs, buttons or bars; a 1 px bevel line is the only relief), one cadmium-orange accent, cream for friends, over
+a plain physical atlas. It replaced Gunmetal (`docs/ui-themes/ui-style-gunmetal-natural.md`, 2026-10-26: warm graphite
+and gradients), whose type, accent, map and rules it keeps. Blue chrome was tried and dropped: it reads as water. The
+tokens are `Theme`'s (the accent keeps the old name `Brass`):
 
 | Token | Hex | Meaning |
 |---|---|---|
-| `Ground` | `#0F0F0E` | between panes |
-| `Panel`, `Panel2` | `#1B1B19`, `#22221F` | pane body; a group row, a tab at rest |
-| `Inset` | `#0B0B0A` | wells: value fields, empty bars |
-| `HeaderBg`, `Line`, `Edge` | `#141412`, `#272724`, `#050505` | column headers and title strips; the rule between rows; the edge round panes |
-| `Bevel` | `#2E2E2A` | the light line inside a pane's edge: panels have a bevel, never a shadow |
-| `Text`, `Bright`, `Muted`, `Faint` | `#D3CFC4`, `#F6F3EA`, `#8A867B`, `#55524B` | body; figures and names; labels and notes; disabled |
+| `Ground` | `#181B1C` | between panes |
+| `Panel`, `Panel2` | `#242728`, `#2B2F31` | pane body; a group row, a tab at rest |
+| `Inset` | `#141616` | wells: value fields, empty bars |
+| `HeaderBg`, `Line`, `Edge` | `#1E2122`, `#303536`, `#0A0B0C` | column headers and sub-headers; the rule between rows; the edge round panes |
+| `TitleStrip` | `#2D3133` | a pane's title strip, the chosen numbered tab |
+| `Bevel` | `#33383A` | the light line inside a pane's edge: panels have a bevel, never a shadow |
+| `Text`, `Bright`, `Muted`, `Faint` | `#D5D6D7`, `#F5F5F5`, `#919597`, `#586164` | body; figures and names; labels and notes; disabled |
 | `Brass` (the accent) | `#E8772E` | **the selection and the active**: the chosen tab, row, option, the primary action, pane titles. One thing per pane |
 | `Amber` | `#E8B64A` | **a consequence, never a refusal**: over a limit, a warning (a hue apart from the accent). Nothing is ever red for "no" |
 | `Ok` | `#8DBE6B` | ready, within limits |
 | `Friend` | `#F1ECDD` | friend, everywhere (`MapPalette.Friend`): cream, never blue, which sinks into the sea |
 | `Hostile` | `#E04A3C` | the enemy (`MapPalette.Hostile`), in figures and marks only |
 | `Water`, `Arc` | `#7FB0CF`, the accent | on drawings: the waterline and liquid layers; arcs of fire and guns bearing (fills at about 6 %) |
-| `Plan`, `PlanLine` | `#262724`, `#BDB8AA` | the work surface's graphite plate and its lines |
-| `Group(…)`, `ArmourRamp` | see the file | weight groups' swatches and bars (the gunmetal set); armour thin to thick |
+| `Plan`, `PlanLine` | `#282C2E`, `#B0B3B4` | the work surface's grey plate and its lines |
+| `Group(…)`, `ArmourRamp` | see the file | weight groups' swatches and bars; armour thin to thick |
 
 Blue belongs to the sea only: water on a drawing, the map's sea. A screen uses the accent for a handful of things and
 grey for the rest. When everything is highlighted, nothing is.
@@ -176,7 +180,7 @@ headers, close enough to the game to judge by.
 4. Every control is one of the pieces above, drawn by `Pieces`; a new kind of control needs a reason, and then goes in
    this table and in `Pieces`.
 5. Every tab and toggle has a key, and the status bar shows it.
-6. Mock it up at 1920×1080 by copying `launch-bureau.html`'s CSS. Screenshot it headless
+6. Mock it up at 1920×1080 by copying `launch-bureau.html`'s CSS (it carries the Dunkelgrau tokens). Screenshot it headless
    (`msedge --headless=new --window-size=1920,1080 --screenshot=out.png file:///…`), and set it beside a
    designer screenshot before porting.
 7. Once ported, compare the game's `-screenshot=N -ui` with the mockup.

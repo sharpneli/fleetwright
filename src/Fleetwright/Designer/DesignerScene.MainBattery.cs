@@ -916,8 +916,7 @@ public sealed unsafe partial class DesignerScene
             ImGui.EndDisabled();
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            var top = hover && ok ? new Vector4(0.247f, 0.233f, 0.199f, 1) : new Vector4(0.202f, 0.188f, 0.154f, 1);
-            dl.AddRectFilledMultiColor(a, a + new Vector2(bw, bh), T.U32(top), T.U32(top), T.U32(T.Panel), T.U32(T.Panel));
+            dl.AddRectFilled(a, a + new Vector2(bw, bh), T.U32(hover && ok ? T.ButtonHover : T.Button));
             dl.AddRect(a, a + new Vector2(bw, bh), T.U32(T.Edge));
             var tc = ok ? (hover ? T.Bright : T.Text) : T.Muted;
             dl.PushClipRect(a, a + new Vector2(bw, bh), true);

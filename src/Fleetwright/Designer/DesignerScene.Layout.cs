@@ -652,7 +652,7 @@ public sealed unsafe partial class DesignerScene
         var q = ImGui.GetCursorScreenPos();
         dl.AddRectFilled(q, q + detail, T.U32(T.Panel));
         dl.AddRect(q, q + detail, T.U32(T.Edge));
-        dl.AddLine(q + new Vector2(1, 0), q + new Vector2(detail.X - 1, 0), T.U32(T.TitleTop));
+        dl.AddLine(q + new Vector2(1, 0), q + new Vector2(detail.X - 1, 0), T.U32(T.TitleStrip));
         ImGui.SetCursorPos(new Vector2(pos.X + 1, detailY + 1));
         var inner = detail - new Vector2(2, 2);
         ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(P(6), 0));
@@ -1187,7 +1187,7 @@ public sealed unsafe partial class DesignerScene
             dl.Bar(p + new Vector2(barX, RowH / 2 - P(3)), new Vector2(barW, P(6)), g.Frac * 2, T.Group(g.Group));
         }
         p = ImGui.GetCursorScreenPos();
-        dl.AddLine(p, p + new Vector2(w, 0), T.U32(T.TitleTop));
+        dl.AddLine(p, p + new Vector2(w, 0), T.U32(T.TitleStrip));
         dl.Text(UiFonts.SansBold, p + new Vector2(P(6), (RowH - UiFonts.SansBold.FontSize) / 2), T.Bright, "Standard");
         dl.Text(UiFonts.Mono, p + new Vector2(tX - Width(UiFonts.Mono, s.Std), my), T.Bright, s.Std);
         ImGui.Dummy(new Vector2(w, RowH));

@@ -1,6 +1,10 @@
 # UI style: Gunmetal, natural map
 
-**Status:** chosen direction for Fleetwright's UI (picked 12 Oct 2026 from the theme trials).
+**Status:** replaced 2026-11-08 by **Dunkelgrau** (`docs/ui-language.md` "Colour", trials in `navy-trials.html`, key 6;
+as built: `png/dunkel-game-{launch,designer,battle}.png`): the same type, accent, map and rules, in flat naval grey without
+gradients. Kept for its reasoning, which still holds.
+
+Was: chosen direction for Fleetwright's UI (picked 12 Oct 2026 from the theme trials).
 **Live reference:** `docs/ui-themes/theme-trials.html`. Open it and press **4**.
 **Drop-in tokens:** `docs/ui-themes/gunmetal-natural.css`
 

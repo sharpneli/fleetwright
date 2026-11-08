@@ -912,7 +912,7 @@ public sealed unsafe partial class LaunchScene : IScene, ISceneMenu
         var b = a + size;
         dl.AddRectFilled(a, b, U(T.Panel));
         dl.AddRect(a, b, U(T.Edge));
-        dl.HLine(a.X + 1, b.X - 1, a.Y, T.TitleTop);
+        dl.HLine(a.X + 1, b.X - 1, a.Y, T.TitleStrip);
         if (current == null)
             return;
         var inner = new Vector2(a.X + 1, a.Y + 1);
