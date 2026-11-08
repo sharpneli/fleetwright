@@ -41,12 +41,12 @@ convergence) first, as "Cost and convergence" asks, since threshold races move w
 1. **Magazines at the margin.** The bed is out ("What the research found"), so it's back where EX3 left it: on the BCF's handling Lion's forward magazines read 0.82 in calm water, Tiger 0.49, Invincible 0.60. EX4 didn't touch a magazine's own race (a burn has no near field). Left to try: shell rooms' bursters (EX6's chain, now that the near field can carry a detonation through her), what a real magazine's boundaries are like. **Not tuned, and decision 3 says no balancing yet.**
 2. **Whether a break's end is a switch.** `GirderEndShare` (0.12) still reads an end apart: Lion's fore magazines break her at 0.88, right at that line, so she's lost where a little further forward she'd lose her bow and live. The way out is to take off the smaller piece at any break and let the flooding say. Bigger than this step.
 3. **The near field:** built (EX4). A Tallboy's charge in Lion's aft engine room still leaves her whole: her bottom holed, at 0.31 of her length where the moment is small. In a destroyer it now takes her whole section.
-4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them; 470 K [EST] is the rule, and EX6's.
+4. **A flooded magazine next to a dry one.** Q 95% flooded is contained (293 kPa, 1.5 t). A and B 95% flooded still light the rest (71 t) as hot gas reaches them (measured under the 470 K rule; EX6b's heat dose replaced it, not re-read).
 5. **cases and brass read alike,** with the research (R 32 against 28). The bed separates bags from both by more than before.
 6. **12″ and 6″ HE never rupture a destroyer's side.** Friedrich Eckoldt isn't met; with the research.
 7. **A magazine's cost:** 60-700 ms a race (Release; Bismarck's slow burns the worst, 90-170 s of gas in 4,500-8,600 steps), against about 20 wanted; a shell's 10-230 µs is on budget, but a shell whose gas lights a magazine (EX6a) pays the race. Over budget since EX5 at least. A longer step isn't the way, and exact tuning of the loop gave 19%: see "Cost and convergence". Threads were the first answer (workers.md W16, built 2026-11-07: a second later, off the sim thread); the user then had the gas take its own time in the world instead of one moment (workers.md "Explosions in time", built 2026-11-08): no race stalls the sim at any speed now.
-8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m, ignition 470 K.
-9. **The research request** "Big explosions in and beside ships" is open and bears on 1, 5 and 6.
+8. **Estimates:** the whip's `k` 0.2, buckling 0.85, a wing's floor 0.5 m, a room's least half-width 1.5 m (ignition is research 15's heat dose since EX6b).
+9. **Research "Big explosions in and beside ships"** came in (13, applied in EX5); 1, 5 and 6 are still open after it.
 10. **The game's step isn't converged on every race** ("Cost and convergence"): Iron Duke's S aft breaks her at the game's step and not at an eighth of it, Queen Mary's B and Dreadnought's Y light one magazine fewer.
 
 ## Why now
