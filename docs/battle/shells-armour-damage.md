@@ -1980,7 +1980,7 @@ None blocks a step; each is settled by its step's bench.
 | E6 | E1, E3, E5 | — | casualties, killed and wounded (done) | crew |
 | E7 | E1, E5, P3 | the fuze's water numbers in the report (done) | near misses (new hit source), splinters, shock, `nearmiss` bench (done) | near misses |
 | E8 | all | — | tuning | the anchors |
-| PM | all | — | the balance pass: the matchup refit to the terminal, the widened bands | AI judgements, gameplay |
+| PM | all | **done 2026-11-08** (`explosions.md` EX7, "PM") | the balance pass: the matchup refit to the terminal, the widened bands | AI judgements, gameplay |
 
 S and P0 are independent, so P0 can come first or between S steps; P1a needs no shells. Everything after P1b needs
 both phases' data. E0 can go any time; E4 and E5 need only S1, P0 and P1a, so they can run alongside P2-P5.
@@ -1992,7 +1992,7 @@ numbers are the research's, sourced or marked, and a result that moves away from
 back (the rules above). Once the physics is in (phase E with E8's anchors), a pass of its own does what is in effect
 balancing, against the model as it then stands:
 
-- **PM The matchup refit to the terminal** (user, 2026-10-17). The matchup judges a hit beam-on, with a burst inside
+- **PM The matchup refit to the terminal** (user, 2026-10-17). **Done 2026-11-08** (`explosions.md` EX7, "PM": hits under the water, the burst's depth by the fuze's delay, a nose burst by the near field, damage adding up; the even band stays 0.5-3, two against one 3-6). The matchup judges a hit beam-on, with a burst inside
   as good as any other and no hit under the water, so since P3 it rates the WWI British shells about three times the
   Germans' per hit where the terminal has them worse. Refit its per-hit estimate to `shipgen hits` across the bench
   pairs: burst depth by the fuze's delay, the underwater hits a delay fuze lets reach the hull, and the target

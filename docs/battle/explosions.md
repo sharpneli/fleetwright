@@ -1,6 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX7 are done** (EX7 2026-11-08: the matchup refit and the whole game read); **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **What next is the user's pick:** "Where to pick up".
+Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX7 are done** (EX7 2026-11-08: the matchup refit and the whole game read; PM the same day); **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **What next is the user's pick:** "Where to pick up".
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -36,9 +36,13 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
   mass), then every readout against EX0. The record's loser lost more in 30 of 44 seeds, the most yet; light forces now stand
   off (the AI's run-in, BL5's); 0 hits reached a magazine at the Jutland.
 
-**Next, for the user to pick:** PM (the matchup reads the burst's depth and damage adding up), the weak points in shipgen
-(Lion's steering), item 10 (the step's convergence, not yet run), the pre-dreadnought sinking in 25 min to two torpedoes, the
-light forces' run-in (BL5); then EX8, the acceptance bench.
+- **PM** (2026-11-08, "PM: the matchup reads the burst's depth and damage adding up"): hits under the water, the burst's depth,
+  a nose burst by the near field, damage adding up; rms 0.089 → 0.071 over 1,688 lines; a flotilla's day attack judged for the
+  force (the user's call).
+
+**Next, for the user to pick:** the weak points in shipgen (Lion's steering), item 10 (the step's convergence, not yet run), the
+pre-dreadnought sinking in 25 min to two torpedoes, the light forces' run-in (BL5), PM's three groups still off (common shells on
+destroyers, HE on light cruisers, pre-dreadnoughts at many hits); then EX8, the acceptance bench.
 
 **Open, in order of what they decide:**
 
@@ -1058,6 +1062,82 @@ pairs at 15 and 30 hits, `kinds-cap*.txt`), `torpedo TARGET --settle 30` on eigh
 
 **Open from EX7:** item 10 (the step's convergence) not run; PM (the burst's depth, damage adding up) and the weak points
 (shipgen's) as above; the pre-dreadnought's 25 min under two torpedoes; light forces' run-in (BL5). Then EX8.
+
+### PM: the matchup reads the burst's depth and damage adding up (2026-11-08)
+
+The user: "Matchup should produce reasonable expectations to the AI." Measured first, then the terms, each from the terminal's own
+rules (one model), then one fit. **Built and pushed (`f41a2490`).**
+
+**What the terminal does that the matchup didn't see** (`hits` at 10 km, 2,000 hits a pair): the German 12" AP (0.025 s, ±50%)
+reaches the hull under the water in 7-10% of hits (4 m through the water, reach 7.5 m), the British 13.5" (0.003 s) in 1-2%; the
+German shell's delay carries it out of an Arethusa before it bursts in 35% of hits (a V25 16%, Derfflinger 18%); heavy AP passes a
+V25 whole 70-88% of the time. By calibre, measured over judged: the German AP on capitals 1.8-2.1, the British 0.9; base fuzes on
+light ships a third.
+
+**The terms** (`Matchup.OutExponent`, `Matchup.Inside`, `Matchup.UnderBandM`, `Matchup.OutShare`):
+
+- **Under the water.** A band short of her waterline, `min(reach·cos fall, draught/tan fall)` (the shell's `WaterRun` reach at the
+  speed it strikes, none for a nose fuze), counted as hits (the hit chance's danger space, as the bench and the sim count them) and
+  worth `MatchupUnderwaterShare` of a burst inside. The band by `MatchupUnderBandShare` 0.6: the bench gives 0.56-0.77 of the full
+  band (V25, Iron Duke, Derfflinger), her section narrowing under the water.
+- **The burst's depth.** A base fuze started at a face bursts `delay × the speed it kept` in (`Terminal.Residual` through the
+  plate): inside her if that's short of her run past the face, beyond her (a pass's worth) if not, spread by the fuze's scatter
+  and `MatchupRunSpread` 0.75; the run from the side `MatchupRunShare` 0.6 of her beam (the bench's hits fall on her ends and upper
+  works too: the German AP's bursts beyond a V25 and an Arethusa give it), from the deck her depth along the fall.
+- **A nose fuze on a plate it can't punch** does `kept + (inside − kept) × MatchupContactShare × NearField.PlateShare(mm)`: the near
+  field's reach through the plate, √(6/mm) (`NearField.PlateShare`, the damage model's own law).
+- **Damage adds up.** What the hits do is harm (`Matchup.Harm`: the exponent over the toughness left in her), summed; a class's
+  ships are out at the regularized gamma `P(shape, harm a ship)` (`Matchup.OutShare`: a Poisson count of hits that matter reaching
+  `shape`; 1 − e^(−harm) at shape 1). Tabulated per class (513 steps to harm 12), so a judgement costs 20-25 µs (EX7: 15-17). Every
+  place that adds up a hit reads harm (the fight's slices, the lines' tables, the torpedoes, the captain's round worth, the floors).
+
+**The fit** (`explosions-ex7/pm/` beside the EX7 runs: 1,688 lines of `matchup --kinds`, light ships at 1, 3 and 6 hits,
+pre-dreadnoughts at 4, 10 and 20, capitals at 5-6, 15 and 30; a Nelder-Mead over the shares, the scale, the mass's power and the
+shape, `--ships 0` runs giving each line's terms): `MatchupShellK` 0.343, `MatchupShellMassPower` 0.62 (back near the square root:
+the fuze terms carry what the mass did), `MatchupKeptShare` 0.01 (was 0.15), `MatchupPassShare` 0.07 (0.4), `MatchupUnderwaterShare`
+2 (a hole below the belt floods besides), `MatchupContactShare` 0.25, `MatchupOutShapeK` 1.22 with no size power (the fit's was
+−0.06: hits add up a little in every ship, not only big ones). **rms 0.089 → 0.071, log 0.87 → 0.73** against EX7's law on the same
+lines; the shell kinds differ from the damage model in 40 of 844 lines (53).
+
+| Out of the fight, a line's mean | Measured | EX7 | PM |
+|---|---:|---:|---:|
+| a light cruiser's guns (Arethusa, Chatham) | 0.055 | 0.020 | 0.045 |
+| HE on destroyers | 0.33 | 0.22 | 0.33 |
+| HE on capitals | 0.007 | 0.025 | 0.017 |
+| capitals at 30 hits | 0.080 | 0.056 | 0.059 |
+| destroyers at 6 hits | 0.37 | 0.28 | 0.37 |
+| common shells on destroyers | 0.125 | 0.19 | 0.24 |
+| HE on light cruisers | 0.118 | 0.064 | 0.072 |
+| pre-dreadnoughts at 20 hits | 0.062 | 0.055 | 0.038 |
+
+The last three are where it still reads off; the shape a shell kind's pass-throughs on a light hull and a light cruiser's thin belt
+under a nose burst give aren't caught by one constant each.
+
+**The torpedo** on the same law: harm `8.95 × charge_t / disp_kt^0.42`, out at `(1 − dud) × P(1.22, harm)`: QE 33% (measured 42),
+Iron Duke 34 (34), Derfflinger 32 (31), Lion 29 (28), Arethusa 59 (43), Chatham 62 (51), V25 74 (78), the fleet destroyer 69 (87).
+
+**The judgements:** Iron Duke on Derfflinger 2.59 → 1.76 (the damage model about 1.4 a hit), Lion on Derfflinger 2.68 → 1.70;
+Arethusa on a V25 20.9; four Arethusas on eight V25s 5.35; two Iron Dukes on one 4.10 → 4.84 (the one taking two's fire crosses her
+threshold sooner); twenty V25s match Iron Duke by day (sixteen 1.01 → 0.84).
+
+**A flotilla's day attack, for the force** (the user's call, 2026-11-08: "Judge it for the force"). With the boats' losses read
+right (the 12" HE on a destroyer as measured), eight M-class against one dreadnought judged alone fell 0.63 → 0.43 under doctrine's
+½, and no flotilla went in by day. They were judged as if every enemy gun were on them, though the rule needs the force's heavy
+units engaging that enemy. By day now (`FlotillaAttacks.Worth`) the boats are judged beside the heavy units engaging the group, and
+the attack goes in where its own exchange is at doctrine's bar: the tonnes its torpedo salvo puts out against the tonnes of its
+boats lost in, at and out of it (`MatchupTerms.AttackTakenT`, `AttackLostT`). Eight boats beside four dreadnoughts on one: 6,717 t
+for 8,696 t (0.77), sent; four beside four on four: 1,043 t for 7,995 t (0.13), kept back; eight V25s beside four Iron Dukes on
+four Derfflingers 0.20. By night the boats alone, as before.
+
+**Restated:** doctrine's round floor 8.5e-6 → 1.7e-5 (a 6" round's harm on a battleship 1.7e-5 at 8 km, 2.3e-5 at 7, 8.9e-6 at
+11: the user's 8 km kept), the launch screen's option with it; `MatchupTests`' anchors to the bench (a 6" on a V25 1-2% a hit, one
+13.5" on Derfflinger almost never, fifteen 4-14%), two against one 3-6, twenty V25s by day. The even band stays 0.5-3.
+
+**The panel** (`balance-pm.txt`, 8 seeds, Jutland 4; against EX7's): 5 of 14 sides within twice the record (5); the record's loser
+lost more in 30 of 44 seeds (30); capsized 49%, foundered 28%, broke in two 22%, magazine 1%. The prizes' war's stand-off eases
+(light shells fired at 6.6 km against 7.8, hits 6.6% against 3.3%; lost 0.8 / 1.4 against 1.5 / 0.9); Cape Sarych's Russians 3.1 →
+4.5, Heligoland's British 1.5 → 3.3, Åland's Swedes 1.1 → 3.0, Jutland 25.3 / 51.5 → 23.0 / 54.0; Tsushima still the wrong way round
+(Japan 6.5 lost, Russia 2.6; 1 of 8 seeds both). Within the seeds' spread mostly; nothing tuned.
 
 ## What stays out
 
