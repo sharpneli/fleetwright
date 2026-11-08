@@ -308,7 +308,7 @@ public sealed class ShellSystem : IWorldSystem
             {
                 Hits++;
                 if (Damage != null && settings.HitsDoDamage && s.Loadout != null && s.ShellType >= 0)
-                    Damage.Take(world, new Hit
+                    Damage.Strike(world, new Hit
                     {
                         Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, WaterRunM = s.WaterRunM,
                         Source = HitSource.Shell,
@@ -379,7 +379,7 @@ public sealed class ShellSystem : IWorldSystem
                 continue;
             var q = HitQuery.ToShip(cls, frame, attitude, at + dir);
             NearMissCount++;
-            Damage.Take(world, new Hit
+            Damage.Strike(world, new Hit
             {
                 Ship = entity, Ms = now, Point = p, Direction = new P3(q.X - p.X, q.Y - p.Y, q.Z - p.Z), SpeedMs = speed, WaterRunM = run,
                 Source = HitSource.NearMiss, Shell = shell, ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery, Force = force,

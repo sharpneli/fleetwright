@@ -684,7 +684,6 @@
 
   // fire, flooding, going down (docs/battle/fighting.md 4.3b; damage-model-research.md §3.5, §3.6, §8.4, §8.5)
   "FloodMs": 1000,
-  "HitDelayMs": 1000,
   "FloodIdleMs": 30000,
   "FloodIdleT": 0.05,
   "FloodSteadyShare": 0.0001,

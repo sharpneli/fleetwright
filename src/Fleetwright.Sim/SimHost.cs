@@ -67,13 +67,7 @@ public sealed class SimHost : IDisposable
         thread = new Thread(Run) { Name = "Sim", IsBackground = true };
     }
 
-    /// <summary>Starts the sim thread, and the damage system's thread for explosions (docs/battle/workers.md W16d: a magazine's race
-    /// off the sim thread; the world the same without it).</summary>
-    public void Start()
-    {
-        world.Damage.Threaded = true;
-        thread.Start();
-    }
+    public void Start() => thread.Start();
 
     /// <summary>Real time passed, seconds; the world turns it into game time at its asked speed.</summary>
     public void Elapse(double realSeconds)
@@ -103,7 +97,6 @@ public sealed class SimHost : IDisposable
         if (thread.IsAlive)
             thread.Join();
         wake.Dispose();
-        world.Damage.Threaded = false;
         if (ReportGaps)
             Console.WriteLine($"sim: the longest gap between snapshots while running {LongestGapMs:F0} ms, at {LongestGapAt}");
     }

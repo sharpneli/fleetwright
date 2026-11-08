@@ -12,13 +12,10 @@ public sealed partial class DamageSystem
 {
     /// <summary>What a hit took from the world when it came: its draws' index, the moment, her men's experience, the sea her girder
     /// takes, her rudder, where she was (for the screens' ring) and the class's flooding model. Her turrets' bearings and her mounts'
-    /// states as they stood are in the <see cref="HitScratch"/> it was taken into. SetOff: not a hit but a magazine her fire set off
-    /// (Room), an explosion of hers all the same (W16c).</summary>
+    /// states as they stood are in the <see cref="HitScratch"/> it was taken into.</summary>
     struct HitInputs
     {
         public Hit Hit;
-        public bool SetOff;
-        public int Room;
         public ulong Index;
         public long Now;
         public double Experience, Sea, Rudder;
@@ -67,20 +64,13 @@ public sealed partial class DamageSystem
         public Struck Record;
     }
 
-    /// <summary>A hit lands, now: what it does to the ship, at once (the benches', the coarse tier's; in the fine tier the game's
-    /// hits come through <see cref="Take"/>). Anything still on its way to her lands first.</summary>
+    /// <summary>A hit lands, now: what it does to the ship.</summary>
     public void Strike(World world, in Hit hit)
     {
-        int slot = ships.Store.SlotOf(hit.Ship);
+        var store = ships.Store;
+        int slot = store.SlotOf(hit.Ship);
         if (slot < 0 || Spared?.Invoke(hit) == true)
             return;
-        Flush(world, slot);
-        StrikeAt(world, slot, hit);
-    }
-
-    void StrikeAt(World world, int slot, in Hit hit)
-    {
-        var store = ships.Store;
         var cls = store[slot].Handling.Class;
         var k = store.Combat.Condition(slot);
         touched = true;
@@ -169,9 +159,6 @@ public sealed partial class DamageSystem
             w.Fx |= HitEffect.Magazine;
         if (w.Broke)
             w.Fx |= HitEffect.Broken;
-        // she's lost on her condition now, so an explosion after this one in her batch finds her going down (Land's Lose the rest)
-        if (w.Blew || w.Broke)
-            (k.Status, k.Loss) = (ShipStatus.GoingDown, w.Blew ? LossKind.Magazine : LossKind.BrokeInTwo);
         if (hit.Source is HitSource.Shell or HitSource.Coarse)
             (w.Recorded, w.Record) = (true, RecordOf(at, cls, t, e, sx.Path));
         w.E = e;

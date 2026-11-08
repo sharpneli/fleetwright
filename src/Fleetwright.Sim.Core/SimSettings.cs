@@ -1964,9 +1964,6 @@ public sealed record SimSettings
     /// (it changed by under <see cref="FloodIdleT"/> in a step) and nothing burns, every <see cref="FloodIdleMs"/>.</summary>
     public int FloodMs { get; init; } = 1000;
 
-    /// <summary>How long after it happens an explosion on a ship lands in the fine tier, ms, at least (docs/battle/workers.md W16): on
-    /// the <see cref="FloodMs"/> lattice, worked out meanwhile off the sim thread. 0: at once, as in the coarse tier.</summary>
-    public int HitDelayMs { get; init; } = 1000;
     public int FloodIdleMs { get; init; } = 30_000;
     public double FloodIdleT { get; init; } = 0.05;
     /// <summary>The share of her displacement her water may move in one step while it isn't settled: the step is the
