@@ -960,6 +960,52 @@ alone now). The sim thread publishes nothing while one runs, so the ships stop a
   flag is taken before the store's hit. **Noted:** `StoreLimit` isn't in the state hash (a draw that decides; `StoreHeat` is); a
   store in a fire cooler than its filler neither heats nor cools while it burns.
 
+## EX7: the whole game (2026-11-08)
+
+The user: "most important part is to update the AIs matchup etc and see where we are at." Kept in `explosions-ex7/`.
+
+### The matchup refit
+
+Measured first against the damage model as EX6 and ET left it (`ai-expectation-not-optimism`): `matchup --kinds` (the
+shell-choice bench's 7 shooters on 7 targets, 200 ships a line, 30 min after, K hits by the target's size; and the capital
+pairs at 15 and 30 hits, `kinds-cap*.txt`), `torpedo TARGET --settle 30` on eight classes (`torpedo.txt`).
+
+- **Torpedoes, far off on light cruisers.** Out of the fight a hit (duds in): QE 42%, Iron Duke 34%, Derfflinger 31%, Lion 28%,
+  Arethusa 43%, Chatham 51%, V25 78%, the fleet destroyer 87%. The old law (charge over displacement) read the capital ships
+  right and the cruisers 83-86%: one hit floods a machinery space or two in any ship (power down to 40-60% in every class), so it
+  goes far slower than her size. **Now** `K · charge_t / disp_kt^½` (`Matchup.TorpedoOut`, K 8.26): 32, 33, 31, 28, 59, 63, 75,
+  69; rms 0.10 against 0.20. Light craft still read low (they break in two besides).
+- **Shells, near on the whole, wrong by size.** The old law read 1.5x the damage model over the 564 lines; by group the light
+  guns on light ships 3x (an Arethusa's 6" HE puts a V25 out 1-2% a hit, a 13.5" HE 30%; 6.0% on 2026-10-15: open item 6 shows
+  here). The kept, pass and spall shares moved nothing beyond the bench's noise (rms 0.043 to 0.039); a displacement power
+  neither. **Now** a shell's worth by its mass (`MatchupShellMassPower` 1, was the square root; `MatchupShellK` 0.103 per 100 kg
+  and per thousand tonnes): rms 0.037, light on light 0.9% against a measured 1.2% (2.9% before), the heavy groups unchanged.
+- **The kinds still rank alike:** 4 of 224 lines differ beyond the noise (1 of 170 at shell-choice A0).
+- **What's measured but not fixed, and why** (1 and 2 PM's, `shells-armour-damage.md`: the damage model is right, the matchup
+  doesn't know it; the user, 2026-11-08: a battleship's AP through a destroyer is expected to do little; 3 is shipgen's):
+  1. **The burst's depth.** By calibre, measured over judged: on capital ships the German 11" and 12" AP 1.8-2.1, the British
+     13.5" 0.9; on light ships the base-fuzed shells (6", the pre-dreadnoughts' 12" common and AP) a third, the nose-fuzed 13.5"
+     HE all of it. A delay fuze bursts deep in a big ship and beyond a small one, and the matchup reads neither. So mass overstates
+     the 13.5" against the 12": Iron Duke against Derfflinger per hit 2.1x as the matchup has it now, 1.7x by the square root,
+     about 1.4x measured. Mass was kept as the smaller error (light guns on light ships 4x against a capital ratio 1.5x).
+  2. **Heavy damage adds up.** Capital guns on capital ships: near 0% out at 6 hits, as judged at 15, twice it at 30 (water, list
+     and machinery build to the fall-out line). The matchup's hits are independent, so it matches one count only; the fit is at
+     15, about a capital's fight. Light guns on capital ships read about nothing in both (15 6" hits 0-1%). The way in: out after
+     enough hits by her size (a threshold count), not a chance a hit.
+  3. **A class's own weak points: shipgen's** (the user, 2026-11-08). Lion goes out to 15 German AP hits 20% of the time against
+     the matchup's 3-5%, not lost but her steering (16%) and speed (7%); Iron Duke and Derfflinger don't show it. Where her
+     steering gear sits and what covers it is the design's question first. Common shells pass through light ships whole (78% on
+     a V25) and read about 3x their worth still (item 1).
+- **The judgements:** Arethusa on a V25 18.5 to 11.1; four Arethusas on eight V25s 3.19 to 3.27; eight V25s on Iron Duke 0.36 to
+  0.33; four Arethusas on Iron Duke 0.29 to 0.34; Lion on Derfflinger 2.61 to 2.68; Iron Duke on Derfflinger 1.82 to 2.59 (item 1).
+- **Restated:** doctrine's round floor 3e-5 to 8.5e-6 to keep the user's pick (a 6" on a battleship inside about 8 km; a round
+  there 3.0e-5 before, 8.6e-6 now), the launch screen's "what they can hurt" with it (it still offered 1.2e-5); `MatchupTests`'
+  V25 anchor to the measured 1-2%; the search test's enemy 4 to 5 (two Iron Dukes on four Derfflingers judge 0.53, just over the
+  bar by item 1; back to 4 with PM). The even band (0.5-3) stays: Lion on Derfflinger reads 2.7 where the bench has her the
+  weaker (item 3).
+- **The bench:** `matchup --kinds ... --ships 0` prints the matchup's exponent alone, so a refit's terms come in seconds against a
+  kept run (its exponent is linear in the kept, pass and spall shares: four runs give every line's terms).
+
 ## What stays out
 
 - Aircraft, bomb sights, a bomb's flight.
