@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07, to be replaced by "Explosions in time" (ET, agreed 2026-11-08); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
+Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07, replaced by "Explosions in time" (ET0-ET6 built 2026-11-08); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -662,9 +662,9 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
 | ET1 | **Done**: the same final hashes, hits, races and history benches as `1817567b`, timings aside. W16c-d out: back to every explosion worked at once (the output of `1817567b`, the freeze with it for a step), the items under "What goes" removed |
 | ET2 | **Done**, narrowed: the run resumable (`Start`, `Advance(to)`: its step, quiet time and steps kept between advances, a step cut at the advance's end resuming at the length it wanted), `Run` the two to the end at once: the same hashes and figures as ET1. The state's move onto the ship went to ET3, where its lifetime changes |
 | ET3 | **Done** (below). The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read, the boundaries' and spaces' episodes (decision 4), spaces leaving and rejoining the stepped set, `GasRunS` from the newest source. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
-| ET4 | The benches through the same slices: `Strike` then the run out (`DamageSystem.Settle` advances it slice by slice), `explode`, `magazine --race`, `hits`, the three history benches. The convergence check again with the slices' clip (`explode --step`; "Check again whenever the inputs move"). Readouts: Lion's four, `losses`, the panel (`balance --fc-runs 0`) beside W16c's |
-| ET5 | Measured in the game, as W16f: the 2000 mm salvo at 1x, 30x, 100x, 240x, the sim's longest gap and the map's longest still; the Jutland's ms a game second while a race runs. A worker pass for the slices only if this asks |
-| ET6 | Docs: explosions.md's model ("It runs to the end at the moment of the event" goes), CLAUDE.md, `magazine-explosions.md`'s event timing |
+| ET4 | **Done** (below). The benches through the same slices: `Strike` then the run out (`DamageSystem.Settle` advances it slice by slice), `explode`, `magazine --race`, `hits`, the three history benches. The convergence check again with the slices' clip (`explode --step`; "Check again whenever the inputs move"). Readouts: Lion's four, `losses`, the panel (`balance --fc-runs 0`) beside W16c's |
+| ET5 | **Done** (below). Measured in the game, as W16f: the 2000 mm salvo at 1x, 30x, 100x, 240x, the sim's longest gap and the map's longest still; the Jutland's ms a game second while a race runs. A worker pass for the slices only if this asks |
+| ET6 | **Done** (below). Docs: explosions.md's model ("It runs to the end at the moment of the event" goes), CLAUDE.md, `magazine-explosions.md`'s event timing |
 
 ### Decisions (the user, 2026-11-08: 1-3 as proposed; 4 reworked on the user's question)
 
@@ -724,6 +724,40 @@ mounts allocated; and `Prepare` (every hit) topped the pool back up, so a third 
 fixed; the zero-allocation tests hold. Tests: `GasInTimeTests` (a dreadnought's magazine runs 19.1 s, landing on her in 31 slices;
 the same hash stepped in 37 ms or one go; the coarse tier; her gas goes down with her; a burst's moment holds only its near field;
 every field of a network hashed or named).
+
+### ET4-ET6: built (2026-11-08)
+
+- **ET4, the benches.** `DamageSystem.StrikeOut` (a hit, then her gas run out slice by slice through the same landings, its toll in
+  what the hit did) for `GivenHits` (`hits`, `torpedo`, `nearmiss`) and the hitbox viewer's shot; benches whose world runs its clock
+  between hits (`GivenFire`: the history benches) need nothing, and take how a magazine fire ended from the race log; `crew-history`
+  counts her own dead. `explode --sliced MS` and `Magazines.SetOff(..., sliceMs)` run a race a slice at a time, her girder read each
+  slice. **Sliced against at once** (Lion, Iron Duke, Seydlitz, every magazine): the same propellant burned, times within hundredths,
+  what gave within a few boundaries, peaks within about 10%, the same races break her in a seaway. **At an eighth of the step** both
+  move alike (Lion's forward magazines' seaway load 0.61 to 0.77, Iron Duke's S aft 1.02 to 1.00): explosions.md item 10, not the slices.
+  - `damage-history` (20 runs): Tiger lost 15%, Bismarck 30%, Seydlitz and Derfflinger 5%, Mikasa 10%, Indefatigable 20%, as the review
+    had them; **Indefatigable's four now break in two 2-5 min after her magazine lights**, where they were lost to it at the hit: her
+    girder is read as the gas goes, not with the race's peak whip against its last torn section.
+  - The panel (`balance --fc-runs 0`, 737 s): 6 of 14 sides within about twice the record (W16c 8); the record's loser lost more in 27 of
+    44 seeds (29); capsized 50%, foundered 25%, broke in two 25%, magazine 0% (51, 21, 28, 0). Within the seeds' spread scenario by
+    scenario (Heligoland's Germany 14.9 lost, 7.8-14.3 in earlier panels; Dogger Bank's Britain 9.0, 5.8-7.3). Nothing tuned.
+- **ET5, in the game** (DevRelease, `-ships=bismarck:1:0@56.5,4.0,0,0 -ignite=1 -nopause -speed=S -frametimes`, 900 frames; her
+  magazine's race, the slowest there is):
+
+  | | the sim's longest gap | the map's longest still | the damage system's longest call |
+  |---|---|---|---|
+  | 1x | 55 ms (the start) | 0 frames | 4.4 ms |
+  | 30x | 54 ms (the start) | 0 | 18.4 ms |
+  | 100x | 59 ms (the start) | 0 | 18.7 ms |
+  | 240x | 58 ms (the start) | 0 | 18.6 ms |
+  | 30x, no fire | 42 ms (the start) | 0 | |
+
+  Against W16f's at once: 1,159 ms at 30x and 1,198 ms at 100x. No worker pass needed.
+- **ET6, docs:** explosions.md's model, magazine-explosions.md's timing (the loss, and its event, comes when her girder gives), CLAUDE.md
+  (`-ignite`, `explode --sliced`).
+
+**W16's open item is closed:** no race stalls the sim at any speed. Left open: the step's convergence on Lion's forward magazines
+(explosions.md item 10), and whether Indefatigable's later break, rather than a loss at the flash, wants a look of its own (the
+magazine event plays at the break).
 
 ## What to expect
 
