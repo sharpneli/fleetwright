@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07, to be replaced by "Explosions in time" (ET, drafted 2026-11-08); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
+Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07, to be replaced by "Explosions in time" (ET, agreed 2026-11-08); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -593,7 +593,7 @@ Bismarck's races at 18 km run 1.1-1.2 s (several magazines, slow burns). The lea
 (the ships drawn further past the world), or a cheaper race (explosions.md item 7: the step's count, the cells a step
 visits). The delay can't grow with the speed (`same-at-any-compression`).
 
-## Explosions in time (ET) - drafted 2026-11-08, replaces W16's batches
+## Explosions in time (ET) - agreed 2026-11-08, replaces W16's batches
 
 The user, 2026-11-08: "The whole thing compresses up to 2 minutes of gas propagation into a single tick. I think we probably
 should just scrap it and make it tick based, so that 2 minutes of gas propagation and effects would take 2 minutes to happen in
@@ -611,13 +611,16 @@ slack stalls the sim (W16f's 1.1 s).
 
 1. **Her gas is her own, live:** one run a ship (the network's working state, today one a thread and reset every run, becomes a
    ship's, pooled by class: `GasRun`), from her first explosion until it's done (every panel caught up, nothing burning, nothing
-   more can give: today's `Done`), at most `GasRunS`.
+   more can give: today's `Done`), at most `GasRunS` after the newest explosion joined it (a run kept alive by new sources isn't
+   cut off). A shell's gas is gone in a slice or two and salvos come tens of seconds apart, so runs end between them; only what
+   keeps making gas (a burning stow) keeps one live. A space whose gas is back at the atmosphere with no load on its boundaries
+   leaves the stepped set and joins again when gas reaches it, so a long run costs where its gas is, not where it has been.
 2. **It's stepped on a lattice of world time,** `GasSliceMs` (100 [EST], a divisor of `FloodMs`): an event a slice while she has a
    run. Within a slice the solver keeps its own steps (the step's control as now, clipped at the slice's end, and the step it wanted
    carried over to the next).
 3. **Every advance lands what it did on her live condition at once:** what tore (today's `Commit`, already written as deltas), the
    holes to the sea (her water's step wakes for them), the men and gear in the spaces it reached as their boundaries' felt rises
-   (`Casualties.Gas` takes the conditional risk from the last level to the new: the risk is a curve of the peak felt), a train's
+   (`Casualties.Gas` takes the conditional risk from the last level to the new within an episode, decision 4), a train's
    handling room gone hot (the flash), a gunhouse vented or lifted, a magazine lit (spent from then: her mounts there have no more
    rounds), her girder read when her section lost something, and what she can do worked out again when anything changed. There's
    nothing to guard, copy or hold back: everything reads her as she is.
@@ -658,21 +661,23 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
 | ET0 | Measured first: over the 75 races of "Cost and convergence" and a shell burst of each size, the steps and the ms in each 100 ms of gas time (`explode --slices`), so `GasSliceMs` and the worst slice are numbers, not the bound above |
 | ET1 | W16c-d out: back to every explosion worked at once (the output of `1817567b`, the freeze with it for a step), the items under "What goes" removed |
 | ET2 | `GasRun`: the network's working state a ship's, pooled by class and made when the class comes in (no allocation in play); `Begin`, `Add` (a source at its moment), `Advance(to)` (steps to then and lands what they did), `Done`. Still run to its end at once: byte for byte as ET1 (benches and scenarios with `--hashes`) |
-| ET3 | The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
+| ET3 | The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read, the boundaries' and spaces' episodes (decision 4), spaces leaving and rejoining the stepped set, `GasRunS` from the newest source. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
 | ET4 | The benches through the same slices: `Strike` then the run out (`DamageSystem.Settle` advances it slice by slice), `explode`, `magazine --race`, `hits`, the three history benches. The convergence check again with the slices' clip (`explode --step`; "Check again whenever the inputs move"). Readouts: Lion's four, `losses`, the panel (`balance --fc-runs 0`) beside W16c's |
 | ET5 | Measured in the game, as W16f: the 2000 mm salvo at 1x, 30x, 100x, 240x, the sim's longest gap and the map's longest still; the Jutland's ms a game second while a race runs. A worker pass for the slices only if this asks |
 | ET6 | Docs: explosions.md's model ("It runs to the end at the moment of the event" goes), CLAUDE.md, `magazine-explosions.md`'s event timing |
 
-### Decisions
+### Decisions (the user, 2026-11-08: 1-3 as proposed; 4 reworked on the user's question)
 
-1. **The slice: 100 ms** (proposed), or `FloodMs`'s 1 s (a tenth of the events, the gas's tears up to a second late). ET0 decides
-   if the worst slice is too heavy at 100 ms.
-2. **One gas a ship** (rule 4, proposed): a second explosion joins the live run. The other way, separate runs side by side, has two
-   gases in one space that never meet.
-3. **The coarse tier steps it too** (rule 5, proposed), against landing at once there (`coarse-statistically-rough` would allow it,
-   but it's a second rule and the old freeze at 1000x).
-4. **Seams sprung at the run's end** (proposed): a boundary that held is drawn by the most it felt (review finding 1), and before the
-   end that most isn't known. A two-minute burn's sprung seams leak from its end; they're slow leaks.
+1. **The slice: 100 ms**, not `FloodMs`'s 1 s. ET0 checks the worst slice.
+2. **One gas a ship** (rule 4): a second explosion joins the live run.
+3. **The coarse tier steps it too** (rule 5).
+4. **A boundary's load comes in episodes, not runs.** The user: "if we have one gas per ship and we get lots of small booms when
+   does the run ever end?" Today a held boundary's seams are drawn once a run by the most it felt (review finding 1), and two shells'
+   runs draw twice and add up (`JoinSeamM2`). Drawn at the end of one long run, a ship under steady fire would draw once by the
+   highest peak, or never. So each boundary keeps its own episode: from when the load across it rises to when it falls back under
+   `LeakWeepD` (the load that leaves no leak: no new threshold); its seams and closures are drawn then by that episode's peak, and
+   the peak starts again. A space's men the same: their risk by the rise in felt within an episode, a new episode a new risk. Each
+   small boom is its own episode, as each shell is its own run today, whether or not the run ends.
 
 ## What to expect
 
