@@ -14,7 +14,7 @@ static class ExplodeBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Room, double Kg, string Explosive, double CalibreMm, string? Magazine, string? Packaging, double Flooded, string? Doctrine,
-        double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1, bool Volumes = false);
+        double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1, bool Volumes = false, bool Slices = false);
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -34,6 +34,8 @@ static class ExplodeBench
             GasNetwork.StepK = o.Step;
         if (o.Trace)
             GasNetwork.Trace = Console.WriteLine;
+        if (o.Slices)
+            GasNetwork.Slices = new GasNetwork.SliceCost();
         Console.WriteLine(string.Format(Inv, "the network's rungs: heat kept {0:0.##}, tear {1:0.##} of a boundary, panel {2:0.#} ms, rupture {3:0.###} MPa/mm, step x{4:0.##}", s.MagazineHeatKeep, s.RupturedShare, s.PanelMs, s.RuptureMPaMm, GasNetwork.StepK));
         if (o.Volumes)
         {
@@ -153,6 +155,7 @@ static class ExplodeBench
         Console.WriteLine(string.Format(Inv, "      peak {0:0} kPa, felt {1:0}; {2} spaces, holed " + r.Holed + ", gave: {3} bulkheads, {4} decks, {5} doors, {6} sides, {7} weather deck, {8} bottom; sprung {9}; {10:0.00} s in {11} steps ({12:0} µs)",
             r.PeakKPa, r.FeltMPa * 1000, r.Spaces, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.Deformed, r.EndS, r.Steps, us));
         Hull(c, HullGirder.Of(c), k, r.WhipEM, s);
+        SliceLine();
         if (cells)
             Cells(c, net);
     }
@@ -332,6 +335,15 @@ static class ExplodeBench
             foreach (int ci in c.Links(c.Rooms[room].Cells))
                 gas += Blast.GasM3(c, k, ci);
             var rng = RandomStream.Named(1, "explode bench");
+            if (GasNetwork.Slices != null)
+            {
+                // a warm run first: the slices' figures are the loop's own, not the JIT's
+                var warm = Ship(c, s, out var kw, out int sw0);
+                kw.Flash = k.Flash;
+                Flood(c, kw, room, flooded);
+                var rw = RandomStream.Named(1, "explode bench");
+                net.Burn(kw, room, warm.Ships.Store.Combat.Mounts(sw0), s, ref rw);
+            }
             var sw = Stopwatch.StartNew();
             var r = net.Burn(k, room, w.Ships.Store.Combat.Mounts(slot), s, ref rng);
             double ms = sw.Elapsed.TotalMilliseconds;
@@ -339,9 +351,29 @@ static class ExplodeBench
             Console.WriteLine(string.Format(Inv, "      peak {0:0} kPa, burned {1:0.0} t, {2} spaces ({3:0} m³), gave: {4} bulkheads, {5} decks, {6} doors, {7} sides, {8} weather deck, {9} bottom; vented {10}, lifted {11}, magazines {12}; first {13:0.00} s, the hull's {14:0.00} s, ran {15:0.0} s in {16} steps ({17:0.0} ms)",
                 r.PeakKPa, r.BurnedKg / 1000, r.Spaces, r.VolumeM3, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.Vented, r.Lifted, r.Magazines, r.FirstS, r.HullS, r.EndS, r.Steps, ms));
             Hull(c, girder, k, r.WhipEM, s);
+            SliceLine();
             if (cells)
                 Cells(c, net);
         }
+    }
+
+    /// <summary>The last run's cost by its own time (docs/battle/workers.md ET0), when <c>--slices</c>: the worst slice, the first,
+    /// the mean, how many over 5 ms, and the steps in the worst.</summary>
+    static void SliceLine()
+    {
+        if (GasNetwork.Slices is not { } sc || sc.Steps.Count == 0)
+            return;
+        double f = 1000.0 / Stopwatch.Frequency;
+        int worst = 0, over = 0;
+        for (int i = 0; i < sc.Ticks.Count; i++)
+        {
+            if (sc.Ticks[i] > sc.Ticks[worst])
+                worst = i;
+            over += sc.Ticks[i] * f > 5 ? 1 : 0;
+        }
+        double total = sc.Ticks.Sum() * f;
+        Console.WriteLine(string.Format(Inv, "      slices of {0:0} ms: {1}, worst {2:0.00} ms ({3} steps) at {4:0.0} s, first {5:0.00} ms ({6} steps), mean {7:0.000} ms, over 5 ms {8}, all {9:0.0} ms",
+            sc.SliceS * 1000, sc.Steps.Count, sc.Ticks[worst] * f, sc.Steps[worst], worst * sc.SliceS, sc.Ticks[0] * f, sc.Steps[0], total / sc.Steps.Count, over, total));
     }
 
     static void Flood(ShipClass c, ShipCondition k, int room, double flooded)

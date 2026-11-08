@@ -658,7 +658,7 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
 
 | | |
 |---|---|
-| ET0 | Measured first: over the 75 races of "Cost and convergence" and a shell burst of each size, the steps and the ms in each 100 ms of gas time (`explode --slices`), so `GasSliceMs` and the worst slice are numbers, not the bound above |
+| ET0 | **Done** (below). Measured first: over the 75 races of "Cost and convergence" and a shell burst of each size, the steps and the ms in each 100 ms of gas time (`explode --slices`), so `GasSliceMs` and the worst slice are numbers, not the bound above |
 | ET1 | W16c-d out: back to every explosion worked at once (the output of `1817567b`, the freeze with it for a step), the items under "What goes" removed |
 | ET2 | `GasRun`: the network's working state a ship's, pooled by class and made when the class comes in (no allocation in play); `Begin`, `Add` (a source at its moment), `Advance(to)` (steps to then and lands what they did), `Done`. Still run to its end at once: byte for byte as ET1 (benches and scenarios with `--hashes`) |
 | ET3 | The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read, the boundaries' and spaces' episodes (decision 4), spaces leaving and rejoining the stepped set, `GasRunS` from the newest source. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
@@ -678,6 +678,24 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
    `LeakWeepD` (the load that leaves no leak: no new threshold); its seams and closures are drawn then by that episode's peak, and
    the peak starts again. A space's men the same: their risk by the rise in felt within an episode, a new episode a new risk. Each
    small boom is its own episode, as each shell is its own run today, whether or not the run ends.
+
+### ET0: measured (2026-11-08)
+
+`explode DESIGN --magazine all --slices` (and `--kg`): a run's steps and wall-clock ms in each 100 ms of its gas, a warm run first,
+`DOTNET_TieredCompilation=0`, Release. **100 ms holds; nothing else to decide.**
+
+| | Races | Worst slice | Mean slice | All |
+|---|---:|---:|---:|---:|
+| Bismarck's magazines (slow burns, 91-167 s of gas) | 8 | 1.05 ms (5 steps) | 0.15-0.27 ms | 133-386 ms |
+| Iron Duke, Lion, Seydlitz, Dreadnought, Queen Mary | 39 | 3.15 ms (36 steps) | 0.12-1.21 ms | 24-311 ms |
+| Destroyer, V25 | 9 | 0.20 ms | 0.02-0.08 ms | 4-15 ms |
+| 60 kg TNT, 61.7 kg TNA in a destroyer | 2 | 0.11 ms (all in one slice) | | 0.1 ms |
+| 2.4 t Torpex in Bismarck's boiler room | 1 | 8.1 ms (152 steps, the first slice) | | 10.9 ms |
+| 13.6 t lyddite (2000 mm) in Bismarck's engine room | 1 | 21.8 ms (326 steps, the first) | | 26.8 ms |
+| The same in Dreadnought (lights her magazines, 25 s of gas) | 1 | 16.1 ms (422 steps, the first) | 0.97 ms | 243 ms |
+
+A magazine's flame needs seconds to build, so its first slice is 12 steps and its worst comes 4-130 s in, at a few ms. Only a
+very large detonation puts a heavy first slice down, and it's all in that one slice: about a frame at 1x.
 
 ## What to expect
 

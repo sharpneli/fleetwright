@@ -42,6 +42,40 @@ public sealed class GasNetwork
     /// <summary>A bench's view: what gave and when. Null in the game.</summary>
     public static Action<string>? Trace;
 
+    /// <summary>A bench's view of a run's cost by its own time (docs/battle/workers.md ET0): steps and wall-clock ticks in each slice of
+    /// <see cref="SliceS"/> of gas. Null in the game.</summary>
+    public sealed class SliceCost
+    {
+        public double SliceS = 0.1;
+        public readonly List<int> Steps = [];
+        public readonly List<long> Ticks = [];
+        long last;
+
+        public void Begin()
+        {
+            Steps.Clear();
+            Ticks.Clear();
+            last = System.Diagnostics.Stopwatch.GetTimestamp();
+        }
+
+        public void Step(double atS)
+        {
+            long now = System.Diagnostics.Stopwatch.GetTimestamp();
+            int i = (int)(atS / SliceS);
+            while (Steps.Count <= i)
+            {
+                Steps.Add(0);
+                Ticks.Add(0);
+            }
+            Steps[i]++;
+            Ticks[i] += now - last;
+            last = now;
+        }
+    }
+
+    [ThreadStatic]
+    public static SliceCost? Slices;
+
     [ThreadStatic]
     static double stepK;
 
@@ -752,8 +786,11 @@ public sealed class GasNetwork
         double dt = dt0, quiet = 0;
         int steps = 0;
         Fixed();
+        var slices = Slices;
+        slices?.Begin();
         while (time < s.GasRunS)
         {
+            double t0 = time;
             lag = 1 - Math.Exp(-dt * Math.PI * 1000 / Math.Max(s.PanelMs, 1e-3));   // a panel's response: P·min(k, π·t/T) as a lag
             plainLag = 1 - Math.Exp(-dt * Math.PI / (s.PanelMs / 1000));   // a plain plate's in Boundary.Take, as it reckons it
             for (int a = 0; a < n; a++)
@@ -769,6 +806,7 @@ public sealed class GasNetwork
             double most = Moved(out double gauge);
             time += dt;
             steps++;
+            slices?.Step(t0);
             if (!double.IsNaN(res.HullS) && time <= res.HullS + 1)
                 fastKg = burned;
             quiet = changed || most > 0.01 ? 0 : quiet + dt;
