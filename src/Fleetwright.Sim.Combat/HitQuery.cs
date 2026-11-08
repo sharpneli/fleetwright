@@ -20,21 +20,33 @@ public readonly record struct Attitude(double SinkageM, double TrimDeg, double H
     /// under (docs/visuals/destruction.md decision 1: reasonable, not precise; they're gone in minutes and only stop shells
     /// for that while): it turns about the break, its broken end going down and its far end rising, steeper for a shorter
     /// piece, most of the way up in the first third of the time; the break goes under in the first tenth (the V forms at
-    /// once: her back gone, nothing holds the middle up), then the piece sinks steadily until its far end is under when
-    /// she's gone. The same moments as <see cref="At"/>.</summary>
+    /// once: her back gone, nothing holds the middle up), then the piece sinks steadily until its highest point is under
+    /// when she's gone. The same moments as <see cref="At"/>.
+    /// <para>Each piece starts where that part of her was at the break (her settled trim and sinkage, about the break): a
+    /// piece whose far end was already under (a ship going down by the bow when she broke) has nothing holding that end up
+    /// and goes on down by it, deeper the further under it was; one whose far end floated stands it up.</para></summary>
     public static Attitude Piece(ShipClass c, in Attitude settled, double breakX, bool bow, long lossMs, long goneMs, long ms)
     {
         double p = Math.Clamp((ms - lossMs) / (double)Math.Max(goneMs - lossMs, 1), 0, 1);
         double x0 = c.Hull.X0, x1 = c.Hull.X1, length = Math.Max(x1 - x0, 1);
         double piece = Math.Clamp(bow ? x1 - breakX : breakX - x0, 0, length);
         double most = PieceMostDeg - (PieceMostDeg - PieceLeastDeg) * piece / length;
+        double fb = Math.Max(c.Vertical.Freeboard, 1), top = c.Solids.Bounds.Top - c.Vertical.Waterline + 3;
+        // her pose at the break about the break: the same trim, the sinkage the break's (bow down is positive trim)
+        double t0 = settled.TrimDeg, st0 = Math.Sin(double.DegreesToRadians(t0)), ct0 = Math.Cos(double.DegreesToRadians(t0));
+        double dx = breakX - c.Hydrostatics.Lcf, s0 = settled.SinkageM + dx * st0;
+        // the far end's deck over the sea then: afloat, it stands up (the V, its broken end down); under, it goes down by it
+        double far = bow ? piece : -piece, farDeck = -far * st0 + fb * ct0 - s0;
+        double v = bow ? -1 : 1, target = v * most * Math.Clamp(farDeck / fb, -1, 1);
+        if (target * t0 > 0 && Math.Abs(t0) > Math.Abs(target))
+            target = t0;   // already steeper that way: it doesn't come back
         double up = 1 - Math.Pow(1 - Math.Min(p / 0.35, 1), 2);
-        double deg = most * up, top = c.Solids.Bounds.Top - c.Vertical.Waterline + 3;
+        double deg = t0 + (target - t0) * up;
         // the break: her deck there a couple of metres under; then the rest, down to her highest point under at the end
-        double first = 1 - Math.Pow(1 - Math.Min(p / 0.1, 1), 2), deck = Math.Max(c.Vertical.Freeboard, 0) + 2;
-        double sink = settled.SinkageM + first * deck + Math.Pow(p, 1.5) * Math.Max(piece * Math.Sin(double.DegreesToRadians(most)) + top - deck, 0);
-        // bow down is positive: the stern's piece goes down by its forward (broken) end, the bow's by its after one
-        return new Attitude(sink, bow ? -deg : deg, settled.HeelDeg, breakX - c.Hydrostatics.Lcf);
+        double first = 1 - Math.Pow(1 - Math.Min(p / 0.1, 1), 2), extra = Math.Max(fb + 2 - s0, 0);
+        double rise = Math.Max(-far * Math.Sin(double.DegreesToRadians(target)), 0);
+        double sink = s0 + first * extra + Math.Pow(p, 1.5) * Math.Max(rise + top - s0 - extra, 0);
+        return new Attitude(sink, deg, settled.HeelDeg, dx);
     }
 
     /// <summary>A lost ship's attitude at a moment (ms) as it goes under, from the attitude it settled to when lost

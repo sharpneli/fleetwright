@@ -101,6 +101,14 @@ only while something holds its gas in: once the snapshot shows her gas run over 
 the vent and the light inside die within 0.3 s. A 3.2 t burst inside a dreadnought: her run over 0.3 s after the hit,
 the jet gone by 4 s, where it stood about 4 s before.
 
+**The bow that came back up (the user, a battleship going down by the bow that then broke).** Her bow, under when she
+broke, popped up. Each piece started level from her settling at the centre of flotation, so the trim she had went at
+once. Now each piece starts where that part of her was (`Attitude.Piece`: her trim, and the sinkage at the break
+about it). Each then goes by its far end: afloat at the break, it stands up as before (the V); under, nothing holds it up
+and it goes on down by it, steeper the further under it was, never coming back from a steeper trim it already had. The
+break still goes under in the first tenth, now to two metres under her deck there, not that much more on top of what
+she had settled. The squadrons' hash is unchanged (`A_ship_broken_going_down_by_the_bow_keeps_her_bow_under`).
+
 **D7, cost.** The Jutland at 60x, the 2000 mm bench, a melee of destroyers under 15" fire: frame time, pieces,
   jets, lights, as I8 did.
 - **D8, by eye.** Side-by-side captures, day and night: the 2000 mm shell on a destroyer at 0, 1, 5, 30 s and 2 min;

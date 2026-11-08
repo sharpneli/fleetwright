@@ -313,6 +313,34 @@ public class HullGirderTests
         }
     }
 
+    /// <summary>A ship going down by the bow when she breaks (the user, 2026-11-08: her bow, under at the break, popped up):
+    /// each piece starts where that part of her was, and a bow already under goes on down by it.</summary>
+    [Fact]
+    public void A_ship_broken_going_down_by_the_bow_keeps_her_bow_under()
+    {
+        var c = Class("dreadnought");
+        double at = c.Hydrostatics.Lcf, wl = c.Vertical.Waterline;
+        var settled = new Attitude(4, 6, 2);   // her bow deck well under
+        long loss = 0, gone = 300_000;
+        var whole = HitQuery.WaterOf(c, settled);
+        Assert.True(whole.At(c.Hull.X1, 0) > wl + c.Vertical.Freeboard, "the case: her bow deck under when she breaks");
+        foreach (bool bow in new[] { true, false })
+        {
+            var start = HitQuery.WaterOf(c, Attitude.Piece(c, settled, at, bow, loss, gone, 0));
+            foreach (double x in new[] { c.Hull.X0, at, c.Hull.X1 })
+                Assert.True(Math.Abs(start.At(x, 0) - whole.At(x, 0)) < 0.5, $"{(bow ? "bow" : "stern")} piece at {x:0}: starts where she was");
+        }
+        double last = double.NegativeInfinity;
+        for (long ms = 0; ms <= gone; ms += 5_000)
+        {
+            double over = HitQuery.WaterOf(c, Attitude.Piece(c, settled, at, true, loss, gone, ms)).At(c.Hull.X1, 0);
+            Assert.True(over >= last - 1e-6, $"at {ms / 1000} s her bow came up: sea {over - wl:0.0} m over its waterline, was {last - wl:0.0}");
+            last = over;
+        }
+        var stern = Attitude.Piece(c, settled, at, false, loss, gone, 60_000);
+        Assert.True(HitQuery.WaterOf(c, stern).At(c.Hull.X0, 0) < wl - 5, "her stern, afloat at the break, stands up");
+    }
+
     /// <summary>A charge that tears her open is recorded for the screens (docs/visuals/destruction.md D1): each outside face it tore
     /// stamped with when, and what its gas lifted off her deck wrecked and flagged with the speed it left at.</summary>
     [Fact]
