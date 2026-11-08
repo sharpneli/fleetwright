@@ -40,8 +40,6 @@ public struct EffectsResult
     /// <summary>The magazine set off (a room of the class), when <see cref="Magazine"/>; else -1.</summary>
     public int MagazineRoom;
     public MagazineVia MagazineVia;
-    /// <summary>Whether the magazine's race already ran, in this hit's own gas (<see cref="Blast"/>: its gas lit it; EX6a).</summary>
-    public bool Raced;
     /// <summary>An underwater burst's bubble's whip on her girder, design moments (<see cref="HullGirder.Bubble"/>).</summary>
     public double BubbleWhip;
     /// <summary>The stations of an ammunition train whose charges this hit lit, the magazine's own among them
@@ -515,42 +513,37 @@ public static class Effects
             SpaceBurstIn(ref b, ref res, ref r);
             SpacesNextDoor(ref b, ref res, ref r);
         }
-        GasNetwork? net = null;
-        int gasHandling = -1, gasPart = b.Part;
-        bool inHandling = false;
+        GasNetwork? partGas = null;
         if (!b.Broken && b.Inside && shell.FillerKg > 0)
         {
             double fill = shell.FillerKg * b.Force;
             if (b.Deck >= 0)
             {
                 // on the deck: its near field down through it from the space under it, at its own height over it (the plate's
-                // standoff), the hemisphere of its products facing it after
-                net = GasNetwork.For(c);
-                res.Blast = net.Strike(k, b.Deck, b.At, b.Charge, s, ref r, fill * s.ContactGasShare, shell);
+                // standoff), the hemisphere of its products facing it into her gas from now (docs/battle/workers.md ET3)
+                res.Blast = GasNetwork.Of(k, s, ms).AddContact(b.Deck, b.At, b.Charge, fill * s.ContactGasShare, shell);
                 res.BreachM2 += res.Blast.HoleM2;
-                Flashed(c, net, b.Deck, ref gasHandling, ref inHandling);
-                gasPart = -1;
             }
             else if (b.Part >= 0)
             {
-                net = GasNetwork.For(c);
-                res.Blast = DetonateInPart(c, k, net, b.Part, fill, shell, vent, s, ref r);
+                // a part's space has no way to her cells: its gas runs to its end now, on its own
+                partGas = GasNetwork.For(c);
+                res.Blast = DetonateInPart(c, k, partGas, b.Part, fill, shell, vent, s, ref r);
             }
             else if (b.Cell >= 0)
             {
-                net = GasNetwork.For(c);
-                res.Blast = net.Detonate(k, b.Cell, b.At, fill, shell, b.Charge, s, ref r);
+                // its near field now, its gas into hers from now: what it does there lands as it does it
+                res.Blast = GasNetwork.Of(k, s, ms).AddBurst(b.Cell, b.At, fill, shell, b.Charge);
                 res.BreachM2 += res.Blast.HoleM2;
-                Flashed(c, net, b.Cell, ref gasHandling, ref inHandling);
             }
         }
-        // the people its pieces reach (E6), and what its gas does to them and the gear wherever it went
+        // the people its pieces reach (E6), and what a part's gas does to them and the gear there
         Crew(c, k, b.Part, b.Cell, b.At, b.Dir, b.Frag, crew, b.Around, b.Broken ? 0 : w * b.Force, b.Broken, res.Blast, s);
-        if (net is not null)
-            GasFelt(c, k, net, gasPart, s, ref res);
+        if (partGas is not null)
+            GasFelt(c, k, partGas, b.Part, s, ref res);
         if (!b.Broken)
             StartFires(ref b, shell, w, ref res, ref r);
-        MagazineLit(ref b, ms, gasHandling, inHandling, ref res, ref r);
+        MagazineLit(ref b, ms, ref res, ref r);
         // the high-explosive stores it touches or its pieces set off (EX6c), each its own explosion after this one
         res.Stores += Stores.Burst(c, k, b.At, b.Dir, b.V, b.Frag, b.Share, b.Broken ? 0 : w * b.Force, b.Cell, b.Part, b.Around, self, s, ref r);
     }
@@ -808,20 +801,14 @@ public static class Effects
             res.Fire |= Start(c, k, deck, shell, w, true, s, ref r);
     }
 
-    /// <summary>The magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them, or its gas reaching
-    /// one; else charges lit at a station of a mount's train (ready charges set burning, a burst in a gunhouse, its working
-    /// chamber or a casemate, its gas in a handling room: E5's Savannah) and the flame down the train's open doors.</summary>
-    static void MagazineLit(ref BurstSite b, long now, int gasHandling, bool inHandling, ref EffectsResult res, ref RandomStream r)
+    /// <summary>The magazine (docs/battle/magazines.md V2): a burst among its charges, or in it beside them; else charges lit at a
+    /// station of a mount's train (ready charges set burning, a burst in a gunhouse, its working chamber or a casemate) and the flame
+    /// down the train's open doors. Its gas reaching a magazine or a handling room lights them in her gas, as it gets there
+    /// (<see cref="GasNetwork.Land"/>).</summary>
+    static void MagazineLit(ref BurstSite b, long now, ref EffectsResult res, ref RandomStream r)
     {
         var (c, k, s) = (b.C, b.K, b.S);
         int reached = -1;
-        if (res.Blast.Magazines > 0)
-        {
-            // its gas lit one (EX6a): that's the magazine's race, already run, the burst its first second
-            int lit = GasNetwork.For(c).LitRoom(0);
-            (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Raced) = (true, lit, lit == b.Magazine ? b.Via : MagazineVia.Gas, true);
-            return;
-        }
         var via = b.Via;
         if (b.Inside && b.Magazine >= 0)
             (reached, res.Stations) = (b.Magazine, res.Stations + 1);   // its pieces among the charges light them: their packaging stops nothing a burst throws (15 §2.3)
@@ -832,9 +819,6 @@ public static class Effects
             if (r.NextDouble() < Magazines.LightChance(c, k, b.Turret, b.TurretSt, s))
                 (reached, via) = (Magazines.Light(c, k, b.Turret, b.TurretSt, burning: false, s, ref r, ref res, now), MagazineVia.Turret);
         }
-        else if (b.Inside && gasHandling >= 0 && c.MountOf(c.Rooms[gasHandling].Mount) is int hm and >= 0 &&
-                 c.StationOfRoom(hm, gasHandling) is var hs and >= 0 && r.NextDouble() < Magazines.Exposed(c, gasHandling) * Magazines.LightChance(c, k, hm, hs, s))
-            (reached, via) = (Magazines.Light(c, k, hm, hs, burning: false, s, ref r, ref res, now), inHandling ? MagazineVia.Handling : MagazineVia.Gas);
         if (reached >= 0)
             (res.Magazine, res.MagazineRoom, res.MagazineVia) = (true, reached, via);
     }
@@ -971,25 +955,8 @@ public static class Effects
         }
     }
 
-    /// <summary>Where a burst's gas carried its flame (hot enough to light charges: <see cref="GasNetwork.Hot"/>): a handling room it
-    /// reached is a flash source. A magazine it reached lit in the run itself (EX6a).</summary>
-    static void Flashed(ShipClass c, GasNetwork net, int burstCell, ref int handling, ref bool inHandling)
-    {
-        foreach (int cell in net.Reached())
-        {
-            if (!net.Hot(cell))
-                continue;
-            foreach (int room in c.RoomsIn(cell))
-            {
-                var kind = c.Rooms[room].Kind;
-                if (kind is RoomKind.Handling or RoomKind.Passage && handling < 0 && c.Rooms[room].Mount >= 0)
-                    (handling, inHandling) = (room, cell == burstCell);
-            }
-        }
-    }
-
     /// <summary>A node's gear under a gas pressure: out of action from its class's, damaged from a share of it.</summary>
-    static void Pressed(ShipClass c, ShipCondition k, int node, double classMPa, double felt, SimSettings s, ref EffectsResult res)
+    internal static void Pressed(ShipClass c, ShipCondition k, int node, double classMPa, double felt, SimSettings s, ref EffectsResult res)
     {
         var state = felt >= classMPa ? PartState.Disabled : felt >= s.BlastDamagedShare * classMPa ? PartState.Damaged : PartState.Ok;
         if (state != PartState.Ok)

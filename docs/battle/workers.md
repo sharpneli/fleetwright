@@ -661,7 +661,7 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
 | ET0 | **Done** (below). Measured first: over the 75 races of "Cost and convergence" and a shell burst of each size, the steps and the ms in each 100 ms of gas time (`explode --slices`), so `GasSliceMs` and the worst slice are numbers, not the bound above |
 | ET1 | **Done**: the same final hashes, hits, races and history benches as `1817567b`, timings aside. W16c-d out: back to every explosion worked at once (the output of `1817567b`, the freeze with it for a step), the items under "What goes" removed |
 | ET2 | **Done**, narrowed: the run resumable (`Start`, `Advance(to)`: its step, quiet time and steps kept between advances, a step cut at the advance's end resuming at the length it wanted), `Run` the two to the end at once: the same hashes and figures as ET1. The state's move onto the ship went to ET3, where its lifetime changes |
-| ET3 | The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read, the boundaries' and spaces' episodes (decision 4), spaces leaving and rejoining the stepped set, `GasRunS` from the newest source. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
+| ET3 | **Done** (below). The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read, the boundaries' and spaces' episodes (decision 4), spaces leaving and rejoining the stepped set, `GasRunS` from the newest source. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
 | ET4 | The benches through the same slices: `Strike` then the run out (`DamageSystem.Settle` advances it slice by slice), `explode`, `magazine --race`, `hits`, the three history benches. The convergence check again with the slices' clip (`explode --step`; "Check again whenever the inputs move"). Readouts: Lion's four, `losses`, the panel (`balance --fc-runs 0`) beside W16c's |
 | ET5 | Measured in the game, as W16f: the 2000 mm salvo at 1x, 30x, 100x, 240x, the sim's longest gap and the map's longest still; the Jutland's ms a game second while a race runs. A worker pass for the slices only if this asks |
 | ET6 | Docs: explosions.md's model ("It runs to the end at the moment of the event" goes), CLAUDE.md, `magazine-explosions.md`'s event timing |
@@ -696,6 +696,34 @@ test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a 
 
 A magazine's flame needs seconds to build, so its first slice is 12 steps and its worst comes 4-130 s in, at a few ms. Only a
 very large detonation puts a heavy first slice down, and it's all in that one slice: about a frame at 1x.
+
+### ET3: built (2026-11-08)
+
+`GasNetwork` is her gas (`ShipCondition.Gas`), from a per-class pool (two made when the class comes in, `GasNetwork.Warm`); `Of`
+gives the run in her or begins one, `AddBurst`, `AddContact` and `AddStow` put an explosion in at its moment, `AdvanceTo` steps it to
+the world's ms, and `Land` (`GasNetwork.Landing.cs`) puts what it did on her: what tore and opened, held boundaries' seams by episode,
+the magazines it lit (wrecked, their men flashed), the trains' men once the fire isn't held in its magazine (the old rule, now at the
+moment it gets out), gunhouses vented or thrown, the men and gear by the rise in felt, a hot handling room's flash down its train.
+`DamageSystem.Gas.cs` steps it on `GasSliceMs` (an event a slice while she has gas) and does the world's part: her girder read when her
+section lost something or the gas drives her (broken with a magazine burning in it: lost to her magazine), what she can do worked out
+again, her water's step woken, stores going off; at its end a magazine fire counted by how it ended. A hit steps her gas to its moment
+first; a fire's set-off and the dev's `DamageSystem.Ignite` light a magazine in it. `Detonate`, `Strike` and `Burn` on a thread's
+network (`For`) still run one explosion in still air to its end at once for the benches and tests, through the same steps and `Land`.
+
+Decided on the way:
+
+- **A part's burst** (a gunhouse, a conning tower, a block) is run at once on a thread's network: a part's space has no way to her
+  cells, so its gas never meets hers. By geometry, not by source.
+- **Her girder takes the gas's whip as a level** (`HullGirder.Bear`): the most her gas drives her within her period now, against what's
+  left of her earlier whips; read every slice, an impulse can't count twice. A bubble's is still an impulse added.
+- **The near field walks from its own charge** (`Walk`), not from every space her gas is in.
+- **`GasRunS` counts from the newest source**; spaces back at the atmosphere (`GasLeaveKPa`, 1 [EST]) leave the stepped set.
+
+Found on the way: the hit scratch's mounts weren't sized when a class came in (W16b), so the first hit on a class of more than 16
+mounts allocated; and `Prepare` (every hit) topped the pool back up, so a third ship of a class burning made two more networks. Both
+fixed; the zero-allocation tests hold. Tests: `GasInTimeTests` (a dreadnought's magazine runs 19.1 s, landing on her in 31 slices;
+the same hash stepped in 37 ms or one go; the coarse tier; her gas goes down with her; a burst's moment holds only its near field;
+every field of a network hashed or named).
 
 ## What to expect
 

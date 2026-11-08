@@ -644,6 +644,8 @@
   "GirderSeawayMs": 15,
   "GirderEndShare": 0.12,
   "GasRunS": 180,
+  "GasSliceMs": 100,
+  "GasLeaveKPa": 1,
   "MagazineLossMs": 60000,
   "CasualtyS": 8.7,
   "CasualtyQ": 0.08,

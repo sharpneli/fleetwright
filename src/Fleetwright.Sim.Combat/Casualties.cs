@@ -179,10 +179,15 @@ public static class Casualties
     }
 
     /// <summary>A burst's gas on a group's men in a closed space (<see cref="GasRisk"/>).</summary>
-    internal static void Gas(ShipCondition k, int g, double feltMPa, SimSettings s)
+    internal static void Gas(ShipCondition k, int g, double feltMPa, SimSettings s) => GasRise(k, g, 0, feltMPa, s);
+
+    /// <summary>A space's gas risen from one peak to a higher within an episode (docs/battle/workers.md ET decision 4): the risk it
+    /// adds to the men who came through the first, killed and a casualty given they weren't by the lower.</summary>
+    internal static void GasRise(ShipCondition k, int g, double fromMPa, double toMPa, SimSettings s)
     {
-        var (pk, pc) = GasRisk(feltMPa, s);
-        Add(k, g, pk, pc);
+        var (k0, c0) = GasRisk(fromMPa, s);
+        var (k1, c1) = GasRisk(toMPa, s);
+        Add(k, g, (k1 - k0) / Math.Max(1 - k0, 1e-12), (c1 - c0) / Math.Max(1 - c0, 1e-12));
     }
 
     /// <summary>A man's chance of being killed, and of being a casualty, in a closed space whose boundaries felt a gas
@@ -300,18 +305,22 @@ public static class Casualties
         foreach (int cell in c.Links(c.Rooms[magazine].Cells))
             Flash(k, Cell(c, cell), true, s);
         for (int m = 0; m < c.Mounts.Length; m++)
-        {
-            ref readonly var mr = ref c.Mounts[m];
-            if (mr.Magazine != magazine)
-                continue;
-            Flash(k, Part(mr.Component), true, s);
-            if (mr.Barbette >= 0)
-                Flash(k, Part(mr.Barbette), true, s);
-            for (int room = 0; room < c.Rooms.Length; room++)
-                if (c.Rooms[room].Kind == RoomKind.Handling && c.Rooms[room].Mount == mr.Component)
-                    foreach (int cell in c.Links(c.Rooms[room].Cells))
-                        Flash(k, Cell(c, cell), true, s);
-        }
+            if (c.Mounts[m].Magazine == magazine)
+                TrainOf(c, k, m, s);
+    }
+
+    /// <summary>The flash up one mount's train (a magazine's gas through its way up: docs/battle/workers.md ET3): the men in its
+    /// gunhouse, its barbette and its handling rooms.</summary>
+    internal static void TrainOf(ShipClass c, ShipCondition k, int mount, SimSettings s)
+    {
+        ref readonly var mr = ref c.Mounts[mount];
+        Flash(k, Part(mr.Component), true, s);
+        if (mr.Barbette >= 0)
+            Flash(k, Part(mr.Barbette), true, s);
+        for (int room = 0; room < c.Rooms.Length; room++)
+            if (c.Rooms[room].Kind == RoomKind.Handling && c.Rooms[room].Mount == mr.Component)
+                foreach (int cell in c.Links(c.Rooms[room].Cells))
+                    Flash(k, Cell(c, cell), true, s);
     }
 
     /// <summary>The hit's men rolled (16 §4.7): each of a touched group's killed, wounded or untouched by its risks; of

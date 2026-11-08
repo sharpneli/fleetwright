@@ -29,7 +29,7 @@ public struct GasResult
 /// the holes, <see cref="ShipCondition.EdgeLost"/>, <see cref="ShipCondition.FaceLost"/>), so a salvo's next shell finds it.
 /// Its working state says nothing between runs, so it's one per thread (<see cref="For"/>), grown to the largest class it has met;
 /// a run allocates nothing.</summary>
-public sealed class GasNetwork
+public sealed partial class GasNetwork
 {
     const int Faces = 4, Cohorts = 32;
     const double DtMin = 1e-4, DtMax = 0.02, GaugeFloor = 40e3, RtAir = 84_000, AirR = 287, SeaRhoG = 1025 * 9.81, StepCellM3 = 10, Sigma = 5.670e-8;
@@ -98,6 +98,176 @@ public sealed class GasNetwork
         g.Bind(c);
         return g;
     }
+
+    // ------------------------------------------------------------------ a ship's own gas, live (docs/battle/workers.md ET3)
+
+    /// <summary>Each class's networks not in use (a ship's live gas is one of them while it runs), and how many it has made.</summary>
+    sealed class Pool
+    {
+        public readonly Stack<GasNetwork> Free = new(4);
+        public int Made;
+    }
+
+    static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ShipClass, Pool> Pools = new();
+
+    /// <summary>Her gas (<see cref="ShipCondition.Gas"/>): the run already in her, or one begun now. A run behind now is first
+    /// stepped to now (the world's damage system has landed what it did by then; a bench calling straight in hasn't).</summary>
+    public static GasNetwork Of(ShipCondition k, SimSettings settings, long nowMs)
+    {
+        var g = k.Gas;
+        if (g is null)
+        {
+            g = Rent(k.Class);
+            g.Begin(k, settings);
+            g.startMs = nowMs;
+            k.Gas = g;
+        }
+        else
+            g.AdvanceTo(nowMs);
+        return g;
+    }
+
+    static GasNetwork Rent(ShipClass c)
+    {
+        var pool = Pools.GetValue(c, static _ => new Pool());
+        lock (pool)
+        {
+            if (pool.Free.Count > 0)
+                return pool.Free.Pop();
+            pool.Made++;
+        }
+        var g = new GasNetwork();   // more of her class burning at once than ever before
+        g.Bind(c);
+        return g;
+    }
+
+    /// <summary>A class's first networks made now, before her first explosion (no allocation in play): up to n made in all, whether
+    /// or not they're in use.</summary>
+    public static void Warm(ShipClass c, int n)
+    {
+        var pool = Pools.GetValue(c, static _ => new Pool());
+        lock (pool)
+            for (; pool.Made < n; pool.Made++)
+            {
+                var g = new GasNetwork();
+                g.Bind(c);
+                pool.Free.Push(g);
+            }
+    }
+
+    /// <summary>Her run over: off her condition and back to its class's pool.</summary>
+    public void Release()
+    {
+        armed = false;   // the next ship's rounds aren't these
+        if (ReferenceEquals(k?.Gas, this))
+            k!.Gas = null;
+        var pool = Pools.GetValue(c, static _ => new Pool());
+        lock (pool)
+            pool.Free.Push(this);
+    }
+
+    /// <summary>The world's: what set her gas going (its first explosion) and what set her first magazine off in it, as its own
+    /// tags (-1: none yet); and her girder's last reading while it ran. Reports: read by no step.</summary>
+    public int SourceCause = -1, MagazineCause = -1;
+    public GirderReading Girder;
+
+    /// <summary>The world's time her run is at, ms.</summary>
+    public long NowMs => startMs + (long)Math.Round(time * 1000);
+
+    /// <summary>Whether it has nothing left to step: every panel caught up, nothing burning, nothing more to give.</summary>
+    public bool Done => finished;
+
+    /// <summary>Her run stepped on to the world's ms, and what it reads of her that it doesn't move read again first (rule 6): her
+    /// liquid, her waterline, her stows' water; spaces back at the atmosphere let go (decision 4's episodes). Done, its clock still
+    /// keeps up.</summary>
+    public void AdvanceTo(long ms)
+    {
+        double until = (ms - startMs) / 1000.0;
+        if (!finished && until > time)
+        {
+            Leave();
+            Fixed();
+            Waterline();
+            for (int t = 0; t < nStows; t++)
+                stows[t].Flooded = Math.Max(Magazines.Flooded(c, k, stows[t].Room), k.MagazineWet.Length > stows[t].Room ? k.MagazineWet[stows[t].Room] : 0);
+            Advance(until);
+        }
+        time = Math.Max(time, until);
+    }
+
+    /// <summary>A new source in the run: its first step's length; a run already stepping goes on, its step no longer than that.</summary>
+    void Kick(int source, double dt0)
+    {
+        (sourceCell, lastSourceS) = (source, time);
+        if (!started)
+        {
+            Start(source, dt0);
+            return;
+        }
+        (stepDt, quietS, finished) = (Math.Min(stepDt, dt0), 0, false);
+    }
+
+    /// <summary>The waterline as she lies now: what's under it of each outside face in the run.</summary>
+    void Waterline()
+    {
+        water = HitQuery.WaterOf(c, k.Attitude);
+        for (int a = 0; a < nTouched; a++)
+        {
+            int i = touched[a];
+            for (int f = 0; f < Faces; f++)
+                if (faceStamp[i * Faces + f] == id)
+                    Sea(i * Faces + f, i, f);
+        }
+    }
+
+    /// <summary>The spaces whose gas is back at the atmosphere, with no load on their walls, no stow and no charges it could still
+    /// light, leave the stepped set: an episode over (docs/battle/workers.md ET decision 4). Gas reaching one again brings it back
+    /// fresh.</summary>
+    void Leave()
+    {
+        int kept = 0;
+        double near = s.GasLeaveKPa * 1e3;
+        for (int a = 0; a < n; a++)
+        {
+            int i = region[a];
+            bool stays = i == partNode || Math.Abs(p[i] - P0) >= near || lagged[i] >= near / 1e6 || HasStow(i)
+                         || rt[i] / AirR > s.ChargeIgniteK && UnlitMagazine(i);
+            if (stays)
+                region[kept++] = i;
+            else
+                stamp[i] = 0;
+        }
+        n = kept;
+    }
+
+    bool HasStow(int cell)
+    {
+        for (int t = 0; t < nStows; t++)
+            if (stows[t].Cell == cell)
+                return true;
+        return false;
+    }
+
+    // the live run's own: when it began on the world's clock, whether a source has started its stepping, when the newest came (s)
+    long startMs;
+    bool started;
+    double lastSourceS;
+    /// <summary>Every cell the run has touched, in order (what its commits look at, in the stepped set or not).</summary>
+    int[] touchStamp = [], touched = [];
+    int nTouched;
+    /// <summary>A near field's own walk, from its charge's space through what's open or it opened: by its own stamp, so a live run's
+    /// other spaces aren't its.</summary>
+    int[] walk = [], walkStamp = [];
+    int nWalk, nearId;
+    /// <summary>What's landed on her (<see cref="GasLanding"/>): each cell's felt and heat, the stows, each mount's way up.</summary>
+    double[] feltLanded = [];
+    bool[] hotLanded = [], ventLanded = [], liftLanded = [];
+    int stowsLanded;
+    /// <summary>The commit a held boundary last had its seams drawn in, so one seen from both its cells draws once.</summary>
+    int[] edgeDrawn = [], faceDrawn = [];
+    int commits;
+    /// <summary>The most energy × mass within the hull's period since her girder was last read (<see cref="TakeWhip"/>).</summary>
+    double whipSince;
 
     /// <summary>A class's edges as the gas sees them, shared: a pool entry's canonical entry (the lower cell's, what the flooding
     /// reads), its shared area, its plate, and what holds the gas between the two spaces: the plate and any slope or internal belt
@@ -377,6 +547,8 @@ public sealed class GasNetwork
         public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, EnergyJKg;
         public readonly double[] Cnt = new double[Cohorts], Z = new double[Cohorts];
         public double Burning, Pending, MadePa;
+        /// <summary>Whether the flash has been through its trains (<see cref="TrainsLanded"/>).</summary>
+        public bool Trains;
     }
 
     void Bind(ShipClass cls)
@@ -400,6 +572,15 @@ public sealed class GasNetwork
             (faceHeavy, faceHeavyStamp) = (new double[size * Faces], new int[size * Faces]);
             (faceStamp, faces, faceBack, faceDry) = (new int[size * Faces], new Boundary[size * Faces], new double[size * Faces], new double[size * Faces]);
         }
+        if (touchStamp.Length < nc + 1)
+        {
+            int size = nc + 1;
+            (touchStamp, touched, walk, walkStamp, feltLanded, hotLanded) = (new int[size], new int[size], new int[size], new int[size], new double[size], new bool[size]);
+            rose = new int[size];
+            faceDrawn = new int[size * Faces];
+        }
+        if (edgeDrawn.Length < ne)
+            edgeDrawn = new int[ne];
         if (trainStamp.Length < cls.Rooms.Length)
             trainStamp = new int[cls.Rooms.Length];
         if (edgeStamp.Length < ne)
@@ -411,6 +592,7 @@ public sealed class GasNetwork
         if (ventedMount.Length < nm)
         {
             (ventedMount, liftedMount, rounds) = (new bool[nm], new bool[nm], new int[nm]);
+            (ventLanded, liftLanded) = (new bool[nm], new bool[nm]);
             int lm = 2 * nm + 8;
             (linkFrom, linkTo, linkMount, linkAt, linkArea, linkOpen) = (new int[lm], new int[lm], new int[lm], new double[lm], new double[lm], new bool[lm]);
         }
@@ -433,62 +615,100 @@ public sealed class GasNetwork
     double Gm => 1 + s.BlastHeatK;
     double P0 => s.AtmosphereMPa * 1e6;
 
-    /// <summary>w kg of a filler bursting at a point in a space: its near field's holes (<see cref="Near"/>), then all its energy in
-    /// the first step, its afterburn as the space's air allows (11 §2.1). A space already with vents as big as its faces is open:
-    /// nothing builds there, and only the near field stays. What the charge opens itself the gas goes out by, in the run.</summary>
+    /// <summary>w kg of a filler bursting at a point in a space, in still air and run to its end at once, what it left committed (a
+    /// bench's, a test's: the game's goes into her live run, <see cref="AddBurst"/>).</summary>
     public GasResult Detonate(ShipCondition cond, int cell, P3 at, double w, in ShellTypeRow f, in NearCharge near, SimSettings settings, ref RandomStream r)
     {
         Begin(cond, settings);
-        JoinSpace(cell);
-        double gas = 0, vents = 0;
-        for (int i = 0; i < n; i++)
-            (gas, vents) = (gas + v[region[i]], vents + vent[region[i]]);
-        Near(at, near);
-        return Burst(cell, gas, vents, w, f, ref r);
+        AddBurst(cell, at, w, f, near);
+        return RunOut(ref r);
     }
 
-    /// <summary>A charge going off against her from outside, in the water: its near field (<see cref="Near"/>) from the space behind
-    /// the plate, and w kg of its products in that space through what the near field opened (none: its gas is all the bubble's in
-    /// the sea; docs/battle/explosions.md EX5).</summary>
+    /// <summary>w kg of a filler bursting at a point in a space, into the run at its moment: its near field's holes at once
+    /// (<see cref="Near"/>: on her now), then all its energy in the first step, its afterburn as the space's air allows (11 §2.1). A
+    /// space already with vents as big as its faces is open: nothing builds there, and only the near field stays. What the charge
+    /// opens itself the gas goes out by. What it did at once: its near field's holes, whether it was open, the spaces its own room
+    /// is (docs/battle/workers.md ET3, rule 4).</summary>
+    public GasResult AddBurst(int cell, P3 at, double w, in ShellTypeRow f, in NearCharge near)
+    {
+        var was = res;
+        Walk(cell, out double gas, out double vents);
+        Near(at, near);
+        bool open = Blast.Open(gas, vents, s);
+        if (open)
+            res.Open = true;
+        else
+        {
+            Charge(cell, w, f, gas);
+            Kick(cell, 2e-4);
+        }
+        CommitOpened();
+        return AtOnce(was, open);
+    }
+
+    /// <summary>A charge going off against her from outside, in the water, in still air and run to its end at once (a bench's, a
+    /// test's: the game's is <see cref="AddContact"/>).</summary>
     public GasResult Strike(ShipCondition cond, int cell, P3 at, in NearCharge near, SimSettings settings, ref RandomStream r, double w = 0, in ShellTypeRow f = default)
     {
         Begin(cond, settings);
-        JoinSpace(cell);
-        double gas = 0, vents = 0;
-        for (int i = 0; i < n; i++)
-            (gas, vents) = (gas + v[region[i]], vents + vent[region[i]]);
+        AddContact(cell, at, near, w, f);
+        return RunOut(ref r);
+    }
+
+    /// <summary>A charge going off against her from outside, in the water, into the run at its moment: its near field
+    /// (<see cref="Near"/>) from the space behind the plate, and w kg of its products in that space through what the near field
+    /// opened (none: its gas is all the bubble's in the sea; docs/battle/explosions.md EX5).</summary>
+    public GasResult AddContact(int cell, P3 at, in NearCharge near, double w = 0, in ShellTypeRow f = default)
+    {
+        var was = res;
+        Walk(cell, out double gas, out double vents);
         intoBubble = true;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
         Near(at, near);
         intoBubble = false;
-        if (!(w > 0))
-        {
+        bool open = !(w > 0) || Blast.Open(gas, vents, s);
+        if (open)
             res.Open = true;
-            return Finish(cell, ref r);
+        else
+        {
+            Charge(cell, w, f, gas);
+            Kick(cell, 2e-4);
         }
-        return Burst(cell, gas, vents, w, f, ref r);
+        CommitOpened();
+        return AtOnce(was, open);
     }
 
+    /// <summary>What an explosion did the moment it came: the holes its near field made, the plate it opened between spaces, whether
+    /// it was open, and the spaces of the room it went off in.</summary>
+    GasResult AtOnce(in GasResult was, bool open) => new()
+    {
+        Holed = res.Holed - was.Holed, HoleM2 = res.HoleM2 - was.HoleM2, OpenM2 = res.OpenM2 - was.OpenM2, Open = open, Spaces = nWalk,
+        FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN,
+    };
+
     /// <summary>w kg bursting in a part of her (a gunhouse, a conning tower, a superstructure block, a barbette; E5): its gas in
-    /// the part's free space, vented by what its kind leaves open and its own hole, against its walls of a plate. Open as above.</summary>
+    /// the part's free space, vented by what its kind leaves open and its own hole, against its walls of a plate. Open as above. A
+    /// part's space has no way to her cells, so its gas is its own, run to its end at once on this thread's network (not hers).</summary>
     public GasResult Detonate(ShipCondition cond, double gasM3, double ventM2, double wallM2, double wallMm, double w, in ShellTypeRow f, SimSettings settings, ref RandomStream r)
     {
         Begin(cond, settings);
         Node(partNode, gasM3, ventM2);
-        (partM2, partMm, partWalls) = (wallM2, wallMm, default);
-        return Burst(partNode, gasM3, ventM2, w, f, ref r);
-    }
-
-    /// <summary>A charge going off in a space of so much gas and vent: all its energy in the first step, unless it's open.</summary>
-    GasResult Burst(int source, double gasM3, double ventM2, double w, in ShellTypeRow f, ref RandomStream r)
-    {
+        (partM2, partMm, partWalls, sourceCell) = (wallM2, wallMm, default, partNode);
         if (Blast.Open(gasM3, ventM2, s))
             res.Open = true;
         else
         {
-            Charge(source, w, f, gasM3);
-            Run(source, 2e-4);
+            Charge(partNode, w, f, gasM3);
+            Kick(partNode, 2e-4);
         }
-        return Finish(source, ref r);
+        return RunOut(ref r);
+    }
+
+    /// <summary>A run stepped to its end at once, and what it left committed.</summary>
+    GasResult RunOut(ref RandomStream r)
+    {
+        if (started)
+            Advance(double.PositiveInfinity);
+        return Finish(ref r);
     }
 
     void Charge(int cell, double w, in ShellTypeRow f, double gasM3)
@@ -497,22 +717,44 @@ public sealed class GasNetwork
         m[cell] += w;
         u[cell] += joules;
         Refresh(cell);
-        (whipKg, whipJ, whipPeak) = (w, joules, joules * w);
+        // its drive on the hull, with what's still driving her within her period
+        (whipKg, whipJ) = (whipKg + w, whipJ + joules);
+        whipPeak = Math.Max(whipPeak, whipKg * whipJ);
+        whipSince = Math.Max(whipSince, whipKg * whipJ);
     }
 
-    /// <summary>A magazine alight: its stow burns by the burn law in its space, the train's ways up open as the pressure
-    /// stands, and any magazine its gas reaches lights in turn. Nothing lights (no charge known, nothing to burn): no result's
-    /// <see cref="GasResult.Magazines"/>.</summary>
+    /// <summary>The most her explosions drove her within her period since the last reading, energy × mass (J·kg), and the
+    /// reading's: what her girder takes as whip when it's read (docs/battle/explosions.md, <see cref="HullGirder.Bear"/>).</summary>
+    public double TakeWhip()
+    {
+        double w = whipSince;
+        whipSince = 0;
+        return w;
+    }
+
+    /// <summary>A magazine alight, in still air and run to its end at once (a bench's, a test's: the game's is
+    /// <see cref="AddStow"/>). Nothing lights (no charge known, nothing to burn): no result's <see cref="GasResult.Magazines"/>.</summary>
     public GasResult Burn(ShipCondition cond, int room, ReadOnlySpan<MountState> mounts, SimSettings settings, ref RandomStream r)
     {
         Begin(cond, settings);
-        for (int mt = 0; mt < c.Mounts.Length; mt++)
-            rounds[mt] = mt < mounts.Length ? mounts[mt].Rounds : c.Mounts[mt].Rounds;
+        if (!AddStow(room, mounts))
+            return res;
+        return RunOut(ref r);
+    }
+
+    /// <summary>A magazine alight, into the run at its moment: its stow burns by the burn law in its space, the train's ways up open
+    /// as the pressure stands, and any magazine its gas reaches lights in turn. mounts: what each mount has left (empty: as they
+    /// stand in the run). Whether it lit.</summary>
+    public bool AddStow(int room, ReadOnlySpan<MountState> mounts)
+    {
+        if (mounts.Length > 0)
+            for (int mt = 0; mt < c.Mounts.Length; mt++)
+                rounds[mt] = mt < mounts.Length ? mounts[mt].Rounds : c.Mounts[mt].Rounds;
         int cell = Light(room);
         if (cell < 0)
-            return res;
-        Run(cell, 2e-3);
-        return Finish(cell, ref r);
+            return false;
+        Kick(cell, 2e-3);
+        return true;
     }
 
     void Begin(ShipCondition cond, SimSettings settings)
@@ -523,7 +765,9 @@ public sealed class GasNetwork
         id++;
         (n, links, nStows, burned, fastKg, time, peakSource) = (0, 0, 0, 0, 0, 0, 0);
         res = new GasResult { FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN };
-        (whipKg, whipJ, whipPeak) = (0, 0, 0);
+        (whipKg, whipJ, whipPeak, whipSince) = (0, 0, 0, 0);
+        (started, finished, lastSourceS, startMs, nTouched, stowsLanded, sourceCell) = (false, true, 0, 0, 0, 0, -1);
+        (SourceCause, MagazineCause, Girder) = (-1, -1, default);
         // any run can light a magazine (EX6a): what it would stow, and how its trains stand
         if (!armed)
             for (int mt = 0; mt < c.Mounts.Length; mt++)
@@ -533,6 +777,41 @@ public sealed class GasNetwork
         water = HitQuery.WaterOf(c, k.Attitude);
         Array.Clear(ventedMount);
         Array.Clear(liftedMount);
+        Array.Clear(ventLanded);
+        Array.Clear(liftLanded);
+    }
+
+    /// <summary>A charge's space and what's open to it: where its near field's walk starts (<see cref="Near"/>), in the run; its gas
+    /// and vents.</summary>
+    void Walk(int cell, out double gas, out double vents)
+    {
+        nearId++;
+        (nWalk, sourceCell) = (0, cell);
+        WalkFrom(cell);
+        (gas, vents) = (0, 0);
+        for (int a = 0; a < nWalk; a++)
+            (gas, vents) = (gas + v[walk[a]], vents + vent[walk[a]]);
+    }
+
+    /// <summary>A cell and what's open to it into the near field's walk, and the run.</summary>
+    void WalkFrom(int cell)
+    {
+        int first = nWalk;
+        WalkAdd(cell);
+        for (int a = first; a < nWalk; a++)
+            foreach (ref readonly var e in c.Neighbours(c.Cells[walk[a]].Neighbours))
+                if (e.Join == JoinKind.Open)
+                    WalkAdd(e.Cell);
+    }
+
+    void WalkAdd(int x)
+    {
+        if (walkStamp[x] == nearId)
+            return;
+        walkStamp[x] = nearId;
+        walk[nWalk++] = x;
+        if (stamp[x] != id)
+            Join(x);
     }
 
     /// <summary>A cell and what's open to it joins: it's one room.</summary>
@@ -570,6 +849,12 @@ public sealed class GasNetwork
     {
         stamp[i] = id;
         region[n++] = i;
+        if (i != partNode)
+        {
+            if (touchStamp[i] != id)
+                (touchStamp[i], touched[nTouched++]) = (id, i);
+            (feltLanded[i], hotLanded[i]) = (0, false);   // a new episode for its men (docs/battle/workers.md ET decision 4)
+        }
         v[i] = gasM3;
         m[i] = P0 * gasM3 / RtAir;
         u[i] = P0 * gasM3 / GammaK;
@@ -617,14 +902,14 @@ public sealed class GasNetwork
     {
         if (!(near.ReachM > 0))
             return;
-        for (int a = 0; a < n; a++)   // the region grows as it goes
+        for (int a = 0; a < nWalk; a++)   // the walk grows as it goes
         {
-            int i = region[a];
+            int i = walk[a];
             NearEdges(i, at, near);
             NearFaces(i, at, near);
         }
-        for (int a = 0; a < n; a++)
-            nearStamp[region[a]] = id;   // what it walked into, apart from what a run's gas or a bent plate brings in later
+        for (int a = 0; a < nWalk; a++)
+            nearStamp[walk[a]] = nearId;   // what it walked into, apart from what a run's gas or a bent plate brings in later
     }
 
     void NearEdges(int i, P3 at, in NearCharge near)
@@ -653,8 +938,8 @@ public sealed class GasNetwork
                     res.Holed++;
                 }
             }
-            if (open[q] > k.JoinSeamM2[q] && stamp[e.Cell] != id)   // a sprung seam lets water through, not this
-                JoinSpace(e.Cell);
+            if (open[q] > k.JoinSeamM2[q] && walkStamp[e.Cell] != nearId)   // a sprung seam lets water through, not this
+                WalkFrom(e.Cell);
         }
     }
 
@@ -716,6 +1001,7 @@ public sealed class GasNetwork
         JoinSpace(cell);
         Trains(room, cell);
         res.Magazines = nStows;
+        k.MagazineSpent[room] = true;   // gone up from now: what's there is burning (docs/battle/workers.md ET3)
         Trace?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "      {0:0.000} s: {1} alight ({2:0} open, {3:0} packed, {4:0} kg each, {5:0} m³ of gas)", time, c.RoomId(room), st.Open, st.Cased, st.Ck, v[cell]));
         return cell;
     }
@@ -734,7 +1020,7 @@ public sealed class GasNetwork
         st.Pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)] * st.Pr.Sensitivity;
         st.TBurn = st.Pr.WebM / Magazines.Rate(101_325, st.Pr);
         st.EnergyJKg = s.MagazineHeatKeep * st.Pr.ImpetusJkg / GammaK;
-        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa) = (0, 0, 0, -1, 0, 0, 0);
+        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa, st.Trains) = (0, 0, 0, -1, 0, 0, 0, false);
         if (nOpen * (1 - st.Flooded) < 1 && nCased * (1 - st.Flooded) >= 1)
         {
             st.LitCased = 1;
@@ -797,19 +1083,19 @@ public sealed class GasNetwork
     /// <summary>A run's stepping begins: its first step's length; what its steps read and the run doesn't move.</summary>
     void Start(int source, double dt0)
     {
-        (sourceCell, stepDt, quietS, stepsN, finished) = (source, dt0, 0, 0, false);
+        (sourceCell, stepDt, quietS, stepsN, finished, started) = (source, dt0, 0, 0, false, true);
         Fixed();
         Slices?.Begin();
     }
 
     /// <summary>The run stepped on to its own time untilS (s since it began), its last step cut to end there and the step it wanted
     /// kept for the next advance (docs/battle/workers.md ET2). Whether it's done: every panel caught up, nothing burning, nothing
-    /// more to give (<see cref="Done"/>), or <see cref="SimSettings.GasRunS"/> reached.</summary>
+    /// more to give (<see cref="Over"/>), or <see cref="SimSettings.GasRunS"/> reached.</summary>
     bool Advance(double untilS)
     {
         var slices = Slices;
         int source = sourceCell;
-        while (!finished && time < s.GasRunS && untilS - time > 1e-9)
+        while (!finished && time - lastSourceS < s.GasRunS && untilS - time > 1e-9)
         {
             double t0 = time, want = stepDt, dt = Math.Min(want, untilS - time);
             bool clipped = dt < want;
@@ -832,7 +1118,7 @@ public sealed class GasNetwork
             if (!double.IsNaN(res.HullS) && time <= res.HullS + 1)
                 fastKg = burned;
             quietS = changed || most > 0.01 ? 0 : quietS + dt;
-            if (Done(caught, gauge, quietS))
+            if (Over(caught, gauge, quietS))
             {
                 finished = true;
                 break;
@@ -843,7 +1129,7 @@ public sealed class GasNetwork
                 : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax * Math.Min(StepK, 1)) : dt;
             stepDt = Math.Max(Math.Min(next, soonest), DtMin);   // the step ends where a magazine's dose would light it, not a step's length after
         }
-        finished |= time >= s.GasRunS;
+        finished |= time - lastSourceS >= s.GasRunS;
         res.Steps = stepsN;
         res.EndS = time;
         return finished;
@@ -917,7 +1203,7 @@ public sealed class GasNetwork
 
     /// <summary>Done when every panel has taken up its load, nothing can burn and nothing more can give: no intact door or plate
     /// takes less than the door's own.</summary>
-    bool Done(bool caught, double gauge, double quiet)
+    bool Over(bool caught, double gauge, double quiet)
     {
         bool burning = false;
         for (int i = 0; i < nStows; i++)
@@ -956,12 +1242,11 @@ public sealed class GasNetwork
             madeKg += made;
             SpreadFlame(st, dt);
         }
-        if (nStows == 0)
-            return;
         // the energy within about the hull's period (07 §3.1; her two-node period, research 13 §4.2): what comes slower doesn't whip her
         double fade = Math.Exp(-dt / period);
         (whipKg, whipJ) = (whipKg * fade + madeKg, whipJ * fade + released);
         whipPeak = Math.Max(whipPeak, whipKg * whipJ);
+        whipSince = Math.Max(whipSince, whipKg * whipJ);
     }
 
     /// <summary>What a stow's lit charges make in a step, kg: r = β·P^α on each cohort's burning surface.</summary>
@@ -1179,6 +1464,12 @@ public sealed class GasNetwork
     {
         faceStamp[x] = id;
         faces[x] = new Boundary { Torn = k.FaceTornM2[x] };
+        Sea(x, i, f);
+    }
+
+    /// <summary>The sea behind a face as she lies: what presses back on it, and its share above the waterline.</summary>
+    void Sea(int x, int i, int f)
+    {
         var point = hull.Point[x];
         var box = c.Cells[i].Box;
         double wl = water.At(point.X, point.Y);
@@ -1331,56 +1622,60 @@ public sealed class GasNetwork
         }
     }
 
-    GasResult Finish(int source, ref RandomStream r)
+    /// <summary>A run at its end at once: what it did, and what it left committed.</summary>
+    GasResult Finish(ref RandomStream r)
     {
-        res.PeakKPa = peakSource / 1000;
-        res.FeltMPa = felt[source];
-        // what was lit and hadn't burned when the run stopped goes on burning, harmlessly, at no pressure
+        res = Report();
+        CommitOpened();
+        Seams(ref r, end: true);
+        return res;
+    }
+
+    /// <summary>What the run has done so far, as a result: the peak at its newest source, the propellant burned (what was lit and hadn't
+    /// burned goes on burning, harmlessly, at no pressure), the spaces it has had, their gas and vents as they stand, its whip.</summary>
+    public GasResult Report()
+    {
+        var x = res;
+        x.PeakKPa = peakSource / 1000;
+        x.FeltMPa = sourceCell >= 0 ? felt[sourceCell] : 0;
+        double all = burned;
         for (int t = 0; t < nStows; t++)
         {
             var st = stows[t];
             for (int i = 0; i < st.Cohort; i++)
-                burned += st.Cnt[i] * st.Ck * (1 - st.Z[i]);
+                all += st.Cnt[i] * st.Ck * (1 - st.Z[i]);
         }
-        res.BurnedKg = burned;
-        res.FastKg = double.IsNaN(res.HullS) ? burned : fastKg;
-        res.Spaces = n;
+        x.BurnedKg = all;
+        x.FastKg = double.IsNaN(x.HullS) ? all : fastKg;
+        x.Spaces = Math.Max(n, nTouched);
         double vol = 0, vents = 0;
         for (int a = 0; a < n; a++)
             (vol, vents) = (vol + v[region[a]], vents + vent[region[a]]);
         for (int l = 0; l < links; l++)
             vents += linkOpen[l] && linkTo[l] < 0 ? linkArea[l] : 0;
-        (res.VolumeM3, res.VentM2) = (vol, vents);
-        res.WhipEM = whipPeak;
-        Commit(ref r);
-        return res;
+        (x.VolumeM3, x.VentM2) = (vol, vents);
+        x.WhipEM = whipPeak;
+        return x;
     }
 
-    /// <summary>What this run left on the ship's condition: what it tore and blew open between spaces (never past a boundary's
-    /// own area) and to the sea or air; a boundary that held, its seams sprung and closures loosened by the most it felt (not what's
-    /// left on it once the gas has gone), drawn about the curve; and what the girder has lost of each boundary so far (<see cref="ShipCondition.EdgeLost"/>). Short of
-    /// rupture its seams leak but it carries its load; past it, <see cref="Blast.LostShare"/>. No step: one curve from the first
-    /// crack to torn out.</summary>
-    void Commit(ref RandomStream r)
+    /// <summary>What the run has torn and blown open so far onto her condition: between spaces (never past a boundary's own area) and
+    /// to the sea or air, and what the girder has lost of each boundary (<see cref="ShipCondition.EdgeLost"/>, <see cref="ShipCondition.FaceLost"/>);
+    /// a space whose liquid has run out. No draws: it's on her the moment it happens (a near field's at once, the gas's each slice).</summary>
+    void CommitOpened()
     {
         bool lost = false;
-        for (int a = 0; a < n; a++)
+        for (int a = 0; a < nTouched; a++)
         {
-            int i = region[a];
-            if (i == partNode)
-                continue;
-            lost |= CommitEdges(i, ref r);
-            lost |= CommitFaces(i, ref r);
+            int i = touched[a];
+            lost |= OpenedEdges(i);
+            lost |= OpenedFaces(i);
+            if (spilled[i])
+                k.Drained[i] = true;   // its liquid has run out: the next explosion finds a void
         }
         k.GirderStale |= lost;
-        for (int a = 0; a < n; a++)
-            if (region[a] != partNode && spilled[region[a]])
-                k.Drained[region[a]] = true;   // its liquid has run out: the next explosion finds a void
-        for (int t = 0; t < nStows; t++)
-            k.MagazineSpent[stows[t].Room] = true;
     }
 
-    bool CommitEdges(int i, ref RandomStream r)
+    bool OpenedEdges(int i)
     {
         bool lost = false;
         var nb = c.Cells[i].Neighbours;
@@ -1390,33 +1685,23 @@ public sealed class GasNetwork
             if (edgeStamp[q] != id || !(area[j] > 0))
                 continue;
             ref var b = ref edges[q];
-            if (b.Fate is Blast.Fate.Holed or Blast.Fate.Ruptured or Blast.Fate.Door)
+            if (b.Fate is not (Blast.Fate.Holed or Blast.Fate.Ruptured or Blast.Fate.Door))
+                continue;
+            if (opened[q] > 0)
             {
-                if (opened[q] > 0)
-                {
-                    k.JoinOpenM2[q] = Math.Min(k.JoinOpenM2[q] + opened[q], area[j]);
-                    res.OpenM2 += opened[q];
-                    opened[q] = 0;
-                }
-                double share = b.Fate == Blast.Fate.Ruptured ? Blast.LostShare(b.Torn, area[j], s)
-                    : b.Fate == Blast.Fate.Holed ? Blast.HoleShare(b.Torn, area[j]) : 0;
-                if (share > k.EdgeLost[q])
-                    (k.EdgeLost[q], lost) = (share, true);
+                k.JoinOpenM2[q] = Math.Min(k.JoinOpenM2[q] + opened[q], area[j]);
+                res.OpenM2 += opened[q];
+                opened[q] = 0;
             }
-            else if (b.Fate == Blast.Fate.None && b.Peak > 0)
-            {
-                b.Fate = Blast.Fate.Deformed;   // once, from whichever side
-                double d = b.PeakD(EdgeRupture(j));
-                double leak = Blast.Leak(d, area[j], c.InternalsJoint, s, ref r);
-                leak += Leaks.Sprung(c, k, i, j, leak, d, area[j], s, ref r);   // its seams sprung and its closures loosened (DC1)
-                if (leak > 0)
-                    (res.LeakM2, res.Deformed) = (res.LeakM2 + leak, res.Deformed + 1);
-            }
+            double share = b.Fate == Blast.Fate.Ruptured ? Blast.LostShare(b.Torn, area[j], s)
+                : b.Fate == Blast.Fate.Holed ? Blast.HoleShare(b.Torn, area[j]) : 0;
+            if (share > k.EdgeLost[q])
+                (k.EdgeLost[q], lost) = (share, true);
         }
         return lost;
     }
 
-    bool CommitFaces(int i, ref RandomStream r)
+    bool OpenedFaces(int i)
     {
         bool lost = false;
         for (int f = 0; f < Faces; f++)
@@ -1445,18 +1730,78 @@ public sealed class GasNetwork
                 if (share > k.FaceLost[x])
                     (k.FaceLost[x], lost) = (share, true);
             }
-            else if (b.Fate == Blast.Fate.None && b.Peak > 0)
-            {
-                b.Fate = Blast.Fate.Deformed;
-                double leak = Blast.Leak(b.PeakD(Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s)), fa, c.ShellJoint, s, ref r);
-                if (leak > 0)
-                {
-                    k.Hole(i, leak, hull.Point[x], seam: true);
-                    (res.HoleM2, res.Deformed) = (res.HoleM2 + leak, res.Deformed + 1);
-                }
-            }
         }
         return lost;
+    }
+
+    /// <summary>The boundaries that held, each by its own episodes of load (docs/battle/workers.md ET decision 4): once what's across
+    /// it has fallen back under the weep (<see cref="SimSettings.LeakWeepD"/>), or the run is over (end), its seams are sprung and its
+    /// closures loosened by the most it felt in that episode (not what's left on it once the gas has gone), drawn about the curve, and
+    /// a new episode begins from what's on it now. Short of rupture its seams leak but it carries its load; past it,
+    /// <see cref="Blast.LostShare"/>. A boundary with no gas either side has nothing on it.</summary>
+    void Seams(ref RandomStream r, bool end)
+    {
+        commits++;
+        for (int a = 0; a < nTouched; a++)
+        {
+            int i = touched[a];
+            SeamEdges(i, end, ref r);
+            SeamFaces(i, end, ref r);
+        }
+    }
+
+    void SeamEdges(int i, bool end, ref RandomStream r)
+    {
+        var nb = c.Cells[i].Neighbours;
+        for (int j = nb.Start; j < nb.End; j++)
+        {
+            int q = canon[j];
+            if (edgeStamp[q] != id || !(area[j] > 0) || edgeDrawn[q] == commits)
+                continue;
+            ref var b = ref edges[q];
+            if (b.Fate != Blast.Fate.None || !(b.Peak > 0))
+                continue;
+            int o = c.Neighbour(j).Cell;
+            if (stamp[i] != id && stamp[o] != id)
+                b.Felt = 0;   // no gas either side: nothing on it
+            double rupture = EdgeRupture(j);
+            if (!end && Blast.RuptureD * b.Felt / rupture >= s.LeakWeepD)
+                continue;   // its load isn't over yet
+            edgeDrawn[q] = commits;
+            double d = b.PeakD(rupture);
+            b.Peak = b.Felt;
+            double leak = Blast.Leak(d, area[j], c.InternalsJoint, s, ref r);
+            leak += Leaks.Sprung(c, k, i, j, leak, d, area[j], s, ref r);   // its seams sprung and its closures loosened (DC1)
+            if (leak > 0)
+                (res.LeakM2, res.Deformed) = (res.LeakM2 + leak, res.Deformed + 1);
+        }
+    }
+
+    void SeamFaces(int i, bool end, ref RandomStream r)
+    {
+        for (int f = 0; f < Faces; f++)
+        {
+            int x = i * Faces + f;
+            if (faceStamp[x] != id || faceDrawn[x] == commits)
+                continue;
+            ref var b = ref faces[x];
+            if (b.Fate != Blast.Fate.None || !(b.Peak > 0))
+                continue;
+            if (stamp[i] != id)
+                b.Felt = 0;
+            double rupture = Blast.RuptureMPa(Math.Max(hull.HeldMm[x], 1), c.ShellJoint, s);
+            if (!end && Blast.RuptureD * b.Felt / rupture >= s.LeakWeepD)
+                continue;
+            faceDrawn[x] = commits;
+            double d = b.PeakD(rupture);
+            b.Peak = b.Felt;
+            double leak = Blast.Leak(d, hull.Area[x], c.ShellJoint, s, ref r);
+            if (leak > 0)
+            {
+                k.Hole(i, leak, hull.Point[x], seam: true);
+                (res.HoleM2, res.Deformed) = (res.HoleM2 + leak, res.Deformed + 1);
+            }
+        }
     }
 
     /// <summary>The ship's rounds by mount for the runs to come (a magazine any of them lights stows what's left), until
@@ -1471,7 +1816,7 @@ public sealed class GasNetwork
     public void Disarm() => armed = false;
 
     /// <summary>Whether the last run's near field walked into a cell: what its wreck and debris reached.</summary>
-    public bool NearReached(int cell) => nearStamp[cell] == id;
+    public bool NearReached(int cell) => nearStamp[cell] == nearId;
 
     /// <summary>Whether the last run got into a cell: its near field or its gas.</summary>
     public bool InRun(int cell) => stamp[cell] == id;
@@ -1496,6 +1841,9 @@ public sealed class GasNetwork
     /// <summary>The cells reached, by the order they joined.</summary>
     public ReadOnlySpan<int> Reached() => region.AsSpan(0, n);
 
+    /// <summary>The newest explosion's own room and what its near field walked into.</summary>
+    public ReadOnlySpan<int> Walked() => walk.AsSpan(0, nWalk);
+
     /// <summary>The magazines this run lit: how many, and each one's room.</summary>
     public int LitCount => nStows;
     public int LitRoom(int i) => stows[i].Room;
@@ -1503,4 +1851,159 @@ public sealed class GasNetwork
     /// <summary>Whether a mount's way up vented this run, and whether its gunhouse lifted.</summary>
     public bool VentedMount(int mount) => ventedMount[mount];
     public bool LiftedMount(int mount) => liftedMount[mount];
+
+    /// <summary>Her live gas into the hash (docs/battle/workers.md ET3): everything a later step or landing reads. What a step works out
+    /// afresh (its lag, the step's start pressures, the soonest a dose lights) and what's the class's or worked out from her condition
+    /// once a run (liquid, panels' mass, rupture pressures) stay out; <c>GasNetworkHashTests</c> holds the list.</summary>
+    public void Hash(ref StateHash h)
+    {
+        h.Add(startMs);
+        h.Add(time);
+        h.Add(started);
+        h.Add(finished);
+        h.Add(lastSourceS);
+        h.Add(stepDt);
+        h.Add(quietS);
+        h.Add(stepsN);
+        h.Add(sourceCell);
+        h.Add(armed);
+        h.Add(moving);
+        h.Add(n);
+        h.Add(links);
+        h.Add(nStows);
+        h.Add(stowsLanded);
+        h.Add(burned);
+        h.Add(fastKg);
+        h.Add(peakSource);
+        h.Add(whipKg);
+        h.Add(whipJ);
+        h.Add(whipPeak);
+        h.Add(whipSince);
+        HashResult(ref h);
+        for (int a = 0; a < n; a++)
+        {
+            int i = region[a];
+            h.Add(i);
+            h.Add(v[i]);
+            h.Add(m[i]);
+            h.Add(u[i]);
+            h.Add(p[i]);
+            h.Add(rt[i]);
+            h.Add(vent[i]);
+            h.Add(lagged[i]);
+            h.Add(felt[i]);
+            h.Add(hottest[i]);
+            h.Add(hyd[i]);
+            h.Add(dose[i]);
+            h.Add(spilled[i]);
+        }
+        h.Add(nTouched);
+        for (int a = 0; a < nTouched; a++)
+        {
+            int i = touched[a];
+            h.Add(i);
+            h.Add(feltLanded[i]);
+            h.Add(hotLanded[i]);
+            var nb = c.Cells[i].Neighbours;
+            for (int j = nb.Start; j < nb.End; j++)
+            {
+                int q = canon[j];
+                if (edgeStamp[q] != id)
+                    continue;
+                h.Add(q);
+                h.Add(open[q]);
+                h.Add(opened[q]);
+                HashBoundary(ref h, edges[q]);
+            }
+            for (int f = 0; f < Faces; f++)
+            {
+                int x = i * Faces + f;
+                if (faceStamp[x] != id)
+                    continue;
+                h.Add(x);
+                h.Add(faceBack[x]);
+                h.Add(faceDry[x]);
+                HashBoundary(ref h, faces[x]);
+            }
+        }
+        for (int t = 0; t < nStows; t++)
+        {
+            var st = stows[t];
+            h.Add(st.Room);
+            h.Add(st.Cell);
+            h.Add(st.Cohort);
+            h.Add(st.Ck);
+            h.Add(st.Open);
+            h.Add(st.Cased);
+            h.Add(st.Flooded);
+            h.Add(st.Pkg);
+            h.Add(st.TBurn);
+            h.Add(st.LitOpen);
+            h.Add(st.LitCased);
+            h.Add(st.CohortT0);
+            h.Add(st.EnergyJKg);
+            h.Add(st.Burning);
+            h.Add(st.Pending);
+            h.Add(st.MadePa);
+            h.Add(st.Trains);
+            for (int i = 0; i < st.Cohort; i++)
+            {
+                h.Add(st.Cnt[i]);
+                h.Add(st.Z[i]);
+            }
+        }
+        for (int l = 0; l < links; l++)
+        {
+            h.Add(linkFrom[l]);
+            h.Add(linkTo[l]);
+            h.Add(linkMount[l]);
+            h.Add(linkAt[l]);
+            h.Add(linkArea[l]);
+            h.Add(linkOpen[l]);
+        }
+        for (int mt = 0; mt < c.Mounts.Length; mt++)
+        {
+            h.Add(rounds[mt]);
+            h.Add(ventedMount[mt]);
+            h.Add(liftedMount[mt]);
+            h.Add(ventLanded[mt]);
+            h.Add(liftLanded[mt]);
+        }
+        for (int room = 0; room < c.Rooms.Length; room++)
+            h.Add(trainStamp[room] == id);
+    }
+
+    static void HashBoundary(ref StateHash h, in Boundary b)
+    {
+        h.Add(b.Felt);
+        h.Add(b.Peak);
+        h.Add(b.Torn);
+        h.Add(b.Delta);
+        h.Add(b.Dir);
+        h.Add(b.Fate);
+    }
+
+    void HashResult(ref StateHash h)
+    {
+        h.Add(res.FirstS);
+        h.Add(res.HullS);
+        h.Add(res.VentS);
+        h.Add(res.Charges);
+        h.Add(res.OpenM2);
+        h.Add(res.LeakM2);
+        h.Add(res.HoleM2);
+        h.Add(res.Open);
+        h.Add(res.Holed);
+        h.Add(res.Bulkheads);
+        h.Add(res.Decks);
+        h.Add(res.Doors);
+        h.Add(res.Deformed);
+        h.Add(res.Sides);
+        h.Add(res.WeatherDecks);
+        h.Add(res.Bottoms);
+        h.Add(res.PartWalls);
+        h.Add(res.Magazines);
+        h.Add(res.Vented);
+        h.Add(res.Lifted);
+    }
 }

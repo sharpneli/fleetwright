@@ -51,19 +51,17 @@ public static class Underwater
         var near = NearField.Charge(size, 1, NearField.Tamp(depth, size, s), s);
         var b0 = cells[first].Box;
         var at = new P3(Math.Clamp(p.X, b0.X0, b0.X1), Math.Clamp(p.Y, b0.Y0, b0.Y1), Math.Clamp(p.Z, b0.Base, b0.Top));
-        var net = GasNetwork.For(c);
-        res.Blast = net.Strike(k, first, at, near, s, ref r, w * s.ContactGasShare, Products);
+        // its near field now, its products into her gas from now (docs/battle/workers.md ET3)
+        var net = GasNetwork.Of(k, s, hit.Ms);
+        res.Blast = net.AddContact(first, at, near, w * s.ContactGasShare, Products);
         res.BubbleWhip = HullGirder.Of(c).Bubble(w, p, Math.Sqrt((p.X - at.X) * (p.X - at.X) + (p.Y - at.Y) * (p.Y - at.Y) + (p.Z - at.Z) * (p.Z - at.Z)),
             HitQuery.WaterOf(c, k.Attitude), s);   // none at her plate: its bubble vents into what it opened
         res.BreachM2 += res.Blast.HoleM2;
-        if (res.Blast.Magazines > 0)   // its gas lit one (EX6a): the race has run
-            (res.Magazine, res.MagazineRoom, res.MagazineVia, res.Raced) = (true, net.LitRoom(0), MagazineVia.Underwater, true);
         outcome = Outboard(c, first) && !Inside(c, net) ? Outcome.Held : Outcome.Exploded;
 
         Reach(c, k, net, p, near.ReachM, s, ref res, ref r);
         // the high-explosive stores in what it opened: its own case's pieces through her plating, or touching (EX6c; Rowan's)
         res.Stores += Stores.Outside(c, k, net, p, hit.Direction, hit.Torpedo.Warhead.Fragments?.High, w, s, ref r);
-        Effects.GasFelt(c, k, net, -1, s, ref res);
         NearMiss.Shock(c, k, hit, w, s, ref res, ref r);
         Casualties.Draw(c, k, hit.Ms, s, ref res, ref r);
         k.CrewLost += res.CrewLost;
@@ -94,8 +92,6 @@ public static class Underwater
                     (magazine, magazineD) = (room, d);
             }
         }
-        if (res.Raced)
-            return;
         // its near field among the charges lights them (research 15 §2.3): whole within the half of its reach it wrecks, weakening to
         // nothing at the reach, as the rooms it wrecks go (above)
         res.Magazine = magazine >= 0 && r.NextDouble() < Math.Clamp(2 * (1 - magazineD / reach), 0, 1);
@@ -128,7 +124,7 @@ public static class Underwater
     /// <summary>Whether the explosion opened a way from a space outside a holding bulkhead into one inside it.</summary>
     static bool Inside(ShipClass c, GasNetwork net)
     {
-        foreach (int i in net.Reached())
+        foreach (int i in net.Walked())
         {
             if (!Outboard(c, i))
                 continue;

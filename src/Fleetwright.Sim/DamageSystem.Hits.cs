@@ -40,6 +40,8 @@ public sealed partial class DamageSystem
             Bender.Reserve(c.Solids.Solids.Length);
             if (Bearings.Length < c.Mounts.Length)
                 Bearings = new double[Math.Max(c.Mounts.Length, Bearings.Length * 2)];
+            if (Mounts.Length < c.Mounts.Length)
+                Mounts = new MountState[Math.Max(c.Mounts.Length, Mounts.Length * 2)];
         }
 
         public Span<MountState> MountsFor(int n)
@@ -50,17 +52,16 @@ public sealed partial class DamageSystem
         }
     }
 
-    /// <summary>What a hit did to her condition, for the world's part after it: the walk's outcome, the effects (with the race's),
-    /// the race, her girder after it, the flags for the log, whether she was worked out again and with what change (for her mounts
-    /// and power), whether it blew her up or broke her, and her record for the screens' ring.</summary>
+    /// <summary>What a hit did to her condition at once, for the world's part after it: the walk's outcome, the effects, her girder
+    /// after it, the flags for the log, whether she was worked out again and with what change (for her mounts and power), whether it
+    /// broke her, and her record for the screens' ring. What its gas does lands as it does it (docs/battle/workers.md ET3).</summary>
     struct Worked
     {
         public TerminalResult T;
         public EffectsResult E;
-        public RaceResult Race;
         public GirderReading Girder;
         public HitEffect Fx, Change;
-        public bool Recomputed, Blew, Broke, Recorded;
+        public bool Recomputed, Broke, Recorded;
         public Struck Record;
     }
 
@@ -76,9 +77,11 @@ public sealed partial class DamageSystem
         touched = true;
         Ready(slot, k);
         Prepare(cls);
+        GasTo(world, slot, k, world.Time.Ms);   // her gas to this moment, what it did landed, before what this does
         var at = Capture(world, hit, slot, cls, scratch, (ulong)hits++);
         var w = Work(at, cls, k, scratch);
         Land(world, slot, k, at, w);
+        GasWake(world, slot, k);
     }
 
     /// <summary>What a hit takes from the world when it comes, into a scratch (its mounts' states and her turrets' bearings).</summary>
@@ -115,48 +118,32 @@ public sealed partial class DamageSystem
 
         var rng = stream.Derive(at.Index);
         ReadOnlySpan<MountState> mounts = sx.Mounts.AsSpan(0, at.Mounts);
-        var net = GasNetwork.For(cls);
-        net.Arm(mounts);   // a magazine the hit's gas lights stows what's left (EX6a)
+        // her gas (docs/battle/workers.md ET3): this explosion's goes in at its moment, and a magazine it lights stows what's left
+        var net = GasNetwork.Of(k, settings, now);
+        net.Arm(mounts);
+        if (net.SourceCause < 0)
+            net.SourceCause = (int)(hit.Source == HitSource.Torpedo ? BlastCause.Torpedo : hit.Source == HitSource.Store ? BlastCause.Store : BlastCause.Shell);
         var e = WhatItDoes(hit, cls, k, now, sx, out var t, ref rng);
-        // a magazine set off: its gas through her and what it leaves of her girder decide (docs/battle/explosions.md)
-        var race = default(RaceResult);
-        if (e.Magazine && k.Status == ShipStatus.Afloat)
-        {
-            if (e.Raced)
-            {
-                // its own gas lit it (EX6a): its race ran there; its draws the hit's own, not the next hit's (workers.md: keyed streams)
-                var rr = stream.Derive(at.Index).Derive(0x8ACEDu);
-                race = Magazines.Raced(cls, k, e.Blast, settings, now, ref rr, at.Sea);
-            }
-            else
-                race = Magazines.SetOff(cls, k, e.MagazineRoom, mounts, settings, now, ref rng, at.Sea, e.Blast.WhipEM);
-            if (race.Magazines > 0)
-            {
-                if (!race.Lost)
-                    k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // what it opened takes the sea from her next second
-                Join(ref e, race);
-            }
-        }
-        net.Disarm();
-        // what's left of her girder, and what's on it (docs/battle/explosions.md: after every explosion, one reading a moment)
-        var girder = race.Girder;
-        if (race.Magazines == 0 && k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0 || e.BubbleWhip > 0))
-            girder = HullGirder.Of(cls).Bear(k, e.Blast.WhipEM, now, at.Sea, settings, e.BubbleWhip);
+        // a magazine its pieces, a flash down its train or its near field lit: alight in her gas from now, landing as it burns
+        if (e.Magazine && k.Status == ShipStatus.Afloat && net.AddStow(e.MagazineRoom, mounts) && net.MagazineCause < 0)
+            net.MagazineCause = net.SourceCause;
+        // what's left of her girder at once, and what's on it: what the near field cut and a bubble's whip (her gas's own drive is
+        // read as it lands: docs/battle/explosions.md, one reading a moment)
+        var girder = default(GirderReading);
+        if (k.Status == ShipStatus.Afloat && (!near || e.BreachM2 > 0 || e.BubbleWhip > 0))
+            girder = HullGirder.Of(cls).Bear(k, 0, now, at.Sea, settings, e.BubbleWhip);
         // its section's fire main and the fire parties there (docs/battle/fire.md B4)
         if (!near && k.Status == ShipStatus.Afloat)
             Fires.Hit(cls, at.Flood, k, cls.SectionAt(hit.Point.X), now, settings, ref rng);
 
-        var w = new Worked { T = t, Race = race, Girder = girder, Fx = Flags(e) };
+        var w = new Worked { T = t, Girder = girder, Fx = Flags(e) };
         // men hit or shaken change what her stations can do (docs/battle/crew.md N2, N3b)
         if ((e.Changed || e.Killed + e.Wounded > 0 || k.Stirred || girder.EndOff) && k.Status == ShipStatus.Afloat)
         {
             (w.Recomputed, w.Change) = (true, RecomputeOwn(k, at.Experience, at.Rudder, now, ref rng));
             w.Fx |= w.Change;
         }
-        w.Blew = e.Magazine && race.Lost && k.Status == ShipStatus.Afloat;
-        w.Broke = girder.Broken && !w.Blew && k.Status == ShipStatus.Afloat;
-        if (w.Blew)
-            w.Fx |= HitEffect.Magazine;
+        w.Broke = girder.Broken && k.Status == ShipStatus.Afloat;
         if (w.Broke)
             w.Fx |= HitEffect.Broken;
         if (hit.Source is HitSource.Shell or HitSource.Coarse)
@@ -175,13 +162,7 @@ public sealed partial class DamageSystem
         bool near = hit.Source == HitSource.NearMiss, own = hit.Source == HitSource.Store;
         if (own)
             ships.Store.Combat.Spent(slot, hit.Store);   // her launcher's warheads gone with it
-        if (w.Race.Magazines > 0)
-        {
-            MagazineCounts.ByHit[(int)w.Race.Tier]++;
-            LogRace(slot, w.Race.Tier);
-        }
         trainsLit += w.E.Stations > 0 ? 1 : 0;
-        LastRace = w.Race;
         if (w.Recomputed)
         {
             RecomputeWorld(world, slot, k, w.Change);
@@ -199,10 +180,7 @@ public sealed partial class DamageSystem
             log.Add(new CombatEntry(now, near ? CombatEvent.NearMiss : own ? CombatEvent.Store : CombatEvent.Hit, hit.Shooter, hit.Battery, hit.Ship,
                 own ? hit.Store : hit.ShellType, e.Part, w.T.Outcome, w.Fx, hit.Shell.Kind,
                 (float)(hit.Source == HitSource.Torpedo ? hit.Torpedo.CalibreMm : hit.Shell.CalibreMm), hit.Source));
-        if (w.Blew)
-            Blew(world, slot, k, e.MagazineRoom, hit.Source switch { HitSource.Torpedo => BlastCause.Torpedo, HitSource.Store => BlastCause.Store, _ => BlastCause.Shell },
-                hit.Point, w.Race);
-        else if (w.Broke)
+        if (w.Broke)
             Lose(world, slot, k, LossKind.BrokeInTwo);
         else if (k.Status == ShipStatus.Afloat && (e.BreachM2 > 0 || w.Girder.EndOff || e.Fire || Repairs.Busy(cls, k) || Magazines.Busy(cls, Flood(cls), k, settings)))
             Wake(world, slot, k);   // water or fire: its steps begin (or come sooner)

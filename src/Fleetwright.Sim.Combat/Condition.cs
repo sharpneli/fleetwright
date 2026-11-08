@@ -339,6 +339,10 @@ public sealed class ShipCondition
     /// <summary>Each section's modulus with what's gone gone, and whether what's gone has moved since (<see cref="HullGirder"/>).</summary>
     public double[] GirderZ = [];
     public bool GirderStale;
+    /// <summary>Her gas, live (docs/battle/workers.md ET): from her first explosion until it's done, stepped by the world on its own
+    /// lattice; null when there's none. Its next step's world ms (-1: none due) and its events' generation.</summary>
+    public GasNetwork? Gas;
+    public long GasNextMs = -1, GasGen;
     /// <summary>Her whip so far (<see cref="HullGirder.Bear"/>): design moments squared (whips add as energies), as of a moment, world ms.</summary>
     public double WhipSq;
     public long WhipMs;
@@ -686,6 +690,9 @@ public sealed class ShipCondition
         Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (GirderStale, WhipSq, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
+        Gas?.Release();
+        (Gas, GasNextMs) = (null, -1);
+        GasGen++;
         (Status, Loss, Attitude, PowerCap, Steering, JamRudderRad, Conned, Hits, Damaged) = (ShipStatus.Afloat, LossKind.None, Attitude.Upright, 1, Steering.Free, 0, true, 0, false);
         (ConnAt, ConnShiftMs) = (0, 0);
         (GivenUp, ColoursMs, AbandonMs, OffMs, ScuttleMs) = (GivenUp.None, 0, 0, 0, 0);
@@ -1170,6 +1177,9 @@ public sealed class ShipCondition
 
     public void Hash(ref StateHash h)
     {
+        h.Add(GasNextMs);
+        if (Gas is { } gas)
+            gas.Hash(ref h);
         h.Add(Hits);
         h.Add(CrewLost);
         if (Killed + Wounded > 0)

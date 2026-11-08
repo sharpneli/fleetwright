@@ -429,8 +429,10 @@ public sealed class HullGirder
     /// gone (07 §3.2). Whether she's broken is the reading's to say.</summary>
     public GirderReading Bear(ShipCondition k, double energyMass, long now, double sea, SimSettings s, double bubble = 0)
     {
+        // her gas's drive is a level, read each time her gas lands (what drives her within her period now: docs/battle/workers.md
+        // ET3), not an impulse to add again; a bubble's is one
         double gas = Whip(energyMass, s.GirderWhipK);
-        k.WhipSq = k.WhipSq * Math.Exp(-Math.Max(now - k.WhipMs, 0) / (1000 * PeriodS)) + gas * gas + bubble * bubble;
+        k.WhipSq = Math.Max(k.WhipSq * Math.Exp(-Math.Max(now - k.WhipMs, 0) / (1000 * PeriodS)) + bubble * bubble, gas * gas);
         k.WhipMs = now;
         var r = Read(k, sea, Math.Sqrt(k.WhipSq), s);
         if (r.EndLoad >= 1 && !r.Broken)

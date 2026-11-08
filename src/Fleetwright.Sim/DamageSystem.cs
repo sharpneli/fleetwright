@@ -29,6 +29,8 @@ public enum DamageCommand : ushort
     SetShipDamageControl,
     Blackout,
     SetStupidity,
+    /// <summary>The dev's magazine fire: a magazine set alight in her gas (docs/battle/workers.md ET), its race landing as it burns.</summary>
+    Ignite,
 
 }
 
@@ -294,6 +296,10 @@ public sealed partial class DamageSystem : IWorldSystem
     public static Command Burn(int entity, double xM) => new(Id, (ushort)DamageCommand.Burn, entity, X: xM);
     public static Command BurnCell(int entity, int cell) => new(Id, (ushort)DamageCommand.Burn, entity, B: cell + 1);
 
+    /// <summary>The dev's magazine fire (docs/battle/workers.md ET): a magazine set alight in her gas now, its race taking its own time
+    /// as a fire's does. The magazine as <see cref="Sink"/>'s: the one serving a mount, or by default the one that holds the most.</summary>
+    public static Command Ignite(int entity, int mount = -1) => new(Id, (ushort)DamageCommand.Ignite, entity, B: mount);
+
     /// <summary>The dev's shot (the world view's hits bench, docs/visuals/hits-and-fires.md I1): a shell of the shooter's
     /// battery (of a kind, or the one it fires) from a range and an aspect (degrees off the target's bow it comes from), its
     /// line through a point on her centreline, x m along her and z m over her waterline, struck through the damage system as
@@ -423,6 +429,7 @@ public sealed partial class DamageSystem : IWorldSystem
             case DamageCommand.WreckKind:
             case DamageCommand.Burn:
             case DamageCommand.Sink:
+            case DamageCommand.Ignite:
                 slot = ships.Store.SlotOf(c.Entity);
                 if (slot >= 0)
                     Dev(world, slot, c);
@@ -551,6 +558,12 @@ public sealed partial class DamageSystem : IWorldSystem
                     Blew(world, slot, k, DevMagazine(cls, (int)c.B), BlastCause.Dev, default);
                 else
                     Lose(world, slot, k, (LossKind)c.A);
+                break;
+            case DamageCommand.Ignite:
+                int lit = DevMagazine(cls, (int)c.B);
+                if (lit < 0 || !Ignite(world, slot, k, lit, BlastCause.Dev, world.Time.Ms))
+                    throw new ArgumentException($"no magazine to set alight on ship {c.Entity}");
+                GasWake(world, slot, k);
                 break;
             case DamageCommand.Burn:
                 int top = c.B > 0 ? (int)c.B - 1 : -1;
@@ -714,7 +727,8 @@ public sealed partial class DamageSystem : IWorldSystem
     {
         Flood(cls);
         HullGirder.Of(cls);
-        GasNetwork.For(cls);   // grown to her now, on this thread, not at her first burst
+        GasNetwork.For(cls);   // grown to her now, on this thread, not at her first burst in a part
+        GasNetwork.Warm(cls, 2);   // her gas, and a second of her class's at once, made now (docs/battle/workers.md ET3)
         _ = cls.Electric;   // built on its first read: now, not in her first hit (an allocation in play)
         scratch.Reserve(cls);
     }
@@ -987,35 +1001,6 @@ public sealed partial class DamageSystem : IWorldSystem
     /// (<see cref="SimSettings.GirderSeawayMs"/>).</summary>
     double Sea(World world, int slot) => world.Weather.At(ships.Store[slot].Position, world.Time).WindMs / settings.GirderSeawayMs;
 
-    /// <summary>A magazine set off, by a hit or a fire: its gas through her and what it leaves of her girder decide
-    /// (docs/battle/explosions.md); how it ended counted; if she lives, what it opened takes the sea from her next second.</summary>
-    RaceResult SetOff(World world, int slot, ShipCondition k, int room, double alsoWhipEM, int[] counts, ref RandomStream rng)
-    {
-        long now = world.Time.Ms;
-        return Counted(world, slot, k, Magazines.SetOff(k.Class, k, room, ships.Store.Combat.Mounts(slot), settings, now, ref rng, Sea(world, slot), alsoWhipEM), counts);
-    }
-
-    RaceResult Counted(World world, int slot, ShipCondition k, in RaceResult race, int[] counts)
-    {
-        long now = world.Time.Ms;
-        if (race.Magazines == 0)
-            return race;
-        counts[(int)race.Tier]++;
-        LogRace(slot, race.Tier);
-        if (!race.Lost)
-            k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);
-        return race;
-    }
-
-    /// <summary>A magazine a hit set off is what the hit did, too (its holes already the hit's when its own gas raced it).</summary>
-    static void Join(ref EffectsResult e, in RaceResult race)
-    {
-        (e.Killed, e.Wounded, e.Fire) = (e.Killed + race.Killed, e.Wounded + race.Wounded, e.Fire || !race.Lost);
-        (e.Destroyed, e.Disabled, e.Damaged) = (e.Destroyed + race.Destroyed, e.Disabled + race.Disabled, e.Damaged + race.Damaged);
-        if (!e.Raced)
-            e.BreachM2 += race.Gas.HoleM2;
-    }
-
     /// <summary>A magazine that took the ship (its race severed her, or the dev's): its record for the screens
     /// (<see cref="Blast"/>: the tier and the propellant burned by the girder's failure, the fireball's), and the ship
     /// lost.</summary>
@@ -1097,6 +1082,7 @@ public sealed partial class DamageSystem : IWorldSystem
         var store = ships.Store;
         int entity = store[slot].Entity;
         (k.Status, k.Loss) = (ShipStatus.GoingDown, how);
+        EndGas(slot, k);   // her gas goes down with her
         (k.PowerCap, k.PowerCapLasts) = (0, 0);
         k.NextStepMs = -1;
         k.StepGen++;   // no more steps: its water and attitude stay as they were
@@ -1175,20 +1161,8 @@ public sealed partial class DamageSystem : IWorldSystem
         if (fs.Flooded > 0)
             k.FloodDueMs = Math.Min(k.FloodDueMs, now + settings.FloodMs);   // a magazine's valves opened: its water from the next second
         touched = true;
-        if (fs.Magazine)
-        {
-            // fire's heat set it off (fire B2)
-            var race = SetOff(world, slot, k, fs.MagazineRoom, 0, MagazineCounts.ByFire, ref rng);
-            if (race.Magazines > 0)
-            {
-                if (race.Lost)
-                {
-                    Blew(world, slot, k, fs.MagazineRoom, BlastCause.Fire, default, race);
-                    return -1;
-                }
-                Recompute(world, slot, k, ref rng);
-            }
-        }
+        if (fs.Magazine && Ignite(world, slot, k, fs.MagazineRoom, BlastCause.Fire, now))
+            GasWake(world, slot, k);   // fire's heat set it off (fire B2): alight in her gas, landing as it burns
         // the high-explosive stores' cases in her fires (docs/battle/explosions.md EX6c): cooked off, or burned
         if (k.Fires > 0 || Hot(k.StoreHeat))
         {
@@ -1314,9 +1288,11 @@ public sealed partial class DamageSystem : IWorldSystem
             (k.StepMs, k.FloodStepMs) = (t, t);
         k.StepGen++;   // the world's own steps for it are cancelled: these take their place
         k.NextStepMs = -1;
+        (k.GasGen, k.GasNextMs) = (k.GasGen + 1, -1);   // and her gas's slices
         long next = (t / settings.FloodMs + 1) * settings.FloodMs;
         k.FloodDueMs = Math.Min(k.FloodDueMs, next);
         SettleSteps(world, slot, k, entity, next, end);
+        GasWake(world, slot, k);   // what's left of her gas goes on with the world
         // the timed outages that end meanwhile (E4) over too
         if (k.Status == ShipStatus.Afloat && k.Clear(end))
         {
@@ -1336,11 +1312,15 @@ public sealed partial class DamageSystem : IWorldSystem
                 var rc = stream.Derive(0xC1EBu).Derive((ulong)entity).Derive((ulong)next);
                 Recompute(world, slot, k, ref rc);
             }
+            SettleGas(world, slot, k, next);   // her gas to the step's moment first, as the world's slices would be
+            if (k.Status != ShipStatus.Afloat)
+                break;
             long d = Step(world, slot, k, next);
             if (d < 0)
                 break;
             next = (next / d + 1) * d;
         }
+        SettleGas(world, slot, k, end);
     }
 
     public void Handle(World world, in SimEvent e)
@@ -1355,7 +1335,9 @@ public sealed partial class DamageSystem : IWorldSystem
             return;
         }
         var k = ships.Store.Combat.Condition(slot);
-        if (e.Code == ClearEvent)
+        if (e.Code == GasEvent)
+            RunGas(world, slot, k, e.A);
+        else if (e.Code == ClearEvent)
             RunClear(world, slot, k, e.A);
         else
             RunStep(world, slot, k, e.A);

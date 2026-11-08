@@ -1829,8 +1829,14 @@ public sealed record SimSettings
     public double GirderSeawayMs { get; init; } = 15;
     /// <summary>What breaks within this share of her length from an end takes the end off, and she may live (07 §3.2).</summary>
     public double GirderEndShare { get; init; } = 0.12;
-    /// <summary>The longest an explosion's gas runs, s.</summary>
+    /// <summary>The longest an explosion's gas runs, s, from the newest explosion in her (docs/battle/workers.md ET3).</summary>
     public double GasRunS { get; init; } = 180;
+    /// <summary>A ship's gas is stepped on this lattice of world time, ms, and what it did lands on her each time (docs/battle/workers.md
+    /// ET, decision 1): a divisor of <see cref="FloodMs"/>.</summary>
+    public int GasSliceMs { get; init; } = 100;
+    /// <summary>A space whose gas is within this of the atmosphere, kPa, with no load on its walls, leaves her gas's stepped set: its
+    /// episode over (docs/battle/workers.md ET, decision 4) [EST].</summary>
+    public double GasLeaveKPa { get; init; } = 1;
     /// <summary>How a side's crews handle charges (docs/battle/magazines.md V5, decision 2; research/simulation/
     /// damage-research/10 §3): a doctrine row names one (<see cref="DamageControlDoctrine.Flash"/>).
     /// <list type="bullet">
