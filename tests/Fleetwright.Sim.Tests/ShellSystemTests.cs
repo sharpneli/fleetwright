@@ -18,10 +18,12 @@ public class ShellSystemTests(ITestOutputHelper output)
 
     /// <summary>A shooter and a target 8 km east of it, both stopped, and a third ship far off turning circles (so the
     /// fine tick runs all along); run until the two are on rails.</summary>
-    static (World W, int Shooter, int Target) Make(SimSettings s)
+    static (World W, int Shooter, int Target) Make(SimSettings s) => Make(s, out _);
+
+    static (World W, int Shooter, int Target) Make(SimSettings s, out AiSystem ai)
     {
         var w = new World(Start, 7, s);
-        _ = new AiSystem(w);
+        ai = new AiSystem(w);
         int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
         var east = Destination(Earth.Position(Lat, Lon), 90, 8000);
         var (tl, to) = Earth.LatLon(east);
@@ -321,14 +323,16 @@ public class ShellSystemTests(ITestOutputHelper output)
     [Fact]
     public void A_shell_allocates_nothing()
     {
-        var (w, shooter, target) = Make(Settings);
+        var (w, shooter, target) = Make(Settings, out var ai);
         var (lat, lon) = Earth.LatLon(Ship(w, target).Position);
         void Salvo()
         {
             w.Apply(ShellSystem.FireAt(shooter, 0, lat, lon));
             w.AdvanceTo(w.Time + 30_000);
         }
-        for (int k = 0; k < 3; k++)
+        // warmed: the pools at their size, and the target's captain made, which a ship gets once, at the captains' first
+        // think after she's damaged and taking water (CaptainLayer.FindItems: a spawn's kind of allocation, not the shells')
+        for (int k = 0; k < 3 || k < 12 && ai.Captains.Count == 0; k++)
             Salvo();
         long before = GC.GetAllocatedBytesForCurrentThread();
         for (int k = 0; k < 5; k++)

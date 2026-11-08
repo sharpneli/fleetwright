@@ -86,6 +86,18 @@ def _fly(d, m, v0, elev, i, dt=0.05, want_path=False):
         x, z, vx, vz, t = nx, nz, nvx, nvz, t + dt
 
 
+# Expected 100 % pattern / true mean dispersion D, by shells in the salvo [S: USNI Proceedings June 1917 for 3 and
+# 5-12; Jurens, Warship International 1991 via NavWeaps INRO, the same series with 2 -> 1.69 and 4 -> 2.89]. USNI 1917
+# prints 2.74 for 4 shells; 2.89 is taken because it fits the smooth run of the rest (each value ~6-15 % above the
+# normal-theory E[range]/D, falling steadily with n) [INFERRED]. One shell has no pattern: n < 2 is not a salvo.
+_PATTERN_N = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+_PATTERN_RATIO = [1.69, 2.43, 2.89, 3.21, 3.47, 3.67, 3.85, 4.00, 4.13, 4.24, 4.34]
+
+
+def pattern_ratio(n):
+    return float(np.interp(n, _PATTERN_N, _PATTERN_RATIO))
+
+
 @dataclass
 class Gun:
     name: str
@@ -94,9 +106,10 @@ class Gun:
     v0: float           # m/s
     max_elev: float     # deg
     max_range: float    # m at max_elev  [S navweaps]
-    pattern_pct: float  # full-salvo 100 % range pattern, % of range  [S/INFERRED, note §5.1]
+    pattern_pct: float  # full-salvo 100 % range pattern, % of range  [S/INFERRED, note §7]
     defl_ratio: float = 0.4   # deflection sigma / range sigma  [S: "about half"; 4 mil normal]
     train_rate: float = 4.0   # deg/s mount training  [S where known]
+    pattern_n: float = 8.0    # shells in the salvo pattern_pct is quoted for (sets each shell's sigma; note §7)
     i: float = 1.0      # fitted form factor
     table: dict = field(default_factory=dict, repr=False)
 
@@ -136,31 +149,43 @@ class Gun:
         R0 = float(np.interp(max(el - h, self.table["el"][0]), self.table["el"], self.table["R"]))
         return (R1 - R0) / (el + h - max(el - h, self.table["el"][0]))
 
-    def sigma_D(self, R, n):
-        """Range and deflection 1-sigma shell dispersion (m) for an n-gun salvo.
-        pattern = ratio(n) * D (USNI 1917 table), D = 0.798 sigma (normal)."""
-        ratio = float(np.interp(n, [1, 2, 3, 4, 6, 8, 9, 10, 12], [1.6, 1.9, 2.43, 2.74, 3.47, 3.85, 4.0, 4.13, 4.34]))
-        sr = (self.pattern_pct / 100.0) * R / ratio / 0.798 * 0.85  # 0.85: quoted patterns are full salvos with gun-to-gun scatter
+    def sigma_D(self, R):
+        """Range and deflection 1-sigma dispersion (m) of ONE shell about its salvo's MPI.
+
+        A property of the gun and its battery (round to round, gun to gun, interference), not of the salvo fired:
+        a salvo of fewer shells has a smaller pattern, not wider shells. The quoted pattern_pct is the expected
+        spread of a salvo of pattern_n shells = pattern_ratio(pattern_n) * D, D = 0.798 sigma (normal).
+        Check [S INRO 1944 expected patterns]: 16in 3 guns 1.0 %, 9 guns 1.9 % -> sigma 0.52 % and 0.60 % of the
+        range; 5in/38 6 guns 1.4 %, 10 guns 1.7 % -> 0.51 % and 0.52 %. Taking the ratio at the salvo FIRED
+        instead (the reference before 2026-11-08) gave one gun sigma = 3.3 % / 1.6 / 0.798 * 0.85 = 2.2 % of the
+        range for the 12in, and a 4-gun half salvo 1.4x the shell scatter of an 8-gun one."""
+        sr = (self.pattern_pct / 100.0) * R / pattern_ratio(self.pattern_n) / 0.798 * 0.85  # 0.85 [INFERRED, unsourced]: see note §7
         return sr, self.defl_ratio * sr
 
+    def pattern(self, R, n):
+        """Expected 100 % range spread (m) of a salvo of n shells: what a spotter sees grow with the shells in it."""
+        return pattern_ratio(n) * 0.798 * self.sigma_D(R)[0]
 
-# name, bore, shell kg, m/s, max elev, max range m, full-salvo pattern % of range, train deg/s
+
+# name, bore, shell kg, m/s, max elev, max range m, full-salvo pattern % of range, train deg/s,
+# pattern_n = the salvo that pattern is quoted for (note §7 "The pattern's own salvo"). The Great War patterns
+# (navalgazing) state no salvo: 8 [EST], the 12in and 15in ships' broadside (13.5in ships 8-10).
 GUNS = {g.name: g for g in [
-    Gun("12in/40 (Mikasa)", 0.305, 386, 732, 15, 13700, 3.5, train_rate=2.0),            # range [UNCERTAIN]
-    Gun("12in/45 Mk X", 0.305, 386, 831, 13.5, 16450, 3.3, train_rate=2.0),
-    Gun("30.5cm SK L/50", 0.305, 405, 855, 13.5, 18100, 2.5, train_rate=3.0),
-    Gun("13.5in/45 Mk V(H)", 0.343, 635, 757, 20, 21700, 2.5, train_rate=2.0),
-    Gun("15in/42 Mk I", 0.381, 871, 749, 30, 30680, 1.7, train_rate=2.0),
-    Gun("14in/45 Mk VII", 0.356, 721, 757, 40, 35260, 2.0, train_rate=2.0),
-    Gun("38cm SK C/34", 0.380, 800, 820, 30, 36520, 1.5, train_rate=5.0),               # pattern [INFERRED]
-    Gun("16in/45 Mk 6", 0.406, 1225, 701, 45, 33740, 1.9, train_rate=4.0),
-    Gun("16in/50 Mk 7", 0.406, 1225, 762, 45, 38720, 1.9, train_rate=4.0),
-    Gun("46cm Type 94", 0.460, 1460, 780, 45, 42030, 1.2, train_rate=2.0),
-    Gun("8in/55 Mk 9", 0.203, 118, 853, 41, 29130, 2.0, train_rate=6.7),
-    Gun("6in/47 Mk 16", 0.152, 59, 812, 47.5, 23880, 2.0, train_rate=10.0),
-    Gun("5in/38 Mk 12", 0.127, 25, 792, 45, 15900, 1.7, train_rate=25.0),
-    Gun("5in/54 Mk 45", 0.127, 31.75, 808, 45, 23700, 1.5, train_rate=30.0),          # pattern [INFERRED]
-    Gun("76mm/62 OTO", 0.076, 6.3, 925, 45, 16000, 1.5, train_rate=60.0),              # pattern [INFERRED]
+    Gun("12in/40 (Mikasa)", 0.305, 386, 732, 15, 13700, 3.5, train_rate=2.0, pattern_n=8),     # range [UNCERTAIN]; the RN 12in figure's salvo [EST]
+    Gun("12in/45 Mk X", 0.305, 386, 831, 13.5, 16450, 3.3, train_rate=2.0, pattern_n=8),       # n [EST]: 8-gun broadside
+    Gun("30.5cm SK L/50", 0.305, 405, 855, 13.5, 18100, 2.5, train_rate=3.0, pattern_n=8),     # n [EST]
+    Gun("13.5in/45 Mk V(H)", 0.343, 635, 757, 20, 21700, 2.5, train_rate=2.0, pattern_n=8),    # n [EST]: Lion 8, Orion/KGV/Iron Duke 10
+    Gun("15in/42 Mk I", 0.381, 871, 749, 30, 30680, 1.7, train_rate=2.0, pattern_n=8),         # n [EST]: QE/R 8-gun broadside
+    Gun("14in/45 Mk VII", 0.356, 721, 757, 40, 35260, 2.0, train_rate=2.0, pattern_n=10),      # pattern [INFERRED]; n: KGV's 10
+    Gun("38cm SK C/34", 0.380, 800, 820, 30, 36520, 1.5, train_rate=5.0, pattern_n=8),         # pattern [INFERRED]; n: Bismarck's 8
+    Gun("16in/45 Mk 6", 0.406, 1225, 701, 45, 33740, 1.9, train_rate=4.0, pattern_n=9),        # [S INRO 1944: South Dakota, 9 guns]
+    Gun("16in/50 Mk 7", 0.406, 1225, 762, 45, 38720, 1.9, train_rate=4.0, pattern_n=9),        # [S INRO 1944: Iowa, 9 guns]
+    Gun("46cm Type 94", 0.460, 1460, 780, 45, 42030, 1.2, train_rate=2.0, pattern_n=9),        # n [EST]: Yamato's 9
+    Gun("8in/55 Mk 9", 0.203, 118, 853, 41, 29130, 2.0, train_rate=6.7, pattern_n=10),         # n [EST]: the IJN 10-gun cruisers it is read from
+    Gun("6in/47 Mk 16", 0.152, 59, 812, 47.5, 23880, 2.0, train_rate=10.0, pattern_n=12),      # pattern [INFERRED]; n [EST]: Cleveland's 12
+    Gun("5in/38 Mk 12", 0.127, 25, 792, 45, 15900, 1.7, train_rate=25.0, pattern_n=10),        # [S INRO 1944: Iowa, 10 guns]
+    Gun("5in/54 Mk 45", 0.127, 31.75, 808, 45, 23700, 1.5, train_rate=30.0, pattern_n=10),     # pattern [INFERRED]; n [EST]: the 5in/38's 10 rounds
+    Gun("76mm/62 OTO", 0.076, 6.3, 925, 45, 16000, 1.5, train_rate=60.0, pattern_n=10),        # pattern [INFERRED]; n [EST] as above
 ]}
 
 
@@ -184,8 +209,9 @@ def ballistics_table():
             else:
                 cells.append(f"{'-':>12}")
         R15 = min(15000 * YD, 0.9 * g.table["R"][-1])
-        sr, sd = g.sigma_D(R15, 9)
-        print(f"  {g.name:20s} i={g.i:4.2f}  {cells[0]}  {cells[1]}  sigma_D(9 guns)={sr / YD:4.0f} x {sd / YD:3.0f} yd")
+        sr, sd = g.sigma_D(R15)
+        print(f"  {g.name:20s} i={g.i:4.2f}  {cells[0]}  {cells[1]}  sigma_D={sr / YD:4.0f} x {sd / YD:3.0f} yd"
+              f"  (pattern quoted for {g.pattern_n:g})")
 
 
 for _g in GUNS.values():
@@ -928,7 +954,7 @@ def engage(scn, lvl, seed=0, trace=False):
                 lat = c_d + e_tr + e_sd + zb_d * lvl.defl_bias_mil * MIL * R_ord + kick[1]
                 th_act = thp + lat / R_ord
                 T_act = gun.tof(min(R_act, gun.table["R"][-1]))
-                sr, sd = gun.sigma_D(R_act, n)
+                sr, sd = gun.sigma_D(R_act)  # each shell's own, whatever n fires
                 if not lvl.director:  # each gun's own laying error widens the pattern
                     sr = math.hypot(sr, lay * gun.dR_del(R_act))
                     sd = math.hypot(sd, lay * R_act)
@@ -1057,7 +1083,7 @@ def run(scn, lvl, n=60, seed0=1):
 # =============================================================================
 KYD = 1000 * YD
 pre = TargetClass("pre-dread", 121, 23, 8, 30, 0.6, 13, 1.0)
-rod = Gun("16in/45 Mk I (Rodney)", 0.406, 929, 785, 40, 36300, 2.2, train_rate=2.0).fit()
+rod = Gun("16in/45 Mk I (Rodney)", 0.406, 929, 785, 40, 36300, 2.2, train_rate=2.0, pattern_n=9).fit()  # n [EST]: her 9 guns
 zeiss = lambda: [S_RF("Zeiss 3 m stereo", 3.0, 23, "stereo", h=30, per_min=3), S_RF("Zeiss 3 m stereo", 3.0, 23, "stereo", h=15, per_min=3)]
 bis = lambda: [S_RF("10.5 m stereo", 10.5, 23, "stereo", h=35, per_min=4), S_RF("10.5 m stereo", 10.5, 23, "stereo", h=20, per_min=4), S_RF("7 m stereo", 7.0, 23, "stereo", h=18, per_min=4)]
 twin4 = ((4, 0, 150), (4, 180, 150))
@@ -1095,12 +1121,12 @@ def _phi(x):
     return 0.5 * (1 + math.erf(x / math.sqrt(2)))
 
 
-def quick_hit_probability(R, gun, tc, aspect_deg, sig_fc_r, sig_fc_d, n=9):
+def quick_hit_probability(R, gun, tc, aspect_deg, sig_fc_r, sig_fc_d):
     """Expected hits per shell, normal errors, rectangle hitting space.
     sig_fc_* = 1-sigma MPI (fire-control) error in m. Exact in expectation for normal errors:
     per-shell spread is sqrt(sig_fc^2 + sig_D^2) per axis."""
     danger, depth, width = hitting_space(tc, R, gun, aspect_deg)
-    sr, sd = gun.sigma_D(R, n)
+    sr, sd = gun.sigma_D(R)
     s_r, s_d = math.hypot(sig_fc_r, sr), math.hypot(sig_fc_d, sd)
     # range window: shell must land between the near side (minus danger space) and the far side
     pr = _phi((depth / 2) / s_r) - _phi((-depth / 2 - danger) / s_r)

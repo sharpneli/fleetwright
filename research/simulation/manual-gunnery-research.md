@@ -1,5 +1,5 @@
 # Gunnery without computers: from the ironclads to the MK1 eyeball
-Status: final    Updated: 2026-10-09    Request: -
+Status: final    Updated: 2026-11-08    Request: -
 
 *Extends [`fire-control-research.md`](fire-control-research.md) backwards (1860–1912) and sideways into emergencies. The fire-control note starts at the Dumaresq and the Dreyer table. This one covers what came before: one man at one gun, laying by eye on a rolling ship through his own smoke. It also covers what came back when a WWII or later ship lost her director, power or radar.*
 
@@ -305,11 +305,11 @@ One battery of six 6-inch-class guns, using each era's human and technical means
   - The manual, unstabilised 25 mm Mk 38 Mod 1 had a third to half the hit probability of the stabilised Mod 2 against small boats (the Cole lesson).
   - See [`evasion-research.md`](evasion-research.md) table 7 for 40 mm against MTBs.
 
-**Model table 9** (combat; hit % per round; reference rows from [`fire_control_ref.py`](fire_control_ref.py)). Destroyer battery, 5 × 5″/38, at a destroyer on a parallel course (both 30 kn), moderate sea:
+**Model table 9** (combat; hit % per round; reference rows from [`fire_control_ref.py`](fire_control_ref.py)). Destroyer battery, 5 × 5″/38, at a destroyer on a parallel course (both 30 kn), moderate sea: (The reference row was rerun on 2026-11-08 after the `sigma_D` fix. A shell's σ now comes from its gun, whatever the salvo; see [dispersion-and-hits.md](fire-control-research/dispersion-and-hits.md) §1.4.)
 
 | Case | 2,000 yd | 3,000 yd | 5,000 yd | 8,000 yd |
 |---|---|---|---|---|
-| Director + radar (Mk 37 + Mk 12), reference | 51.9 | 44.7 | 23.6 | 7.5 |
+| Director + radar (Mk 37 + Mk 12), reference | 52.0 | 44.6 | 24.3 | 7.7 |
 | Local control, power on, telescopes, eye range | 28.0 | 10.8 | 2.4 | 0.7 |
 | Same, open sights only | 27.4 | 12.6 | 2.9 | 0.6 |
 | Same, power lost: hand drive, firing on the roll | 22.9 | 9.6 | 3.7 | 0.9 |

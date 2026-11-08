@@ -12,19 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-08 - sigma_D's n: the pattern's own salvo, not the guns firing (a fix to fire_control_ref.py)
-- Question: `fire_control_ref.py` `Gun.sigma_D(R, n)` (and `evasion_ref.py`'s calls) turns the gun's quoted full-salvo
-  pattern into a shell's σ through the USNI ratio at the n *firing*, so the fewer guns fire the wider each shell
-  scatters (one gun: σ = 3.3% / 1.6 / 0.798 · 0.85 ≈ 2.2% of the range; a 4-gun half salvo 1.4x an 8-gun one). The
-  game now takes the ratio at the quoted pattern's own salvo (`PatternReferenceGuns`, 8 [EST]) and keeps each shell's
-  σ the gun's, as the USN's 1944 expected patterns have it (3 guns 1.0%, 9 guns 1.9%). (1) Please confirm and carry
-  the fix into the reference and any figures built on it. (2) What salvo were the Great War patterns in
-  dispersion-and-hits.md §1.2 quoted for (navalgazing's 12", 13.5" and 15": full broadsides of 8? 10?), and do
-  sources give a gun's round-to-round σ directly anywhere, so the conversion isn't needed?
-- Context / relevant files: `src/Fleetwright.Sim.Combat/FireControl.cs` `Dispersion`, `docs/battle/error-sources.md`
-  ES7, `research/simulation/fire-control-research/dispersion-and-hits.md` §1.1-1.2.
-- Wanted output: the reference fixed; the reference salvo by source, with tags.
-
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?
@@ -284,6 +271,34 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-08 - sigma_D's n: the pattern's own salvo, not the guns firing (a fix to fire_control_ref.py)
+- Done 2026-11-08: [simulation/fire-control-research/dispersion-and-hits.md](simulation/fire-control-research/dispersion-and-hits.md)
+  §1.4 (new), §1.1 and §1.2 (a salvo column with tags). The fix is in [fire_control_ref.py](simulation/fire_control_ref.py)
+  and its callers. **Confirmed:** a shell's σ is its gun's. The USN 1944 pairs give the same per-shell σ from 3- and
+  9-gun salvos: 0.52% and 0.60% of the range for 16", where the old rule wanted 1.65×. A 3-gun salvo is about 0.87 of a
+  full salvo's, which looks like one turret against all of them. Nevada's mixed mounts give 0.60. `Gun.pattern_n` is
+  the quoted salvo per gun: 9 for the 16" and 10 for the 5"/38 [S], [EST] elsewhere. `sigma_D(R)` takes no n, and the
+  new `pattern(R, n)` gives n shells' expected spread. Reruns:
+  - fire-control-research.md §11. Only half salvos moved: Jutland's British battlecruisers 2.7 → 3.1 (record 1.4),
+    the German 1st Scouting Group 4.0 → 4.5, Denmark Strait 11.4 → 12.1, North Cape 6.0 → 6.9. `fc_tables.py history`
+    now prints these.
+  - evasion tables 6–10 and 14–15: the one-gun 5"/54 and 76 mm about doubled at range.
+  - designer and manual-gunnery reference rows: noise level.
+- **The Great War patterns state no salvo.** navalgazing's 400 / 300 / 200 yd at 12 kyd has no source and no salvo
+  size, and nothing else online ties those figures to a salvo. 8 [EST] stays. If the figures were 4-gun half salvos,
+  σ is 1.33× larger; if 10-gun broadsides, 0.93×.
+- **Direct round-to-round σ:** the only source found is the German proving-ground probable error, 0.5–0.8% of range
+  at 15–30°, ×1.5–1.7 for the battery with delay coils and ×2–3 without (NavTecMisEu 1945). It is ambiguous between
+  a probable error and the 50% zone; the 50%-zone reading fits the USN. It is also the wrong quantity unless
+  multiplied by the battery factor. Iowa 1987 and USNI 1911 are partial.
+- **For the game (advisory):**
+  - (a) `PatternRatio`: USNI 1917's 2.74 at 4 shells breaks the series, and Jurens has 2.89. The 1 → 1.6 and
+    2 → 1.9 entries have no source; 2 is 1.69. Harmless while only 8 is looked up.
+  - (b) The 0.85 is unsourced. With it, a full 8-shell salvo spreads 0.79 of its quoted pattern (0.93 without).
+    Drop it, or keep it and say why.
+  - (c) Mixed or worn mounts widen σ itself (Nevada, the 16"/45s in 1941), a possible design hook.
+- Also corrected: §1.1's "σ ≈ pattern ÷ (1.25 × ratio)" had the 1.25 inverted. The code was right.
 
 ### 2026-11-07 - What sets an explosive store off: sympathetic detonation, cook-off and flame, by store
 - Done 2026-11-07 (draft): [simulation/damage-research/15-what-sets-a-store-off.md](simulation/damage-research/15-what-sets-a-store-off.md) with

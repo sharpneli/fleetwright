@@ -1,5 +1,5 @@
 # Fire control in the ship designer: from tech values to hits
-Status: final    Updated: 2026-10-09    Request: -
+Status: final    Updated: 2026-11-08    Request: -
 
 *Companion to [`fire-control-research.md`](fire-control-research.md), [`evasion-research.md`](evasion-research.md) and [`manual-gunnery-research.md`](manual-gunnery-research.md). Written 2026-10-09.*
 
@@ -333,7 +333,7 @@ Smallest base that reaches 90 % of the best base's hits (mean of steady and zigz
 
 > Choose B so that δ·R_design² / (B_eff·M) ≈ k·σ_pattern(R_design), with k ≈ 1 (0.7 for "best in class", 1.4 for "adequate").
 >
-> σ_pattern is the shooter's own salvo range sigma: `gun.sigma_D(R, n)` in the code. For the 8 in cruiser it is 49 m at 10 kyd and 97 m at 20 kyd.
+> σ_pattern is the range σ of one of the shooter's shells about the salvo's MPI: `gun.sigma_D(R)` in the code, the gun's own whatever the salvo (since 2026-11-08; [dispersion-and-hits.md](fire-control-research/dispersion-and-hits.md) §1.4). For the 8 in cruiser it is 47 m at 10 kyd and 94 m at 20 kyd.
 
 The rule has a physical reading. When one reading's error equals the scatter of the salvo, the opening salvo lands as close as the guns can group it, and further base buys nothing until the ladder is done.
 
@@ -356,10 +356,10 @@ Table tech, director at 30 m, 12.7 mm director plating. ΔGM is for a 10,000 t c
 | Base | Director t | t·m above KG | ΔGM mm | Extra hits/15 min at 10 / 15 / 20 / 25 kyd (vs previous row) |
 |---|---|---|---|---|
 | 2.74 m | 12.1 | 285 | −28 | +45 / +16 / +6.3 / +3.1 (vs eye only) |
-| 3.66 m | 13.1 | 307 | −31 | +3.1 / +1.3 / +1.0 / +0.7 |
-| 4.57 m | 14.1 | 331 | −33 | +2.1 / +1.2 / +0.5 / +0.1 |
-| 5.5 m | 15.2 | 358 | −36 | +1.1 / +0.9 / +0.4 / +0.5 |
-| 8.1 m | 18.9 | 445 | −44 | +1.0 / +0.9 / +0.3 / +0.5 (vs 6.1 m) |
+| 3.66 m | 13.1 | 307 | −31 | +3.3 / +1.4 / +1.0 / +0.6 |
+| 4.57 m | 14.1 | 331 | −33 | +1.9 / +1.0 / +0.5 / +0.4 |
+| 5.5 m | 15.2 | 358 | −36 | +1.2 / +1.0 / +0.4 / +0.4 |
+| 8.1 m | 18.9 | 445 | −44 | +0.8 / +0.7 / +0.4 / +0.4 (vs 6.1 m) |
 | 15 m | 32.3 | 758 | −76 | +0.9 / +0.9 / +0.6 / +0.5 (vs 10 m) |
 
 **Weight versus a gun.** Going from 4.6 m to 8 m costs about 5 t and 11 mm of GM, and buys about 10–15 % more hits at 15–20 kyd. Ten per cent more guns would buy a similar gain and cost hundreds of tonnes of mounts, barbettes and magazines, two orders of magnitude more. **By weight alone the bigger rangefinder is always the better buy.** The real limits were elsewhere (§7), and the game has to model them or every player will fit the biggest tube.
@@ -391,13 +391,13 @@ Keeper tech, haze, zigzagging target. Hits in 15 min / hits in first 5 min / med
 
 | Radar | RF | 12 kyd | 18 kyd | 24 kyd |
 |---|---|---|---|---|
-| none | eye | 4.0 / 0.6 / 562 | 1.3 / 0.1 / – | 0.4 / 0.1 / – |
-| none | 2.74 m | 34.4 / 6.4 / 179 | 10.2 / 1.9 / 234 | 3.6 / 0.5 / 438 |
-| none | 8.1 m | 48.8 / 10.0 / 157 | 15.2 / 3.5 / 192 | 5.3 / 0.9 / 304 |
-| metric (Mk 3 class) | eye | 40.8 / 9.8 / 157 | 15.0 / 3.4 / 189 | 1.3 / 0.1 / 813 |
-| metric | 8.1 m | 48.4 / 11.2 / 157 | 17.2 / 3.7 / 189 | 5.5 / 1.0 / 286 |
-| X-band (Mk 13 class) | eye | 53.5 / 11.9 / 156 | 19.3 / 4.3 / 171 | 7.8 / 1.7 / 214 |
-| X-band | 8.1 m | 54.8 / 12.5 / 139 | 18.9 / 4.3 / 173 | 8.0 / 1.6 / 228 |
+| none | eye | 4.2 / 0.6 / 540 | 1.5 / 0.1 / – | 0.4 / 0.1 / – |
+| none | 2.74 m | 34.3 / 6.4 / 179 | 10.3 / 2.0 / 234 | 3.7 / 0.5 / 420 |
+| none | 8.1 m | 48.6 / 10.2 / 157 | 15.9 / 3.5 / 191 | 5.6 / 0.9 / 314 |
+| metric (Mk 3 class) | eye | 41.0 / 9.8 / 157 | 15.0 / 3.5 / 189 | 1.4 / 0.1 / 814 |
+| metric | 8.1 m | 48.2 / 11.2 / 157 | 17.2 / 3.7 / 189 | 5.6 / 0.9 / 300 |
+| X-band (Mk 13 class) | eye | 52.7 / 12.0 / 156 | 19.2 / 4.4 / 171 | 7.9 / 1.6 / 246 |
+| X-band | 8.1 m | 55.8 / 12.5 / 139 | 19.4 / 4.3 / 173 | 8.0 / 1.6 / 230 |
 
 **What this says:**
 - **With a centimetric FC radar the rangefinder becomes a backup.** Its size no longer moves the result. The designer should then spend the rangefinder budget on redundancy instead: a small optical set for jamming, radar failure and close-in work.

@@ -16,10 +16,10 @@ public class GasInTimeTests(ITestOutputHelper output)
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json"));
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 14);
 
-    static World Make(int ships = 1)
+    static World Make(int ships = 1, ShipClass? cls = null)
     {
         var w = new World(Start, 3, Settings);
-        int c = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        int c = w.Ships.AddClass(cls ?? Fleet.Get("dreadnought").Class!);
         for (int i = 0; i < ships; i++)
             w.Apply(ShipSystem.Spawn(c, 56, 4 + 0.05 * i, 0, 0));
         w.AdvanceTo(w.Time + 1000);
@@ -109,7 +109,8 @@ public class GasInTimeTests(ITestOutputHelper output)
     [Fact]
     public void Her_gas_goes_down_with_her_and_its_network_is_used_again()
     {
-        var w = Make(2);
+        // a class of her own: the pools are by class, and the shared dreadnought's is in use by tests running beside this
+        var w = Make(2, ShipClassCompiler.Compile(Fleet.Get("dreadnought").Ship!));
         var k = Her(w);
         w.Apply(DamageSystem.Ignite(1));
         w.AdvanceTo(w.Time + 300);

@@ -245,9 +245,9 @@ public class SmokeSightTests(ITestOutputHelper output)
     [Fact]
     public void Between_the_coarse_ticks_her_newest_smoke_is_on_the_lines()
     {
-        double Mean(double speed)
+        double Mean(double speed, ulong seed)
         {
-            var w = new World(Start, 9, Settings with { Smoke = true });
+            var w = new World(Start, seed, Settings with { Smoke = true });
             int c = w.Ships.AddClass(Fleet.Get("super_dreadnought").Class!);
             w.Apply(Command.SetSpeed(speed));
             w.Apply(Command.SetWeather(8_000));
@@ -270,8 +270,12 @@ public class SmokeSightTests(ITestOutputHelper output)
             Assert.Equal(speed >= Settings.CoarseMinSpeed ? ClockTier.Coarse : ClockTier.Fine, w.Ships.Store[w.Ships.Store.SlotOf(1)].Tier);
             return sum / n;
         }
-        double fine = Mean(1), coarse = Mean(1000);
-        output.WriteLine($"the most smoke on a line between them, mean over 4 minutes: fine τ {fine:F2}, coarse {coarse:F2}");
+        // over four worlds: one fight's hits and fires (their smoke on the line) are its own chance (2026-11-08: seed 9
+        // alone 0.51 v 0.87, seeds 1-8 0.61 v 0.64)
+        double fine = 0, coarse = 0;
+        for (ulong seed = 1; seed <= 4; seed++)
+            (fine, coarse) = (fine + Mean(1, seed) / 4, coarse + Mean(1000, seed) / 4);
+        output.WriteLine($"the most smoke on a line between them, mean over 4 minutes and 4 worlds: fine τ {fine:F2}, coarse {coarse:F2}");
         Assert.True(fine > 0.1, "her own smoke on the line in fine");
         Assert.InRange(coarse, 0.6 * fine, 1.6 * fine);
     }

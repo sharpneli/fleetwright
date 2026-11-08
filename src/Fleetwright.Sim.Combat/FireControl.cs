@@ -88,14 +88,16 @@ public static class FireControl
 
     /// <summary>A shell's own dispersion about its salvo's centre, 1 sigma in range and across, metres, from its gun's
     /// pattern (its 100% spread, % of the range) as quoted for a salvo of <paramref name="patternGuns"/> shells
-    /// (<see cref="SimSettings.PatternReferenceGuns"/>): that pattern is ratio(n)·D, D = 0.798σ (USNI 1917), times 0.85
-    /// for the gun-to-gun scatter in quoted patterns (Gun.sigma_D). The n is the quoted salvo's, never the guns firing
-    /// now: a shell's scatter is its gun's, and a salvo's pattern grows with the shells in it (the USN's 1944 expected
-    /// patterns, 1.0% of the range for 3 guns, 1.9% for 9; fire-control-research/dispersion-and-hits.md §1.2).</summary>
+    /// (<see cref="SimSettings.PatternReferenceGuns"/>): that pattern is ratio(n)·D, D = 0.798σ (USNI 1917; Gun.sigma_D),
+    /// so a full salvo of our shells matches the pattern it's quoted at within some 7% (the ratio sits a little above the
+    /// normal's: D kept, the core of the fall). The n is the quoted salvo's, never the guns firing now: a shell's scatter
+    /// is its gun's, and a salvo's pattern grows with the shells in it (the USN's 1944 expected patterns, 1.0% of the
+    /// range for 3 guns, 1.9% for 9: the same σ a shell; fire-control-research/dispersion-and-hits.md §1.2, §1.4). The
+    /// old unsourced 0.85 on σ is gone (2026-11-08, §1.4).</summary>
     public static (double Range, double Across) Dispersion(double patternPct, double rangeM, double patternGuns, double deflectionRatio)
     {
         double ratio = Interp(patternGuns, PatternGuns, PatternRatio);
-        double sr = patternPct / 100 * rangeM / ratio / 0.798 * 0.85;
+        double sr = patternPct / 100 * rangeM / ratio / 0.798;
         return (sr, deflectionRatio * sr);
     }
 
@@ -142,7 +144,10 @@ public static class FireControl
     public static double PerMvPct(BallisticTable table, double elevationDeg, double h0) =>
         (table.Fall(elevationDeg, h0, 1.01).Range - table.Fall(elevationDeg, h0, 0.99).Range) / 2;
 
-    static readonly double[] PatternGuns = [1, 2, 3, 4, 6, 8, 9, 10, 12], PatternRatio = [1.6, 1.9, 2.43, 2.74, 3.47, 3.85, 4.0, 4.13, 4.34];
+    /// <summary>A salvo's pattern over D by its shells (dispersion-and-hits.md §1.1): USNI 1917's 3 and 5-12, Jurens's 2
+    /// and 4 (2.89 for USNI's 2.74, which breaks the run); one shell has no pattern.</summary>
+    static readonly double[] PatternGuns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        PatternRatio = [1.69, 2.43, 2.89, 3.21, 3.47, 3.67, 3.85, 4.0, 4.13, 4.24, 4.34];
 
     static double Interp(double x, double[] xs, double[] ys)
     {

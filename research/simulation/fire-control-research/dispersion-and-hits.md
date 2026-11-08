@@ -1,5 +1,5 @@
 # 04 — Dispersion, Danger Space, Hit Probability and Historical Hit Rates (1900–1990)
-Status: final    Updated: 2026-10-09    Request: -
+Status: final    Updated: 2026-11-08    Request: [sigma_D's n](../../REQUESTS.md) (§1.1, §1.2, §1.4)
 
 Scope: the last stage of gunnery. Given the gun orders, how the shells spread, how often they hit, and how to turn fire-control error, dispersion and target size into a hit probability that matches history.
 
@@ -39,11 +39,13 @@ Every sourced fact has its URL next to it.
 - **Wild shots.** ±4D contains 99.9% of shots. Anything outside it counts as a wild shot. https://eugeneleeslover.com/USNAVY/CHAPTER-18-A.html
 - **Pattern vs. D.** The salvo "pattern" is the 100% spread from the shortest to the longest shot. Its ratio to D depends on the number of shells (USNI 1917): https://www.usni.org/magazines/proceedings/1917/june/estimate-value-accuracy-pointing-long-range-naval-gunnery
 
-| Shots per salvo | 3 | 4 | 6 | 8 | 9 | 10 | 12 |
-|---|---|---|---|---|---|---|---|
-| Pattern ÷ D | 2.43 | 2.74 | 3.47 | 3.85 | 4.00 | 4.13 | 4.34 |
+| Shots per salvo | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Pattern ÷ D | 1.69 | 2.43 | 2.89 (USNI 1917: 2.74) | 3.21 | 3.47 | 3.67 | 3.85 | 4.00 | 4.13 | 4.24 | 4.34 |
 
-- **Converting pattern to σ.** [INFERRED] σ_range ≈ pattern ÷ (1.25 × ratio). For a 9-gun salvo, σ ≈ pattern ÷ 5.0. For a 3-gun salvo, σ ≈ pattern ÷ 3.0.
+  3 and 5–12 are USNI 1917's; 2 and 4 are Jurens's (Warship International 1991, via NavWeaps INRO, https://www.navweaps.com/index_inro/INRO_BB-Gunnery.php), whose series is otherwise the same. USNI 1917 prints 2.74 for 4 shots; 2.89 is used because it fits the smooth run of the others. Each value is 6–15% above the normal-theory expected range ÷ D, falling steadily as the salvo grows (2.74 would break the run at 1.06) [INFERRED]. USNI 1917 calls the relation "very recently published" and does not say how it was derived. Jurens lists 1.00 for one gun, but one shell has no pattern, so the table starts at 2.
+
+- **Converting pattern to σ.** [INFERRED] σ_range = pattern ÷ (0.798 × ratio(n)), where **n is the salvo the pattern was quoted for**. For a 9-gun salvo, σ ≈ pattern ÷ 3.2. For a 3-gun salvo, σ ≈ pattern ÷ 1.9. σ is the shell's. A smaller salvo fired from the same guns has a smaller pattern, not wider shells (§1.4). (Corrected 2026-11-08: this line used to read "pattern ÷ (1.25 × ratio)", i.e. ÷ 5.0 for 9 guns, which inverts the 1.25. `fire_control_ref.py` always divided by 0.798.)
 - **Worked example (Naval Ordnance & Gunnery).** Ten 5"/38 guns at 8,500 yd:
   - Pattern: 260 yd in range × 130 yd in deflection.
   - D_r = 65 yd and D_d = 34 yd.
@@ -57,32 +59,34 @@ Every sourced fact has its URL next to it.
 
 ### 1.2 Pattern sizes by gun
 
-| Gun / ship | Range | Pattern (100%) | % of range | Source |
-|---|---|---|---|---|
-| British 12" (WWI) | 12,000 yd | ~400 yd | 3.3% | https://navalgazing.net/Spotting |
-| British 13.5" | 12,000 yd | ~300 yd | 2.5% | same |
-| British 15"/42 | 12,000 yd | ~200 yd | 1.7% | same. Postwar USN called it the "most accurate" BB gun of the war: https://en.wikipedia.org/wiki/BL_15-inch_Mk_I_naval_gun |
-| 14" (12-gun USN example, 1917) | 18,000 yd | 1,000 yd | 5.6% | USNI 1917 (above) |
-| USN 14"/45 and 14"/50, 1920s | extreme | 1,200–3,200 yd (12 guns) | — | https://navweaps.com/Weapons/WNUS_14-50_mk4.php |
-| USN 14"/50 Mk 11, after chamber fix | — | <700 yd (12 guns) | — | https://navweaps.com/Weapons/WNUS_14-50_mk11.php |
-| Tennessee / California 14" at Surigao, 1944 | 20,000 yd | 300–400 yd (6–9 gun salvos) | 1.5–2% | same |
-| USN 16"/45 (old guns), expected 8-gun salvo | — | — | 1.8% | https://navweaps.com/index_inro/INRO_BB-Gunnery.php |
-| Same, actual 7-gun salvo, 1941 | — | — | ~2.2% | same |
-| 1944 expected values, 3-gun / full salvo: Iowa 16"/50 | — | — | 1.0 / 1.9 (9 guns) | same |
-| 1944 expected: South Dakota 16"/45 | — | — | 1.0 / 1.9 | same |
-| 1944 expected: Colorado 16"/45 | — | — | 1.0 / 1.8 (8 guns) | same |
-| 1944 expected: New Mexico and Pennsylvania 14" | — | — | 1.2 / 2.4 (12 guns) | same |
-| 1944 expected: Nevada 14"/45 | — | — | 1.2 / 3.4 (10 guns) | same |
-| 1944 expected: 5"/38 (South Dakota / Iowa) | — | — | 0.9 / 1.4 (6 guns) and 1.7 (10 guns) | same |
-| Iowa 16"/50, 1987 Crete test (15 shells, one gun per turret) | 34,000 yd | 220 yd | 0.64%. Shell-to-shell dispersion 123 yd (0.36%) | https://www.navweaps.com/Weapons/WNUS_16-50_mk7.php |
-| IJN 46 cm Type 94 (Yamato) | max range | 400–500 m | ~1–1.2% [INFERRED: max ≈ 42 km] | https://navweaps.com/Weapons/WNJAP_18-45_t94.php |
-| IJN 20 cm (Takao), 1933 | 19,300 m | 483 m | 2.5% | https://www.navweaps.com/Weapons/WNJAP_8-50_3ns.php |
-| IJN 20 cm (Myoko class, after hull stiffening), 1936 | 20–22 km | 280–330 m | 1.3–1.65% | same |
-| USN 8"/55, early treaty cruisers | — | up to 2,000 yd (full salvo) | — | https://navweaps.com/Weapons/WNUS_8-55_mk9.php |
-| 5"/38 twin, 10 rounds | 10,000 / 12,000 yd | 175 / 335 yd | 1.75% / 2.8% | INRO, above |
-| 5"/38, 2-gun range pattern with delay coils | 11,700 yd | 92–100 yd | 0.8% | same |
-| 5"/38 single ship (Richard P. Leary wear test) | 6,000 / 12,000 yd | 260 / 470 yd | 4.3% / 3.9% | https://navweaps.com/Weapons/WNUS_5-38_mk12.php |
-| West Virginia 5"/51 secondary, 6 guns | 14,212 yd (1925) / 10,258 yd (1929) | 643 / 329 yd | 4.5% / 3.2% | INRO, above |
+Salvo = the shells the pattern was quoted for: [S] where the source says so, [EST] the game's working value where it doesn't. §1.4 explains why it matters.
+
+| Gun / ship | Range | Pattern (100%) | % of range | Salvo (shells) | Source |
+|---|---|---|---|---|---|
+| British 12" (WWI) | 12,000 yd | ~400 yd | 3.3% | **not stated** [UNCERTAIN]; 8 [EST], the broadside of Dreadnought to St Vincent | https://navalgazing.net/Spotting (footnote 3: "typical pattern spreads in range"; no salvo, no source) |
+| British 13.5" | 12,000 yd | ~300 yd | 2.5% | **not stated** [UNCERTAIN]; 8 [EST] (Lion class 8, Orion/KGV/Iron Duke 10) | same |
+| British 15"/42 | 12,000 yd | ~200 yd | 1.7% | **not stated** [UNCERTAIN]; 8 [EST], the QE/R broadside | same. Postwar USN called it the "most accurate" BB gun of the war: https://en.wikipedia.org/wiki/BL_15-inch_Mk_I_naval_gun |
+| 14" (12-gun USN example, 1917) | 18,000 yd | 1,000 yd | 5.6% | 12 [S]; mean dispersion ±230 yd | USNI 1917 (above) |
+| USN 14"/45 and 14"/50, 1920s | extreme | 1,200–3,200 yd | — | 12 [S] | https://navweaps.com/Weapons/WNUS_14-50_mk4.php |
+| USN 14"/50 Mk 11, after chamber fix | — | <700 yd | — | 12 [S] | https://navweaps.com/Weapons/WNUS_14-50_mk11.php |
+| Tennessee / California 14" at Surigao, 1944 | 20,000 yd | 300–400 yd | 1.5–2% | 6–9 [S] | same |
+| USN 16"/45 (old guns), expected | — | — | 1.8% | 8 [S] | https://navweaps.com/index_inro/INRO_BB-Gunnery.php |
+| Same, actual, 1941 | — | — | ~2.2% | 7 [S] | same |
+| 1944 expected values, small / full salvo: Iowa 16"/50 | — | — | 1.0 / 1.9 | 3 / 9 [S]; how the 3 were formed is not stated (one turret [INFERRED]) | same |
+| 1944 expected: South Dakota 16"/45 | — | — | 1.0 / 1.9 | 3 / 9 [S] | same |
+| 1944 expected: Colorado 16"/45 | — | — | 1.0 / 1.8 | 3 / 8 [S] | same |
+| 1944 expected: New Mexico and Pennsylvania 14" | — | — | 1.2 / 2.4 | 3 / 12 [S] | same |
+| 1944 expected: Nevada 14"/45 | — | — | 1.2 / 3.4 | 3 / 10 [S] (twin and triple turrets mixed) | same |
+| 1944 expected: 5"/38 (South Dakota / Iowa) | — | — | 0.9 / 1.4 and 1.7 | small salvo unstated / 6 and 10 [S] | same |
+| Iowa 16"/50, 1987 Crete test | 34,000 yd | 220 yd | 0.64%. "Shell-to-shell dispersion" 123 yd (0.36%) | 15 shells, five from the right gun of each turret [S]. Neither figure is defined, and "14 of 15 within 250 yd of the centre, 8 within 150 yd" does not fit a 220 yd spread [UNCERTAIN] | https://www.navweaps.com/Weapons/WNUS_16-50_mk7.php |
+| IJN 46 cm Type 94 (Yamato) | max range | 400–500 m | ~1–1.2% [INFERRED: max ≈ 42 km] | not stated; 9 [EST] | https://navweaps.com/Weapons/WNJAP_18-45_t94.php |
+| IJN 20 cm (Takao), 1933 | 19,300 m | 483 m | 2.5% | not stated; 10 [EST] | https://www.navweaps.com/Weapons/WNJAP_8-50_3ns.php |
+| IJN 20 cm (Myoko class, after hull stiffening), 1936 | 20–22 km | 280–330 m | 1.3–1.65% | not stated; 10 [EST] | same |
+| USN 8"/55, early treaty cruisers | — | up to 2,000 yd | — | "full salvo" [S]: 9–10 by class | https://navweaps.com/Weapons/WNUS_8-55_mk9.php |
+| 5"/38 twin | 10,000 / 12,000 yd | 175 / 335 yd | 1.75% / 2.8% | 10 rounds [S] | INRO, above |
+| 5"/38, range pattern with delay coils | 11,700 yd | 92–100 yd | 0.8% | 2 [S] | same |
+| 5"/38 single ship (Richard P. Leary wear test) | 6,000 / 12,000 yd | 260 / 470 yd | 4.3% / 3.9% | not stated [UNCERTAIN] | https://navweaps.com/Weapons/WNUS_5-38_mk12.php |
+| West Virginia 5"/51 secondary | 14,212 yd (1925) / 10,258 yd (1929) | 643 / 329 yd | 4.5% / 3.2% | 6 [S] | INRO, above |
 
 **Gaps.** No sourced pattern figures turned up for the 38 cm SK C/34, 4.7"/45, 3"/76 or 6"/47. For a model, assume these defaults [INFERRED from the scaling above]:
 
@@ -110,6 +114,51 @@ Every sourced fact has its URL next to it.
 - **Long-run trend.** USN mean dispersion fell 66% between 1920 and 1945, while MPI (fire-control) error fell only 23%. https://navweaps.com/index_inro/INRO_BB-Gunnery.php
 - **Wild shots.** About 10% of rounds in the USN's 1927–28 practices were wild shorts (same source).
 - **Rule of thumb.** Pattern in yards grows about linearly with range, so the percentage of range stays roughly constant. One linked page says the pattern shrinks as elevation rises: https://www.eugeneleeslover.com/USN-GUNS-AND-RANGE-TABLES/ACCURACY-OF-SHIPBOARD-GUN-FIRE.html [UNCERTAIN: no numbers given]
+
+### 1.4 The pattern's own salvo (added 2026-11-08, request "sigma_D's n")
+
+A quoted pattern mixes two things. One is the shell's scatter, σ_D: round to round, gun to gun, salvo interference, and mount and hull flex. That belongs to the gun and its battery. The other is how many shells the salvo held. The expected spread of n shells is ratio(n) · 0.798 σ_D, so it grows with n while σ_D stays the same. To recover σ_D, divide by the ratio at **the salvo the pattern was quoted for**. Dividing by the ratio at the salvo being fired is wrong. Before this fix, `fire_control_ref.py` `Gun.sigma_D(R, n)` (and the game's `FireControl.Dispersion`) took the ratio at the guns firing. The fewer guns fired, the wider each shell went. A single 12" gun came out at σ = 3.3 / 1.6 / 0.798 · 0.85 ≈ 2.2% of range. A 4-gun half salvo had 1.4× the shell scatter of an 8-gun broadside. The 1.6 and 1.9 used for 1 and 2 guns were extrapolations with no source.
+
+**The record agrees with the fix [INFERRED from the sourced 1944 table, §1.2].** Per-shell σ worked out from each salvo size, without the 0.85:
+
+| Battery | Small salvo | Full salvo | Small ÷ full |
+|---|---|---|---|
+| 16" (Iowa, South Dakota): 3 guns 1.0%, 9 guns 1.9% | 0.52% | 0.60% | 0.87 |
+| 16"/45 Colorado: 3 guns 1.0%, 8 guns 1.8% | 0.52% | 0.59% | 0.88 |
+| 14" New Mexico/Pennsylvania: 3 guns 1.2%, 12 guns 2.4% | 0.62% | 0.69% | 0.89 |
+| 14" Nevada: 3 guns 1.2%, 10 guns 3.4% (mixed twin and triple turrets) | 0.62% | 1.03% | 0.60 |
+| 5"/38: 6 guns 1.4% against 10 guns 1.7% | 0.51% | 0.52% | 0.98 |
+
+The patterns nearly double from 3 shells to 9, but the shells scatter about the same. Under the old rule the 3-gun salvo's shells should have scattered 1.65× wider than the 9-gun salvo's. Instead they scatter about 0.87× as wide, which is what you'd expect if the 3 guns are one turret and so miss the scatter between turrets. Nevada is the exception that proves it: her mixed mounts add gun-to-gun scatter that a single turret doesn't see. Worn guns move σ_D directly: the old 16"/45s were expected at 0.59% (8 guns) and gave 0.75% (7 guns) in 1941.
+
+**What salvo were the Great War patterns quoted for?** The source doesn't say. navalgazing's footnote ("at 12,000 yards, typical pattern spreads in range were 200 yards for 15" guns, 300 yards for 13.5" guns and 400 yards for 12" guns") gives no salvo size and no source, and the article's main text is about 3- and 4-shell spotting salvos. No other online source was found that ties these figures to a salvo: not the Dreadnought Project, Wikipedia, the Down report of 1917 (which says only that Americans thought British spreads too small), or USNI 1911–1921. The game's 8 [EST] is the full broadside of the 12" and 15" ships. The 13.5" ships fired 8 (Lion class) or 10 (Orion, KGV, Iron Duke). How much the choice matters (σ_D relative to n = 8):
+
+| If the quoted salvo was | 4 (half salvo) | 5 | 6 | 8 | 10 |
+|---|---|---|---|---|---|
+| σ_D × | 1.33 | 1.20 | 1.11 | 1.00 | 0.93 |
+
+The risk is one-sided. If the figures were for half salvos (the Grand Fleet's usual ranging and much of its action fire), each shell scattered up to a third more than the game now has. If they were 10-gun broadsides, about 7% less.
+
+**Is a gun's round-to-round σ given directly anywhere?**
+- **German proving-ground figures** [S: NavTecMisEu letter 0892, 21 Aug 1945, summarising the 1940 Fire Effect Tables, https://kbismarck.com/german-fire-effect-tables.html]. A single gun's "probable error" was 0.50–0.80% of range at 15–30° elevation. Curves for all German naval guns existed but are not reproduced. To convert to the battery's error, multiply by 1.5–1.7 with delay coils (1939–40) and about 2–3 without, plus "numerous wild shots". This is the only direct round-to-round source found. It is ambiguous [UNCERTAIN]:
+  - Read as a probable error, σ is 0.74–1.19% of range, and a Bismarck 8-gun pattern would be 3.4–5.8%.
+  - Read as the German 50% zone (its full width, 2 PE), σ is 0.37–0.59%, and the pattern would be 1.8–2.9%.
+  - The second reading fits the USN's 0.5–0.6% per shell in 1944 and the inferred 1.5% for the 38 cm.
+- **The battery factor is the real lesson.** The game wants the per-shell σ inside a ship's salvo. A proving ground's single-gun σ is 1.5–3× too small for that, because gun-to-gun scatter and interference are missing. Converting from a ship's quoted pattern is therefore the right route, as long as the salvo is known. A proving-ground figure needs the battery factor before it means anything. For Great War ships without delay coils, that factor is 2–3 [S, German].
+- **Iowa 1987** (above): 15 shells from three guns. The counts within 150 and 250 yd of the centre give σ ≈ 0.4–0.6% of range [INFERRED; the figures are inconsistent].
+- **USN battle practice c.1910** [S: USNI Proceedings Sept 1911, "Note on salvo dispersion", https://www.usni.org/magazines/proceedings/1911/september/note-salvo-dispersion]: one ship's mean dispersion D was 42 yd (12"), 38 yd (8") and 93 yd (6"). The range is not given in the text found.
+- **Sims 1904** (`manual_gunnery_ref.py` `gun_err`): a gun's own scatter is ±3 arcmin, read as about 2 arcmin 1σ, in angle. It is pre-dreadnought and single-gun.
+- **Range tables.** The British range tables' "50 per cent zone" columns and the USN's probable-error columns would be direct sources. None were found online.
+
+**The 0.85 (open).** `sigma_D` and `FireControl.Dispersion` multiply σ by 0.85, commented "quoted patterns are full salvos with gun-to-gun scatter". Nothing in either note sources it. The ratio table already sits 6–8% above normal theory at 8–12 shells. With both, a modelled 8-shell salvo of normal shells spreads only 0.79 of its quoted pattern (0.93 without the 0.85). If the 0.85 is meant as "one turret's shells", the 1944 pairs above fit it (0.87–0.89). But a full salvo's shells come from every turret, so they should carry the full σ. Left unchanged here. A choice for the game: drop it (full salvos then match their quoted patterns to within 7%), or keep it as a deliberate tightening and say why.
+
+**Fixed in `fire_control_ref.py` (2026-11-08).** `Gun.pattern_n` is the quoted salvo per gun, with tags in `GUNS`: 9 for the USN 16" [S], 10 for the 5"/38 [S], and [EST] elsewhere. `sigma_D(R)` takes no n. The new `pattern(R, n)` gives the expected spread of n shells. The ratio table is the full sourced series above. Callers changed: `engage()`, `quick_hit_probability()`, `evasion_ref.py` and `designer_ref.py`. Figures that moved:
+- [fire-control-research.md](../fire-control-research.md) §11. Only the half-salvo cases moved: Tsushima 8.0 → 8.5, Jutland's British battlecruisers 2.7 → 3.1 (record 1.4), the German 1st Scouting Group 4.0 → 4.5 (record 4.0), Denmark Strait 11.4 → 12.1, LRBP 2.8 → 3.0, North Cape 6.0 → 6.9, Komandorski 1.0 → 1.1.
+- Unchanged: the ladder, the MPI table and the 1944 study, which fire full salvos.
+- [evasion-research.md](../evasion-research.md) tables 6–10 and 14–15. The single-gun digital mounts moved most: the 5″/54 and 76 mm about doubled at range.
+- [fire-control-designer.md](../fire-control-designer.md) tables in §4 (noise-level changes).
+- [manual-gunnery-research.md](../manual-gunnery-research.md) table 9's reference row.
+- `fc_tables.py history`, which the game's `fc-history --ref` prints, now gives these §11 figures.
 
 ---
 

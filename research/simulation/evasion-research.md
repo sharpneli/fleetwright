@@ -1,5 +1,5 @@
 # Evasion: the motion contest between a ship and the gun that wants to hit it
-Status: final    Updated: 2026-10-09    Request: -
+Status: final    Updated: 2026-11-08    Request: - (tables 6–10, 14–15 rerun after the `sigma_D` fix: [dispersion-and-hits.md](fire-control-research/dispersion-and-hits.md) §1.4)
 
 *Companion to [`fire-control-research.md`](fire-control-research.md). That note covers how a shooter gets a solution; this one covers what the target can do to spoil it, and what the shooter can do back. The scope runs from battleships to MTBs, 1900–1990: how each class should evade, how much evasion is enough at a given range, when an attack run becomes suicidal, and which predictive systems a game can give shooters to make evaders' lives harder. Everything stays within what was physically achievable.*
 
@@ -40,7 +40,7 @@ Status: final    Updated: 2026-10-09    Request: -
    | Battleship / cruiser vs model-based digital fire control | inside ~20 kyd | Evasion buys 0–15%. Fight |
    | Destroyer | below 4 kyd | Evasion is useless and can even raise enemy hits (shells fly 5–7 s) |
    | | 8–12 kyd | ±30–45° zigzag cuts radar-directed 5″ hits by 50–75% |
-   | MTB | any range | A continuous full-speed weave (±40°, 30 s period) is by far the best defence: it cuts 5″/38 hits 3–5× at 1–3 km. Slowing down is fatal |
+   | MTB | any range | A continuous full-speed weave (±40°, 30 s period) is by far the best defence: it cuts 5″/38 hits 4–5× at 1–3 km. Slowing down is fatal |
 
 5. **Suicidal thresholds** (tables 8–9; P = chance of being stopped before launching):
 
@@ -236,17 +236,17 @@ Model table 5: 9 × 8″/55 every 20 s against a Baltimore-type target at 32 kn.
 
 | Shooter | kyd | Steady | Zigzag | Weave | Random | Flash | Chase |
 |---|---|---|---|---|---|---|---|
-| WWII optical, track | 10 | 15.7 | 10.4 | 13.1 | 14.1 | 13.3 | 9.3 |
-| | 16 | 6.3 | 2.3 | 4.9 | 4.1 | 3.4 | 2.5 |
-| | 22 | 2.8 | 1.0 | 2.2 | 1.3 | 1.7 | 0.9 |
-| WWII optical, aspect | 16 | 6.1 | 3.7 | 5.8 | 4.6 | 5.1 | 3.7 |
-| WWII radar, track | 16 | 6.0 | 3.2 | 3.8 | 3.8 | 3.5 | 2.9 |
-| WWII radar, anticipate | 16 | 5.7 | 4.7 | 5.5 | 4.6 | 5.7 | 4.7 |
-| Digital, track | 10 | 30.9 | 22.7 | 20.3 | 28.2 | 25.3 | 22.4 |
-| | 16 | 12.1 | 6.4 | 3.2 | 7.3 | 5.5 | 3.4 |
-| | 22 | 6.5 | 1.8 | 0.7 | 2.2 | 1.3 | 1.2 |
-| Digital, anticipate | 16 | 11.1 | 7.4 | 9.3 | 10.5 | 8.7 | 7.6 |
-| | 22 | 4.8 | 2.9 | 3.4 | 3.8 | 3.7 | 2.7 |
+| WWII optical, track | 10 | 16.7 | 9.7 | 13.4 | 13.3 | 12.3 | 9.2 |
+| | 16 | 6.6 | 2.6 | 5.4 | 4.1 | 3.6 | 2.5 |
+| | 22 | 3.0 | 0.7 | 3.0 | 1.5 | 1.6 | 0.7 |
+| WWII optical, aspect | 16 | 5.9 | 3.2 | 5.1 | 4.7 | 5.6 | 4.2 |
+| WWII radar, track | 16 | 5.5 | 3.2 | 3.9 | 3.9 | 3.3 | 2.8 |
+| WWII radar, anticipate | 16 | 5.0 | 3.8 | 5.4 | 4.1 | 5.4 | 5.3 |
+| Digital, track | 10 | 31.1 | 25.3 | 20.9 | 27.5 | 23.9 | 22.9 |
+| | 16 | 12.7 | 6.6 | 3.5 | 7.7 | 5.7 | 3.6 |
+| | 22 | 6.1 | 1.7 | 0.7 | 1.9 | 1.4 | 1.1 |
+| Digital, anticipate | 16 | 10.7 | 7.9 | 9.5 | 10.0 | 8.3 | 7.7 |
+| | 22 | 5.0 | 2.3 | 3.9 | 3.0 | 4.0 | 2.7 |
 
 **Cruiser verdict.** Same pattern as battleships, but stronger: the cruiser is faster and its hitting window is smaller.
 - **At 16 kyd,** a zigzag or salvo-chasing cruiser takes about 40% of the hits a steady one would.
@@ -261,27 +261,27 @@ Model table 6: 8 × 5″/38 every 4 s (WWII, Mk 37 + radar) or one 5″/54 every
 
 | Shooter | kyd | Steady | Zigzag | Weave | Random | Flash | Chase |
 |---|---|---|---|---|---|---|---|
-| WWII 5″/38, track | 4 | 24.4 | 20.1 | 25.3 | 23.9 | 18.8 | 25.7 |
-| | 8 | 6.9 | 3.3 | 3.3 | 5.1 | 3.9 | 3.7 |
-| | 12 | 2.4 | 0.9 | 1.1 | 1.5 | 1.0 | 1.0 |
-| WWII 5″/38, anticipate | 8 | 6.3 | 3.0 | 5.5 | 4.5 | 4.7 | 6.0 |
-| Digital 5″/54, track | 4 | 36.8 | 37.1 | 42.7 | 40.3 | 37.8 | 43.7 |
-| | 8 | 12.0 | 9.6 | 9.8 | 10.8 | 10.9 | 11.2 |
-| | 12 | 4.2 | 2.7 | 1.7 | 3.4 | 2.6 | 2.5 |
-| Digital 5″/54, anticipate | 8 | 14.2 | 9.2 | 13.1 | 15.7 | 12.9 | 13.2 |
+| WWII 5″/38, track | 4 | 25.0 | 20.0 | 24.9 | 24.0 | 21.5 | 25.7 |
+| | 8 | 6.4 | 3.6 | 3.6 | 4.7 | 3.9 | 3.6 |
+| | 12 | 2.5 | 1.0 | 1.3 | 1.3 | 1.2 | 0.9 |
+| WWII 5″/38, anticipate | 8 | 6.3 | 2.9 | 5.4 | 6.2 | 5.1 | 6.4 |
+| Digital 5″/54, track | 4 | 47.1 | 44.9 | 50.2 | 46.0 | 46.7 | 48.7 |
+| | 8 | 23.4 | 15.2 | 13.2 | 20.0 | 16.5 | 16.1 |
+| | 12 | 9.6 | 4.4 | 2.1 | 5.5 | 4.2 | 3.4 |
+| Digital 5″/54, anticipate | 8 | 25.4 | 12.9 | 20.8 | 21.2 | 19.1 | 20.6 |
 
 Sufficiency (model table 15), WWII 5″/38 radar, hit %:
 
 | kyd | Steady | ZZ 15/180 | ZZ 30/120 | ZZ 45/60 | Flash 15 | Flash 35 | Weave 15/90 | Chase |
 |---|---|---|---|---|---|---|---|---|
-| 4 | 24.4 | 20.6 | 20.1 | 19.4 | 20.7 | 18.8 | 20.6 | 25.7 |
-| 8 | 6.9 | 5.0 | 3.3 | 1.9 | 4.7 | 3.9 | 4.1 | 3.7 |
-| 12 | 2.4 | 1.8 | 0.9 | 0.6 | 2.0 | 1.0 | 1.5 | 1.0 |
+| 4 | 25.0 | 19.9 | 20.0 | 18.5 | 21.2 | 21.5 | 20.7 | 25.7 |
+| 8 | 6.4 | 5.1 | 3.6 | 1.8 | 5.0 | 3.9 | 4.0 | 3.6 |
+| 12 | 2.5 | 2.0 | 1.0 | 0.6 | 2.1 | 1.2 | 1.4 | 0.9 |
 
 **Destroyer verdict:**
 - **Inside about 4 kyd evasion is nearly worthless:** a 5-inch shell flies about 6 s. Salvo chasing even raises the enemy's hits, because the turn bleeds speed and the ship turns toward where the gun is already pointing.
 - **At 8–12 kyd** a hard zigzag (±45° every minute) cuts radar-directed WWII 5-inch hits by 70–75%.
-- **Against digital guns** the same zigzag cuts hits only by about a third at 8 kyd, and by about two-thirds at 12 kyd.
+- **Against digital guns** the same zigzag cuts hits by about half at 8 kyd and by about four-fifths at 12 kyd (table 15's digital rows, not shown: 23.4 → 11.8 and 9.6 → 1.7). Since 2026-11-08 the single 5″/54 hits about twice as often as it used to at 8–12 kyd. Before the `sigma_D` fix, a one-gun salvo's shells scattered 2.6× wider than the gun's quoted pattern implies ([dispersion-and-hits.md](fire-control-research/dispersion-and-hits.md) §1.4).
 
 ### 5.1 Torpedo attacks on a battleship
 
@@ -303,16 +303,16 @@ Cell = P(stopped before launch) / mean hits before launch:
 | | 6 kyd | 1.00 / 13.0 | 0.50 / 9.4 | 0.58 / 9.9 | 0.62 / 7.1 |
 | | 4 kyd | 1.00 / 13.0 | 0.71 / 15.3 | 0.88 / 14.8 | 0.79 / 11.0 |
 | **Night, no radar** (searchlights 4 km) | 10 / 8 / 6 kyd | 0.00 | 0.00 | 0.00 | 0.00 |
-| | 4 kyd | 0.04 / 2.3 | 0.04 / 1.4 | 0.04 / 2.4 | 0.04 / 2.3 |
-| **WWI dreadnought, day** (12 × 6″ casemates, Dreyer) | 10 kyd | 0.12 / 1.7 | 0.08 / 0.8 | 0.00 / 0.6 | 0.00 / 0.5 |
-| | 8 kyd | 0.46 / 3.3 | 0.25 / 1.4 | 0.12 / 1.1 | 0.00 / 0.8 |
-| | 6 kyd | 0.62 / 5.3 | 0.38 / 2.5 | 0.17 / 2.7 | 0.08 / 1.2 |
-| | 4 kyd | 0.92 / 7.1 | 0.38 / 3.0 | 0.29 / 4.0 | 0.42 / 3.1 |
+| | 4 kyd | 0.04 / 2.2 | 0.04 / 1.4 | 0.04 / 2.4 | 0.04 / 2.2 |
+| **WWI dreadnought, day** (12 × 6″ casemates, Dreyer) | 10 kyd | 0.21 / 1.7 | 0.04 / 0.6 | 0.21 / 0.9 | 0.04 / 0.6 |
+| | 8 kyd | 0.58 / 4.0 | 0.21 / 1.2 | 0.29 / 1.7 | 0.08 / 1.1 |
+| | 6 kyd | 0.83 / 5.9 | 0.29 / 2.1 | 0.46 / 2.4 | 0.12 / 1.6 |
+| | 4 kyd | 0.96 / 7.5 | 0.38 / 2.9 | 0.50 / 3.1 | 0.46 / 3.6 |
 
 **What the table says:**
 - **A steady approach is suicide against anything competent.** Every destroyer captain in the record weaved, zigzagged or chased salvos on the way in.
 - **Against a 1944 radar battleship, an evasive attack becomes a coin toss at about 6–8 kyd and suicidal inside 5 kyd,** day or night. Radar removes the night's protection.
-- **Against WWI fire control, an evasive attack to 6 kyd costs about 10–40%.** That matches Jutland: German boats launched at about 7–8 kyd during Scheer's turn-away, losing 1 of 13 sunk and 4 badly damaged [S].
+- **Against WWI fire control, an evasive attack to 6 kyd costs about 10–45%.** That matches Jutland: German boats launched at about 7–8 kyd during Scheer's turn-away, losing 1 of 13 sunk and 4 badly damaged [S].
 - **Without radar, night protects completely until the attacker is illuminated.** Surigao: US destroyers launched at 6.5–10.7 kyd with almost no losses [S]. Cape Bon: surprise from inside 1,000 m [S].
 - The 1916 RN torpedo handbook's rule, not to approach inside 7,000 yd against effective fire [S], is exactly the model's coin-toss range.
 
@@ -338,22 +338,22 @@ Model table 7: MTB (Elco 80 ft, 40 kn), daylight, combat. Hit % per round:
 | 40 mm quad, Mk 51 + tracers | 1 | 7.4 | 6.1 | 12.1 | 16.1 | 12.2 |
 | | 2 | 3.9 | 3.0 | 3.3 | 4.9 | 4.1 |
 | | 3 | 1.6 | 1.2 | 1.6 | 1.6 | 1.6 |
-| 4 × 5″/38, Mk 37 + radar | 1 | 34.3 | 8.4 | 25.1 | 21.6 | 20.2 |
-| | 2 | 23.5 | 4.7 | 10.9 | 10.5 | 8.8 |
-| | 3 | 12.3 | 3.5 | 5.4 | 4.3 | 3.8 |
-| | 5 | 3.4 | 1.7 | 0.7 | 1.3 | 1.0 |
-| 76 mm OTO, digital | 1 | 36.6 | 30.4 | 38.0 | 45.4 | 37.5 |
-| | 2 | 27.9 | 18.7 | 21.8 | 22.9 | 19.0 |
-| | 3 | 16.3 | 8.6 | 10.2 | 11.6 | 8.8 |
-| | 5 | 5.2 | 0.9 | 2.3 | 2.1 | 1.4 |
+| 4 × 5″/38, Mk 37 + radar | 1 | 34.6 | 8.3 | 24.2 | 21.2 | 20.2 |
+| | 2 | 27.1 | 6.4 | 11.3 | 9.6 | 8.7 |
+| | 3 | 14.0 | 2.7 | 5.0 | 4.2 | 4.9 |
+| | 5 | 4.4 | 1.9 | 1.0 | 1.2 | 0.7 |
+| 76 mm OTO, digital | 1 | 46.4 | 32.7 | 46.3 | 49.7 | 41.9 |
+| | 2 | 40.3 | 23.4 | 28.5 | 30.2 | 23.1 |
+| | 3 | 29.4 | 10.4 | 15.9 | 15.6 | 11.5 |
+| | 5 | 12.1 | 1.3 | 2.9 | 3.5 | 2.4 |
 
 (The 40 mm battery's effective range is set to 4.5 km.)
 
 **Small-craft verdict:**
-- **Weave continuously at full speed.** A ±40° weave on a 30 s period cuts radar-directed 5-inch hits 3–5× at 1–3 km. That is the best single defence in the model.
+- **Weave continuously at full speed.** A ±40° weave on a 30 s period cuts radar-directed 5-inch hits 4–5× at 1–3 km. That is the best single defence in the model.
 - **Never slow down.** Speed jinks that drop to 40% speed *raise* 40 mm hits at 1 km (16% against 7%). The boat's speed is its armour; deceleration hands the gunner a slow, predictable target.
 - **Light automatic guns are hard to evade but miss a lot anyway.** Tracers close the loop every second and flight times are 2–4 s, so evasion barely matters to them. Their hit rate is about 4–7% per round at 1–2 km.
-- **The digital 76 mm is the hardest to fool.** Weaving still halves its hits at 3 km and cuts them 5× at 5 km.
+- **The digital 76 mm hits hardest, and weaving still pays against it.** It makes 46% per round at 1 km against a steady boat. Weaving cuts that about 3× at 3 km and 9× at 5 km. (Before 2026-11-08 each round of a one-gun mount scattered 2.6× too wide, which hid how sharp the gun is.)
 
 ### 7.1 MTB torpedo attack on a destroyer
 
@@ -367,22 +367,22 @@ P(stopped before launch):
 
 | Condition | Launch at | Steady | Weave | Random + speed | Flash + speed |
 |---|---|---|---|---|---|
-| **Day, seen at 8 km** | 4 km | 0.78 | 0.20 | 0.40 | 0.65 |
-| | 3 km | 0.90 | 0.30 | 0.65 | 0.88 |
-| | 2 km | 1.00 | 0.35 | 1.00 | 0.97 |
-| | 1 km | 1.00 | 0.90 | 1.00 | 1.00 |
-| **Night, radar-directed 5″; seen by eye at 2 km** | 4 km | 0.70 | 0.33 | 0.42 | 0.53 |
-| | 3 km | 0.93 | 0.45 | 0.68 | 0.80 |
-| | 2 km | 1.00 | 0.62 | 0.93 | 0.97 |
-| | 1 km | 1.00 | 0.93 | 1.00 | 1.00 |
+| **Day, seen at 8 km** | 4 km | 0.80 | 0.12 | 0.45 | 0.60 |
+| | 3 km | 0.93 | 0.15 | 0.70 | 0.90 |
+| | 2 km | 1.00 | 0.25 | 0.95 | 0.95 |
+| | 1 km | 1.00 | 0.72 | 1.00 | 1.00 |
+| **Night, radar-directed 5″; seen by eye at 2 km** | 4 km | 0.68 | 0.35 | 0.35 | 0.50 |
+| | 3 km | 0.88 | 0.40 | 0.65 | 0.78 |
+| | 2 km | 1.00 | 0.55 | 0.90 | 0.95 |
+| | 1 km | 1.00 | 0.82 | 1.00 | 1.00 |
 | **Night, no radar; seen at 2 km** (starshell, wake) | 4 / 3 / 2 km | 0.00 | 0.00 | 0.00 | 0.00 |
-| | 1 km | 0.97 | 0.45 | 0.95 | 0.90 |
-| | 500 m | 1.00 | 0.65 | 1.00 | 1.00 |
-| **Night, no radar; quiet approach, seen at 1.2 km** | 1 km | 0.17 | 0.23 | 0.72 | 0.20 |
-| | 500 m | 0.95 | 0.72 | 1.00 | 0.93 |
+| | 1 km | 0.97 | 0.53 | 0.95 | 0.90 |
+| | 500 m | 1.00 | 0.72 | 1.00 | 1.00 |
+| **Night, no radar; quiet approach, seen at 1.2 km** | 1 km | 0.20 | 0.23 | 0.70 | 0.23 |
+| | 500 m | 0.95 | 0.78 | 1.00 | 0.90 |
 
 **Where it becomes fully suicidal:**
-- **By day against an alert radar destroyer, every MTB attack is suicidal.** Even weaving launchers are stopped 20% of the time at 4 km and 90% at 1 km, and a 4 km torpedo shot at a manoeuvring destroyer rarely hits. Historically MTBs and PT boats did not attack warships by day.
+- **By day against an alert radar destroyer, every MTB attack is suicidal.** Even weaving launchers are stopped 12% of the time at 4 km and 72% at 1 km, and a 4 km torpedo shot at a manoeuvring destroyer rarely hits. Historically MTBs and PT boats did not attack warships by day.
 - **At night against radar-directed guns:**
   - **Weaving launchers:** survival is about two-thirds at 4 km, half at 3 km, a third at 2 km. Hits from inside 2 km cost the boat almost certainly.
 - **At night against a non-radar ship:**
@@ -402,20 +402,20 @@ P(stopped before launch):
 - River Plate: Graf Spee's 130–150° turns under smoke threw out British fire.
 - The folk logic: the spotter has just corrected away from the last splash, so steer there.
 
-Model table 10: cruiser against cruiser, 16 kyd, 8″, 25 min. Rows set how often the target steers for the splash; otherwise it gambles left / hold / right on each splash. Hit % per shell (steady target, optical track: 5.5):
+Model table 10: cruiser against cruiser, 16 kyd, 8″, 25 min. Rows set how often the target steers for the splash; otherwise it gambles left / hold / right on each splash. Hit % per shell (steady target, optical track: 5.6):
 
 | p(chase) | Optical track | Optical + aspect, fire on splash | Optical anticipate | Radar track | Radar anticipate |
 |---|---|---|---|---|---|
-| 0.00 | 2.9 | 3.6 | 3.6 | 2.9 | 4.9 |
-| 0.50 | 2.5 | 4.6 | 4.1 | 3.0 | 4.8 |
-| 0.75 | 2.2 | 4.4 | 4.0 | 3.2 | 4.8 |
-| 1.00 | 2.4 | 3.5 | 4.0 | 3.2 | 4.2 |
+| 0.00 | 3.0 | 4.5 | 3.8 | 2.8 | 4.7 |
+| 0.50 | 2.6 | 4.2 | 4.6 | 3.1 | 4.4 |
+| 0.75 | 2.4 | 4.2 | 4.2 | 3.2 | 5.0 |
+| 1.00 | 2.2 | 4.0 | 4.0 | 2.9 | 4.6 |
 
 **What this shows:**
-- **Any big course change triggered by each splash halves hits against a tracking WWII shooter** (5.5 → 2.2–2.9).
+- **Any big course change triggered by each splash halves hits against a tracking WWII shooter** (5.6 → 2.2–3.0).
 - **Steering *toward* the splash is not what does it.** A random left/hold/right gamble on the same trigger is about as good. This supports Naval Gazing's argument that chasing works because it breaks the steady-course assumption at the worst moment for the computer: just after the shooter's newest data point [S]. A commenter's point applies too: humans are bad at random, so a mechanical rule is a practical way to be unpredictable.
 - **The shooter's counter is to see the turn, not to guess its direction.**
-  - Reading the target's heading from her silhouette and holding fire until the last splash lands recovers roughly a third to three-quarters of the lost hits per shell.
+  - Reading the target's heading from her silhouette and holding fire until the last splash lands recovers about half of the lost hits per shell.
   - Learning the habit and leading it adds little beyond that.
   - **Fire-on-the-splash costs rate of fire** (table 13): it pays at 12–20 kyd against evaders but costs hits at 28 kyd, where the time of flight exceeds the salvo interval.
 
@@ -466,7 +466,7 @@ Model table 14: battleship duel at 20 kyd, hit % per shell:
 | Digital, track | 14.9 | 10.5 | 7.0 | 8.0 | 6.1 |
 | Digital, decaying turn | 16.1 | 10.8 | 7.0 | 8.0 | 6.6 |
 | Digital, centroid of futures | 16.5 | 10.5 | 6.9 | 8.5 | 5.6 |
-| Digital, split salvo (3 aims) | 13.2 | 7.8 | 5.9 | 6.2 | 5.9 |
+| Digital, split salvo (3 aims) | 17.4 | 9.8 | 5.9 | 8.3 | 6.6 |
 | Digital, cover envelope | 16.5 | 10.5 | 6.9 | 8.5 | 5.6 |
 
 In the code, `cover` only widens the pattern when the sampled futures spread wider than the gun's own dispersion. At 20 kyd they do not, so `cover` aims exactly like `centroid` and the two rows coincide.
@@ -474,7 +474,7 @@ In the code, `cover` only widens the pattern when the sampled futures spread wid
 Compare with `aspect` and `anticipate` in tables 4, 10 and 13.
 
 **Why the clever-looking options fail, and what works:**
-1. **The real unpredictability at these ranges is small.** At 20 kyd a battleship can only get about 50 m off a sensible prediction before the shell lands, which is far below the shooter's own salvo error of about 200–300 m. What hurts the shooter is a **wrong motion model**: straight-line trackers lag every turn, and turn-following filters over-extrapolate every jink. Widening the net (spread, rocking, split, cover) pays for a problem that isn't there and thins the pattern.
+1. **The real unpredictability at these ranges is small.** At 20 kyd a battleship can only get about 50 m off a sensible prediction before the shell lands, which is far below the shooter's own salvo error of about 200–300 m. What hurts the shooter is a **wrong motion model**: straight-line trackers lag every turn, and turn-following filters over-extrapolate every jink. Widening the net (spread, rocking, split, cover) pays for a problem that isn't there and thins the pattern. Since the 2026-11-08 `sigma_D` fix, the split salvo comes out about even with centroid aiming (17.4 against 16.5 steady, a little worse against weaving). It no longer pays the old penalty of three-gun groups scattering wider, but it doesn't gain anything either.
 2. **The fix is a better model of the target's intent: "she turned, and now she will hold her new heading".** In daylight a WWII lookout delivers that by reading target angle. Digitally, a model-based predictor does it (`anticipate` gives 16.4–17.1 hits per 10 min against evaders at 20 kyd, where `track` gives 9.9–13.0).
 3. **Splitting and covering only pay when the shooter's own error is smaller than the target's reach.** That means very long flight times with precise post-war guns, or small craft at medium range: compare the 76 mm "cover" row in table 7 with plain digital tracking, roughly a wash.
 4. **Crossfire does not beat evasion** (table 11). Two ships 90° apart score about the same per shell as one. Turning displaces the target along her narrow axis whoever is watching.

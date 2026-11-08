@@ -322,7 +322,8 @@ public class GunneryTests(ITestOutputHelper output)
     /// range rate its constant-rate clock can't follow, where the AFCT tracks her true course (measured, 24 duels: the Dreyer
     /// 38.9%, the AFCT 73.5; the Dreyer with the AFCT's latency and residuals, the tracker alone, 60.4). Her zigzag (20°
     /// either side every 75 s at 14 km): both straight-course machines, the AFCT ahead by its 8 s latency against the
-    /// Dreyer's 15 (17.6 v 20.6%; with the latency and residuals the Dreyer 20.6). Steady at 14 km the two filters are one
+    /// Dreyer's 15 (17.6 v 20.6%; with the latency and residuals the Dreyer 20.6; 2026-11-08, the pattern's 0.85 gone, 64
+    /// duels 18.3 v 21.1, the default 16 within the noise). Steady at 14 km the two filters are one
     /// (the Dreyer with the AFCT's latency and residuals 74.8, the AFCT 74.7); the officer's step and doubt from his machine's
     /// residual bias (1.2 against 0.6%) and the latency make the rest (67.0). The long-base stereo over the FQ/FT and the
     /// power drive over follow the pointer, a little each on their rungs (printed).</summary>
@@ -341,7 +342,7 @@ public class GunneryTests(ITestOutputHelper output)
         var byAfct = Refit("super_dreadnought", fq, afct, pointer);
         double passD = Engaged(byDreyer, dd, 30, 8_000, 180, 30, 6, readings), passL = Engaged(byLike, dd, 30, 8_000, 180, 30, 6, readings),
             passA = Engaged(byAfct, dd, 30, 8_000, 180, 30, 6, readings);
-        double zigD = Engaged(byDreyer, qe, 90, 14_000, 0, 18, 10, readings, zig: 20), zigA = Engaged(byAfct, qe, 90, 14_000, 0, 18, 10, readings, zig: 20);
+        double zigD = Engaged(byDreyer, qe, 90, 14_000, 0, 18, 10, readings, n: 64, zig: 20), zigA = Engaged(byAfct, qe, 90, 14_000, 0, 18, 10, readings, n: 64, zig: 20);
         double steadyL = Engaged(byLike, qe, 90, 14_000, 0, 18, 10, readings), steadyA = Engaged(byAfct, qe, 90, 14_000, 0, 18, 10, readings);
         var all = Settings with { Smoke = false };
         output.WriteLine($"the readings and the priors: a destroyer passing at 4 km at 30 kn, the Dreyer {passD:F1}%, the Dreyer with the AFCT's latency and " +

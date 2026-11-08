@@ -236,6 +236,7 @@ def envelope_table():
 # =============================================================================
 G40 = Gun("40mm/56 Bofors", 0.040, 0.90, 881, 45, 10000, 3.0, defl_ratio=0.6, train_rate=30).fit()
 G20 = Gun("20mm/70 Oerlikon", 0.020, 0.123, 844, 45, 4390, 4.0, defl_ratio=0.6, train_rate=40).fit()
+# light AA patterns [INFERRED]; quoted salvo left at Gun's default 8 rounds [EST]
 G76 = GUNS["76mm/62 OTO"]
 G5 = GUNS["5in/38 Mk 12"]
 
@@ -722,7 +723,7 @@ def duel(d, seed=0, trace=False):
                 if not (b.rmin < Ra < b.gun.table["R"][-1]):
                     continue
                 nshell = ng * b.burst
-                sr, sd = b.gun.sigma_D(Ra, max(nshell, 1))
+                sr, sd = b.gun.sigma_D(Ra)
                 R_ord = max(0.5 * Ra, min(1.5 * Ra, Ra + x["c_r"] + rock * 2.0 * sr))
                 e_r = rng.normal(0, lay) * b.gun.dR_del(R_ord) + rng.normal(0, cond.combat * lvl.salvo_pct / 100 * R_ord) \
                       + x["zb"][0] * lvl.resid * R_ord
@@ -756,7 +757,7 @@ def duel(d, seed=0, trace=False):
                 continue
             T_imp = b.gun.tof(min(Rcen, b.gun.table["R"][-1]))
             salvos.append(dict(R_at=R, x=x, t_imp=t + T_imp, pts=shells, u=u, R=Rcen, c_r=x["c_r"], c_d=x["c_d"],
-                               pattern=4.0 * b.gun.sigma_D(Rcen, max(len(shells), 1))[0], aim=aim_pts))
+                               pattern=4.0 * b.gun.sigma_D(Rcen)[0], aim=aim_pts))
             if d.flash_visible:
                 events.append((t + ev.react, "flash", None))
                 events.sort(key=lambda e: e[0])
@@ -886,7 +887,7 @@ def gamble_multiplier(hull, gun, R, fc_pct, react=4.0, latency=2.0):
     reach = envelope(hull, T, react=react)["reach"]
     danger, depth, width = fc.hitting_space(hull.tc, R, gun, 90)
     h = 0.5 * (danger + depth)            # broadside: the turn moves the ship along the line of fire
-    sr, _ = gun.sigma_D(R, 9)
+    sr, _ = gun.sigma_D(R)
     sig = math.hypot(sr, fc_pct / 100 * R)
     P = lambda x: _phi((x + h) / sig) - _phi((x - h) / sig)
     return T, reach, (P(0) + 2 * P(reach)) / 3 / P(0)

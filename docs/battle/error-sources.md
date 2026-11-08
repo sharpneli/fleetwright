@@ -466,6 +466,25 @@ Strait 18.1 → 21.7; full salvos alike (the USN 1944 study 55.5 → 55.4, Rodne
 within twice the record (5); the record's loser lost more in 25 of 44 seeds (30). The gap to the record widens a little
 further: for the revisit with the rest.
 
+**The research's answer** (dispersion-and-hits.md §1.4, the same day; the user: "go ahead"): the fix confirmed (the 1944
+pairs give one σ a shell from 3 and 9 guns, 0.52 and 0.60% for the 16"; a turret's 3 shells some 0.87 of a full
+salvo's, wanting no turret-to-turret scatter). Two changes taken: the **0.85 on σ gone** (unsourced; with it a full
+salvo of our normal shells spread 0.79 of the pattern it's quoted at, without it 0.93: the USNI ratio sits a little over
+the normal's, so D, the core of the fall, is kept), and the **ratio table the sourced series** (USNI 1917's 3 and 5-12,
+Jurens's 2 and 4: 1.69, 2.89; no entry for one gun). `PatternReferenceGuns` stays 8 [EST]: no source ties the Great
+War patterns to a salvo, and the risk is one-sided (if they were half salvos, σ 1.33x ours; 10-gun broadsides, 0.93x):
+the first lever for the revisit. **The panel** (`balance/pattern-085.json` against `pattern-n.json`): fc-history 5 of
+23 in band, the orderings 3 of 7 (the salvo chaser's 2.10 → 2.89, want 3-10); about half of the n fix's rise back:
+Dogger Bank's British 13.5 → 9.5% (8.9 before both), Jutland's 3rd BCS 35.9 → 32.4 (27.0), Denmark Strait 21.7 → 17.4
+(18.1), Rodney 49.7 → 46.9, the USN 1944 study 55.4 → 52.6, the LRBP 2.5 → 2.9 (its band's floor); Santiago stays at 58%
+(43 before: its single mounts' shells had the one-gun ratio's 2x). The scenarios: 5 of 14 sides within twice the record,
+the record's loser losing more in 24 of 44 seeds. Five tests moved with it, each measured: two that read one seed or a
+16-duel pair within the noise (the coarse tier's smoke on the line, 4 worlds: 0.61 v 0.63; the AFCT over the Dreyer on
+a zigzag, 64 duels: 21.1 v 18.3), the shell-choice test read while her target's afloat (a destroyer may go down inside
+its three minutes), the shell's allocation test warmed until her target has a captain (made once, the first think after
+she's damaged and taking water), and the gas pool's reuse test on a class of its own (the shared dreadnought's pool is
+in use by tests beside it).
+
 ## Decided (the user, 2026-11-03)
 
 1. **The order** as above.

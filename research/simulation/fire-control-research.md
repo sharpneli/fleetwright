@@ -1,5 +1,5 @@
 # Fire control: from MK1 Eyeball to automated gunnery radar
-Status: final    Updated: 2026-10-09    Request: -
+Status: final    Updated: 2026-11-08    Request: [sigma_D's n](../REQUESTS.md) (§7, §11)
 
 *Research for the gunnery model. This is the piece the damage docs keep pointing to: [`08-gunfire-effects.md`](damage-research/08-gunfire-effects.md) starts once a shell has hit, and this doc decides whether it hits. It covers the whole chain: seeing the target, measuring range and bearing, computing a solution, turning it into gun orders, laying the guns, shell dispersion, the hit test against the real hull, and spotting the fall of shot to correct the next salvo.*
 
@@ -534,21 +534,23 @@ What this means for the game:
     | Pattern ÷ D | 2.43 | 2.74 | 3.47 | 3.85 | 4.00 | 4.13 | 4.34 |
 
     Source: USNI 1917.
+    (2 → 1.69 and 4 → 2.89 from Jurens 1991; USNI 1917 prints 2.74 for 4. See the dispersion appendix §1.1.)
   - For normal errors, D = 0.798σ.
+  - **A shell's σ is its gun's, not its salvo's** (2026-11-08). σ_D = pattern ÷ (0.798 · ratio(n_q)), with n_q the salvo **the pattern was quoted for** (`Gun.pattern_n`). The salvo actually fired never enters σ: fewer shells make a smaller pattern, not wider shells. The USN's 1944 expected patterns bear this out: a 3-gun 1.0% and a 9-gun 1.9% give per-shell σ of 0.52% and 0.60%. Until 2026-11-08 the code took the ratio at the guns firing, so one 12″ gun scattered σ ≈ 2.2% of the range and a half salvo 1.4× a broadside. The Great War patterns state no salvo, and 8 is [EST]. The 0.85 in `sigma_D` is unsourced. See the dispersion appendix §1.4.
   - Deflection dispersion is about 0.3–0.5 of range dispersion; a typical deflection pattern is about 4 mil.
 - **Full-salvo patterns as % of range** (model `pattern_pct`):
 
-  | Gun | Pattern | Source / note |
+  | Gun | Pattern | Source / note (quoted salvo, `pattern_n`) |
   |---|---|---|
-  | 12″ WWI | 3.3–3.5% | [S] |
-  | 13.5″ | 2.5% | [S] |
-  | 15″/42 | 1.7% | [S]; called the most accurate battleship gun |
-  | 16″/50 and 16″/45 | 1.9% | [S 1944 USN] |
-  | 14″/45 RN | 2.0% | [INFERRED] |
-  | 38 cm with delay coils | 1.5% | [INFERRED from German 0.5–0.8% single-gun PE × 1.5–1.7] |
-  | 46 cm | 1.2% | [S: 400–500 m at maximum range] |
-  | 8″ | 2.0% | [S: IJN 1.3–2.5%] |
-  | 5″/38 | 1.7% | [S: 1.4–1.7%] |
+  | 12″ WWI | 3.3–3.5% | [S]; salvo not stated, 8 [EST] |
+  | 13.5″ | 2.5% | [S]; salvo not stated, 8 [EST] (8–10) |
+  | 15″/42 | 1.7% | [S]; called the most accurate battleship gun; salvo not stated, 8 [EST] |
+  | 16″/50 and 16″/45 | 1.9% | [S 1944 USN]; 9 [S] |
+  | 14″/45 RN | 2.0% | [INFERRED]; 10 [EST] |
+  | 38 cm with delay coils | 1.5% | [INFERRED from German 0.5–0.8% single-gun PE × 1.5–1.7, read as the 50% zone]; 8 [EST] |
+  | 46 cm | 1.2% | [S: 400–500 m at maximum range]; 9 [EST] |
+  | 8″ | 2.0% | [S: IJN 1.3–2.5%]; 10 [EST] |
+  | 5″/38 | 1.7% | [S: 1.4–1.7%]; 10 [S] |
   | Rodney 16″/45 | 2.2% | [S: mixed rifling] |
 
 - **What sets pattern size** [S]:
@@ -669,24 +671,24 @@ Sources: INRO, Wikipedia, kbismarck, navalgazing (see the dispersion appendix §
 
 ## 11. Calibration: model vs history
 
-The model's 14 levels with their sensors and conditions, against the record (model table 8, 40 runs each). "Combat" scenarios use `combat = 1.5`, which multiplies salvo-to-salvo error, laying error, rangetaker error and spotting noise. The other inputs are historical: visibility, smoke, spray, gun output and target behaviour.
+The model's 14 levels with their sensors and conditions, against the record (model table 8, 40 runs each). Rerun 2026-11-08 with each shell's σ the gun's whatever the salvo fired (§7); the half-salvo cases moved up by 5–15%, the full-salvo ones not at all. "Combat" scenarios use `combat = 1.5`, which multiplies salvo-to-salvo error, laying error, rangetaker error and spotting noise. The other inputs are historical: visibility, smoke, spray, gun output and target behaviour.
 
 | Case | Level | Model hit % | Record | Model straddle % |
 |---|---|---|---|---|
-| Tsushima 1905, Mikasa 12″, 6 kyd | 1 | 8.0 | ~40 / 446 (≈9%) | 58 |
-| Jutland Run to the South, British battlecruisers | 3 | 2.7 | 21 / 1,469 (1.4%) | 17 |
-| Jutland, German 1st Scouting Group | 3 + Zeiss | 4.0 | 67 / 1,670 (4.0%) | 25 |
-| Denmark Strait, Bismarck | 4 + 10.5 m | 11.4 | 5–7 / 93 | 35 |
-| USN LRBP 1932, 30 kyd | 4 | 2.8 | 4.2–5.4% practice | 37 |
+| Tsushima 1905, Mikasa 12″, 6 kyd | 1 | 8.5 | ~40 / 446 (≈9%) | 59 |
+| Jutland Run to the South, British battlecruisers | 3 | 3.1 | 21 / 1,469 (1.4%) | 14 |
+| Jutland, German 1st Scouting Group | 3 + Zeiss | 4.5 | 67 / 1,670 (4.0%) | 21 |
+| Denmark Strait, Bismarck | 4 + 10.5 m | 12.1 | 5–7 / 93 | 31 |
+| USN LRBP 1932, 30 kyd | 4 | 3.0 | 4.2–5.4% practice | 36 |
 | USN 1944 study, 10 / 20 / 30 kyd | 6 | 34 / 11 / 4.2 | 32.7 / 10.5 / 2.7 (estimate) | 69 / 57 / 48 |
-| North Cape, Duke of York, night | 4 + 284M | 6.0 | ≥13 / 446 (≥3%) | 28 (record 60) |
+| North Cape, Duke of York, night | 4 + 284M | 6.9 | ≥13 / 446 (≥3%) | 25 (record 60) |
 | Guadalcanal, Washington, night, 8.4 kyd | 5r | 30 | 9–20 / 75 (12–27%) | 57 |
-| Komandorski, Salt Lake City, 3.5 h stern chase (target zigzags to unmask turrets) | 5r | 1.0 | 2–5 / 832 (~0.5%) | 14 |
+| Komandorski, Salt Lake City, 3.5 h stern chase (target zigzags to unmask turrets) | 5r | 1.1 | 2–5 / 832 (~0.5%) | 13 |
 | Bismarck's end, Rodney | 4 | 27 | ~40 / 375 counted (≥11%) | 51 |
 
 Notes:
-- **Practice cases match within about 15–30%.** LRBP runs low (2.8 against 4–5%); the 1932 USN Ford system was probably better than the generic level 4.
-- **Combat cases fall within about ×2 of the record.**
+- **Practice cases match within about 15–30%.** LRBP runs low (3.0 against 4–5%); the 1932 USN Ford system was probably better than the generic level 4.
+- **Combat cases fall within about ×2 of the record.** Since 2026-11-08 (each shell's σ is its gun's, §7) the British battlecruisers at Jutland sit just outside it, 3.1 against 1.4 (2.7 before): their half salvos no longer scatter wider than a broadside.
   - The ordering is right: German better than British at Jutland; radar-at-night high; stern chases near zero.
   - Recorded hits are lower bounds. Counts at Bismarck's end and North Cape are of identified hits on a burning ship.
 - **North Cape exposes a gap.** Duke of York straddled 60% of the time with few hits; the model gives 25% straddles and more hits. That suggests 14″ quad-mount dispersion was worse than modelled (2.0% of range), or that night hits went uncounted. [UNCERTAIN]
@@ -781,7 +783,7 @@ Notes:
    | Own smoke, director aft of funnel | Raise p_obscured for that sensor |
 
 3. **Night.** A sensor with `bearing_from_optics` yields no solution without illumination. Starshell and searchlights temporarily raise `night_vis`, and searchlights also reveal the illuminating ship.
-4. **Chasing salvos and evasion** are worth exposing to the player as orders. The model shows the effect (Komandorski: 1.0%); [`evasion-research.md`](evasion-research.md) has the full study of evasion styles and counters.
+4. **Chasing salvos and evasion** are worth exposing to the player as orders. The model shows the effect (Komandorski: 1.1%); [`evasion-research.md`](evasion-research.md) has the full study of evasion styles and counters.
 5. **Several ships on one target.** Use `spot_confusion` (0.2–0.3) to model splashes being misattributed. Germans and Americans used dye-coloured shells; give dyed shells a lower confusion value [INFERRED].
 6. **CPU.** The full simulation is about 1 s step × handful of float ops per ship pair; trackers update only on readings. A 15-minute duel takes about 0.02 s in pure Python.
 

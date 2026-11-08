@@ -96,7 +96,7 @@ public class ShellChoiceTests
 
     /// <summary>A captain firing at will, his side's doctrine by target: a dreadnought's main battery on a destroyer
     /// comes round to HE (AP passes through her), on another dreadnought it stays on AP; by the magazine order nothing
-    /// is ordered.</summary>
+    /// is ordered. Read while the main battery is on her: a destroyer may be going down inside the three minutes.</summary>
     [Theory]
     [InlineData("destroyer", ShellUse.ByTarget, ShellKind.He)]
     [InlineData("dreadnought", ShellUse.ByTarget, null)]
@@ -109,11 +109,18 @@ public class ShellChoiceTests
         w.Apply(ShipSystem.Spawn(w.Ships.AddClass(Fleet.Get(target).Class!), 56.554, 4.0, 90, 0, side: 1));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Shells, (double)use));
         w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Shells, (double)ShellUse.MagazineOrder));
-        w.AdvanceTo(w.Time + 3 * 60_000);
         var combat = w.Ships.Store.Combat;
         int slot = w.Ships.Store.SlotOf(1);
-        Assert.Equal(2, combat.Target(slot, 0));
-        Assert.Equal(loads, combat.Ordered(slot, 0));
+        bool engaged = false;
+        ShellKind? ordered = null;
+        for (var end = w.Time + 3 * 60_000; w.Time < end;)
+        {
+            w.AdvanceTo(w.Time + 5_000);
+            if (combat.Target(slot, 0) == 2)
+                (engaged, ordered) = (true, combat.Ordered(slot, 0));
+        }
+        Assert.True(engaged);
+        Assert.Equal(loads, ordered);
     }
 
     /// <summary>The player's kind for a ship's main guns holds against her captain (A5, decision 3): HE on a battleship,

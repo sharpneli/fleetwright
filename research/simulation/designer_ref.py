@@ -487,10 +487,10 @@ def physics_table():
         hz = [s.sigma_range(k * KYD, Conditions(k_optic=1.5), TARGETS["CA"]) for k in ranges]
         print(f"   {B:5.2f}m " + " ".join(f"{a:4.0f}/{b:<3.0f}" for a, b in zip(cl, hz)))
     print("\n   For comparison: the things a range error must be small against")
-    print(f"   {'range':>6} {'pattern sig (9)':>15} {'hitting space CA':>17} {'danger space':>12} {'salvo wander 1%':>15}")
+    print(f"   {'range':>6} {'shell sigma_D':>15} {'hitting space CA':>17} {'danger space':>12} {'salvo wander 1%':>15}")
     for k in ranges:
         R = k * KYD
-        sr, _ = g.sigma_D(R, 9)
+        sr, _ = g.sigma_D(R)
         dng, dep, wid = fc.hitting_space(TARGETS["CA"], R, g, 60)
         print(f"   {k:5d}k {sr:15.0f} {dng + dep:17.0f} {dng:12.0f} {0.01 * R:15.0f}")
     print("\n=== D3. Magnification: effective M (what the error formula sees) by support and weather, 30 m high ===")
@@ -724,7 +724,7 @@ def value_table(res):
 def rule_b(R, M=25, tech=None, k=1.0):
     """Base whose clear-weather unit of error at range R equals k x the 9-gun salvo's range sigma."""
     tech = tech or OPTICS["O3"]
-    sr, _ = GUNS[CRUISER_GUN].sigma_D(R, 9)
+    sr, _ = GUNS[CRUISER_GUN].sigma_D(R)
     for b in np.arange(0.5, 40.0, 0.05):
         if RFSensor(RFFit(b, M, "stereo", "director", "tower", 30), tech).unit_error(R) <= k * sr:
             return float(b)
@@ -738,7 +738,7 @@ def rule_of_thumb(res=None):
     print(f"   {'range':>6} {'pattern sig':>11} {'k=0.7':>7} {'k=1':>7} {'k=1.4':>7}   knee table / keeper (clear, haze)")
     for kk in (10, 12, 15, 18, 20, 25):
         R = kk * KYD
-        sr, _ = GUNS[CRUISER_GUN].sigma_D(R, 9)
+        sr, _ = GUNS[CRUISER_GUN].sigma_D(R)
         line = f"   {kk:5d}k {sr:10.0f}m " + " ".join(f"{rule_b(R, k=k):6.1f}m" for k in (0.7, 1.0, 1.4))
         if res is not None and kk in (10, 15, 20, 25):
             line += "   " + " ".join(f"{knee(res, t, c, kk):5.2f}" for t in ("table (C3/M2/O3)", "keeper (C4/M3/O4)")
