@@ -1,0 +1,53 @@
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b0 (main, 305 mm): Ap 330 kg (filler 5.28 kg, Base fuze), Common 330 kg (filler 12.21 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  11.8%/  7.0%  Common  12.1%/  6.5%  matchup Common, damage model Ap  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  11.5%/  9.0%  Common  11.0%/ 10.5%  matchup Ap, damage model Common  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  14.3%/  6.0%  Common  14.6%/  9.0%  matchup Common, damage model Common
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  14.1%/ 11.0%  Common  13.5%/  6.5%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  37.5%/  9.5%  Common  36.7%/  7.5%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  39.0%/ 11.5%  Common  37.6%/ 11.0%  matchup Ap, damage model Ap
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b1 (main, 152 mm): Ap 40.8 kg (filler 0.65 kg, Base fuze), Common 40.8 kg (filler 1.51 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap   1.4%/  3.0%  Common   1.2%/  3.5%  matchup Ap, damage model Common  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap   1.1%/  1.5%  Common   0.7%/  0.0%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap   1.7%/  2.0%  Common   1.5%/  1.0%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap   1.3%/  1.0%  Common   0.9%/  0.0%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap   6.9%/  4.5%  Common   6.8%/  5.0%  matchup Ap, damage model Common  (within the noise)
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap   9.2%/  3.5%  Common   9.1%/ 10.5%  matchup Ap, damage model Common  <- DIFFER
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b2 (secondary, 75 mm): Common 4.9 kg (filler 0.18 kg, Base fuze), Ap 4.9 kg (filler 0.08 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Common   1.6%/  2.0%  Ap   1.6%/  1.5%  matchup Common, damage model Common
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b3: no Common profile (none bearing)
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b3: no Ap profile (none bearing)
+
+Mikasa-like (pre-dreadnought) b0 (main, 305 mm): Ap 384.7 kg (filler 19.24 kg, Base fuze), Common 384.7 kg (filler 38.47 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  22.2%/ 34.0%  Common  22.8%/  8.0%  matchup Common, damage model Ap  <- DIFFER
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  19.0%/ 41.0%  Common  19.5%/  7.0%  matchup Common, damage model Ap  <- DIFFER
+  on Arethusa-like (1914)  12000 m, 6 hit(s): Ap  27.7%/ 63.0%  Common  17.1%/ 14.0%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  26.8%/ 36.5%  Common  27.4%/  7.5%  matchup Common, damage model Ap  <- DIFFER
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  23.0%/ 51.5%  Common  23.5%/ 12.0%  matchup Common, damage model Ap  <- DIFFER
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): Ap  33.7%/ 64.0%  Common  20.7%/ 21.0%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  72.3%/ 72.5%  Common  72.3%/ 49.5%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  72.3%/ 77.0%  Common  72.3%/ 62.5%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): Ap  72.3%/ 79.5%  Common  72.3%/ 72.0%  matchup Ap, damage model Ap
+
+Mikasa-like (pre-dreadnought) b1 (secondary, 152 mm): Common 47.6 kg (filler 4.76 kg, Base fuze), Ap 47.6 kg (filler 2.38 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Common   2.4%/  4.0%  Ap   2.4%/ 16.5%  matchup Common, damage model Ap  <- DIFFER
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Common   0.9%/  0.5%  Ap   1.5%/ 17.0%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Common   2.9%/  4.5%  Ap   2.9%/ 17.5%  matchup Common, damage model Ap  <- DIFFER
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Common   1.1%/  0.5%  Ap   1.9%/ 14.5%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Common  14.7%/ 12.5%  Ap  14.7%/ 70.5%  matchup Common, damage model Ap  <- DIFFER
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Common  14.7%/ 32.5%  Ap  14.7%/ 76.5%  matchup Common, damage model Ap  <- DIFFER
+Mikasa-like (pre-dreadnought) b2: no Common profile (none bearing)
+Mikasa-like (pre-dreadnought) b2: no Ap profile (none bearing)
+
+Mikasa-like (pre-dreadnought) b3 (secondary, 76 mm): Common 6 kg (filler 0.6 kg, Base fuze), Ap 6 kg (filler 0.3 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Common   2.0%/  9.5%  Ap   2.0%/ 58.5%  matchup Common, damage model Ap  <- DIFFER
+Mikasa-like (pre-dreadnought) b4: no Common profile (none bearing)
+Mikasa-like (pre-dreadnought) b4: no Ap profile (none bearing)
+
+33 lines (out of the fight, matchup/damage model), 10 where they pick a different kind beyond the noise

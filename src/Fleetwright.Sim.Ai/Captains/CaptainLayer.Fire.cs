@@ -1020,7 +1020,7 @@ public sealed partial class CaptainLayer
         foreach (ref readonly var e in shellTarget.Entries)
         {
             var (hit, exponent) = gun.Chosen(e.Profile, rangeM, ctx.Settings);
-            (hits, round, n) = (hits + e.Count * hit, round + e.Count * hit * (1 - Math.Exp(-exponent / Math.Max(e.Toughness, 1e-3))), n + e.Count);
+            (hits, round, n) = (hits + e.Count * hit, round + e.Count * hit * Matchup.Harm(exponent, e.Toughness), n + e.Count);
         }
         return n > 0 && hits / n >= hitFloor && round / n >= roundFloor;
     }

@@ -1,0 +1,47 @@
+
+Iron Duke-like (1914) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  30.1%/ 23.5%  He  34.5%/ 73.0%  matchup He, damage model He
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  27.9%/ 26.5%  He  40.5%/ 70.0%  matchup He, damage model He
+  on Arethusa-like (1914)  12000 m, 6 hit(s): Ap  38.2%/ 32.0%  He  42.2%/ 73.5%  matchup He, damage model He
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  35.5%/ 27.0%  He  40.9%/ 79.0%  matchup He, damage model He
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  33.0%/ 30.5%  He  48.1%/ 78.5%  matchup He, damage model He
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): Ap  45.5%/ 43.0%  He  50.1%/ 83.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  58.1%/ 22.5%  He  88.1%/ 99.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  58.8%/ 31.0%  He  88.1%/ 99.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): Ap  59.3%/ 36.5%  He  88.1%/ 99.0%  matchup He, damage model He
+
+Iron Duke-like (1914) b1 (secondary, 152 mm): He 46.2 kg (filler 4.16 kg, Nose fuze), Ap 48.6 kg (filler 1.56 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.7%/ 12.5%  Ap   2.4%/  4.0%  matchup Ap, damage model He  <- DIFFER
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.7%/ 15.0%  Ap   1.9%/  5.0%  matchup Ap, damage model He  <- DIFFER
+  on Arethusa-like (1914)  12000 m, 6 hit(s): He   3.3%/ 11.0%  Ap   3.7%/  3.5%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.9%/ 13.5%  Ap   2.8%/  4.0%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   0.9%/ 25.0%  Ap   2.3%/  4.5%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): He   4.3%/ 14.5%  Ap   4.7%/  2.5%  matchup Ap, damage model He  <- DIFFER
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He  14.3%/ 66.5%  Ap   7.6%/  6.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He  14.3%/ 57.0%  Ap   9.8%/ 17.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): He  14.3%/ 63.0%  Ap  11.6%/ 22.5%  matchup He, damage model He
+Iron Duke-like (1914) b2: no He profile (none bearing)
+Iron Duke-like (1914) b2: no Ap profile (none bearing)
+
+Lion-like (1912) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  30.3%/ 26.0%  He  34.8%/ 71.5%  matchup He, damage model He
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  28.2%/ 24.5%  He  40.3%/ 69.0%  matchup He, damage model He
+  on Arethusa-like (1914)  12000 m, 6 hit(s): Ap  37.3%/ 30.5%  He  41.9%/ 74.5%  matchup He, damage model He
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  35.6%/ 26.5%  He  41.2%/ 77.5%  matchup He, damage model He
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  33.3%/ 29.5%  He  47.8%/ 78.5%  matchup He, damage model He
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): Ap  44.4%/ 42.0%  He  49.7%/ 82.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  58.1%/ 25.5%  He  88.1%/ 97.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  58.7%/ 31.0%  He  88.1%/ 99.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): Ap  59.2%/ 39.0%  He  88.1%/ 98.0%  matchup He, damage model He
+
+Lion-like (1912) b1 (secondary, 102 mm): He 14 kg (filler 1.26 kg, Nose fuze), Ap 14.7 kg (filler 0.47 kg, Base fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.2%/  5.0%  Ap   0.7%/  3.0%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.2%/ 10.5%  Ap   0.3%/  0.0%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.2%/  7.5%  Ap   0.8%/  1.5%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   0.2%/ 10.5%  Ap   0.4%/  1.0%  matchup Ap, damage model He  <- DIFFER
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He   4.5%/ 37.5%  Ap   2.4%/  9.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He   4.5%/ 46.5%  Ap   3.3%/ 14.5%  matchup He, damage model He
+Lion-like (1912) b2: no He profile (none bearing)
+Lion-like (1912) b2: no Ap profile (none bearing)
+
+33 lines (out of the fight, matchup/damage model), 9 where they pick a different kind beyond the noise

@@ -11,7 +11,8 @@ namespace Fleetwright.Sim.Ai;
 /// <summary>When a commander sends a flotilla in to attack (docs/battle/command.md 5.1d and 5.1g; the chain of command,
 /// docs/battle/admirals-orders.md O7b): the one rule the side's commander (for his top units) and every force's admiral
 /// (for the flotillas of his force) share. A flotilla is sent in by day on an enemy line his own heavy units are engaging,
-/// its attack worth making (its matchup has it attacking, at doctrine's bar); by night (doctrine's NightAttack) on any
+/// its attack worth making for the force (the heavy units engaging that enemy beside it: its matchup has them attacking,
+/// at doctrine's bar; docs/battle/explosions.md EX7, PM); by night (doctrine's NightAttack) on any
 /// heavy enemy in reach worth it; declining a stronger enemy, by night only; broken off, once, to cover the others
 /// breaking off; given up and going home, never. One whose attack was beaten off isn't sent in again. AI state:
 /// hashed; nothing allocated once grown.</summary>
@@ -20,6 +21,7 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
     readonly List<int> beatenOff = new(8), covered = new(8);   // units, sorted
     readonly MatchupSide one = new(), enemy = new();
     readonly List<Vec3d>[] heavy = new List<Vec3d>[256];
+    readonly List<Unit>[] heavyUnits = new List<Unit>[256];
     readonly long[] heavyMs = new long[256];
 
     internal TaskLayer Tasks { get; set; } = null!;
@@ -79,10 +81,12 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
     public List<Vec3d> Heavy(in AiContext ctx, byte side)
     {
         var list = heavy[side] ??= new List<Vec3d>(16);
+        var units = heavyUnits[side] ??= new List<Unit>(16);
         if (heavyMs[side] != 0 && ctx.NowMs - heavyMs[side] < ctx.Settings.AdmiralPeriodMs)
             return list;   // once a think's period (docs/battle/workers.md W14)
         heavyMs[side] = ctx.NowMs;
         list.Clear();
+        units.Clear();
         var groups = ctx.World.Groups;
         var ships = ctx.Ships;
         for (int k = 0; k < groups.Count; k++)
@@ -90,12 +94,18 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
             var g = groups[k];
             if (!g.IsForce && ships.SlotOf(groups.GuideShip(g)) is int slot and >= 0 && ships[slot].Side == side &&
                 roles.Of(Unit.Group(g.GroupId)) == UnitRole.Heavy)
+            {
                 list.Add(ships[slot].Position);
+                units.Add(Unit.Group(g.GroupId));
+            }
         }
         for (int slot = 0; slot < ships.Slots; slot++)
             if (ships.IsAlive(slot) && ships[slot].Side == side && groups.Of(ships[slot].Entity) == null &&
                 roles.Of(Unit.Ship(ships[slot].Entity)) == UnitRole.Heavy)
+            {
                 list.Add(ships[slot].Position);
+                units.Add(Unit.Ship(ships[slot].Entity));
+            }
         return list;
     }
 
@@ -115,7 +125,10 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
     /// <summary>Whether a flotilla's attack is worth making (docs/battle/command.md 5.1g): an enemy group within
     /// <see cref="SimSettings.CommanderAttackM"/> of it that its matchup has it attacking, at doctrine's bar or better; and,
     /// unless <paramref name="engaging"/> is null (by night), a heavy unit of its side's engaging that group (within
-    /// <see cref="SimSettings.FightCompareM"/> of it).</summary>
+    /// <see cref="SimSettings.FightCompareM"/> of it). By day it's judged for the force: the heavy units engaging the
+    /// group fight beside it, the enemy's guns shared between them and the boats, so the attack is made where it does
+    /// better for the whole than the gunfight alone, and its losses count against the force (docs/battle/explosions.md EX7:
+    /// once the matchup expected the boats' real losses, about half on a day attack, the boats judged alone never went).</summary>
     public bool Worth(in AiContext ctx, byte side, Unit u, Vec3d at, ReadOnlySpan<HeldGroup> enemyGroups, List<Vec3d>? engaging)
     {
         double reach = ctx.Settings.CommanderAttackM, fight = ctx.Settings.FightCompareM, accept = judge.Bars(0, side).Accept;
@@ -137,13 +150,33 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
                 judge.AddMembers(ctx.World, own, one);
             else if (ctx.Ships.SlotOf(u.Entity) is int slot and >= 0)
                 one.AddOwn(ctx.World, judge.Matchups, slot);
+            if (engaging != null && heavyUnits[side] is { } units)
+                for (int k = 0; k < units.Count && k < engaging.Count; k++)
+                {
+                    if ((engaging[k] - g.Centre).Length > fight)
+                        continue;
+                    if (units[k].IsGroup && ctx.World.Groups.Get(units[k].GroupId) is { } line)
+                        judge.AddGroup(ctx.World, line, one);
+                    else if (!units[k].IsGroup && ctx.Ships.SlotOf(units[k].Entity) is int hs and >= 0)
+                        one.AddOwn(ctx.World, judge.Matchups, hs);
+                }
             enemy.Clear();
             foreach (int i in held.Members(side, g))
                 enemy.AddContact(ctx.World, judge.Matchups, side, pic[i]);
             if (one.Count == 0 || enemy.Count == 0)
                 continue;
             var r = judge.Judge(ctx, 0, side, at, one, enemy);
-            if ((r.Terms.Style & MatchupStyle.AttackByA) != 0 && r.Confidence >= accept)
+            if (engaging == null)
+            {
+                // by night, the boats alone: their attack, at doctrine's bar
+                if ((r.Terms.Style & MatchupStyle.AttackByA) != 0 && r.Confidence >= accept)
+                    return true;
+                continue;
+            }
+            // by day, for the force: the attack beside the lines' fight at its range, the tonnes its torpedoes take at
+            // doctrine's bar of what its boats lose (a battle line too strong for them beats them off for little)
+            var t = Matchup.Engage(one.Entries, enemy.Entries, r.Terms.RangeM, MatchupStyle.AttackByA, ctx.Settings);
+            if (t.AttackA > 0 && t.AttackExchange() >= accept)
                 return true;
         }
         return false;

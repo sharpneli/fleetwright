@@ -81,10 +81,11 @@ public class MatchupTests(ITestOutputHelper output)
             last = c;
         }
         Assert.True(Judge([E("v25")], [E("iron_duke")]) < 0.2);
-        // by day sixteen since the torpedo officer's judgement (docs/battle/night.md Q12f: twelve 1.40 -> 0.76, sixteen
-        // 1.20); by night four are a match for her
-        Assert.True(Judge([E("v25", 12)], [E("iron_duke")]) < 1);
-        Assert.True(Judge([E("v25", 16)], [E("iron_duke")]) > 1);
+        // by day twenty since PM (docs/battle/explosions.md EX7: the matchup expects the boats' losses on the run as the fine
+        // model has them, about half; sixteen 1.01 -> 0.84, twenty 1.21), sixteen since the torpedo officer's judgement
+        // (docs/battle/night.md Q12f: twelve 1.40 -> 0.76, sixteen 1.20); by night four are a match for her
+        Assert.True(Judge([E("v25", 16)], [E("iron_duke")]) < 1);
+        Assert.True(Judge([E("v25", 20)], [E("iron_duke")]) > 1);
         Assert.True(Judge([E("v25", 4)], [E("iron_duke")], Moonless) > 1);
         // by night the battleship's guns open only on what she makes out: the lone boat does better
         Assert.True(Judge([E("v25")], [E("iron_duke")], Moonless) > Judge([E("v25")], [E("iron_duke")]));
@@ -101,8 +102,9 @@ public class MatchupTests(ITestOutputHelper output)
         // (docs/battle/shells-armour-damage.md P3)
         Assert.InRange(Judge([E("lion")], [E("derfflinger")]), 0.5, 3);
         Assert.InRange(Judge([E("iron_duke")], [E("derfflinger")]), 0.5, 3);
-        // two against one: about four times as confident (Lanchester's square law), a little less as the losses saturate
-        Assert.InRange(Judge([E("iron_duke", 2)], [E("iron_duke")]), 2.5, 4.5);
+        // two against one: about four times as confident (Lanchester's square law), a little more since PM (docs/battle/
+        // explosions.md EX7: damage adds up, so the one taking the fire of two crosses her threshold sooner: 4.1 -> 4.8)
+        Assert.InRange(Judge([E("iron_duke", 2)], [E("iron_duke")]), 3, 6);
     }
 
     [Fact]
@@ -120,12 +122,14 @@ public class MatchupTests(ITestOutputHelper output)
         // shipgen duel: Iron Duke's 13.5" on Derfflinger, 13.0% at 10 km and 4.7% at 14 km
         Assert.InRange(Matchup.HitChance(main, derf, 10_000, Settings), 0.08, 0.2);
         Assert.InRange(Matchup.HitChance(main, derf, 14_000, Settings), 0.03, 0.08);
-        // shipgen hits (2026-11-08, after the one explosion: docs/battle/explosions.md EX7): a 6" hit puts the V25 out 1-2%
-        // of the time (HE 2%, APC 1%; 6.0% on 2026-10-15), this reads 1.5% since the matchup's shells go by their mass;
-        // 15 13.5" AP hits put Derfflinger out 8% at 14 km (0.56% a hit as the matchup counts them)
+        // shipgen hits and matchup --kinds (2026-11-08, after the one explosion: docs/battle/explosions.md EX7, PM): a 6" hit
+        // puts the V25 out 1-2% of the time (HE 2%, APC 1%; 6.0% on 2026-10-15); one 13.5" AP hit on Derfflinger at 14 km
+        // almost never does, fifteen 8% of the time (the damage adding up: 2.5-13.5% at 8-16 km)
         var six = profiles.Value["arethusa"].Guns[0];
-        Assert.InRange(Matchup.OutChance(six, E("v25"), 6000, Settings), 0.008, 0.03);
-        Assert.InRange(Matchup.OutChance(main, E("derfflinger"), 14_000, Settings), 0.004, 0.017);
+        Assert.InRange(Matchup.OutChance(six, E("v25"), 6000, Settings), 0.005, 0.03);
+        Assert.InRange(Matchup.OutChance(main, E("derfflinger"), 14_000, Settings), 0, 0.005);
+        double fifteen = Matchup.OutShare(15 * Matchup.Harm(Matchup.OutExponent(main, derf, 14_000, Settings), 1), derf);
+        Assert.InRange(fifteen, 0.04, 0.14);
     }
 
     [Fact]

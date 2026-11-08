@@ -197,11 +197,17 @@ static class MatchupBench
                     Console.WriteLine(string.Format(Inv, "  {0} b{1} on {2} with {3}: hits {4:0.0}% (fall {5:0.0}°, {6:0} m/s, pen {7:0}/{8:0} mm side/deck); a hit puts her out {9:0.00}%; {10:0.0000} out a minute a ship",
                         e.Profile.Class.Name, g.Battery, t.Profile.Class.Name, c.Shell.Kind, 100 * hit, fall, strike, Terminal.PenMm(c.Shell, strike, fall),
                         Terminal.PenMm(c.Shell, strike, 90 - fall), 100 * o, g.Guns * g.ShellsPerGunMin * hit * o));
+                    // PM's terms (docs/battle/explosions.md EX7): the hits under the water, a fuze started at her plating bursting inside her
+                    double danger = t.Profile.HeightM / Math.Tan(double.DegreesToRadians(Math.Max(fall, 0.1))), band = Matchup.UnderBandM(c.Shell, t.Profile, fall, strike, s);
+                    Console.WriteLine(string.Format(Inv, "      under the water {0:0.0}% of hits (a band of {1:0.0} m); a fuze started at her side bursts inside her {2:0}%; a round's harm {3:0.00e0} (doctrine's floor reads it)",
+                        100 * band / (danger + band + t.Profile.BeamM), band, 100 * Matchup.Inside(c.Shell, strike, s.MatchupRunShare * t.Profile.BeamM, s),
+                        Matchup.PerRound(c, t, r, s)));
                 }
     }
 
     static void Terms(MatchupTerms t, SimSettings s) =>
-        Console.WriteLine(string.Format(Inv, "  {0,-21} lines at {1,6:0} m{2}{3}, {4,5:0.0} min: on B guns {5:0.###} torpedoes {6:0.###}; on A guns {7:0.###} torpedoes {8:0.###} (attackers lost on the way in {9:0.###}); lost A {10:0.0}% B {11:0.0}%: confidence {12:0.###}",
+        Console.WriteLine(string.Format(Inv, "  {0,-21} lines at {1,6:0} m{2}{3}, {4,5:0.0} min: on B guns {5:0.###} torpedoes {6:0.###}; on A guns {7:0.###} torpedoes {8:0.###} (attackers lost on the way in {9:0.###}); lost A {10:0.0}% B {11:0.0}%: confidence {12:0.###}{13}",
             t.Style, t.RangeM, t.AttackA > 0 ? string.Format(Inv, ", A attacks from {0:0} m", t.AttackA) : "", t.AttackB > 0 ? string.Format(Inv, ", B attacks from {0:0} m", t.AttackB) : "",
-            t.Minutes, t.GunsOnB, t.TorpedoesOnB, t.GunsOnA, t.TorpedoesOnA, t.RunInLost, 100 * t.LostA, 100 * t.LostB, t.Confidence(s.MatchupFloor)));
+            t.Minutes, t.GunsOnB, t.TorpedoesOnB, t.GunsOnA, t.TorpedoesOnA, t.RunInLost, 100 * t.LostA, 100 * t.LostB, t.Confidence(s.MatchupFloor),
+            t.AttackA > 0 ? string.Format(Inv, "; A's attack takes {0:0} t for {1:0} t of its attackers ({2:0.##})", t.AttackTakenT, t.AttackLostT, t.AttackExchange()) : ""));
 }

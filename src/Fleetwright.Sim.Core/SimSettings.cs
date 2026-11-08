@@ -2630,16 +2630,35 @@ public sealed record SimSettings
     /// shipgen torpedo --settle 30, a 303 kg charge, out of the fight a hit (duds in): QE 42%, Iron Duke 34%, Derfflinger
     /// 31%, Lion 28%, Arethusa 43%, Chatham 51%, V25 78%, the fleet destroyer 87%; fitted 32, 33, 31, 28, 59, 63, 75, 69
     /// (the old 1/displacement: 32, 35, 31, 24, 83, 86, 89, 89).</summary>
-    public double MatchupShellK { get; init; } = 0.103;
-    public double MatchupShellMassPower { get; init; } = 1;
-    public double MatchupKeptShare { get; init; } = 0.15;
-    public double MatchupPassShare { get; init; } = 0.4;
-    public double MatchupTorpedoK { get; init; } = 8.26;
-    public double MatchupTorpedoSizePower { get; init; } = 0.5;
+    public double MatchupShellK { get; init; } = 0.343;
+    public double MatchupShellMassPower { get; init; } = 0.62;
+    public double MatchupKeptShare { get; init; } = 0.01;
+    public double MatchupPassShare { get; init; } = 0.07;
+    public double MatchupTorpedoK { get; init; } = 8.95;
+    public double MatchupTorpedoSizePower { get; init; } = 0.42;
     public double MatchupPenSpread { get; init; } = 0.1;
     /// <summary>E3: a shell its plate holds within the spall band adds this share of a burst inside to what a kept one
     /// does: the cloud behind a turret face or a roof, rarely a flash [EST; the balance pass fits it].</summary>
     public double MatchupSpallShare { get; init; } = 0.05;
+    /// <summary>PM (docs/battle/explosions.md EX7): a hit under the water, run on to her hull below the belt, does this share
+    /// of a burst inside; and a base fuze's burst against her run past the face is spread by this share of the delay's
+    /// travel besides the fuze's own scatter (her ends and upper works narrower than her beam) [EST; fitted to shipgen
+    /// matchup --kinds].</summary>
+    public double MatchupUnderwaterShare { get; init; } = 2;
+    public double MatchupRunSpread { get; init; } = 0.75;
+    /// <summary>A side hit's run inside her past the face, as a share of her beam (the bench's hits fall on her ends and upper
+    /// works too: a German 12" AP's bursts beyond a V25 and an Arethusa give 0.6) [EST].</summary>
+    public double MatchupRunShare { get; init; } = 0.6;
+    /// <summary>PM: the under-water band's share of the reach's (her section narrows under the water, so a shell runs further
+    /// to meet her: shipgen hits gives 0.56-0.77 of the full band on a V25, Iron Duke and Derfflinger); and the share of a burst
+    /// inside that a nose fuze's burst on a plate does, by the near field's reach through it (NearField.PlateShare) [EST].</summary>
+    public double MatchupUnderBandShare { get; init; } = 0.6;
+    public double MatchupContactShare { get; init; } = 0.25;
+    /// <summary>PM: how many hits' worth of harm put a class out (Matchup.OutShape: K times her thousands of tonnes to the
+    /// power, at least the floor; 1 is every hit a chance on its own) [fitted to shipgen matchup --kinds at several hit counts].</summary>
+    public double MatchupOutShapeK { get; init; } = 1.22;
+    public double MatchupOutShapePower { get; init; } = 0;
+    public double MatchupOutShapeMin { get; init; } = 0.5;
     /// <summary>A shell through armour does what its fuze and filler give it (<see cref="LowOrderShare"/>): a full burst
     /// all of it, a burst in the plate and a low-order burst these shares, a blind fuze or a dud as one kept out (a
     /// broken shell too, the plate's doing).</summary>

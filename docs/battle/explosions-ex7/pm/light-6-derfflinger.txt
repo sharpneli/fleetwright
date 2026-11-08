@@ -1,0 +1,74 @@
+
+Derfflinger-like (1914) b0 (main, 305 mm): Ap 408.3 kg (filler 11.02 kg, Base fuze), He 408.3 kg (filler 26.95 kg, Nose fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  14.2%/  9.5%  He  14.0%/ 28.5%  matchup Ap, damage model He  <- DIFFER
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  15.0%/ 15.5%  He  13.1%/ 23.0%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)  12000 m, 6 hit(s): Ap  16.8%/ 20.0%  He  19.6%/ 25.0%  matchup He, damage model He
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  17.4%/ 13.5%  He  17.3%/ 25.5%  matchup Ap, damage model He  <- DIFFER
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  18.6%/ 21.0%  He  16.2%/ 25.0%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): Ap  21.0%/ 25.0%  He  24.4%/ 29.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  45.2%/  9.5%  He  74.4%/ 91.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  47.6%/ 12.5%  He  74.4%/ 83.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): Ap  49.6%/ 23.0%  He  74.4%/ 87.5%  matchup He, damage model He
+
+Derfflinger-like (1914) b1 (secondary, 88 mm): He 9.8 kg (filler 0.65 kg, Nose fuze), Ap 9.8 kg (filler 0.26 kg, Base fuze), Star 8.9 kg (filler 0.18 kg, Time fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.1%/  1.5%  Ap   0.3%/  1.5%  Star   0.2%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.1%/  1.0%  Ap   0.2%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.1%/  1.0%  Ap   0.4%/  0.0%  Star   0.3%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   0.2%/  2.0%  Ap   0.3%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He   3.2%/ 16.0%  Ap   2.3%/  7.0%  Star   2.9%/  3.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He   3.2%/ 24.5%  Ap   2.8%/ 13.0%  Star   NaN%/  NaN%  matchup He, damage model He
+Derfflinger-like (1914) b2: no He profile (none bearing)
+Derfflinger-like (1914) b2: no Ap profile (none bearing)
+Derfflinger-like (1914) b2: no Star profile (none bearing)
+
+Derfflinger-like (1914) b3 (secondary, 150 mm): He 48.6 kg (filler 3.21 kg, Nose fuze), Ap 48.6 kg (filler 1.31 kg, Base fuze), Star 43.9 kg (filler 0.88 kg, Time fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.7%/  2.0%  Ap   1.6%/  4.5%  Star   2.3%/  3.5%  matchup Star, damage model Ap  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.8%/  4.5%  Ap   1.8%/  3.5%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)  12000 m, 6 hit(s): He   2.6%/  3.5%  Ap   3.1%/  6.0%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.9%/  1.5%  Ap   2.0%/  3.0%  Star   2.9%/  3.5%  matchup Star, damage model Star
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   1.0%/  8.5%  Ap   2.2%/  4.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): He   3.3%/  5.0%  Ap   3.9%/  7.5%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He  15.0%/ 36.0%  Ap   7.9%/  4.0%  Star  13.6%/  6.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He  15.0%/ 44.5%  Ap  10.2%/  8.0%  Star   NaN%/  NaN%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): He  15.0%/ 41.5%  Ap  12.7%/ 20.5%  Star   NaN%/  NaN%  matchup He, damage model He
+Derfflinger-like (1914) b4: no He profile (none bearing)
+Derfflinger-like (1914) b4: no Ap profile (none bearing)
+Derfflinger-like (1914) b4: no Star profile (none bearing)
+
+Von der Tann-like (1910) b0 (main, 280 mm): Ap 315.9 kg (filler 8.53 kg, Base fuze), He 315.9 kg (filler 20.85 kg, Nose fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap  11.0%/  6.0%  He  10.6%/ 18.0%  matchup Ap, damage model He  <- DIFFER
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap  11.6%/ 12.0%  He   9.9%/ 20.5%  matchup Ap, damage model He  <- DIFFER
+  on Arethusa-like (1914)  12000 m, 6 hit(s): Ap  12.7%/ 16.0%  He  15.5%/ 23.5%  matchup He, damage model He
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap  13.5%/ 10.0%  He  13.1%/ 17.5%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap  14.5%/ 14.5%  He  12.2%/ 20.5%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): Ap  15.9%/ 21.0%  He  19.3%/ 23.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap  37.1%/  5.0%  He  65.1%/ 81.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap  39.3%/ 21.0%  He  65.1%/ 79.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): Ap  41.0%/ 23.5%  He  65.1%/ 77.0%  matchup He, damage model He
+
+Von der Tann-like (1910) b1 (secondary, 88 mm): He 9.8 kg (filler 0.65 kg, Nose fuze), Ap 9.8 kg (filler 0.26 kg, Base fuze), Star 8.9 kg (filler 0.18 kg, Time fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.1%/  1.5%  Ap   0.3%/  1.5%  Star   0.2%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.1%/  1.0%  Ap   0.2%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.1%/  1.0%  Ap   0.4%/  0.0%  Star   0.3%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   0.2%/  2.0%  Ap   0.3%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He   3.2%/ 16.0%  Ap   2.3%/  7.0%  Star   2.9%/  3.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He   3.2%/ 24.5%  Ap   2.8%/ 13.0%  Star   NaN%/  NaN%  matchup He, damage model He
+Von der Tann-like (1910) b2: no He profile (none bearing)
+Von der Tann-like (1910) b2: no Ap profile (none bearing)
+Von der Tann-like (1910) b2: no Star profile (none bearing)
+
+Von der Tann-like (1910) b3 (secondary, 150 mm): He 48.6 kg (filler 3.21 kg, Nose fuze), Ap 48.6 kg (filler 1.31 kg, Base fuze), Star 43.9 kg (filler 0.88 kg, Time fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): He   0.7%/  2.0%  Ap   1.6%/  4.5%  Star   2.3%/  3.5%  matchup Star, damage model Ap  (within the noise)
+  on Arethusa-like (1914)   8000 m, 6 hit(s): He   0.8%/  4.5%  Ap   1.8%/  3.5%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Arethusa-like (1914)  12000 m, 6 hit(s): He   2.6%/  3.5%  Ap   3.1%/  6.0%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): He   0.9%/  1.5%  Ap   2.0%/  3.0%  Star   2.9%/  3.5%  matchup Star, damage model Star
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): He   1.0%/  8.5%  Ap   2.2%/  4.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)  12000 m, 6 hit(s): He   3.3%/  5.0%  Ap   3.9%/  7.5%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): He  15.0%/ 36.0%  Ap   7.9%/  4.0%  Star  13.6%/  6.5%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): He  15.0%/ 44.5%  Ap  10.2%/  8.0%  Star   NaN%/  NaN%  matchup He, damage model He
+  on V25-like torpedo boat (1914)  12000 m, 6 hit(s): He  15.0%/ 41.5%  Ap  12.7%/ 20.5%  Star   NaN%/  NaN%  matchup He, damage model He
+Von der Tann-like (1910) b4: no He profile (none bearing)
+Von der Tann-like (1910) b4: no Ap profile (none bearing)
+Von der Tann-like (1910) b4: no Star profile (none bearing)
+
+48 lines (out of the fight, matchup/damage model), 4 where they pick a different kind beyond the noise

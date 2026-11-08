@@ -1,0 +1,20 @@
+
+Iron Duke-like (1914) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 20 hit(s): Ap  32.3%/ 40.0%  He  11.2%/ 11.5%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 20 hit(s): Ap  29.3%/ 34.5%  He  11.7%/ 21.5%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)  12000 m, 20 hit(s): Ap  24.8%/ 50.5%  He  12.2%/ 21.5%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 20 hit(s): Ap  28.3%/ 34.0%  He  10.9%/  0.5%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 20 hit(s): Ap  26.1%/ 34.5%  He  11.3%/  3.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)  12000 m, 20 hit(s): Ap  22.8%/ 35.5%  He  11.7%/  0.5%  matchup Ap, damage model Ap
+
+Iron Duke-like (1914) b1 (secondary, 152 mm): He 46.2 kg (filler 4.16 kg, Nose fuze), Ap 48.6 kg (filler 1.56 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 20 hit(s): He   0.6%/  1.0%  Ap   1.4%/  5.5%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 20 hit(s): He   0.8%/  2.5%  Ap   1.0%/  1.5%  matchup Ap, damage model He  (within the noise)
+  on Mikasa-like (pre-dreadnought)  12000 m, 20 hit(s): He   0.9%/  5.0%  Ap   1.1%/  2.0%  matchup Ap, damage model He  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 20 hit(s): He   0.5%/  0.0%  Ap   1.2%/  6.5%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 20 hit(s): He   0.7%/  0.5%  Ap   0.9%/  1.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)  12000 m, 20 hit(s): He   0.8%/  0.0%  Ap   1.1%/  0.0%  matchup Ap, damage model He  (within the noise)
+Iron Duke-like (1914) b2: no He profile (none bearing)
+Iron Duke-like (1914) b2: no Ap profile (none bearing)
+
+12 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

@@ -1,0 +1,20 @@
+
+Iron Duke-like (1914) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 10 hit(s): Ap  17.7%/ 18.0%  He   5.8%/  5.5%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 10 hit(s): Ap  15.9%/ 14.5%  He   6.0%/  8.0%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)  12000 m, 10 hit(s): Ap  13.3%/ 17.5%  He   6.3%/  6.5%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 10 hit(s): Ap  15.3%/ 14.5%  He   5.6%/  0.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 10 hit(s): Ap  14.0%/ 15.0%  He   5.8%/  0.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)  12000 m, 10 hit(s): Ap  12.2%/ 14.5%  He   6.1%/  0.0%  matchup Ap, damage model Ap
+
+Iron Duke-like (1914) b1 (secondary, 152 mm): He 46.2 kg (filler 4.16 kg, Nose fuze), Ap 48.6 kg (filler 1.56 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 10 hit(s): He   0.3%/  0.5%  Ap   0.7%/  2.5%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 10 hit(s): He   0.4%/  0.5%  Ap   0.5%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Mikasa-like (pre-dreadnought)  12000 m, 10 hit(s): He   0.5%/  2.0%  Ap   0.6%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 10 hit(s): He   0.3%/  0.5%  Ap   0.6%/  4.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 10 hit(s): He   0.4%/  0.5%  Ap   0.4%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)  12000 m, 10 hit(s): He   0.4%/  0.0%  Ap   0.5%/  0.0%  matchup Ap, damage model He  (within the noise)
+Iron Duke-like (1914) b2: no He profile (none bearing)
+Iron Duke-like (1914) b2: no Ap profile (none bearing)
+
+12 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

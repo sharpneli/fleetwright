@@ -1,0 +1,10 @@
+
+V25-like torpedo boat (1914) b0 (main, 88 mm): Ap 9.8 kg (filler 0.26 kg, Base fuze), He 9.8 kg (filler 0.65 kg, Nose fuze), Star 8.9 kg (filler 0.18 kg, Time fuze)
+  on Arethusa-like (1914)   4000 m, 6 hit(s): Ap   0.3%/  1.5%  He   0.1%/  1.5%  Star   0.2%/  1.0%  matchup Ap, damage model Ap
+  on Arethusa-like (1914)   8000 m, 6 hit(s): Ap   0.2%/  0.0%  He   0.1%/  1.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   4000 m, 6 hit(s): Ap   0.4%/  0.0%  He   0.1%/  1.0%  Star   0.3%/  1.0%  matchup Ap, damage model He  (within the noise)
+  on Chatham-like Town (1912)   8000 m, 6 hit(s): Ap   0.3%/  0.0%  He   0.2%/  2.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on V25-like torpedo boat (1914)   4000 m, 6 hit(s): Ap   2.3%/  7.0%  He   3.2%/ 16.0%  Star   2.9%/  3.0%  matchup He, damage model He
+  on V25-like torpedo boat (1914)   8000 m, 6 hit(s): Ap   2.8%/ 13.0%  He   3.2%/ 24.5%  Star   NaN%/  NaN%  matchup He, damage model He
+
+6 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

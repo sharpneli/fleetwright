@@ -1,0 +1,20 @@
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b0 (main, 305 mm): Ap 330 kg (filler 5.28 kg, Base fuze), Common 330 kg (filler 12.21 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 20 hit(s): Ap   6.1%/ 19.0%  Common   5.6%/  8.0%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 20 hit(s): Ap   7.9%/  5.5%  Common   6.9%/  3.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 20 hit(s): Ap   5.3%/ 11.0%  Common   4.9%/  7.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 20 hit(s): Ap   7.1%/ 12.0%  Common   6.2%/  0.0%  matchup Ap, damage model Ap
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b1 (main, 152 mm): Ap 40.8 kg (filler 0.65 kg, Base fuze), Common 40.8 kg (filler 1.51 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 20 hit(s): Ap   0.8%/  1.0%  Common   0.7%/  1.0%  matchup Ap, damage model Ap
+  on Mikasa-like (pre-dreadnought)   8000 m, 20 hit(s): Ap   1.0%/  0.0%  Common   0.9%/  1.0%  matchup Ap, damage model Common  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 20 hit(s): Ap   0.7%/  0.0%  Common   0.6%/  0.0%  matchup Ap, damage model Ap
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 20 hit(s): Ap   0.9%/  0.0%  Common   0.8%/  0.0%  matchup Ap, damage model Ap
+
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b2 (secondary, 75 mm): Common 4.9 kg (filler 0.18 kg, Base fuze), Ap 4.9 kg (filler 0.08 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 20 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 20 hit(s): Common   0.1%/  0.0%  Ap   0.1%/  0.0%  matchup Ap, damage model Common  (within the noise)
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b3: no Common profile (none bearing)
+Borodino-like (Knyaz Suvorov, Tsushima 1905) b3: no Ap profile (none bearing)
+
+10 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

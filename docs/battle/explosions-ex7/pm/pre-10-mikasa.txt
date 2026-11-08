@@ -1,0 +1,24 @@
+
+Mikasa-like (pre-dreadnought) b0 (main, 305 mm): Ap 384.7 kg (filler 19.24 kg, Base fuze), Common 384.7 kg (filler 38.47 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 10 hit(s): Ap   3.6%/  2.0%  Common   3.6%/  0.0%  matchup Common, damage model Ap  (within the noise)
+  on Mikasa-like (pre-dreadnought)   8000 m, 10 hit(s): Ap   3.8%/  2.5%  Common   3.8%/  1.0%  matchup Common, damage model Ap  (within the noise)
+  on Mikasa-like (pre-dreadnought)  12000 m, 10 hit(s): Ap   4.0%/  1.0%  Common   4.0%/  1.0%  matchup Common, damage model Ap  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 10 hit(s): Ap   3.5%/  0.0%  Common   3.5%/  4.5%  matchup Common, damage model Common
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 10 hit(s): Ap   3.6%/  1.0%  Common   3.7%/  0.0%  matchup Common, damage model Ap  (within the noise)
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)  12000 m, 10 hit(s): Ap   3.9%/  0.0%  Common   3.8%/  0.0%  matchup Ap, damage model Ap
+
+Mikasa-like (pre-dreadnought) b1 (secondary, 152 mm): Common 47.6 kg (filler 4.76 kg, Base fuze), Ap 47.6 kg (filler 2.38 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 10 hit(s): Common   0.3%/  0.5%  Ap   0.3%/  0.0%  matchup Common, damage model Common
+  on Mikasa-like (pre-dreadnought)   8000 m, 10 hit(s): Common   0.4%/  0.5%  Ap   0.4%/  0.5%  matchup Common, damage model Common
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 10 hit(s): Common   0.3%/  0.0%  Ap   0.3%/  0.0%  matchup Common, damage model Common
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   8000 m, 10 hit(s): Common   0.4%/  0.0%  Ap   0.4%/  0.0%  matchup Common, damage model Common
+Mikasa-like (pre-dreadnought) b2: no Common profile (none bearing)
+Mikasa-like (pre-dreadnought) b2: no Ap profile (none bearing)
+
+Mikasa-like (pre-dreadnought) b3 (secondary, 76 mm): Common 6 kg (filler 0.6 kg, Base fuze), Ap 6 kg (filler 0.3 kg, Base fuze)
+  on Mikasa-like (pre-dreadnought)   4000 m, 10 hit(s): Common   0.0%/  0.0%  Ap   0.0%/  0.0%  matchup Common, damage model Common
+  on Borodino-like (Knyaz Suvorov, Tsushima 1905)   4000 m, 10 hit(s): Common   0.0%/  0.0%  Ap   0.0%/  0.0%  matchup Common, damage model Common
+Mikasa-like (pre-dreadnought) b4: no Common profile (none bearing)
+Mikasa-like (pre-dreadnought) b4: no Ap profile (none bearing)
+
+12 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

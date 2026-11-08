@@ -99,5 +99,9 @@ public static class NearField
     /// <summary>What a plate's thickness does to the hole: the root of 6 mm over it in air, nothing in water.</summary>
     static double PlateK(double mm, double tamp) => Math.Pow(6 / Math.Max(mm, 1), 0.5 * (1 - tamp));
 
+    /// <summary>The share of a contact burst's reach in air that a plate of mm lets past it (<see cref="HoleM(in NearCharge,
+    /// double, double, SimSettings)"/>'s): all of it through thin plating, √(6/mm) through armour.</summary>
+    public static double PlateShare(double mm) => Math.Min(PlateK(mm, 0), 1);
+
     static double Lerp(double air, double water, double tamp) => air + (water - air) * tamp;
 }
