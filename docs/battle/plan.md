@@ -39,7 +39,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | How ships are lost | not started; next gameplay work, after some VFX (the user, 2026-11-04) | `loss-stock-take.md` | a post-mortem bench, then the causes |
 | 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
-| 4.5 One explosion | EX0-EX6 done 2026-11-07; the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) 2026-11-08 | `explosions.md` | EX7, the whole game (the step's convergence first), then EX8's acceptance bench |
+| 4.5 One explosion | EX0-EX7 done 2026-11-08 (the matchup refit, the whole game read); the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) | `explosions.md` | PM, the weak points (shipgen), item 10, then EX8 ("Where to pick up") |
 | 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |
 | 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
 | 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |

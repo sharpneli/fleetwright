@@ -1,0 +1,352 @@
+the coarse tier against the fine one: the standard panel (duels, dodging, fights, scenarios, night); 300 runs a duel, 48 seeds a scenario; coarse at 1000x asked
+  playing 14 scenarios (1344 plays) on 32 threads...
+
+duels:
+  battleship v battleship, 16 kyd
+    hits a gun a minute                          fine 0.132 ±0.002     coarse 0.125 ±0.002     -0.007 (-5%)       band ±0.020   ok
+    rounds a gun a minute                        fine 0.980 ±0.002     coarse 0.934 ±0.002     -0.046 (-5%)       band ±0.147   ok
+    first straddle, s after the track            fine 119 ±3.83        coarse 125 ±4.50        +6.36 (+5%)        band ±20.0    ok
+    first hit, s after the track                 fine 149 ±5.20        coarse 158 ±6.15        +8.59 (+6%)        band ±30.0    ok
+  battleship v battleship, 16 kyd, she zigzags
+    hits a gun a minute                          fine 0.102 ±0.002     coarse 0.096 ±0.002     -0.006 (-6%)       band ±0.015   ok
+    rounds a gun a minute                        fine 0.974 ±0.002     coarse 0.932 ±0.002     -0.042 (-4%)       band ±0.146   ok
+    first straddle, s after the track            fine 127 ±4.74        coarse 133 ±5.44        +6.24 (+5%)        band ±20.0    ok
+    first hit, s after the track                 fine 156 ±5.91        coarse 163 ±6.50        +6.87 (+4%)        band ±30.0    ok
+  battleship v battleship, 16 kyd, she turns
+    hits a gun a minute                          fine 0.076 ±0.002     coarse 0.071 ±0.002     -0.005 (-7%)       band ±0.011   ok
+    rounds a gun a minute                        fine 0.972 ±0.002     coarse 0.926 ±0.002     -0.046 (-5%)       band ±0.146   ok
+    first straddle, s after the track            fine 118 ±3.72        coarse 126 ±4.80        +7.92 (+7%)        band ±20.0    ok
+    first hit, s after the track                 fine 152 ±5.96        coarse 160 ±6.65        +7.76 (+5%)        band ±30.0    ok
+  battleship v battleship, 16 kyd, own turn
+    hits a gun a minute                          fine 0.110 ±0.002     coarse 0.098 ±0.002     -0.012 (-11%)      band ±0.017   ok
+    rounds a gun a minute                        fine 0.702 ±0.002     coarse 0.646 ±0.002     -0.056 (-8%)       band ±0.105   ok
+    first straddle, s after the track            fine 119 ±3.91        coarse 127 ±4.93        +7.70 (+6%)        band ±20.0    ok
+    first hit, s after the track                 fine 150 ±5.49        coarse 162 ±6.79        +11.3 (+8%)        band ±30.0    ok
+  battleship v battleship, 7 km in 8 km haze
+    hits a gun a minute                          fine 0.503 ±0.004     coarse 0.490 ±0.004     -0.013 (-3%)       band ±0.075   ok
+    rounds a gun a minute                        fine 1.01 ±0.003      coarse 0.982 ±0.002     -0.028 (-3%)       band ±0.152   ok
+    first straddle, s after the track            fine 54.7 ±1.17       coarse 54.5 ±1.01       -0.237 (0%)        band ±20.0    ok
+    first hit, s after the track                 fine 55.1 ±1.21       coarse 54.5 ±1.01       -0.595 (-1%)       band ±30.0    ok
+  secondaries v destroyer, 6 km
+    hits a gun a minute                          fine 0.410 ±0.013     coarse 0.396 ±0.012     -0.014 (-3%)       band ±0.062   ok
+    rounds a gun a minute                        fine 2.79 ±0.010      coarse 2.62 ±0.009      -0.179 (-6%)       band ±0.419   ok
+    first straddle, s after the track            fine 250 ±6.66        coarse 242 ±5.98        -8.24 (-3%)        band ±37.5    ok
+    first hit, s after the track                 fine 257 ±6.64        coarse 252 ±6.24        -4.90 (-2%)        band ±38.5    ok
+  secondaries v destroyer, 6 km, zigzag
+    hits a gun a minute                          fine 0.318 ±0.017     coarse 0.263 ±0.015     -0.055 (-17%)      band ±0.048   noisy (×1.1 the runs)
+    rounds a gun a minute                        fine 2.73 ±0.011      coarse 2.56 ±0.011      -0.174 (-6%)       band ±0.410   ok
+    first straddle, s after the track            fine 260 ±7.89        coarse 258 ±7.62        -1.79 (-1%)        band ±38.9    ok
+    first hit, s after the track                 fine 272 ±8.45        coarse 276 ±8.22        +3.42 (+1%)        band ±40.8    ok
+  light cruiser v destroyer, 8 km, zigzag
+    hits a gun a minute                          fine 0.133 ±0.008     coarse 0.131 ±0.009     -0.003 (-2%)       band ±0.020   noisy (×1.9 the runs)
+    rounds a gun a minute                        fine 3.30 ±0.008      coarse 3.12 ±0.008      -0.181 (-5%)       band ±0.495   ok
+    first straddle, s after the track            fine 82.4 ±5.13       coarse 89.5 ±6.06       +7.11 (+9%)        band ±20.0    ok
+    first hit, s after the track                 fine 147 ±8.64        coarse 145 ±8.91        -2.75 (-2%)        band ±30.0    ok
+  main battery v torpedo boat, 5 km, zigzag
+    hits a gun a minute                          fine 0.309 ±0.009     coarse 0.278 ±0.009     -0.031 (-10%)      band ±0.046   ok
+    rounds a gun a minute                        fine 1.00 ±0.002      coarse 0.960 ±0.002     -0.044 (-4%)       band ±0.151   ok
+    first straddle, s after the track            fine 58.5 ±1.61       coarse 66.3 ±2.53       +7.82 (+13%)       band ±20.0    ok
+    first hit, s after the track                 fine 59.0 ±1.63       coarse 67.1 ±2.54       +8.15 (+14%)       band ±30.0    ok
+
+fights:
+  battleship v light cruiser, 12 km
+    out of the fight, share                      fine 1.00 ±0.000      coarse 1.00 ±0.000      0.000 (0%)         band ±0.150   ok
+    going down, share                            fine 0.590 ±0.028     coarse 0.543 ±0.029     -0.047 (-8%)       band ±0.100   ok
+    minutes to out of the fight                  fine 9.24 ±0.300      coarse 9.86 ±0.304      +0.616 (+7%)       band ±2.00    ok
+    hits                                         fine 23.9 ±0.455      coarse 20.8 ±0.431      -3.07 (-13%)       band ±3.59    ok
+  light cruiser v destroyer, 7 km, zigzag
+    out of the fight, share                      fine 0.700 ±0.027     coarse 0.690 ±0.027     -0.010 (-1%)       band ±0.105   ok
+    going down, share                            fine 0.120 ±0.019     coarse 0.093 ±0.017     -0.027 (-22%)      band ±0.100   ok
+    minutes to out of the fight                  fine 15.3 ±0.568      coarse 16.1 ±0.554      +0.818 (+5%)       band ±2.29    ok
+    hits                                         fine 31.1 ±1.26       coarse 27.6 ±1.12       -3.42 (-11%)       band ±4.66    ok
+  Squadrons
+    Britain: ships lost                          fine 0.521 ±0.094     coarse 0.292 ±0.073     -0.229 (-44%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.130 ±0.023     coarse 0.073 ±0.018     -0.057 (-44%)      band ±0.050   noisy (×2 the runs)
+    Britain: shell hits made                     fine 500 ±42.3        coarse 283 ±26.8        -217 (-43%)        band ±75.0    FAIL
+    Britain: hit %                               fine 18.3 ±0.883      coarse 11.1 ±0.756      -7.20 (-39%)       band ±2.75    FAIL
+    Britain: ships firing torpedoes              fine 1.00 ±0.152      coarse 0.854 ±0.163     -0.146 (-15%)      band ±0.500   ok
+    Britain: torpedo hits                        fine 0.208 ±0.084     coarse 0.188 ±0.064     -0.021 (-10%)      band ±0.500   ok
+    Germany: ships lost                          fine 1.67 ±0.189      coarse 0.854 ±0.152     -0.813 (-49%)      band ±0.500   noisy (×1.3 the runs)
+    Germany: tonnage lost, share                 fine 0.332 ±0.038     coarse 0.174 ±0.031     -0.158 (-47%)      band ±0.050   FAIL
+    Germany: shell hits made                     fine 306 ±32.9        coarse 274 ±28.3        -31.8 (-10%)       band ±45.9    noisy (×4.6 the runs)
+    Germany: hit %                               fine 12.1 ±0.775      coarse 8.57 ±0.770      -3.49 (-29%)       band ±1.81    noisy (×1.6 the runs)
+    Germany: ships firing torpedoes              fine 1.42 ±0.188      coarse 1.17 ±0.221      -0.250 (-18%)      band ±0.500   noisy (×1.8 the runs)
+    Germany: torpedo hits                        fine 0.479 ±0.126     coarse 0.333 ±0.113     -0.146 (-30%)      band ±0.500   ok
+    the exchange: Britain's share of the tonnage lost fine 0.290 ±0.055     coarse 0.306 ±0.072     +0.016             band ±0.100   noisy (×4.7 the runs)
+    decided, share                               fine 0.042 ±0.029     coarse 0.000 ±0.000     -0.042 (-100%)     band ±0.100   ok
+    the end, hours                               fine 5.91 ±0.055      coarse 6.00 ±0.000      +0.093 (+2%)       band ±0.886   ok
+
+dodging:
+  Flotilla
+    hit % on G101-like large torpedo boat (1914) fine 3.35 ±0.300      coarse 2.71 ±0.261      -0.639 (-19%)      band ±0.503   noisy (×3.2 the runs)
+    hit % on King George V-like (1912)           fine -                coarse 12.5 ±11.8                          band ±-       FAIL
+    hit % on Orion-like (1912)                   fine -                coarse 0.000 ±0.000                        band ±-       FAIL
+    hit % on V25-like torpedo boat (1914)        fine 2.49 ±0.266      coarse 2.62 ±0.282      +0.133 (+5%)       band ±0.500   noisy (×2.9 the runs)
+    Britain: ships lost                          fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.050   ok
+    Britain: shell hits made                     fine 26.6 ±1.49       coarse 29.3 ±1.45       +2.75 (+10%)       band ±3.99    noisy (×1.3 the runs)
+    Britain: hit %                               fine 2.91 ±0.178      coarse 2.67 ±0.174      -0.244 (-8%)       band ±0.500   noisy (×1.1 the runs)
+    Britain: ships firing torpedoes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: ships lost                          fine 4.42 ±0.160      coarse 4.19 ±0.168      -0.229 (-5%)       band ±0.663   ok
+    Germany: tonnage lost, share                 fine 0.738 ±0.026     coarse 0.698 ±0.028     -0.040 (-5%)       band ±0.111   ok
+    Germany: shell hits made                     fine 0.000 ±0.000     coarse 0.021 ±0.021     +0.021             band ±3.00    ok
+    Germany: hit %                               fine -                coarse 8.33 ±8.18                          band ±-       FAIL
+    Germany: ships firing torpedoes              fine 0.271 ±0.145     coarse 1.88 ±0.247      +1.60 (+592%)      band ±0.500   FAIL
+    Germany: torpedo hits                        fine 0.042 ±0.029     coarse 0.021 ±0.021     -0.021 (-50%)      band ±0.500   ok
+    the exchange: Britain's share of the tonnage lost fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    decided, share                               fine 0.188 ±0.057     coarse 0.083 ±0.040     -0.104 (-56%)      band ±0.100   noisy (×2.9 the runs)
+    the end, hours                               fine 3.02 ±0.224      coarse 4.02 ±0.202      +1.00 (+33%)       band ±0.453   noisy (×2.2 the runs)
+  Running fight
+    hit % on B97-like large torpedo boat (1915)  fine 2.50 ±0.681      coarse 1.71 ±0.259      -0.787 (-32%)      band ±0.500   noisy (×16.7 the runs)
+    hit % on Iron Duke-like (1914)               fine -                coarse 39.4 ±10.2                          band ±-       FAIL
+    hit % on Wiesbaden-like (1915)               fine -                coarse 12.5 ±6.22                          band ±-       FAIL
+    Britain: ships lost                          fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.050   ok
+    Britain: shell hits made                     fine 3.46 ±1.32       coarse 7.63 ±3.27       +4.17 (+120%)      band ±3.00    noisy (×10.7 the runs)
+    Britain: hit %                               fine 2.51 ±0.686      coarse 2.75 ±0.984      +0.235 (+9%)       band ±0.500   noisy (×34.8 the runs)
+    Britain: ships firing torpedoes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: ships lost                          fine 0.354 ±0.076     coarse 0.500 ±0.094     +0.146 (+41%)      band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.067 ±0.014     coarse 0.095 ±0.018     +0.028 (+41%)      band ±0.050   noisy (×1.1 the runs)
+    Germany: shell hits made                     fine 0.000 ±0.000     coarse 0.271 ±0.271     +0.271             band ±3.00    ok
+    Germany: hit %                               fine -                coarse 39.4 ±10.2                          band ±-       FAIL
+    Germany: ships firing torpedoes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    the exchange: Britain's share of the tonnage lost fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 3.00 ±0.000      coarse 3.00 ±0.000      0.000 (0%)         band ±0.450   ok
+
+scenarios:
+  Night in the Dover Strait
+    Britain: ships lost                          fine 0.667 ±0.086     coarse 0.188 ±0.064     -0.479 (-72%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.333 ±0.043     coarse 0.094 ±0.032     -0.240 (-72%)      band ±0.050   FAIL
+    Britain: shell hits made                     fine 143 ±11.6        coarse 83.4 ±9.21       -59.6 (-42%)       band ±21.4    FAIL
+    Britain: hit %                               fine 58.4 ±2.77       coarse 49.9 ±4.03       -8.49 (-15%)       band ±8.76    noisy (×1.9 the runs)
+    Britain: ships firing torpedoes              fine 1.88 ±0.057      coarse 1.73 ±0.071      -0.146 (-8%)       band ±0.500   ok
+    Britain: torpedo hits                        fine 1.46 ±0.191      coarse 1.19 ±0.170      -0.271 (-19%)      band ±0.500   noisy (×1.3 the runs)
+    Germany: ships lost                          fine 2.17 ±0.158      coarse 1.69 ±0.120      -0.479 (-22%)      band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.361 ±0.026     coarse 0.281 ±0.020     -0.080 (-22%)      band ±0.054   noisy (×2.1 the runs)
+    Germany: shell hits made                     fine 58.9 ±5.57       coarse 33.9 ±5.59       -25.0 (-42%)       band ±8.83    FAIL
+    Germany: hit %                               fine 42.3 ±4.07       coarse 38.7 ±3.08       -3.58 (-8%)        band ±6.34    noisy (×3.7 the runs)
+    Germany: ships firing torpedoes              fine 2.10 ±0.205      coarse 2.27 ±0.249      +0.167 (+8%)       band ±0.500   noisy (×2.2 the runs)
+    Germany: torpedo hits                        fine 0.563 ±0.119     coarse 0.354 ±0.113     -0.208 (-37%)      band ±0.500   ok
+    the exchange: Britain's share of the tonnage lost fine 0.246 ±0.036     coarse 0.064 ±0.022     -0.182             band ±0.100   noisy (×1.2 the runs)
+    decided, share                               fine 0.063 ±0.035     coarse 0.021 ±0.021     -0.042 (-67%)      band ±0.100   noisy (×1.1 the runs)
+    the end, hours                               fine 3.49 ±0.104      coarse 3.69 ±0.073      +0.199 (+6%)       band ±0.523   ok
+  Cape Sarych
+    Russia: ships lost                           fine 2.50 ±0.195      coarse 2.42 ±0.188      -0.083 (-3%)       band ±0.500   noisy (×1.4 the runs)
+    Russia: tonnage lost, share                  fine 0.304 ±0.031     coarse 0.261 ±0.028     -0.043 (-14%)      band ±0.050   noisy (×3.5 the runs)
+    Russia: shell hits made                      fine 546 ±59.5        coarse 548 ±58.5        +2.31 (0%)         band ±81.9    noisy (×4.8 the runs)
+    Russia: hit %                                fine 14.2 ±1.17       coarse 16.3 ±1.59       +2.17 (+15%)       band ±2.13    noisy (×5.1 the runs)
+    Russia: ships firing torpedoes               fine 0.042 ±0.029     coarse 0.000 ±0.000     -0.042 (-100%)     band ±0.500   ok
+    Russia: torpedo hits                         fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Ottoman Empire: ships lost                   fine 0.667 ±0.075     coarse 0.563 ±0.078     -0.104 (-16%)      band ±0.500   ok
+    Ottoman Empire: tonnage lost, share          fine 0.153 ±0.027     coarse 0.185 ±0.039     +0.031 (+20%)      band ±0.050   noisy (×5.4 the runs)
+    Ottoman Empire: shell hits made              fine 371 ±30.7        coarse 278 ±17.9        -92.7 (-25%)       band ±55.6    noisy (×2.8 the runs)
+    Ottoman Empire: hit %                        fine 14.2 ±1.02       coarse 12.5 ±0.862      -1.67 (-12%)       band ±2.13    noisy (×2.1 the runs)
+    Ottoman Empire: ships firing torpedoes       fine 1.88 ±0.048      coarse 1.96 ±0.029      +0.083 (+4%)       band ±0.500   ok
+    Ottoman Empire: torpedo hits                 fine 0.417 ±0.083     coarse 0.479 ±0.103     +0.063 (+15%)      band ±0.500   ok
+    the exchange: Russia's share of the tonnage lost fine 0.757 ±0.035     coarse 0.735 ±0.043     -0.022             band ±0.100   noisy (×1.7 the runs)
+    decided, share                               fine 0.042 ±0.029     coarse 0.021 ±0.021     -0.021 (-50%)      band ±0.100   ok
+    the end, hours                               fine 6.03 ±0.090      coarse 5.99 ±0.078      -0.041 (-1%)       band ±0.905   ok
+  Coronel
+    Britain: ships lost                          fine 0.646 ±0.101     coarse 0.563 ±0.089     -0.083 (-13%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.174 ±0.033     coarse 0.095 ±0.020     -0.079 (-46%)      band ±0.050   noisy (×3.9 the runs)
+    Britain: shell hits made                     fine 173 ±5.42        coarse 158 ±6.70        -15.3 (-9%)        band ±26.0    ok
+    Britain: hit %                               fine 11.8 ±0.355      coarse 9.99 ±0.336      -1.80 (-15%)       band ±1.77    noisy
+    Britain: ships firing torpedoes              fine 0.333 ±0.069     coarse 0.458 ±0.073     +0.125 (+38%)      band ±0.500   ok
+    Britain: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: ships lost                          fine 0.104 ±0.045     coarse 0.063 ±0.035     -0.042 (-40%)      band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.021 ±0.010     coarse 0.021 ±0.012     0.000 (+2%)        band ±0.050   ok
+    Germany: shell hits made                     fine 294 ±18.3        coarse 220 ±11.0        -74.3 (-25%)       band ±44.1    noisy (×1.6 the runs)
+    Germany: hit %                               fine 8.03 ±0.409      coarse 6.71 ±0.341      -1.32 (-16%)       band ±1.20    noisy (×1 the runs)
+    Germany: ships firing torpedoes              fine 0.625 ±0.114     coarse 1.10 ±0.131      +0.479 (+77%)      band ±0.500   ok
+    Germany: torpedo hits                        fine 0.146 ±0.051     coarse 0.083 ±0.040     -0.063 (-43%)      band ±0.500   ok
+    the exchange: Britain's share of the tonnage lost fine 0.878 ±0.058     coarse 0.896 ±0.058     +0.018             band ±0.100   noisy (×3 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 6.08 ±0.179      coarse 5.69 ±0.207      -0.383 (-6%)       band ±0.911   ok
+  The prizes' war, 1920
+    France: ships lost                           fine 1.31 ±0.149      coarse 1.04 ±0.130      -0.271 (-21%)      band ±0.500   ok
+    France: tonnage lost, share                  fine 0.103 ±0.013     coarse 0.098 ±0.016     -0.005 (-5%)       band ±0.050   ok
+    France: shell hits made                      fine 243 ±16.8        coarse 252 ±17.2        +9.08 (+4%)        band ±36.4    noisy (×2 the runs)
+    France: hit %                                fine 4.06 ±0.242      coarse 4.22 ±0.278      +0.155 (+4%)       band ±0.609   noisy (×1.9 the runs)
+    France: ships firing torpedoes               fine 2.85 ±0.244      coarse 4.44 ±0.202      +1.58 (+55%)       band ±0.500   FAIL
+    France: torpedo hits                         fine 0.396 ±0.154     coarse 0.625 ±0.145     +0.229 (+58%)      band ±0.500   ok
+    Italy: ships lost                            fine 1.02 ±0.141      coarse 1.25 ±0.135      +0.229 (+22%)      band ±0.500   ok
+    Italy: tonnage lost, share                   fine 0.087 ±0.012     coarse 0.118 ±0.013     +0.031 (+35%)      band ±0.050   ok
+    Italy: shell hits made                       fine 220 ±17.1        coarse 205 ±18.5        -15.5 (-7%)        band ±33.1    noisy (×2.8 the runs)
+    Italy: hit %                                 fine 3.80 ±0.226      coarse 4.01 ±0.286      +0.206 (+5%)       band ±0.571   noisy (×2.3 the runs)
+    Italy: ships firing torpedoes                fine 2.54 ±0.227      coarse 3.77 ±0.194      +1.23 (+48%)       band ±0.500   FAIL
+    Italy: torpedo hits                          fine 0.396 ±0.122     coarse 0.667 ±0.161     +0.271 (+68%)      band ±0.500   ok
+    the exchange: France's share of the tonnage lost fine 0.553 ±0.056     coarse 0.437 ±0.053     -0.117             band ±0.100   noisy (×2.8 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 6.94 ±0.064      coarse 6.97 ±0.033      +0.031 (0%)        band ±1.04    ok
+  The battle for Åland, 1921
+    Finland: ships lost                          fine 7.27 ±0.287      coarse 6.29 ±0.381      -0.979 (-13%)      band ±1.09    noisy (×1.1 the runs)
+    Finland: tonnage lost, share                 fine 0.759 ±0.033     coarse 0.662 ±0.041     -0.096 (-13%)      band ±0.114   noisy (×1.2 the runs)
+    Finland: shell hits made                     fine 305 ±29.5        coarse 330 ±22.1        +25.5 (+8%)        band ±45.7    noisy (×3.7 the runs)
+    Finland: hit %                               fine 20.1 ±1.13       coarse 22.0 ±1.07       +1.93 (+10%)       band ±3.01    noisy (×1.3 the runs)
+    Finland: ships firing torpedoes              fine 4.96 ±0.160      coarse 5.38 ±0.132      +0.417 (+8%)       band ±0.744   ok
+    Finland: torpedo hits                        fine 0.167 ±0.062     coarse 0.583 ±0.148     +0.417 (+250%)     band ±0.500   ok
+    Sweden: ships lost                           fine 2.52 ±0.284      coarse 2.54 ±0.229      +0.021 (+1%)       band ±0.500   noisy (×2.9 the runs)
+    Sweden: tonnage lost, share                  fine 0.143 ±0.023     coarse 0.147 ±0.014     +0.004 (+2%)       band ±0.050   noisy (×1.9 the runs)
+    Sweden: shell hits made                      fine 575 ±34.4        coarse 392 ±27.8        -182 (-32%)        band ±86.2    FAIL
+    Sweden: hit %                                fine 20.0 ±0.743      coarse 20.5 ±0.995      +0.455 (+2%)       band ±3.00    ok
+    Sweden: ships firing torpedoes               fine 6.63 ±0.102      coarse 6.88 ±0.057      +0.250 (+4%)       band ±0.994   ok
+    Sweden: torpedo hits                         fine 0.375 ±0.092     coarse 0.417 ±0.126     +0.042 (+11%)      band ±0.500   ok
+    the exchange: Finland's share of the tonnage lost fine 0.682 ±0.038     coarse 0.596 ±0.040     -0.086             band ±0.100   noisy (×1.4 the runs)
+    decided, share                               fine 0.104 ±0.045     coarse 0.063 ±0.035     -0.042 (-40%)      band ±0.100   noisy (×1.8 the runs)
+    the end, hours                               fine 10.1 ±0.405      coarse 10.4 ±0.382      +0.241 (+2%)       band ±1.52    ok
+  Tsushima
+    Russia: ships lost                           fine 3.65 ±0.264      coarse 3.35 ±0.250      -0.292 (-8%)       band ±0.547   noisy (×2.1 the runs)
+    Russia: tonnage lost, share                  fine 0.288 ±0.024     coarse 0.157 ±0.017     -0.131 (-46%)      band ±0.050   FAIL
+    Russia: shell hits made                      fine 1043 ±74.1       coarse 617 ±51.1        -427 (-41%)        band ±157     FAIL
+    Russia: hit %                                fine 14.4 ±0.820      coarse 9.55 ±0.702      -4.85 (-34%)       band ±2.16    FAIL
+    Russia: ships firing torpedoes               fine 0.979 ±0.175     coarse 1.15 ±0.176      +0.167 (+17%)      band ±0.500   noisy (×1.1 the runs)
+    Russia: torpedo hits                         fine 0.396 ±0.125     coarse 0.292 ±0.089     -0.104 (-26%)      band ±0.500   ok
+    Japan: ships lost                            fine 4.56 ±0.279      coarse 3.33 ±0.270      -1.23 (-27%)       band ±0.684   noisy (×1.5 the runs)
+    Japan: tonnage lost, share                   fine 0.287 ±0.021     coarse 0.151 ±0.017     -0.137 (-48%)      band ±0.050   FAIL
+    Japan: shell hits made                       fine 1656 ±99.1       coarse 899 ±62.1        -757 (-46%)        band ±248     FAIL
+    Japan: hit %                                 fine 13.3 ±0.673      coarse 10.6 ±0.581      -2.61 (-20%)       band ±1.99    noisy (×1 the runs)
+    Japan: ships firing torpedoes                fine 1.19 ±0.197      coarse 1.25 ±0.201      +0.063 (+5%)       band ±0.500   noisy (×1.5 the runs)
+    Japan: torpedo hits                          fine 0.271 ±0.093     coarse 0.375 ±0.110     +0.104 (+38%)      band ±0.500   ok
+    the exchange: Russia's share of the tonnage lost fine 0.436 ±0.030     coarse 0.465 ±0.043     +0.029             band ±0.100   noisy (×1.7 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 13.7 ±0.604      coarse 14.6 ±0.596      +0.898 (+7%)       band ±2.05    ok
+
+night:
+  Night: Tsushima 1905
+    Russia: ships lost                           fine 0.000 ±0.000     coarse 0.063 ±0.046     +0.063             band ±0.500   ok
+    Russia: tonnage lost, share                  fine 0.000 ±0.000     coarse 0.021 ±0.015     +0.021             band ±0.050   ok
+    Russia: shell hits made                      fine 32.4 ±11.6       coarse 29.6 ±11.4       -2.73 (-8%)        band ±4.86    noisy (×51.6 the runs)
+    Russia: hit %                                fine 27.8 ±2.93       coarse 38.2 ±4.51       +10.4 (+38%)       band ±4.16    noisy (×10.6 the runs)
+    Russia: ships firing torpedoes               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Russia: torpedo hits                         fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Russia: beams out, ship-minutes              fine 187 ±14.8        coarse 165 ±21.1        -21.7 (-12%)       band ±28.0    noisy (×5.1 the runs)
+    Russia: star shell, ship-minutes             fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Russia: first salvo, minutes                 fine 75.6 ±3.02       coarse 67.5 ±5.31       -8.17 (-11%)       band ±11.3    noisy (×2 the runs)
+    Russia: first torpedoes, minutes             fine -                coarse -                                   band ±-       -
+    Russia: hits on ships lit, share             fine 0.521 ±0.083     coarse 0.427 ±0.125     -0.094 (-18%)      band ±0.100   noisy (×14 the runs)
+    Japan: ships lost                            fine 0.229 ±0.085     coarse 0.208 ±0.094     -0.021 (-9%)       band ±0.500   ok
+    Japan: tonnage lost, share                   fine 0.029 ±0.011     coarse 0.026 ±0.012     -0.003 (-9%)       band ±0.050   ok
+    Japan: shell hits made                       fine 18.7 ±5.00       coarse 44.8 ±13.0       +26.1 (+140%)      band ±3.00    noisy (×168 the runs)
+    Japan: hit %                                 fine 35.5 ±3.76       coarse 45.5 ±3.40       +9.94 (+28%)       band ±5.33    noisy (×4.5 the runs)
+    Japan: ships firing torpedoes                fine 0.146 ±0.073     coarse 0.542 ±0.193     +0.396 (+271%)     band ±0.500   noisy (×1.3 the runs)
+    Japan: torpedo hits                          fine 0.021 ±0.021     coarse 0.083 ±0.058     +0.063 (+300%)     band ±0.500   ok
+    Japan: beams out, ship-minutes               fine 3.71 ±1.47       coarse 5.27 ±1.69       +1.56 (+42%)       band ±1.00    noisy (×25.7 the runs)
+    Japan: star shell, ship-minutes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Japan: first salvo, minutes                  fine 71.8 ±3.22       coarse 66.9 ±5.57       -4.88 (-7%)        band ±10.8    noisy (×2.4 the runs)
+    Japan: first torpedoes, minutes              fine 99.5 ±8.37       coarse 73.7 ±7.27       -25.8 (-26%)       band ±14.9    noisy (×2.8 the runs)
+    Japan: hits on ships lit, share              fine 0.522 ±0.106     coarse 0.372 ±0.044     -0.150 (-29%)      band ±0.100   noisy (×10.2 the runs)
+    the exchange: Russia's share of the tonnage lost fine 0.000 ±0.000     coarse 0.255 ±0.165     +0.255             band ±0.100   noisy (×24.4 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 2.00 ±0.000      coarse 2.00 ±0.000      0.000 (0%)         band ±0.300   ok
+  Night: Southampton, Jutland 1916
+    Britain: ships lost                          fine 0.500 ±0.099     coarse 0.813 ±0.122     +0.313 (+62%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.126 ±0.025     coarse 0.201 ±0.030     +0.075 (+60%)      band ±0.050   noisy (×3.2 the runs)
+    Britain: shell hits made                     fine 62.7 ±7.36       coarse 56.9 ±5.43       -5.81 (-9%)        band ±9.41    noisy (×5.5 the runs)
+    Britain: hit %                               fine 60.3 ±2.79       coarse 55.2 ±2.09       -5.12 (-8%)        band ±9.05    ok
+    Britain: ships firing torpedoes              fine 2.94 ±0.192      coarse 2.96 ±0.143      +0.021 (+1%)       band ±0.500   noisy (×1.3 the runs)
+    Britain: torpedo hits                        fine 1.56 ±0.242      coarse 0.958 ±0.188     -0.604 (-39%)      band ±0.500   noisy (×2.1 the runs)
+    Britain: beams out, ship-minutes             fine 4.90 ±0.767      coarse 3.94 ±0.589      -0.958 (-20%)      band ±1.00    noisy (×5.3 the runs)
+    Britain: star shell, ship-minutes            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Britain: first salvo, minutes                fine 16.5 ±1.55       coarse 10.5 ±0.407      -5.97 (-36%)       band ±2.48    FAIL
+    Britain: first torpedoes, minutes            fine 16.6 ±1.51       coarse 11.0 ±0.497      -5.56 (-34%)       band ±2.49    noisy (×3.3 the runs)
+    Britain: hits on ships lit, share            fine 0.093 ±0.026     coarse 0.012 ±0.005     -0.081 (-87%)      band ±0.100   ok
+    Germany: ships lost                          fine 0.833 ±0.131     coarse 0.708 ±0.126     -0.125 (-15%)      band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.170 ±0.027     coarse 0.146 ±0.026     -0.024 (-14%)      band ±0.050   noisy (×2.6 the runs)
+    Germany: shell hits made                     fine 344 ±41.2        coarse 451 ±31.0        +107 (+31%)        band ±51.6    noisy (×5.7 the runs)
+    Germany: hit %                               fine 42.2 ±1.95       coarse 45.1 ±1.24       +2.98 (+7%)        band ±6.32    ok
+    Germany: ships firing torpedoes              fine 3.88 ±0.254      coarse 4.63 ±0.118      +0.750 (+19%)      band ±0.581   noisy (×1.7 the runs)
+    Germany: torpedo hits                        fine 0.563 ±0.126     coarse 1.08 ±0.181      +0.521 (+93%)      band ±0.500   noisy (×1.2 the runs)
+    Germany: beams out, ship-minutes             fine 4.23 ±1.08       coarse 1.50 ±0.696      -2.73 (-65%)       band ±1.00    noisy (×10.5 the runs)
+    Germany: star shell, ship-minutes            fine 188 ±10.5        coarse 224 ±7.99        +36.3 (+19%)       band ±28.1    noisy (×1.2 the runs)
+    Germany: first salvo, minutes                fine 16.6 ±1.75       coarse 9.51 ±0.326      -7.08 (-43%)       band ±2.49    FAIL
+    Germany: first torpedoes, minutes            fine 18.0 ±1.82       coarse 10.2 ±0.269      -7.73 (-43%)       band ±2.69    FAIL
+    Germany: hits on ships lit, share            fine 0.263 ±0.046     coarse 0.086 ±0.018     -0.177 (-67%)      band ±0.100   noisy (×1.9 the runs)
+    the exchange: Britain's share of the tonnage lost fine 0.399 ±0.072     coarse 0.531 ±0.065     +0.133             band ±0.100   noisy (×4.6 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 2.00 ±0.000      coarse 2.00 ±0.000      0.000 (0%)         band ±0.300   ok
+  Night: the 4th Flotilla, Jutland 1916
+    Britain: ships lost                          fine 5.19 ±0.293      coarse 5.33 ±0.221      +0.146 (+3%)       band ±0.778   noisy (×1.3 the runs)
+    Britain: tonnage lost, share                 fine 0.529 ±0.030     coarse 0.518 ±0.022     -0.011 (-2%)       band ±0.079   noisy (×1.3 the runs)
+    Britain: shell hits made                     fine 115 ±8.97        coarse 194 ±10.6        +79.1 (+69%)       band ±17.3    FAIL
+    Britain: hit %                               fine 76.2 ±2.17       coarse 75.1 ±2.86       -1.18 (-2%)        band ±11.4    ok
+    Britain: ships firing torpedoes              fine 5.46 ±0.416      coarse 8.83 ±0.264      +3.38 (+62%)       band ±0.819   FAIL
+    Britain: torpedo hits                        fine 3.31 ±0.379      coarse 4.73 ±0.398      +1.42 (+43%)       band ±0.500   noisy (×5.7 the runs)
+    Britain: beams out, ship-minutes             fine 4.81 ±0.633      coarse 3.21 ±0.492      -1.60 (-33%)       band ±1.00    noisy (×3.6 the runs)
+    Britain: star shell, ship-minutes            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Britain: first salvo, minutes                fine 32.8 ±0.282      coarse 32.0 ±0.055      -0.741 (-2%)       band ±4.91    ok
+    Britain: first torpedoes, minutes            fine 35.8 ±1.33       coarse 31.4 ±0.205      -4.37 (-12%)       band ±5.36    ok
+    Britain: hits on ships lit, share            fine 0.319 ±0.031     coarse 0.209 ±0.012     -0.110 (-35%)      band ±0.100   noisy
+    Germany: ships lost                          fine 0.792 ±0.099     coarse 1.35 ±0.131      +0.563 (+71%)      band ±0.500   noisy
+    Germany: tonnage lost, share                 fine 0.077 ±0.012     coarse 0.187 ±0.023     +0.110 (+142%)     band ±0.050   FAIL
+    Germany: shell hits made                     fine 208 ±15.0        coarse 158 ±8.04        -49.9 (-24%)       band ±31.2    noisy (×2.1 the runs)
+    Germany: hit %                               fine 67.3 ±1.57       coarse 59.7 ±1.49       -7.62 (-11%)       band ±10.1    ok
+    Germany: ships firing torpedoes              fine 5.67 ±0.113      coarse 5.48 ±0.094      -0.188 (-3%)       band ±0.850   ok
+    Germany: torpedo hits                        fine 2.60 ±0.257      coarse 3.19 ±0.272      +0.583 (+22%)      band ±0.500   noisy (×2.7 the runs)
+    Germany: beams out, ship-minutes             fine 4.23 ±0.965      coarse 3.77 ±0.766      -0.458 (-11%)      band ±1.00    noisy (×8.4 the runs)
+    Germany: star shell, ship-minutes            fine 106 ±3.83        coarse 82.6 ±3.15       -23.2 (-22%)       band ±15.9    noisy
+    Germany: first salvo, minutes                fine 30.9 ±0.112      coarse 33.0 ±0.095      +2.07 (+7%)        band ±4.64    ok
+    Germany: first torpedoes, minutes            fine 31.5 ±0.139      coarse 32.9 ±0.136      +1.39 (+4%)        band ±4.73    ok
+    Germany: hits on ships lit, share            fine 0.546 ±0.028     coarse 0.426 ±0.021     -0.119 (-22%)      band ±0.100   noisy
+    the exchange: Britain's share of the tonnage lost fine 0.588 ±0.044     coarse 0.408 ±0.045     -0.180             band ±0.100   noisy (×1.8 the runs)
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 2.00 ±0.000      coarse 2.00 ±0.000      0.000 (0%)         band ±0.300   ok
+  Night: Black Prince, Jutland 1916
+    Britain: ships lost                          fine 0.458 ±0.073     coarse 0.563 ±0.072     +0.104 (+23%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.458 ±0.073     coarse 0.563 ±0.072     +0.104 (+23%)      band ±0.069   noisy (×10.1 the runs)
+    Britain: shell hits made                     fine 74.6 ±7.12       coarse 58.9 ±6.66       -15.8 (-21%)       band ±11.2    noisy (×3.6 the runs)
+    Britain: hit %                               fine 91.3 ±0.994      coarse 93.1 ±1.01       +1.83 (+2%)        band ±13.7    ok
+    Britain: ships firing torpedoes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: beams out, ship-minutes             fine 1.40 ±0.192      coarse 1.54 ±0.398      +0.146 (+10%)      band ±1.00    noisy (×1.4 the runs)
+    Britain: star shell, ship-minutes            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Britain: first salvo, minutes                fine 43.2 ±0.084      coarse 43.5 ±0.081      +0.279 (+1%)       band ±6.48    ok
+    Britain: first torpedoes, minutes            fine -                coarse -                                   band ±-       -
+    Britain: hits on ships lit, share            fine 0.309 ±0.037     coarse 0.245 ±0.043     -0.064 (-21%)      band ±0.100   noisy (×1.6 the runs)
+    Germany: ships lost                          fine 0.063 ±0.035     coarse 0.000 ±0.000     -0.063 (-100%)     band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.022 ±0.012     coarse 0.000 ±0.000     -0.022 (-100%)     band ±0.050   ok
+    Germany: shell hits made                     fine 74.7 ±9.50       coarse 99.9 ±9.12       +25.2 (+34%)       band ±11.2    noisy (×6.5 the runs)
+    Germany: hit %                               fine 78.9 ±2.01       coarse 77.4 ±1.91       -1.51 (-2%)        band ±11.8    ok
+    Germany: ships firing torpedoes              fine 2.44 ±0.098      coarse 2.63 ±0.087      +0.188 (+8%)       band ±0.500   ok
+    Germany: torpedo hits                        fine 1.60 ±0.216      coarse 1.02 ±0.182      -0.583 (-36%)      band ±0.500   noisy (×1.7 the runs)
+    Germany: beams out, ship-minutes             fine 2.42 ±0.583      coarse 1.90 ±0.652      -0.521 (-22%)      band ±1.00    noisy (×3.8 the runs)
+    Germany: star shell, ship-minutes            fine 32.5 ±1.62       coarse 31.9 ±1.25       -0.604 (-2%)       band ±4.88    ok
+    Germany: first salvo, minutes                fine 42.9 ±0.095      coarse 43.4 ±0.274      +0.589 (+1%)       band ±6.43    ok
+    Germany: first torpedoes, minutes            fine 43.6 ±0.270      coarse 43.3 ±0.273      -0.314 (-1%)       band ±6.55    ok
+    Germany: hits on ships lit, share            fine 0.656 ±0.042     coarse 0.655 ±0.035     -0.001 (0%)        band ±0.100   noisy (×1.6 the runs)
+    the exchange: Britain's share of the tonnage lost fine 0.890 ±0.062     coarse 1.00 ±0.000      +0.110             band ±0.100   noisy (×3.5 the runs)
+    decided, share                               fine 0.458 ±0.073     coarse 0.542 ±0.073     +0.083 (+18%)      band ±0.100   noisy (×4.8 the runs)
+    the end, hours                               fine 1.69 ±0.056      coarse 1.57 ±0.065      -0.117 (-7%)       band ±0.253   ok
+  Night: the 12th Flotilla, Jutland 1916
+    Britain: ships lost                          fine 0.125 ±0.064     coarse 0.021 ±0.021     -0.104 (-83%)      band ±0.500   ok
+    Britain: tonnage lost, share                 fine 0.015 ±0.008     coarse 0.003 ±0.003     -0.013 (-83%)      band ±0.050   ok
+    Britain: shell hits made                     fine 1.63 ±0.512      coarse 0.083 ±0.058     -1.54 (-95%)       band ±3.00    ok
+    Britain: hit %                               fine 8.61 ±1.50       coarse 6.45 ±2.93       -2.16 (-25%)       band ±1.29    noisy (×46.2 the runs)
+    Britain: ships firing torpedoes              fine 0.104 ±0.054     coarse 0.146 ±0.059     +0.042 (+40%)      band ±0.500   ok
+    Britain: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Britain: beams out, ship-minutes             fine 0.563 ±0.368     coarse 0.000 ±0.000     -0.563 (-100%)     band ±1.00    noisy (×1.2 the runs)
+    Britain: star shell, ship-minutes            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Britain: first salvo, minutes                fine 39.6 ±0.383      coarse 45.6 ±3.10       +6.05 (+15%)       band ±5.94    noisy (×2.5 the runs)
+    Britain: first torpedoes, minutes            fine 45.7 ±5.08       coarse 46.5 ±3.09       +0.792 (+2%)       band ±6.86    noisy (×4.9 the runs)
+    Britain: hits on ships lit, share            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    Germany: ships lost                          fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: tonnage lost, share                 fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.050   ok
+    Germany: shell hits made                     fine 10.1 ±3.66       coarse 1.67 ±0.969      -8.40 (-83%)       band ±3.00    noisy (×13.4 the runs)
+    Germany: hit %                               fine 3.80 ±0.932      coarse 2.92 ±0.689      -0.880 (-23%)      band ±0.569   noisy (×24.1 the runs)
+    Germany: ships firing torpedoes              fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: torpedo hits                        fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.500   ok
+    Germany: beams out, ship-minutes             fine 6.63 ±3.57       coarse 4.44 ±3.40       -2.19 (-33%)       band ±1.00    noisy (×114.4 the runs)
+    Germany: star shell, ship-minutes            fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±1.00    ok
+    Germany: first salvo, minutes                fine 39.8 ±0.523      coarse 43.9 ±0.587      +4.12 (+10%)       band ±5.97    ok
+    Germany: first torpedoes, minutes            fine -                coarse -                                   band ±-       -
+    Germany: hits on ships lit, share            fine 0.004 ±0.003     coarse 0.000 ±0.000     -0.004 (-100%)     band ±0.100   ok
+    the exchange: Britain's share of the tonnage lost fine 1.00 ±0.000      coarse 1.00             0.000              band ±0.100   ok
+    decided, share                               fine 0.000 ±0.000     coarse 0.000 ±0.000     0.000              band ±0.100   ok
+    the end, hours                               fine 2.00 ±0.000      coarse 2.00 ±0.000      0.000 (0%)         band ±0.300   ok
+
+311 measures: 168 ok, 27 FAIL, 113 noisy, 3 with nothing either way
+time: 1210 s in all; the runs' own, summed over threads: fine 11353 s, coarse 5189 s
+kept in docs/battle/coarse-parity/2026-11-08-standard-ex7.json

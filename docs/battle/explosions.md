@@ -1,6 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **EX7, the whole game, is next:** "Where to pick up".
+Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX7 are done** (EX7 2026-11-08: the matchup refit and the whole game read); **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **What next is the user's pick:** "Where to pick up".
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -32,9 +32,13 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 - **The look** (2026-11-08, `docs/visuals/destruction.md` D0-D7): what the gas does recorded and drawn; D8 by eye next. That's
   EX7's last line ("the look reads an explosion's energy and place"), done there.
 
-**Next: EX7, the whole game:** `losses`, `balance`, `damage-history`, `dc-history`, `fire-history` against EX0's baseline,
-the standard `coarse-parity` panel, the `Matchup`'s and AI's estimates refit to what's measured. Item 10 (the step's
-convergence) first, as "Cost and convergence" asks, since threshold races move with the step. Then EX8.
+- **EX7** (2026-11-08, "EX7: the whole game"): the matchup refit (torpedoes by the square root of her size, shells by their
+  mass), then every readout against EX0. The record's loser lost more in 30 of 44 seeds, the most yet; light forces now stand
+  off (the AI's run-in, BL5's); 0 hits reached a magazine at the Jutland.
+
+**Next, for the user to pick:** PM (the matchup reads the burst's depth and damage adding up), the weak points in shipgen
+(Lion's steering), item 10 (the step's convergence, not yet run), the pre-dreadnought sinking in 25 min to two torpedoes, the
+light forces' run-in (BL5); then EX8, the acceptance bench.
 
 **Open, in order of what they decide:**
 
@@ -253,7 +257,7 @@ Every step keeps `golden-check`, replays and the no-allocation tests. Each ends 
   has them whole, 15 §4; depth charges and mines wait for their rows).
 - **EX7. The whole game.** `losses`, `balance`, `damage-history`, `dc-history`, `fire-history` against the baseline,
   reported as they come out. The standard `coarse-parity` panel. The `Matchup`'s and AI's estimates refit to what's measured
-  (`ai-expectation-not-optimism`). The look reads an explosion's energy and place, in the world view's own step. **Next.**
+  (`ai-expectation-not-optimism`). The look reads an explosion's energy and place, in the world view's own step. **Done 2026-11-08** ("EX7: the whole game"; PM's terms left, by the user's reading).
   The look is built (`docs/visuals/destruction.md` D0-D7), and ET4 has already run `balance` and `damage-history` once on the sliced gas.
 - **EX8. The acceptance bench.** A Tallboy, a mine, an aircraft torpedo, a depth charge, a 250 kg SAP in a destroyer (11's
   test 3), by data alone. The bombs themselves stay out of this plan.
@@ -1005,6 +1009,55 @@ pairs at 15 and 30 hits, `kinds-cap*.txt`), `torpedo TARGET --settle 30` on eigh
   weaker (item 3).
 - **The bench:** `matchup --kinds ... --ships 0` prints the matchup's exponent alone, so a refit's terms come in seconds against a
   kept run (its exponent is linear in the kept, pass and spall shares: four runs give every line's terms).
+
+### Where we are: the readouts (at `c44107d8`, the refit in)
+
+**The panel** (`balance --fc-runs 0`, 8 seeds, Jutland 4; `explosions-ex7/balance.txt`), lost a seed, against EX0 and EX6:
+
+| | EX0 | EX6 | EX7 | Record |
+|---|---:|---:|---:|---:|
+| Dover Strait: Britain / Germany | 0.5 / 1.6 | 0.5 / 1.5 | 0.4 / 2.0 | 0 / 2 |
+| Coronel | 1.4 / 1.1 | 1.5 / 0.4 | 0.8 / 0.1 | 2 / 0 |
+| Cape Sarych: Russia / Ottomans | 2.8 / 0.9 | 3.5 / 0.6 | 3.1 / 0.6 | 0 / 0 |
+| Heligoland Bight | 2.0 / 14.3 | 0.6 / 10.5 | 1.5 / 16.6 | 0 / 4 |
+| Dogger Bank | 7.3 / 8.4 | 7.5 / 7.5 | 4.4 / 9.8 | 0 / 1 |
+| Tsushima: Russia / Japan | 4.9 / 4.8 | 3.6 / 4.3 | 2.9 / 4.9 | 7 / 0 |
+| Jutland | 28.5 / 49.8 | 24.5 / 48.8 | 25.3 / 51.5 | 14 / 11 |
+| The prizes' war: France / Italy | 1.5 / 2.6 | 1.4 / 2.6 | 1.5 / 0.9 | - |
+| Åland: Finland / Sweden | 6.0 / 4.1 | 5.6 / 3.5 | 7.0 / 1.1 | - |
+
+- **All together:** 5 of 14 sides within about twice the record (EX0 5, EX6 8, ET4 6); **the record's loser lost more in 30 of 44
+  seeds** (23, 26, 27): the most yet, Dogger Bank and Heligoland 8 of 8, Jutland's Germans still all 4. Losses capsized 48%,
+  foundered 28%, broke in two 24%, magazine 0% (EX0 54, 32, 8, 6).
+- **The refit's own move, measured** (the four smaller scenarios again with the old law, the same build: `balance-old-matchup.txt`):
+  light forces now stand off. The prizes' war fires 86% of its light shells at 6-10 km and hits 3.3% (the old law: 6.5 km, 9.3%;
+  losses 2.0 / 2.4 against 1.5 / 0.9), its boats' first torpedoes at 1:41 against 0:39. The matchup picks the same lines (7.8 km)
+  and confidence (1.11 to 1.08) both ways; what moved is the worth of running in: a torpedo now puts a light cruiser out 60% of
+  the time, not 85%, and the guns at 8 km grind slowly (30 min: each side expects 6% lost, not 19%). Åland's Swedes 2.6 to 1.1,
+  Coronel's British 1.5 to 0.8 (now LOW), Tsushima's Russians 4.4 to 2.9 (now LOW) move with it. The AI expecting what the
+  physics gives; **how light forces should judge a run in is BL5's**, not a tuning here.
+- **`losses`** (4 seeds; `explosions-ex7/losses/`): Dogger Bank 15.3 a seed (EX0 14.8), Jutland 76.8 (65-90). The causes: cripples
+  finished 28% and 43%, flooding ran away 30% and 26%, torpedoed 3% and 7%; **0 hits reached a magazine** in either (EX0: 82.8 a
+  Jutland seed lit charges in a train); 122.8 lit a train now, the races mostly breached (13.5 a seed), no ship broken by one.
+  The slow deaths: a capital's sea in is 88% through holes her parties can't reach (Jutland).
+
+**The yardsticks** (no AI in them; 20 runs a case), against EX0:
+
+- **`damage-history`:** Indefatigable lost 20% (10%), now broken in two 17-20 min after her magazine lights (ET4's); Tiger 15%
+  (25%), foundered, steering lost 25% (5%); Seydlitz 5% and Derfflinger 5% (5, 10), no longer by magazine; Lion at Jutland and the
+  Dogger Bank 0% (0, 5). Turret-minutes lost up across the cases (Seydlitz 463 to 535, Tiger 220 to 359 per 100 hits).
+- **`dc-history`:** Seydlitz takes 4,400 t in her first half hour (1,800) and is lost 15% (0); Lützow 20% (45%); **the
+  pre-dreadnought with two torpedoes founders in 25 min** (136 min; the record's Formidable about 2¾ h): EX5's water, too fast here;
+  Audacious still survives (the record: capsized at ~12 h); an RN battleship with 15 heavy hits 10%, one broken in two.
+- **`fire-history`:** Santiago's unstripped cruiser lost 20% (65%), **no longer to her magazines by fire** (13 runs in EX0), but
+  ablaze, still burning at 4 h 60% (20%), 3,320 t of water (496) and 518 killed and wounded (134). The prepared cases as before.
+- **`coarse-parity` standard** (both ways, `coarse-parity/2026-11-08-standard-ex7.json`): 168 ok, 27 FAIL, 113 noisy (Q11: 151,
+  31, 126). The fails are Q11's day-gunnery drift (coarse hits -32 to -46% at Cape Sarych, Coronel, Tsushima, Åland: the one later
+  coarse pass, the user's) and two new: the prizes' war's ships firing torpedoes coarse +55% and +48%, the refit's stand-off held
+  only in fine.
+
+**Open from EX7:** item 10 (the step's convergence) not run; PM (the burst's depth, damage adding up) and the weak points
+(shipgen's) as above; the pre-dreadnought's 25 min under two torpedoes; light forces' run-in (BL5). Then EX8.
 
 ## What stays out
 
