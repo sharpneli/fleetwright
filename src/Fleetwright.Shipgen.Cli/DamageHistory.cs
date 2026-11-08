@@ -172,6 +172,7 @@ static class DamageHistory
     static List<Ship> One(DamageCase dc, ShipClass target, Func<string, ShipClass> cls, SimSettings settings, int runs, Tally tally, int trace)
     {
         var list = new List<Ship>();
+        int racesSeen = 0;
         GivenFire.Run(dc.Fire, dc.Name, target, cls, settings, runs, (_, e) => list.Add(new Ship { Entity = e }), (w, h) =>
         {
             var (ri, ms, where, k, mounts) = (h.Run, h.Ms, h.Where, h.K, h.MountsBefore);
@@ -186,8 +187,6 @@ static class DamageHistory
             if (fx.Magazine)
                 r.Via = fx.MagazineVia;
             (r.TrainHits, r.Stations) = (r.TrainHits + (fx.Stations > 0 ? 1 : 0), r.Stations + fx.Stations);
-            if (fx.Magazine)
-                r.Tiers[(int)w.Damage.LastRace.Tier]++;
             if (fx.Magazine && fx.MagazineVia == MagazineVia.Turret)
                 tally.TurretVia[fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?"] =
                     tally.TurretVia.GetValueOrDefault(fx.Part >= 0 && fx.Part < target.Components.Length ? $"{target.Components[fx.Part].Kind} {t.Outcome} {(int)(w.Damage.LastPath.Crossings.ToArray().Where(c => c.T < t.StopT && c.Plate is >= PlateKind.SideArmour and <= PlateKind.PartArmour).Select(c => c.Mm).DefaultIfEmpty(0).Max())}mm" : "?") + 1;
@@ -213,6 +212,14 @@ static class DamageHistory
             }
         }, (w, m) =>
         {
+            // how each magazine fire ended, once it has (docs/battle/workers.md ET: her gas takes its time); one its gas lit counts as set off
+            for (; racesSeen < w.Damage.RaceLog.Length; racesSeen++)
+                if (list.Find(x => x.Entity == w.Damage.RaceLog[racesSeen].Entity) is { } raced)
+                {
+                    raced.Tiers[(int)w.Damage.RaceLog[racesSeen].Tier]++;
+                    if (raced.Magazine == 0)
+                        (raced.Magazine, raced.Via) = (1, MagazineVia.Gas);
+                }
             var store = w.Ships.Store;
             foreach (var r in list)
             {

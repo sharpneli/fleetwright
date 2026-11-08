@@ -66,6 +66,8 @@ public sealed partial class DamageSystem
         net.AdvanceTo(ms);
         var rng = stream.Derive(0x6A5u).Derive((ulong)ship.Entity).Derive((ulong)ms);
         var fx = net.Land(ms, ref rng);
+        if (summing)
+            Sum(ref gasSum, fx);
         if (fx.Magazine && net.MagazineCause < 0)
             net.MagazineCause = Math.Max(net.SourceCause, 0);   // its gas lit one: as what made the gas
         bool opened = fx.BreachM2 > 0 || fx.Blast.OpenM2 > 0 || fx.Magazine;
@@ -122,6 +124,45 @@ public sealed partial class DamageSystem
 
     /// <summary>What the last gas to end did, as a result (tools and benches: not world state).</summary>
     public GasResult LastGas { get; private set; }
+
+    /// <summary>A bench's (every hit at one moment, each read for what it did): a hit, then her gas stepped on slice by slice to its end
+    /// as the world would step it, without the world's clock moving, through the same landings. <see cref="LastEffects"/> is what the
+    /// hit did with what its gas did after (its men, parts, openings, a magazine it lit; Blast its gas's result), and
+    /// <see cref="LastRace"/> how a magazine fire in it ended. A bench whose world runs its clock between hits needs none of this.</summary>
+    public void StrikeOut(World world, in Hit hit)
+    {
+        Strike(world, hit);
+        var fx = LastEffects;
+        (summing, gasSum) = (true, new EffectsResult { Part = -1, MagazineRoom = -1 });
+        LastRace = default;
+        try
+        {
+            var gas = RunGasOut(world, hit.Ship);
+            if (gas.Steps > 0 || gas.Magazines > 0)
+                fx.Blast = gas with { Spaces = Math.Max(gas.Spaces, fx.Blast.Spaces), Open = fx.Blast.Open, HoleM2 = gas.HoleM2 };
+        }
+        finally
+        {
+            summing = false;
+        }
+        Sum(ref fx, gasSum);
+        if (gasSum.Magazine && !fx.Magazine)
+            (fx.Magazine, fx.MagazineRoom, fx.MagazineVia) = (true, gasSum.MagazineRoom, gasSum.MagazineVia);
+        LastEffects = fx;
+    }
+
+    bool summing;
+    EffectsResult gasSum;
+
+    /// <summary>A landing's toll added to a hit's.</summary>
+    static void Sum(ref EffectsResult into, in EffectsResult x)
+    {
+        (into.Killed, into.Wounded, into.CrewLost) = (into.Killed + x.Killed, into.Wounded + x.Wounded, into.CrewLost + x.CrewLost);
+        (into.Destroyed, into.Disabled, into.Damaged) = (into.Destroyed + x.Destroyed, into.Disabled + x.Disabled, into.Damaged + x.Damaged);
+        (into.BreachM2, into.Fire, into.Stations) = (into.BreachM2 + x.BreachM2, into.Fire || x.Fire, into.Stations + x.Stations);
+        if (x.Magazine && !into.Magazine)
+            (into.Magazine, into.MagazineRoom, into.MagazineVia) = (true, x.MagazineRoom, x.MagazineVia);
+    }
 
     /// <summary>A tool's: a ship's gas stepped on slice by slice from now until it's done, as the world's events would step it, without
     /// the world's clock moving. What it did, as a result.</summary>

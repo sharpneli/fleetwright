@@ -310,7 +310,7 @@ public static unsafe class Program
                 readinesses.Add(arg.Substring("-readiness=".Length));
             }
             else if (arg.StartsWith("-hole=") || arg.StartsWith("-flood=") || arg.StartsWith("-jam=") || arg.StartsWith("-wreck=") ||
-                     arg.StartsWith("-burn=") || arg.StartsWith("-sink="))   // dev damage (docs/battle/fighting.md 4.3b, 4.4): see DevDamage
+                     arg.StartsWith("-burn=") || arg.StartsWith("-sink=") || arg.StartsWith("-ignite="))   // dev damage (docs/battle/fighting.md 4.3b, 4.4): see DevDamage
             {
                 damages.Add(arg);
             }
@@ -606,7 +606,7 @@ public static unsafe class Program
                     world.Send(order);
                 else
                     Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount[:min], " +
-                                            "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine[:mount])");
+                                            "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine[:mount], -ignite=ship[:mount])");
             worldRef = world;
             if (scenarioArg != null)
             {
@@ -829,13 +829,16 @@ public static unsafe class Program
     /// over the waterline, to port with :p), -flood=ship:kind[:n] (n spaces of a kind flooded: boiler_room, engine_room,
     /// magazine...), -jam=ship:mount[:min] (a mount's index; cleared after min minutes, else for the battle), -wreck=ship:kind[:nth[:state]] (the nth part of a component kind:
     /// superstructure, funnel, main...), -burn=ship:x (a fire in the highest space at x), -sink=ship:foundered|capsized|magazine[:mount] (it goes
-    /// down now; a magazine's is the one serving that mount, else the fullest).</summary>
+    /// down now; a magazine's is the one serving that mount, else the fullest), -ignite=ship[:mount] (that magazine set alight in her gas, its race
+    /// landing as it burns: docs/battle/workers.md ET).</summary>
     static Sim.Command? DevDamage(string arg)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         int eq = arg.IndexOf('=');
         string flag = arg[1..eq];
         var p = arg[(eq + 1)..].Split(':');
+        if (flag == "ignite" && int.TryParse(p[0], out int lit))
+            return Sim.DamageSystem.Ignite(lit, p.Length > 1 && int.TryParse(p[1], out int mt) ? mt : -1);
         if (p.Length < 2 || !int.TryParse(p[0], out int ship))
             return null;
         static T? Kind<T>(string s) where T : struct, Enum => Enum.TryParse<T>(s.Replace("_", ""), true, out var k) ? k : null;

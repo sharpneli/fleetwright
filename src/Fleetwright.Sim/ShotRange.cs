@@ -113,7 +113,7 @@ public sealed class ShotRange(SimSettings settings)
         var flags = (PartFlags[])k.Flags.Clone();
         var breach = (double[])k.BreachM2.Clone();
         var fire = k.Fire.Select(f => f.Burning).ToArray();
-        world!.Damage.Strike(world, new Hit
+        world!.Damage.StrikeOut(world, new Hit   // and its gas run out, so the shot shows all it did (docs/battle/workers.md ET)
         {
             Ship = entity, Ms = world.Time.Ms, Point = shot.Point, Direction = dir, SpeedMs = fall.StrikeMs, WaterRunM = run, Source = HitSource.Shell,
             Shell = shell, ShellType = -1,

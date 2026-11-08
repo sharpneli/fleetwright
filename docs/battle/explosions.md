@@ -132,8 +132,11 @@ the race has it). In the stepped solver:
 - a gunhouse lifts at its weight over its bore, a vent like any other.
 
 Only cells with gas in them are stepped, with steps that lengthen as the pressure falls. It's linear in the edges reached
-and allocates nothing (its state lives on the ship's condition, as `Cascade`'s does). It runs to the end at the moment of
-the event, as the race does today, so replays hold.
+and allocates nothing. **It takes its own time in the world** (workers.md "Explosions in time", 2026-11-08): her gas is a run on
+her condition (`ShipCondition.Gas`), stepped by the world every `GasSliceMs` (100) of game time until it's done, what it did
+landing on her each time (`GasNetwork.Land`); a new explosion joins it at its moment, its near field at once. A magazine's race
+takes its 20-170 s in the game, and she floods, lists and fights meanwhile. The benches and tests still run one explosion in still
+air to its end at once (`Detonate`, `Strike`, `Burn`), through the same steps and the same `Land`; replays hold either way.
 
 **Cost budget** (DevRelease): a shell's burst under about 200 µs on average, a magazine under about 20 ms (the race took
 2-13 ms at EX2; 60-700 ms by EX6, "Cost and convergence"). A hit costs about 760 µs all told today.

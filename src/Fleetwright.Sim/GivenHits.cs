@@ -182,7 +182,7 @@ public static class GivenHits
                 rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
                 var k0 = w.Ships.Store.Combat.Condition(slot);
                 var before = (PartState[])k0.State.Clone();
-                w.Damage.Strike(w, hit);
+                w.Damage.StrikeOut(w, hit);
                 var t = w.Damage.LastTerminal;
                 var fx = w.Damage.LastEffects;
                 each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
@@ -378,7 +378,7 @@ public static class GivenHits
                 var k0 = w.Ships.Store.Combat.Condition(slot);
                 var before = (PartState[])k0.State.Clone();
                 var own = store >= 0 ? target.Launchers[store] : default;
-                w.Damage.Strike(w, store >= 0 && k0.Warheads[store] > 0
+                w.Damage.StrikeOut(w, store >= 0 && k0.Warheads[store] > 0
                     ? new Hit
                     {
                         Ship = entity, Ms = w.Time.Ms, Point = own.StoreAt, Direction = own.StoreAxis, Source = HitSource.Store, Store = store,
@@ -499,7 +499,7 @@ public static class GivenHits
                     continue;
                 (rep.Near, rep.Within10, rep.Within30) = (rep.Near + 1, rep.Within10 + (d <= 10 ? 1 : 0), rep.Within30 + (d <= 30 ? 1 : 0));
                 rep.DepthM += wl - at.Z;
-                w.Damage.Strike(w, new Hit
+                w.Damage.StrikeOut(w, new Hit
                 {
                     Ship = entity, Ms = w.Time.Ms, Point = at, Direction = dir, SpeedMs = WaterRun.Speed(fall.StrikeMs, run, decay), WaterRunM = run,
                     Source = HitSource.NearMiss, Shell = shell, ShellType = -1, Force = force,
@@ -562,7 +562,7 @@ public static class GivenHits
                 rep.Add(NearMiss.Apply(target, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity)), hit, settings, ref rng, intoParts), settings);
                 continue;
             }
-            w.Damage.Strike(w, hit);
+            w.Damage.StrikeOut(w, hit);
             rep.Add(w.Damage.LastEffects, settings);
             if (settleS > 0)
             {

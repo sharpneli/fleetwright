@@ -59,6 +59,10 @@ of age, placement on the CPU eye-relative in double, nothing allocated a frame. 
 
 ## The event, once per class and magazine (CPU)
 
+**When it comes** (workers.md "Explosions in time", 2026-11-08): a magazine's gas takes its own time in the world, so the loss
+(and this event) comes when her girder gives under it, seconds after the flash, not at the hit that lit it. Until then her ways up
+vent and her fires burn; a look for the column she survives (tier 1) would hang on the same run.
+
 `MagazineBlast` ports `magazine.plan` and its correlations (one implementation; tests and tools call it), cached per
 class and magazine room. From the `ShipClass`:
 

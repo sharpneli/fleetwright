@@ -80,9 +80,8 @@ static class CrewHistory
             var ships = new List<Ship>();
             GivenFire.Run(cc.Fire, cc.Name, target, Cls, settings, runs, (_, e) => ships.Add(New(e, at.Length, target)), (w, h) =>
             {
-                var fx = w.Damage.LastEffects;
                 var r = ships[h.Run];
-                (r.Hits, r.Killed, r.Wounded) = (r.Hits + 1, r.Killed + fx.Killed, r.Wounded + fx.Wounded);
+                r.Hits++;
                 Most(w, r);
             }, (w, m) =>
             {
@@ -129,6 +128,8 @@ static class CrewHistory
         if (slot < 0 || w.Ships.Store.Combat.Condition(slot) is not { Status: ShipStatus.Afloat } k)
             return;
         (r.MostShaken, r.MostFrozen) = (Math.Max(r.MostShaken, k.Shaken.Sum()), Math.Max(r.MostFrozen, k.Frozen.Sum()));
+        // her own count, whatever it was (a hit, its gas as it lands over the seconds after: docs/battle/workers.md ET, her fires' parties)
+        (r.Killed, r.Wounded) = ((int)Math.Round(k.Killed), (int)Math.Round(k.Wounded));
     }
 
     static void Sample(World w, ShipClass c, Ship r, int i)

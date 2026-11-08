@@ -151,9 +151,11 @@ public sealed partial class GasNetwork
         }
     }
 
-    /// <summary>Her magazine lit in still air and its gas stepped to its end at once, what it did landed on her as the game lands it,
-    /// into fx (a bench's, a test's: <see cref="Magazines.SetOff"/>). What its gas did.</summary>
-    public GasResult BurnOut(ShipCondition cond, int room, ReadOnlySpan<MountState> mounts, SimSettings settings, long now, ref RandomStream r, ref EffectsResult fx)
+    /// <summary>Her magazine lit in still air and its gas stepped to its end, what it did landed on her as the game lands it, into fx (a
+    /// bench's, a test's: <see cref="Magazines.SetOff"/>): at once, or with sliceMs a slice at a time as the world steps it, her liquid
+    /// and waterline read again each time (docs/battle/workers.md ET4: whether the slices move what it does). What its gas did.</summary>
+    public GasResult BurnOut(ShipCondition cond, int room, ReadOnlySpan<MountState> mounts, SimSettings settings, long now, ref RandomStream r, ref EffectsResult fx,
+        int sliceMs = 0, Func<GasNetwork, bool>? landed = null)
     {
         Begin(cond, settings);
         startMs = now;
@@ -161,10 +163,15 @@ public sealed partial class GasNetwork
             return res;
         do
         {
-            Advance(double.PositiveInfinity);
-            var x = Land(now, ref r);
+            if (sliceMs > 0)
+                AdvanceTo(NowMs + sliceMs);
+            else
+                Advance(double.PositiveInfinity);
+            var x = Land(NowMs, ref r);
             (fx.Killed, fx.Wounded, fx.Destroyed, fx.Disabled, fx.Damaged) = (fx.Killed + x.Killed, fx.Wounded + x.Wounded, fx.Destroyed + x.Destroyed, fx.Disabled + x.Disabled, fx.Damaged + x.Damaged);
             (fx.BreachM2, fx.Fire, fx.CrewLost) = (fx.BreachM2 + x.BreachM2, fx.Fire || x.Fire, fx.CrewLost + x.CrewLost);
+            if (landed?.Invoke(this) == true)
+                break;   // the caller's done: she broke
         }
         while (!finished);   // a handling room its gas reached may have lit another
         return Report();

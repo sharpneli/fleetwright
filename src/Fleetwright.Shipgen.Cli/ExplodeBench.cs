@@ -14,7 +14,7 @@ static class ExplodeBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(string? Room, double Kg, string Explosive, double CalibreMm, string? Magazine, string? Packaging, double Flooded, string? Doctrine,
-        double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1, bool Volumes = false, bool Slices = false);
+        double Keep, double Tear, double Panel, double Rupture, double Step, bool Trace, bool Cells, int Salvo = 0, bool Girder = false, double Whip = -1, bool Volumes = false, bool Slices = false, int Sliced = 0);
 
     public static int Run(IReadOnlyList<string> designs, Func<string, Design> load, string settingsPath, Options o)
     {
@@ -36,6 +36,7 @@ static class ExplodeBench
             GasNetwork.Trace = Console.WriteLine;
         if (o.Slices)
             GasNetwork.Slices = new GasNetwork.SliceCost();
+        sliced = o.Sliced;
         Console.WriteLine(string.Format(Inv, "the network's rungs: heat kept {0:0.##}, tear {1:0.##} of a boundary, panel {2:0.#} ms, rupture {3:0.###} MPa/mm, step x{4:0.##}", s.MagazineHeatKeep, s.RupturedShare, s.PanelMs, s.RuptureMPaMm, GasNetwork.StepK));
         if (o.Volumes)
         {
@@ -318,6 +319,9 @@ static class ExplodeBench
         }
     }
 
+    /// <summary>A magazine race stepped a slice at a time as the world steps it (<c>--sliced MS</c>, docs/battle/workers.md ET4), else at once.</summary>
+    static int sliced;
+
     static void Magazine(ShipClass c, SimSettings s, string which, double flooded, string? doctrine, bool cells)
     {
         var net = GasNetwork.For(c);
@@ -345,8 +349,11 @@ static class ExplodeBench
                 net.Burn(kw, room, warm.Ships.Store.Combat.Mounts(sw0), s, ref rw);
             }
             var sw = Stopwatch.StartNew();
-            var r = net.Burn(k, room, w.Ships.Store.Combat.Mounts(slot), s, ref rng);
+            var r = sliced > 0 ? Magazines.SetOff(c, k, room, w.Ships.Store.Combat.Mounts(slot), s, 0, ref rng, 0, 0, sliced).Gas
+                : net.Burn(k, room, w.Ships.Store.Combat.Mounts(slot), s, ref rng);
             double ms = sw.Elapsed.TotalMilliseconds;
+            if (sliced > 0)
+                net = GasNetwork.For(c);   // the slices' run was this thread's network too
             Console.WriteLine(string.Format(Inv, "    {0} ({1:0} m³ of gas):", c.RoomId(room), gas));
             Console.WriteLine(string.Format(Inv, "      peak {0:0} kPa, burned {1:0.0} t, {2} spaces ({3:0} m³), gave: {4} bulkheads, {5} decks, {6} doors, {7} sides, {8} weather deck, {9} bottom; vented {10}, lifted {11}, magazines {12}; first {13:0.00} s, the hull's {14:0.00} s, ran {15:0.0} s in {16} steps ({17:0.0} ms)",
                 r.PeakKPa, r.BurnedKg / 1000, r.Spaces, r.VolumeM3, r.Bulkheads, r.Decks, r.Doors, r.Sides, r.WeatherDecks, r.Bottoms, r.Vented, r.Lifted, r.Magazines, r.FirstS, r.HullS, r.EndS, r.Steps, ms));

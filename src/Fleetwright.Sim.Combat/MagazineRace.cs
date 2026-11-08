@@ -49,20 +49,44 @@ public static partial class Magazines
     /// (<see cref="HullGirder.Bear"/>). In the game a magazine lights in her live gas and lands slice by slice
     /// (docs/battle/workers.md ET3). alsoWhipEM: what else drove her at this moment (the shell that set it off), read with it.</summary>
     public static RaceResult SetOff(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, SimSettings s, long now,
-        ref RandomStream r, double sea = 0, double alsoWhipEM = 0)
+        ref RandomStream r, double sea = 0, double alsoWhipEM = 0, int sliceMs = 0)
     {
         var res = new RaceResult { VentS = double.NaN, StructureS = double.NaN };
         if (room < 0 || k.MagazineSpent[room])
             return res;   // it has gone up already: nothing there to burn
         var net = GasNetwork.For(c);
         var fx = new EffectsResult { Part = -1, MagazineRoom = -1 };
+        if (sliceMs > 0)
+            return Sliced(c, k, room, mounts, s, now, ref r, sea, alsoWhipEM, sliceMs, net, ref fx, res);
         var gas = net.BurnOut(k, room, mounts, s, now, ref r, ref fx);
         if (gas.Magazines == 0)
         {
             k.MagazineSpent[room] = true;   // a room with no charge in it (a carrier's bombs, not in the model yet): nothing to go up, now or later
             return res;
         }
-        var girder = HullGirder.Of(c).Bear(k, net.TakeWhip() + alsoWhipEM, now, sea, s);
+        return Result(gas, HullGirder.Of(c).Bear(k, net.TakeWhip() + alsoWhipEM, now, sea, s), fx);
+    }
+
+    /// <summary>The race a slice at a time (a bench's: docs/battle/workers.md ET4), her girder read each slice as the world reads it (what's
+    /// gone of her section then, what her gas drives her now) to the first that breaks her; the worst reading.</summary>
+    static RaceResult Sliced(ShipClass c, ShipCondition k, int room, ReadOnlySpan<MountState> mounts, SimSettings s, long now, ref RandomStream r, double sea,
+        double alsoWhipEM, int sliceMs, GasNetwork net, ref EffectsResult fx, RaceResult none)
+    {
+        var girder = default(GirderReading);
+        var hull = HullGirder.Of(c);
+        var gas = net.BurnOut(k, room, mounts, s, now, ref r, ref fx, sliceMs, g =>
+        {
+            var reading = hull.Bear(k, g.TakeWhip() + alsoWhipEM, g.NowMs, sea, s);
+            alsoWhipEM = 0;
+            if (reading.Load > girder.Load || reading.Broken)
+                girder = reading;
+            return reading.Broken;
+        });
+        if (gas.Magazines == 0)
+        {
+            k.MagazineSpent[room] = true;
+            return none;
+        }
         return Result(gas, girder, fx);
     }
 
