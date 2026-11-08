@@ -314,7 +314,7 @@ public class HullGirderTests
     }
 
     /// <summary>A charge that tears her open is recorded for the screens (docs/visuals/destruction.md D1): each outside face it tore
-    /// stamped with when, and what its gas threw off her deck (of what's wrecked there) flagged with the speed it left at.</summary>
+    /// stamped with when, and what its gas lifted off her deck wrecked and flagged with the speed it left at.</summary>
     [Fact]
     public void A_big_burst_records_the_plating_it_tore_and_what_it_threw()
     {
@@ -324,10 +324,6 @@ public class HullGirderTests
         int room = Enumerable.Range(0, c.Rooms.Length).Where(i => c.Rooms[i].Kind == RoomKind.BoilerRoom).OrderBy(i => Math.Abs((c.Rooms[i].X0 + c.Rooms[i].X1) / 2 - c.Hydrostatics.Lcf)).First();
         int cell = c.Links(c.Rooms[room].Cells)[0];
         var b = c.Cells[cell].Box;
-        // what a shell's own burst wrecks in its reach (Effects), before its gas lands: everything on her deck within 20 m
-        for (int j = 0; j < c.Components.Length; j++)
-            if (Math.Abs((c.Components[j].Bounds.X0 + c.Components[j].Bounds.X1) / 2 - (b.X0 + b.X1) / 2) < 20)
-                k.Worsen(j, PartState.Destroyed);
         var rng = RandomStream.Named(1, "destruction test");
         var net = GasNetwork.For(c);
         net.Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), shell.FillerKg, shell,
@@ -343,7 +339,7 @@ public class HullGirderTests
             if (k.ThrownMs[j] != 0)
             {
                 thrown++;
-                Assert.Equal(PartState.Destroyed, k.State[j]);   // a record of what its gas wrecked, never a wreck of its own
+                Assert.Equal(PartState.Destroyed, k.State[j]);   // lifted off her deck, it's wrecked
                 Assert.InRange(k.ThrownV[j], 0, Settings.ThrownMostMs);
             }
         Assert.True(torn >= 4, $"{torn} faces torn");

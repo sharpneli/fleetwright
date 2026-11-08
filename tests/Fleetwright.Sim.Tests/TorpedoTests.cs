@@ -304,10 +304,12 @@ public class TorpedoTests(ITestOutputHelper output)
         for (long t = warm; t < warm + 34 * 60; t++)
         {
             int ships = w.Ships.Store.Count, grouped = Grouped(), afloat = Afloat();
+            long networks = GasNetwork.Made;
             long before = GC.GetAllocatedBytesForCurrentThread();
             w.AdvanceTo(s.Start + (t + 1) * 1000);
             long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            if (w.Ships.Store.Count == ships && Grouped() == grouped && Afloat() == afloat)   // a ship lost is one going, from the moment she's lost
+            // a ship lost is one going, from the moment she's lost; more of a class burning at once than ever grows its gas pool, once
+            if (w.Ships.Store.Count == ships && Grouped() == grouped && Afloat() == afloat && GasNetwork.Made == networks)
                 allocated += bytes;
         }
         output.WriteLine($"first torpedoes at {(warm - 60) / 60.0:F1} min; torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");

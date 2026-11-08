@@ -127,6 +127,11 @@ public sealed partial class GasNetwork
         return g;
     }
 
+    /// <summary>How many networks every pool has made: a pool grows (allocates) only when more of a class burn at once than ever
+    /// before, a one-off (the allocation tests leave such a second out).</summary>
+    public static long Made => Interlocked.Read(ref made);
+    static long made;
+
     static GasNetwork Rent(ShipClass c)
     {
         var pool = Pools.GetValue(c, static _ => new Pool());
@@ -136,6 +141,7 @@ public sealed partial class GasNetwork
                 return pool.Free.Pop();
             pool.Made++;
         }
+        Interlocked.Increment(ref made);
         var g = new GasNetwork();   // more of her class burning at once than ever before
         g.Bind(c);
         return g;

@@ -146,8 +146,9 @@ point (`GasNetwork.SourceAt`: it had none, so a shell's magazine flashed at her 
 
 **The first cut of decision 2's rule, withdrawn.** The throw first wrecked the part it lifted. That's new physics (the
 gas presses only what's inside the cells it reaches, so nothing today wrecks a funnel standing on a deck torn under it),
-and it moved the squadrons' fight at 15:50. It's now a record of what the gas wrecked by its existing rules. **For the
-user:** whether a part lifted off a torn deck should be wrecked by it (physics; it would move the benches).
+and it moved the squadrons' fight at 15:50. It was a record of what the gas wrecked by its existing rules for a while.
+**The user (2026-11-08):** "You can change the benches in this case. If the gas lifts the funnel off naturally it should
+get wrecked." So the lift wrecks it again: physics, and the benches move where a part goes.
 
 **D6, two pieces.** `Attitude` gains a pivot (`PivotDx`, 0 for a whole ship); `Attitude.Piece` turns each piece about
 the break, its broken end down: the break's deck 2 m under in the first tenth of her going (the V at once), the piece

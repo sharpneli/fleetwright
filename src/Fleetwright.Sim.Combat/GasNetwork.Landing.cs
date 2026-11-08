@@ -29,7 +29,7 @@ public sealed partial class GasNetwork
         TrainsLanded();
         WaysUpLanded(ref fx);
         FeltLanded(ref fx);
-        ThrownLanded(now);
+        ThrownLanded(now, ref fx);
         FlashLanded(now, ref fx, ref r);
         Casualties.Draw(c, k, now, s, ref fx, ref r);
         if (fx.Changed || fx.Killed + fx.Wounded > 0)
@@ -127,11 +127,11 @@ public sealed partial class GasNetwork
         }
     }
 
-    /// <summary>The parts standing on a weather deck her gas tore open (docs/visuals/destruction.md decision 2): one its gas wrecked
-    /// goes when the most its cell felt beats its weight over its footprint (the gunhouses' rule, <see cref="ShipClass.LiftKPa"/>),
-    /// flagged thrown with its speed (<see cref="Throw"/>). A record only: what wrecks a part is the gas's pressure classes
-    /// (<see cref="FeltLanded"/>), as before. An enclosed gunhouse goes by its own way up (<see cref="WaysUpLanded"/>).</summary>
-    void ThrownLanded(long now)
+    /// <summary>The parts standing on a weather deck her gas tore open (docs/visuals/destruction.md decision 2; the user 2026-11-08:
+    /// "If the gas lifts the funnel off naturally it should get wrecked"): one goes when the most its cell felt beats its weight over
+    /// its footprint (the gunhouses' rule, <see cref="ShipClass.LiftKPa"/>), wrecked and flagged thrown with its speed
+    /// (<see cref="Throw"/>). An enclosed gunhouse goes by its own way up (<see cref="WaysUpLanded"/>).</summary>
+    void ThrownLanded(long now, ref EffectsResult fx)
     {
         var comps = c.Components;
         for (int a = 0; a < n; a++)
@@ -142,7 +142,7 @@ public sealed partial class GasNetwork
             var box = c.Cells[i].Box;
             for (int j = 0; j < comps.Length; j++)
             {
-                if (k.ThrownMs[j] != 0 || k.State[j] != PartState.Destroyed || !Throwable(j))
+                if (k.ThrownMs[j] != 0 || !Throwable(j))
                     continue;
                 var b = comps[j].Bounds;
                 // standing on this deck (its foot within half a deck of the cell's top) over this cell
@@ -151,6 +151,7 @@ public sealed partial class GasNetwork
                 double weight = WeightKPa(j);
                 if (felt[i] * 1e3 < weight)
                     continue;
+                Wreck(j, ref fx);
                 Throw(j, felt[i], weight * 1e-3, now);
             }
         }
