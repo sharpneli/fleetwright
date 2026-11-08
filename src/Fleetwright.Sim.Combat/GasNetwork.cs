@@ -781,16 +781,38 @@ public sealed class GasNetwork
         return cell;
     }
 
+    /// <summary>A run from its first step to its end at once (docs/battle/workers.md ET2: <see cref="Start"/>, then
+    /// <see cref="Advance"/> with no end).</summary>
     void Run(int source, double dt0)
     {
-        double dt = dt0, quiet = 0;
-        int steps = 0;
+        Start(source, dt0);
+        Advance(double.PositiveInfinity);
+    }
+
+    // the run's own clock between advances: the step it wants next, how long nothing has moved, its steps, its source, done
+    double stepDt, quietS;
+    int stepsN, sourceCell;
+    bool finished;
+
+    /// <summary>A run's stepping begins: its first step's length; what its steps read and the run doesn't move.</summary>
+    void Start(int source, double dt0)
+    {
+        (sourceCell, stepDt, quietS, stepsN, finished) = (source, dt0, 0, 0, false);
         Fixed();
+        Slices?.Begin();
+    }
+
+    /// <summary>The run stepped on to its own time untilS (s since it began), its last step cut to end there and the step it wanted
+    /// kept for the next advance (docs/battle/workers.md ET2). Whether it's done: every panel caught up, nothing burning, nothing
+    /// more to give (<see cref="Done"/>), or <see cref="SimSettings.GasRunS"/> reached.</summary>
+    bool Advance(double untilS)
+    {
         var slices = Slices;
-        slices?.Begin();
-        while (time < s.GasRunS)
+        int source = sourceCell;
+        while (!finished && time < s.GasRunS && untilS - time > 1e-9)
         {
-            double t0 = time;
+            double t0 = time, want = stepDt, dt = Math.Min(want, untilS - time);
+            bool clipped = dt < want;
             lag = 1 - Math.Exp(-dt * Math.PI * 1000 / Math.Max(s.PanelMs, 1e-3));   // a panel's response: P·min(k, π·t/T) as a lag
             plainLag = 1 - Math.Exp(-dt * Math.PI / (s.PanelMs / 1000));   // a plain plate's in Boundary.Take, as it reckons it
             for (int a = 0; a < n; a++)
@@ -804,19 +826,27 @@ public sealed class GasNetwork
             Links(dt);
             SecondHalf();
             double most = Moved(out double gauge);
-            time += dt;
-            steps++;
+            time = clipped ? untilS : time + dt;
+            stepsN++;
             slices?.Step(t0);
             if (!double.IsNaN(res.HullS) && time <= res.HullS + 1)
                 fastKg = burned;
-            quiet = changed || most > 0.01 ? 0 : quiet + dt;
-            if (Done(caught, gauge, quiet))
+            quietS = changed || most > 0.01 ? 0 : quietS + dt;
+            if (Done(caught, gauge, quietS))
+            {
+                finished = true;
                 break;
-            dt = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin) : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax * Math.Min(StepK, 1)) : dt;
-            dt = Math.Max(Math.Min(dt, soonest), DtMin);   // the step ends where a magazine's dose would light it, not a step's length after
+            }
+            // a step cut short at the advance's end goes on next time at the length it wanted, unless it had to shorten anyway
+            double next = changed || most > StepMost * StepK ? Math.Max(dt / 2, DtMin)
+                : clipped ? want
+                : most < StepMost / 4 * StepK ? Math.Min(dt * 1.25, DtMax * Math.Min(StepK, 1)) : dt;
+            stepDt = Math.Max(Math.Min(next, soonest), DtMin);   // the step ends where a magazine's dose would light it, not a step's length after
         }
-        res.Steps = steps;
+        finished |= time >= s.GasRunS;
+        res.Steps = stepsN;
         res.EndS = time;
+        return finished;
     }
 
     /// <summary>What the run's steps read and nothing in them moves, as it stands once the near field has holed her (<see cref="liq"/>
