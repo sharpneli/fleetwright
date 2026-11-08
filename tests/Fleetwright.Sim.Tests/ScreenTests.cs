@@ -132,7 +132,7 @@ public class ScreenTests(ITestOutputHelper output)
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.TurnAwayDeg, 0));
         // the default preset's floors: what the enemy's batteries would take (Content/Sim/doctrine.json)
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.HitFloor, 0.01));
-        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, 1.2e-5));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, 8.5e-6));
         for (int g = 1; g <= (onScreen ? 2 : 3); g++)
             w.Apply(ai.Orders.HoldFire(Unit.Group(g)));
         if (onScreen)

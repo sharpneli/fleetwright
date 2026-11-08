@@ -1,0 +1,40 @@
+== super_dreadnought
+Super-dreadnought (Queen Elizabeth-like, 1913) (32060 t, 189 m, depth 14.4 m, draught 9.5 m): 200 hits 4.5 m down along the side, 1 a ship; reach 4.7 m, hole 63 m², a mine's whip 2.85 design moments (f2 0.75 Hz); 3.14 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 3990 t, list 5.4°, power 57% (speed 73%), steering lost 11%; lost 0% (broke in two 0%, magazine 0%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 42%
+== iron_duke
+Iron Duke-like (1914) (29290 t, 178 m, depth 14.0 m, draught 9.3 m): 200 hits 4.5 m down along the side, 1 a ship; reach 4.7 m, hole 63 m², a mine's whip 2.65 design moments (f2 0.70 Hz); 3.29 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 3754 t, list 1.9°, power 51% (speed 70%), steering lost 20%; lost 4% (broke in two 0%, magazine 4%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 34%
+== derfflinger
+Derfflinger-like (1914) (33781 t, 203 m, depth 15.2 m, draught 10.1 m): 200 hits 4.5 m down along the side, 1 a ship; reach 4.7 m, hole 63 m², a mine's whip 2.28 design moments (f2 0.70 Hz); 5.08 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 3848 t, list 0.7°, power 53% (speed 71%), steering lost 16%; lost 0% (broke in two 0%, magazine 0%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 31%
+== lion
+Lion-like (1912) (45281 t, 253 m, depth 16.6 m, draught 10.5 m): 200 hits 4.5 m down along the side, 1 a ship; reach 4.7 m, hole 63 m², a mine's whip 1.18 design moments (f2 0.60 Hz); 7.31 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 5077 t, list 1.9°, power 60% (speed 76%), steering lost 11%; lost 0% (broke in two 0%, magazine 0%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 28%
+== arethusa
+Arethusa-like (1914) (5388 t, 141 m, depth 8.7 m, draught 4.7 m): 200 hits 2.8 m down along the side, 1 a ship; reach 5.0 m, hole 55 m², a mine's whip 0.88 design moments (f2 0.68 Hz); 3.91 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 1077 t, list 0.4°, power 40% (speed 52%), steering lost 10%; lost 11% (broke in two 11%, magazine 0%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 43%
+== town_chatham
+Chatham-like Town (1912) (4198 t, 124 m, depth 8.1 m, draught 4.4 m): 200 hits 2.6 m down along the side, 1 a ship; reach 5.1 m, hole 53 m², a mine's whip 0.00 design moments (f2 0.81 Hz); 3.82 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 708 t, list 1.5°, power 43% (speed 57%), steering lost 16%; lost 28% (broke in two 26%, magazine 2%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 51%
+== v25
+V25-like torpedo boat (1914) (1852 t, 102 m, depth 6.7 m, draught 3.3 m): 200 hits 2.0 m down along the side, 1 a ship; reach 5.5 m, hole 47 m², a mine's whip 0.00 design moments (f2 1.07 Hz); 2.82 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 346 t, list 1.5°, power 33% (speed 38%), steering lost 7%; lost 53% (broke in two 38%, magazine 16%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 78%
+== destroyer
+Fleet Destroyer (2725 t, 115 m, depth 7.4 m, draught 3.8 m): 200 hits 2.3 m down along the side, 1 a ship; reach 5.3 m, hole 47 m², a mine's whip 0.00 design moments (f2 0.97 Hz); 3.33 s
+  put out of action (per 100 hits):
+  each ship after 1 hit(s) and 30 min: water 577 t, list 2.6°, power 39% (speed 46%), steering lost 39%; lost 37% (broke in two 37%, magazine 0%, foundered 0%, capsized 0%)
+  out of the fight (lost, or past the default preset's fall-out) 87%

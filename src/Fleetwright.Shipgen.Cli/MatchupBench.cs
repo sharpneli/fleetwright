@@ -123,8 +123,20 @@ static class MatchupBench
                                 continue;
                             }
                             judged[i] = 1 - Math.Exp(-k * Matchup.OutExponent(kinds[i].Gun, tp, r, s));
+                            if (ships <= 0)
+                            {
+                                measured[i] = double.NaN;   // --ships 0: the matchup's judgement alone, for refits against a kept run
+                                continue;
+                            }
                             var rep = GivenHits.Run(tc, kinds[i].Shell, maxElev, r, 90, ships * k, k, (ulong)seed, s, null, settleMin * 60, fallOut);
                             measured[i] = (double)rep.Out / Math.Max(rep.Ships, 1);
+                        }
+                        if (ships <= 0)
+                        {
+                            // the exponent a hit, in full: a refit's terms (docs/battle/explosions.md EX7)
+                            Console.WriteLine(string.Format(Inv, "  on {0,-18} {1,6:0} m, {2} hit(s): exponent {3}", tc.Name, r, k,
+                                string.Join("  ", kinds.Select((x, i) => string.Format(Inv, "{0} {1:e6}", x.Kind, -Math.Log(1 - judged[i]) / k)))));
+                            continue;
                         }
                         int bj = Best(judged), bm = Best(measured);
                         // a pick within the bench's noise (two standard errors of the measured shares) isn't a disagreement

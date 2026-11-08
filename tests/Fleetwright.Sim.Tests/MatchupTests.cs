@@ -120,10 +120,11 @@ public class MatchupTests(ITestOutputHelper output)
         // shipgen duel: Iron Duke's 13.5" on Derfflinger, 13.0% at 10 km and 4.7% at 14 km
         Assert.InRange(Matchup.HitChance(main, derf, 10_000, Settings), 0.08, 0.2);
         Assert.InRange(Matchup.HitChance(main, derf, 14_000, Settings), 0.03, 0.08);
-        // shipgen hits: a 6" HE hit puts the V25 out 6.0% of the time (2026-10-15; this reads 10.2%: its 1/displacement
-        // overstates a light ship, docs/battle/bugs.md), a 13.5" AP hit Derfflinger 0.85% at 14 km
+        // shipgen hits (2026-11-08, after the one explosion: docs/battle/explosions.md EX7): a 6" hit puts the V25 out 1-2%
+        // of the time (HE 2%, APC 1%; 6.0% on 2026-10-15), this reads 1.5% since the matchup's shells go by their mass;
+        // 15 13.5" AP hits put Derfflinger out 8% at 14 km (0.56% a hit as the matchup counts them)
         var six = profiles.Value["arethusa"].Guns[0];
-        Assert.InRange(Matchup.OutChance(six, E("v25"), 6000, Settings), 0.04, 0.11);
+        Assert.InRange(Matchup.OutChance(six, E("v25"), 6000, Settings), 0.008, 0.03);
         Assert.InRange(Matchup.OutChance(main, E("derfflinger"), 14_000, Settings), 0.004, 0.017);
     }
 

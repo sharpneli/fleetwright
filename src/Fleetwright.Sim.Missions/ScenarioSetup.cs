@@ -694,7 +694,7 @@ public static class DoctrineRules
         new(DoctrineField.NightAttack, "Torpedo craft attack by night", [(1, "yes"), (0, "no")]),
         new(DoctrineField.Dispose, "Admirals place scouts and screens", [(1, "by roles"), (0, "all in line")]),
         new(DoctrineField.Shells, "Shells", [((double)ShellUse.ByTarget, "by target"), ((double)ShellUse.MagazineOrder, "by the magazine order")]),
-        new(DoctrineField.RoundFloor, "Guns at will", [(1.2e-5, "what they can hurt"), (0, "anything in reach")]),
+        new(DoctrineField.RoundFloor, "Guns at will", [(8.5e-6, "what they can hurt"), (0, "anything in reach")]),
         new(DoctrineField.HitFloor, "Guns' shells", [(0.01, "1 hit in 100 or better"), (0, "anything in reach")]),
         new(DoctrineField.ManCasemates, "Casemate guns closed up", [((double)ManGuns.Always, "always"), ((double)ManGuns.InRange, "in range"),
             ((double)ManGuns.TorpedoCraft, "for torpedo craft")]),

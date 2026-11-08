@@ -2614,19 +2614,28 @@ public sealed record SimSettings
     public double MatchupMuzzleM { get; init; } = 10;
 
     /// <summary>What a hit does: the chance it puts the ship out of the fight (lost, or past doctrine's fall-out) is
-    /// 1 - exp(-K x size x share / displacement), tonnes: MatchupShellK with a shell's size the square root of its mass in
-    /// kg (shipgen hits: an 88 mm and a 6" shell on a destroyer, 3.4% and 7.2%, go as that, not as their filler), the share 1 when it
+    /// 1 - exp(-K x size x share / displacement in thousands of tonnes): MatchupShellK with a shell's size its mass over
+    /// 100 kg to MatchupShellMassPower (the square root until EX7: since the one explosion a light shell does far less to
+    /// a light ship, an Arethusa's 6" HE putting a V25 out 1-2% a hit where a 13.5" does 30%), the share 1 when it
     /// bursts inside, MatchupKeptShare when the armour keeps it out (or a nose fuze bursts it on the plate),
-    /// MatchupPassShare when it passes through plating too thin to arm its fuze; MatchupTorpedoK by a torpedo's charge in kg.
+    /// MatchupPassShare when it passes through plating too thin to arm its fuze; MatchupTorpedoK by a torpedo's charge (t)
+    /// over the displacement (kt) to MatchupTorpedoSizePower (Matchup.TorpedoOut).
     /// Penetration is a probability around the plate, spread by MatchupPenSpread of it (1 sigma). A side hit in the
     /// upperworks reaches the vitals by its splinters only, exp(-deck armour / the shell's splinter plate) of it (the
     /// armour its best 10% beat 5 m off: Fragments.SplinterMm, E1). Fitted to shipgen
-    /// hits and shipgen torpedo with 30 minutes of flooding after (a 2,300 t destroyer 7% a 6" HE hit, Iron Duke 0.85% a
-    /// 12" AP hit at 14 km, a battleship 18% a torpedo).</summary>
-    public double MatchupShellK { get; init; } = 28;
+    /// hits and shipgen torpedo with 30 minutes of flooding after. Refitted after the one explosion (docs/battle/explosions.md
+    /// EX7, 2026-11-08) to shipgen matchup --kinds, 564 lines of out of the fight after K hits (K by the target's size, the
+    /// capital pairs at 15): the mass's power 1 fits them best (rms 0.037 against the square root's 0.041; light guns on
+    /// light ships 0.9% against a measured 1.2% where the square root said 2.9%), the shares as they were. The torpedo's refitted after the one explosion (docs/battle/explosions.md EX7, 2026-11-08):
+    /// shipgen torpedo --settle 30, a 303 kg charge, out of the fight a hit (duds in): QE 42%, Iron Duke 34%, Derfflinger
+    /// 31%, Lion 28%, Arethusa 43%, Chatham 51%, V25 78%, the fleet destroyer 87%; fitted 32, 33, 31, 28, 59, 63, 75, 69
+    /// (the old 1/displacement: 32, 35, 31, 24, 83, 86, 89, 89).</summary>
+    public double MatchupShellK { get; init; } = 0.103;
+    public double MatchupShellMassPower { get; init; } = 1;
     public double MatchupKeptShare { get; init; } = 0.15;
     public double MatchupPassShare { get; init; } = 0.4;
-    public double MatchupTorpedoK { get; init; } = 48;
+    public double MatchupTorpedoK { get; init; } = 8.26;
+    public double MatchupTorpedoSizePower { get; init; } = 0.5;
     public double MatchupPenSpread { get; init; } = 0.1;
     /// <summary>E3: a shell its plate holds within the spall band adds this share of a burst inside to what a kept one
     /// does: the cloud behind a turret face or a roof, rarely a flash [EST; the balance pass fits it].</summary>

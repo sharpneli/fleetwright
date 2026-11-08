@@ -1045,12 +1045,19 @@ public static class Matchup
             double fired = Math.Min(Math.Min(pr.TubesBearing, s.TorpedoSpread), pr.Torpedoes * e.TorpedoesLeft) * left;
             // a target turning away outruns a torpedo the faster she is beside it (the bench's target steamed at the reference speed)
             double kn = pr.Torpedo.FastKn, run = Math.Clamp((kn - to[target].SpeedKn) / Math.Max(kn - s.MatchupTorpedoRefKn, 1), 0, 1.5);
-            double q = (1 - pr.TorpedoDud) * (1 - Math.Exp(-s.MatchupTorpedoK * pr.Torpedo.ChargeKg / (tp.DisplacementT * to[target].Toughness)));
+            double q = (1 - pr.TorpedoDud) * TorpedoOut(pr.Torpedo.ChargeKg, tp.DisplacementT, to[target].Toughness, s);
             total += fired * near * run * q;
         }
         outTo[target] += total;
         return total;
     }
+
+    /// <summary>The chance a torpedo that goes off puts a ship out of the fight: 1 - exp(-K x its charge in tonnes over her
+    /// displacement in thousands of tonnes to <see cref="SimSettings.MatchupTorpedoSizePower"/>, over the toughness left in
+    /// her). One hit floods a machinery space or two in any ship (her power down to 40-60% from a light cruiser to a
+    /// battlecruiser, shipgen torpedo), so it goes far slower than her size; light craft break besides.</summary>
+    public static double TorpedoOut(double chargeKg, double displacementT, double toughness, SimSettings s) =>
+        1 - Math.Exp(-s.MatchupTorpedoK * chargeKg / 1000 / (Math.Pow(Math.Max(displacementT, 1) / 1000, s.MatchupTorpedoSizePower) * Math.Max(toughness, 1e-3)));
 
     /// <summary>The chance a shell from a battery hits a class at a range (fire-control-research.md §8.3): the fire
     /// control's error and the salvo's dispersion over the target's hitting space, beam on.</summary>
@@ -1093,7 +1100,7 @@ public static class Matchup
     }
 
     /// <summary>The chance a hit from a battery at a range puts a ship of a class out of the fight: by its shell's size (the
-    /// square root of its mass) and whether it bursts inside, over the side's and deck's armour as the fall angle splits the hits between them (a
+    /// its mass, <see cref="SimSettings.MatchupShellMassPower"/>) and whether it bursts inside, over the side's and deck's armour as the fall angle splits the hits between them (a
     /// side hit in the upperworks reaching the vitals only by its splinters through the deck under them), over the ship's
     /// displacement (and the toughness left in her).</summary>
     public static double OutChance(MatchupGun g, in MatchupEntry target, double rangeM, SimSettings s) =>
@@ -1132,7 +1139,7 @@ public static class Matchup
             deckIn += w * (Through(shell, t.Deck16, penDeck, nearDeck, t.DeckPlatingMm, 90 - fall, bare, s) - deckIn);
         }
         double share = side * (t.UpperShare * upper + (1 - t.UpperShare) * sideIn) + (1 - side) * deckIn;
-        return s.MatchupShellK * Math.Sqrt(shell.MassKg) * share / t.DisplacementT;
+        return s.MatchupShellK * Math.Pow(shell.MassKg / 100, s.MatchupShellMassPower) * share / (t.DisplacementT / 1000);
     }
 
     /// <summary>The share of a shell's effect that gets in through a face: a plate it passes whole bursts it inside (a

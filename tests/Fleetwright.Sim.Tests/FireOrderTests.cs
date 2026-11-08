@@ -165,12 +165,12 @@ public class FireOrderTests(ITestOutputHelper output)
     public void Secondaries_at_will_hold_fire_on_what_their_rounds_cannot_hurt()
     {
         // a battleship at 11 km: the 15" fire, the 6" don't (the matchup has a round of them putting her out with a
-        // chance of 1.7e-5 there, under doctrine's 3e-5; docs/battle/error-sources.md ES7); at 7 km (4.4e-5) they do.
+        // chance of 3.8e-6 there, under doctrine's 8.5e-6; docs/battle/explosions.md EX7); at 7 km (1.3e-5) they do.
         // Doctrine's floor at 0, they take her at 11 km too. A destroyer at 11 km, which a 6" hit may well put out, they take by the round's worth alone, and leave
         // by the hit floor (1% of their shells: they'd hit her with 0.3% there), at 6 km take (docs/battle/balance.md BL1r)
-        foreach (var (target, km, floor, hitFloor, takes) in new[] { ("dreadnought", 11.0, 3e-5, 0.0, false), ("dreadnought", 7.0, 3e-5, 0.01, true),
-                     ("dreadnought", 11.0, 0.0, 0.0, true), ("destroyer", 11.0, 3e-5, 0.0, true), ("destroyer", 11.0, 3e-5, 0.01, false),
-                     ("destroyer", 6.0, 3e-5, 0.01, true) })
+        foreach (var (target, km, floor, hitFloor, takes) in new[] { ("dreadnought", 11.0, 8.5e-6, 0.0, false), ("dreadnought", 7.0, 8.5e-6, 0.01, true),
+                     ("dreadnought", 11.0, 0.0, 0.0, true), ("destroyer", 11.0, 8.5e-6, 0.0, true), ("destroyer", 11.0, 8.5e-6, 0.01, false),
+                     ("destroyer", 6.0, 8.5e-6, 0.01, true) })
         {
             var (w, ai) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed(target, 90, km * 1000, 0, 10, 1));
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, floor));
@@ -199,7 +199,7 @@ public class FireOrderTests(ITestOutputHelper output)
         {
             var (w, ai) = Make(new Placed(shooter, 0, 0, 0, 10, 0), new Placed(target, 90, km * 1000, 0, 10, 1));
             // the default preset's floors (Content/Sim/doctrine.json), or none
-            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, floors ? 1.2e-5 : 0));
+            w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RoundFloor, floors ? 8.5e-6 : 0));
             w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.HitFloor, floors ? 0.01 : 0));
             Run(w, 60);
             output.WriteLine($"{shooter} on a {target} at {km} km, floors {(floors ? "the preset's" : "0")}: main on {Target(w, 1, 0)}");

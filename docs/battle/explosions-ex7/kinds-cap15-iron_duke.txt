@@ -1,0 +1,28 @@
+
+Iron Duke-like (1914) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Derfflinger-like (1914)   8000 m, 15 hit(s): Ap   8.9%/  8.5%  He   4.2%/  0.0%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  12000 m, 15 hit(s): Ap   7.4%/  2.5%  He   4.3%/  0.0%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  16000 m, 15 hit(s): Ap  15.4%/ 13.5%  He   4.4%/  0.0%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)   8000 m, 15 hit(s): Ap  11.0%/  9.5%  He   5.3%/  1.0%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  12000 m, 15 hit(s): Ap   9.6%/  8.0%  He   5.4%/  0.0%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  16000 m, 15 hit(s): Ap  18.8%/ 12.0%  He   5.4%/  0.5%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)   8000 m, 15 hit(s): Ap  10.9%/ 11.5%  He   5.6%/  0.5%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  12000 m, 15 hit(s): Ap   8.9%/  3.0%  He   5.5%/  0.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  16000 m, 15 hit(s): Ap  15.5%/  9.5%  He   5.5%/  0.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)     8000 m, 15 hit(s): Ap   8.4%/ 14.5%  He   3.4%/  2.0%  matchup Ap, damage model Ap
+  on Lion-like (1912)    12000 m, 15 hit(s): Ap   6.3%/  9.0%  He   3.4%/  2.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)    16000 m, 15 hit(s): Ap   6.3%/ 15.5%  He   3.4%/  3.5%  matchup Ap, damage model Ap
+
+Iron Duke-like (1914) b1 (secondary, 152 mm): He 46.2 kg (filler 4.16 kg, Nose fuze), Ap 48.6 kg (filler 1.56 kg, Base fuze)
+  on Derfflinger-like (1914)   8000 m, 15 hit(s): He   0.9%/  0.0%  Ap   0.9%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Derfflinger-like (1914)  12000 m, 15 hit(s): He   1.1%/  0.5%  Ap   1.1%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)   8000 m, 15 hit(s): He   1.1%/  0.0%  Ap   1.2%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)  12000 m, 15 hit(s): He   1.3%/  0.5%  Ap   1.4%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)   8000 m, 15 hit(s): He   1.0%/  1.5%  Ap   1.0%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)  12000 m, 15 hit(s): He   1.1%/  1.0%  Ap   1.2%/  0.5%  matchup Ap, damage model He  (within the noise)
+  on Lion-like (1912)     8000 m, 15 hit(s): He   0.6%/  0.0%  Ap   0.6%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Lion-like (1912)    12000 m, 15 hit(s): He   0.6%/  0.0%  Ap   0.7%/  0.0%  matchup Ap, damage model He  (within the noise)
+Iron Duke-like (1914) b2: no He profile (none bearing)
+Iron Duke-like (1914) b2: no Ap profile (none bearing)
+
+20 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

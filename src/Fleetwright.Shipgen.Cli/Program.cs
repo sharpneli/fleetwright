@@ -153,7 +153,7 @@ public static class Program
         shipgen matchup --kinds A[,C...] B[,D...] [--ranges 4000,8000,12000,16000] [--hits K] [--ships 200] [--settle 30]
             the shell kinds (docs/battle/shell-choice.md A0): each of A's batteries, each kind it carries, on each of B's
             classes by range: out of the fight after K hits as the matchup judges it beside the damage model's, and each
-            one's best kind (K by B's size unless given)
+            one's best kind (K by B's size unless given); --ships 0 the matchup's alone (a refit against a kept run)
         shipgen torpedo TARGET [--shooter DESIGN] [--at mid|bow|stern|SHARE] [--depth M] [--n N] [--per-ship K] [--settle MIN] [--seed S]
                         [--range M [--aspect DEG] [--target-speed KN] [--spread N] [--runs N]]
             torpedoes (docs/battle/fighting.md 4.6), the shooter's (default destroyer). Without --range, the hit alone: N

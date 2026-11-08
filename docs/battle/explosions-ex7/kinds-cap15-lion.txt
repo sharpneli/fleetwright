@@ -1,0 +1,24 @@
+
+Lion-like (1912) b0 (main, 343 mm): Ap 636.8 kg (filler 20.38 kg, Base fuze), He 636.8 kg (filler 63.68 kg, Nose fuze)
+  on Derfflinger-like (1914)   8000 m, 15 hit(s): Ap   9.1%/  8.0%  He   4.2%/  0.5%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  12000 m, 15 hit(s): Ap   7.9%/  4.0%  He   4.3%/  0.5%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  16000 m, 15 hit(s): Ap  13.7%/ 10.0%  He   4.4%/  0.5%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)   8000 m, 15 hit(s): Ap  11.2%/ 13.0%  He   5.2%/  0.0%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  12000 m, 15 hit(s): Ap   9.9%/  9.5%  He   5.3%/  0.5%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  16000 m, 15 hit(s): Ap  16.9%/  9.0%  He   5.4%/  0.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)   8000 m, 15 hit(s): Ap  11.1%/  9.5%  He   5.6%/  0.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  12000 m, 15 hit(s): Ap   9.5%/  9.0%  He   5.5%/  0.5%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  16000 m, 15 hit(s): Ap  14.0%/  3.0%  He   5.5%/  0.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)     8000 m, 15 hit(s): Ap   8.6%/ 12.0%  He   3.4%/  1.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)    12000 m, 15 hit(s): Ap   6.9%/ 17.0%  He   3.4%/  1.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)    16000 m, 15 hit(s): Ap   4.8%/ 11.5%  He   3.4%/  3.5%  matchup Ap, damage model Ap
+
+Lion-like (1912) b1 (secondary, 102 mm): He 14 kg (filler 1.26 kg, Nose fuze), Ap 14.7 kg (filler 0.47 kg, Base fuze)
+  on Derfflinger-like (1914)   8000 m, 15 hit(s): He   0.5%/  0.0%  Ap   0.5%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)   8000 m, 15 hit(s): He   0.7%/  1.0%  Ap   0.7%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)   8000 m, 15 hit(s): He   0.5%/  1.0%  Ap   0.6%/  0.0%  matchup Ap, damage model He  (within the noise)
+  on Lion-like (1912)     8000 m, 15 hit(s): He   0.3%/  0.0%  Ap   0.3%/  0.0%  matchup Ap, damage model He  (within the noise)
+Lion-like (1912) b2: no He profile (none bearing)
+Lion-like (1912) b2: no Ap profile (none bearing)
+
+16 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

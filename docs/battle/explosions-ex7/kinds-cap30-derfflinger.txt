@@ -1,0 +1,38 @@
+
+Derfflinger-like (1914) b0 (main, 305 mm): Ap 408.3 kg (filler 11.02 kg, Base fuze), He 408.3 kg (filler 26.95 kg, Nose fuze)
+  on Derfflinger-like (1914)   8000 m, 30 hit(s): Ap  11.0%/ 35.5%  He   6.2%/  0.0%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  12000 m, 30 hit(s): Ap   9.5%/ 22.0%  He   6.4%/  1.5%  matchup Ap, damage model Ap
+  on Derfflinger-like (1914)  16000 m, 30 hit(s): Ap  10.1%/ 14.5%  He   6.6%/  0.5%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)   8000 m, 30 hit(s): Ap  13.5%/ 30.0%  He   7.6%/  0.5%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  12000 m, 30 hit(s): Ap  12.4%/ 22.5%  He   7.9%/  0.5%  matchup Ap, damage model Ap
+  on Von der Tann-like (1910)  16000 m, 30 hit(s): Ap  11.8%/ 17.5%  He   8.2%/  2.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)   8000 m, 30 hit(s): Ap  13.4%/ 25.5%  He   8.1%/  0.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  12000 m, 30 hit(s): Ap  11.3%/ 20.5%  He   8.1%/  0.0%  matchup Ap, damage model Ap
+  on Iron Duke-like (1914)  16000 m, 30 hit(s): Ap  11.6%/ 15.0%  He   8.1%/  1.0%  matchup Ap, damage model Ap
+  on Lion-like (1912)     8000 m, 30 hit(s): Ap  10.3%/ 46.5%  He   4.9%/  0.0%  matchup Ap, damage model Ap
+  on Lion-like (1912)    12000 m, 30 hit(s): Ap   7.9%/ 45.5%  He   4.9%/  0.5%  matchup Ap, damage model Ap
+  on Lion-like (1912)    16000 m, 30 hit(s): Ap   6.8%/ 51.0%  He   5.0%/  1.5%  matchup Ap, damage model Ap
+
+Derfflinger-like (1914) b1 (secondary, 88 mm): He 9.8 kg (filler 0.65 kg, Nose fuze), Ap 9.8 kg (filler 0.26 kg, Base fuze), Star 8.9 kg (filler 0.18 kg, Time fuze)
+  on Derfflinger-like (1914)   8000 m, 30 hit(s): He   0.9%/  0.5%  Ap   0.9%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)   8000 m, 30 hit(s): He   1.1%/  1.5%  Ap   1.1%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)   8000 m, 30 hit(s): He   0.9%/  1.0%  Ap   0.9%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Lion-like (1912)     8000 m, 30 hit(s): He   0.6%/  0.0%  Ap   0.6%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+Derfflinger-like (1914) b2: no He profile (none bearing)
+Derfflinger-like (1914) b2: no Ap profile (none bearing)
+Derfflinger-like (1914) b2: no Star profile (none bearing)
+
+Derfflinger-like (1914) b3 (secondary, 150 mm): He 48.6 kg (filler 3.21 kg, Nose fuze), Ap 48.6 kg (filler 1.31 kg, Base fuze), Star 43.9 kg (filler 0.88 kg, Time fuze)
+  on Derfflinger-like (1914)   8000 m, 30 hit(s): He   1.8%/  0.5%  Ap   1.9%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Derfflinger-like (1914)  12000 m, 30 hit(s): He   2.1%/  2.0%  Ap   2.2%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)   8000 m, 30 hit(s): He   2.3%/  2.0%  Ap   2.4%/  0.5%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Von der Tann-like (1910)  12000 m, 30 hit(s): He   2.6%/  2.5%  Ap   2.7%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)   8000 m, 30 hit(s): He   2.0%/  1.5%  Ap   2.1%/  0.0%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Iron Duke-like (1914)  12000 m, 30 hit(s): He   2.2%/  3.0%  Ap   2.3%/  0.5%  Star   NaN%/  NaN%  matchup Ap, damage model He  (within the noise)
+  on Lion-like (1912)     8000 m, 30 hit(s): He   1.2%/  0.0%  Ap   1.3%/  0.5%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+  on Lion-like (1912)    12000 m, 30 hit(s): He   1.3%/  1.0%  Ap   1.3%/  2.5%  Star   NaN%/  NaN%  matchup Ap, damage model Ap
+Derfflinger-like (1914) b4: no He profile (none bearing)
+Derfflinger-like (1914) b4: no Ap profile (none bearing)
+Derfflinger-like (1914) b4: no Star profile (none bearing)
+
+24 lines (out of the fight, matchup/damage model), 0 where they pick a different kind beyond the noise

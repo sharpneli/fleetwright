@@ -214,7 +214,10 @@ public class MatchupPlayTests(ITestOutputHelper output)
         w.Apply(GroupSystem.Enter(force, b.GroupId));
         if (known != null)
         {
-            var enemy = Column(w, ids[known], Off(0, 18_000), 180, 4, side: 1);
+            // five: since EX7 the matchup reads the 13.5" over the 12" by its mass, more than the damage model gives
+            // (docs/battle/explosions.md EX7), so two Iron Dukes against four judge 0.53, just over the bar; four again
+            // once the matchup reads the fuze's depth (PM)
+            var enemy = Column(w, ids[known], Off(0, 18_000), 180, 5, side: 1);
             w.Apply(ai.Orders.HoldFire(enemy));
         }
         w.Apply(ShipSystem.LookNow());
