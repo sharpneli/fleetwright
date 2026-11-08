@@ -307,7 +307,7 @@ public sealed class WreckEffects : IThrownParts
             lights.AddFire(root + root.Normalized() * (0.5 * l), bodies.Light(1700, d * l, FireLook.LightShare), FlashPhotometry.Chroma(1700),
                 Math.Max(d, l) / 2, view.MetresPerPixel * Math.Max(view.Width, view.Height));
             // its smoke: a fire's trail, the propellant's brown-yellow, from its tip
-            double rateM2 = q / 1000 / 18 * 0.03 * 8700;   // Q / ΔH_c × a yield × σ_s, as a fire's (SmokeSources.Fire's law) [EST]
+            double rateM2 = q / 1000 / 18 * 0.03 * 8700 * FireLook.SmokeGain;   // Q / ΔH_c × a yield × σ_s, as a fire's (SmokeSources.Fire's law) [EST]
             long key = (long)v.Entity[k] << 20 | 0x80000 | (uint)mt;
             int owner = (int)((uint)(v.Entity[k] * 64 + 63 - mt % 32) & 0xffffff) | 1 << 29;
             trails.Emit(smoke, key, owner, drawMs / 1000.0, SmokeTrails.Spacing(v.Speed[k], FireLook.EveryS), root + root.Normalized() * l,

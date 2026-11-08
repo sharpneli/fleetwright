@@ -636,31 +636,24 @@ public sealed partial class ShipSystem : IWorldSystem
         (v.CutBowMs[n], v.CutSternMs[n]) = (k.CutBowMs, k.CutSternMs);
         (v.TornStart[n], v.TornCount[n], v.ThrownStart[n], v.ThrownCount[n], v.WayStart[n], v.WayCount[n]) = (v.TornTotal, 0, v.ThrownTotal, 0, v.WayTotal, 0);
         (v.GasMs[n], v.GasKgS[n]) = (0, 0);
-        if (!k.Damaged || k.FaceTornMs.Length == 0)
+        if (!k.Damaged || k.TornN + k.ThrownN == 0 && k.Gas == null)
             return;
         var c = k.Class;
         var gas = k.Gas;
-        int torn = 0, thrown = 0;
-        foreach (long ms in k.FaceTornMs)
-            torn += ms != 0 ? 1 : 0;
-        foreach (long ms in k.ThrownMs)
-            thrown += ms != 0 ? 1 : 0;
-        v.EnsureWrecks(v.TornTotal + torn, v.ThrownTotal + thrown, v.WayTotal + (gas != null ? c.Mounts.Length : 0));
-        for (int x = 0; x < k.FaceTornMs.Length; x++)
-            if (k.FaceTornMs[x] != 0)
-            {
-                int j = v.TornTotal++;
-                v.TornCount[n]++;
-                (v.TornFace[j], v.TornM2[j], v.TornMs[j]) = (x, (float)k.FaceTornM2[x], k.FaceTornMs[x]);
-                v.TornMPa[j] = gas != null ? (float)gas.PressureMPa(x / 4) : 0;
-            }
-        for (int p = 0; p < k.ThrownMs.Length; p++)
-            if (k.ThrownMs[p] != 0)
-            {
-                int j = v.ThrownTotal++;
-                v.ThrownCount[n]++;
-                (v.ThrownPart[j], v.ThrownMs[j], v.ThrownV[j]) = (p, k.ThrownMs[p], k.ThrownV[p]);
-            }
+        v.EnsureWrecks(v.TornTotal + k.TornN, v.ThrownTotal + k.ThrownN, v.WayTotal + (gas != null ? c.Mounts.Length : 0));
+        for (int i = 0; i < k.TornN; i++)
+        {
+            int x = k.TornList[i], j = v.TornTotal++;
+            v.TornCount[n]++;
+            (v.TornFace[j], v.TornM2[j], v.TornMs[j]) = (x, (float)k.FaceTornM2[x], k.FaceTornMs[x]);
+            v.TornMPa[j] = gas != null ? (float)gas.PressureMPa(x / 4) : 0;
+        }
+        for (int i = 0; i < k.ThrownN; i++)
+        {
+            int p = k.ThrownList[i], j = v.ThrownTotal++;
+            v.ThrownCount[n]++;
+            (v.ThrownPart[j], v.ThrownMs[j], v.ThrownV[j]) = (p, k.ThrownMs[p], k.ThrownV[p]);
+        }
         if (gas == null || gas.Done)
             return;
         double kgS = 0;

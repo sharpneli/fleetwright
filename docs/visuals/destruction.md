@@ -1,4 +1,4 @@
-# Destruction in the world view: what rides with her, the gas in time, plating blown out, ships broken (plan agreed 2026-11-08)
+# Destruction in the world view: what rides with her, the gas in time, plating blown out, ships broken (plan agreed and first pass built 2026-11-08)
 
 The sim now tears ships apart properly (`docs/battle/explosions.md`: every explosion through one gas network, the
 girder from the same boundaries; `docs/battle/workers.md` ET0-ET6: the gas runs in game time, a magazine burning for
@@ -110,6 +110,75 @@ of D2 below, which are attached.
 4. **Budgets** as proposed (~60 pieces a ship, ~400 in the view, 16 jets a ship, the columns' lights in the fires' pool),
    **ships in view first**: what's spent on a fight off screen never starves the one being watched, so nothing in view
    flickers when hits land elsewhere.
+
+## Done (2026-11-08, first pass)
+
+**D1, the data.** `ShipCondition` keeps for the screens when each outside face first tore (`FaceTornMs`, stamped by the gas
+network's tears and a hit's own punches at `TearMs`), the faces torn and parts thrown as lists in the order they went,
+where she broke and when (`BreakX`, `BreakMs`, set by `HullGirder.Bear` on a broken reading: every one loses her), when an
+end came off (`CutBowMs`, `CutSternMs`), and the parts her gas threw (`ThrownMs`, `ThrownV`: decision 2's record, a part
+its gas wrecked standing on a weather deck it tore, lifted when the most its cell felt beats its weight over its
+footprint, the weight its box's plating x `ThrownWeightK` 2 [EST]; a lifted gunhouse by the pressure it lifted at,
+`liftMPa`; the speed it leaves at the excess over its own height, at most `ThrownMostMs` 60). The live run gives each
+stow's burning (`LitKgS`) and a cell's pressure now (`PressureMPa`). `ShipsView` carries all of it, every ship's alike
+(`PutWrecks`); `BlastsView` gains the race's tier and fast kg, and the gas path's magazine record its first source's
+point (`GasNetwork.SourceAt`: it had none, so a shell's magazine flashed at her origin). The squadrons at 30 minutes:
+`D642D8C72CE80F78` before and after, the same shots and hits. Tests:
+`HullGirderTests.A_big_burst_records_the_plating_it_tore_and_what_it_threw`, the break kept in
+`A_ship_cut_nearly_through_breaks_as_she_floods`.
+
+**The first cut of decision 2's rule, withdrawn.** The throw first wrecked the part it lifted. That's new physics (the
+gas presses only what's inside the cells it reaches, so nothing today wrecks a funnel standing on a deck torn under it),
+and it moved the squadrons' fight at 15:50. It's now a record of what the gas wrecked by its existing rules. **For the
+user:** whether a part lifted off a torn deck should be wrecked by it (physics; it would move the benches).
+
+**D6, two pieces.** `Attitude` gains a pivot (`PivotDx`, 0 for a whole ship); `Attitude.Piece` turns each piece about
+the break, its broken end down: the break's deck 2 m under in the first tenth of her going (the V at once), the piece
+up to 35-75 degrees by its length (a short one steeper) in the first third, then down until her highest point is under
+when she's gone. `ShellSystem` traces a broken wreck once a piece on its attitude and keeps the crossings on its side; a
+crossing past an end that's come off is let pass. The map: `ShipQuad.Clip` (shipmap.vert/frag, shipmap_shadow.frag,
+`SHIP_CLIP` in shipshadow.glsl: past the cut the height map reads as the sea, so nothing there shows, casts or takes a
+shadow), the cut ragged by 0.12 of her beam and charred; each piece one more `Placed` with its own sea and clip, its
+turrets by where they stand, each ending a cut's depth short of the break (what blew out there is gone); every hull
+foreshortened by the cosines of its trim and heel about its pivot (`SquashOf`: nothing afloat, two-thirds of a piece
+standing at 50 degrees). Seen on the 2000 mm bench: at 12 s two pieces with a gap, the break's ends awash; at 70 s the
+ends up, long shadows; at 3 min two ends standing out of the sea in the boils. Test:
+`A_broken_ships_pieces_go_down_by_their_broken_ends`.
+
+**D5, an end off.** The ship drawn short at the cut (ragged, charred), the end going down on its own for
+`CutPieceMs` 60 s on a piece's attitude. Seen: a dreadnought's stern under the 2000 mm HE, cut at -79.2 m, under a metre
+from her end (`bugs.md`: the girder cuts at her tip).
+
+**D2, plating blown out.** `ShipDrawList.Torn`: each torn deck face a ragged hole over the torn share of its cell, each
+side face a bite out of her deck edge along it, both on the shells' marks' decal (mode 4), now ragged in tongues at the
+mark's own scale; the hole is her insides, gutted (burnt frames every 0.6 m over the dark of the spaces, bays lit and
+deep), not black: a ship torn open along her length must still read as a ship (the first cut drew her as a black shape
+on a dark sea). `Map/Hits/WreckEffects`: each tear first seen young (8 s) bursts its gas out of the opening for half a
+second and throws 2-24 plates by its area at 15-60 m/s along the gas's way, dark flecks that splash round her; while her
+gas runs, each opening with pressure behind it vents a jet (the port jets' law, by the pressure), rooted in the hole and
+leaning back by her way through the air (decision 3). Pieces only for ships in view, at most 400 (decision 4).
+
+**D3, the stows burning.** Up each way the run opened, a column of three tongues at Heskestad's height for the
+propellant's burning (her stows' kg/s x 4 MJ/kg shared over the ways [EST]: ~85 m at 900 kg/s), its light in the fires'
+pool, its smoke a fire's trail in the propellant's brown-yellow (`-fires=smoke:` scales it). By night the core burns
+white at the ring and the flame cools orange up its height, lighting her deck and the sea; by day its own plume hides
+the upper part. The magazine event at the break is sized by the sim's fast kg where the record has it.
+
+**D4, thrown parts.** `WreckEffects` flies each part in the record once, from its foot, mostly up (70-88 degrees) at its
+speed, turning and tumbling, on the effects' clock, carrying her way (it rides her pose, as the plates do), its splash
+where it lands. The map draws a gutted hole where it stood, and the part in the air cut from her own sprite by its
+footprint and its height over its foot (mode 5); a gunhouse through the turrets' thrown pose. Leftover: the baked part's
+shadow stays in her height map.
+
+**Fires under the sea.** `Wreck.Shows`: a fire's opening under the sea at her (piece's) attitude, or on an end that came
+off, draws nothing (a fire burned on over a broken destroyer's drowned middle).
+
+**D7, cost.** DevRelease, 2560x1440: through the 2000 mm burst at 1x, CPU p50 3.1 ms, GPU p50 2.7 ms, the effects' build
+0.06 ms a frame; the squadrons at 10x, the effects' build 0.07 ms (I8's 0.16 for comparison), CPU p50 2.2, GPU 1.4. The
+snapshot's lists are kept on the condition: no scan of her faces a fill. Nothing measurable.
+
+**Still to do.** D8's sheet for the user's eye; the magazine's port jets on her pose (D0); the baked parts' shadows;
+the decision above.
 
 ## Later
 

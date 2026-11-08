@@ -188,7 +188,7 @@ public sealed partial class GasNetwork
         var b = c.Components[j].Bounds;
         double excess = Math.Max(mpa / Math.Max(weightMPa, 1e-6) - 1, 0) * 9.81;   // its rise's acceleration, m/s²
         double v = Math.Min(Math.Sqrt(2 * excess * Math.Max(b.Top - b.Base, 1)), s.ThrownMostMs);
-        (k.ThrownMs[j], k.ThrownV[j]) = (Math.Max(now, 1), (float)v);
+        k.Thrown(j, now, v);
     }
 
     /// <summary>A handling room or passage its gas reached hot enough to light charges since (<see cref="Hot"/>): a flash source for

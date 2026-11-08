@@ -340,6 +340,9 @@ public sealed class ShipCondition
     /// display only, read by nothing in the sim. <see cref="TearMs"/> is the moment a hit's own tears are stamped at.</summary>
     public long[] FaceTornMs = [];
     public long TearMs;
+    /// <summary>The faces torn and the parts thrown so far, in the order they went (the screens list them without a scan).</summary>
+    public int[] TornList = [], ThrownList = [];
+    public int TornN, ThrownN;
     /// <summary>Where she broke in two, ship x (NaN: she hasn't), and when, world ms: each piece goes down about it
     /// (<see cref="Attitude.Piece"/>; docs/visuals/destruction.md decision 1).</summary>
     public double BreakX = double.NaN;
@@ -361,8 +364,19 @@ public sealed class ShipCondition
     /// <summary>A face's first tear stamped for the screens, at ms (once).</summary>
     public void Torn(int face, long ms)
     {
-        if (FaceTornMs[face] == 0)
-            FaceTornMs[face] = Math.Max(ms, 1);
+        if (FaceTornMs[face] != 0)
+            return;
+        FaceTornMs[face] = Math.Max(ms, 1);
+        TornList[TornN++] = face;
+    }
+
+    /// <summary>A part thrown off her at ms at a speed, m/s, recorded for the screens (once).</summary>
+    public void Thrown(int part, long ms, double speed)
+    {
+        if (ThrownMs[part] != 0)
+            return;
+        (ThrownMs[part], ThrownV[part]) = (Math.Max(ms, 1), (float)speed);
+        ThrownList[ThrownN++] = part;
     }
 
     /// <summary>Where her bow and stern have come off, ship x (infinite: they haven't).</summary>
@@ -632,6 +646,7 @@ public sealed class ShipCondition
             (EdgeLost, FaceLost, FaceTornM2) = (new double[c.NeighbourCount], new double[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
             FaceTornMs = new long[4 * c.Cells.Length];
             (ThrownMs, ThrownV) = (new long[c.Components.Length], new float[c.Components.Length]);
+            (TornList, ThrownList) = (new int[4 * c.Cells.Length], new int[c.Components.Length]);
             GirderZ = new double[c.Sections.Length];
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
@@ -722,7 +737,7 @@ public sealed class ShipCondition
         Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (GirderStale, WhipSq, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
-        (BreakX, BreakMs, TearMs, CutBowMs, CutSternMs) = (double.NaN, 0, 0, 0, 0);
+        (BreakX, BreakMs, TearMs, CutBowMs, CutSternMs, TornN, ThrownN) = (double.NaN, 0, 0, 0, 0, 0, 0);
         Gas?.Release();
         (Gas, GasNextMs) = (null, -1);
         GasGen++;

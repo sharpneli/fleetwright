@@ -100,10 +100,14 @@ public sealed class MagazineBook : IThrownTurrets
             var up = v.At[i].Normalized();
             var stbd = Vec3d.Cross(fwd, up).Normalized();
             double scale = Math.Exp(MagazineLook.ScatterD * Gaussian(h, 1)), life = Math.Exp(MagazineLook.ScatterS * Gaussian(h, 3));
+            // the fireball of what the sim burned fast (her race's propellant before her hull gave: docs/visuals/destruction.md D3),
+            // else the class's placeholder share of the room (the dev's, a fire's)
+            double fastKg = i < v.FastKg.Length ? v.FastKg[i] : double.NaN;
+            var (ballM, ballS) = fastKg > 0 ? MagazineBlast.Fireball(fastKg) : (ev.FireballM, ev.FireballS);
             double ageS = (drawMs - ms) / 1000.0;
             // spent before it was first seen (the snapshot keeps a blast for its pall's minutes, longer than the event is kept
             // here at speed): not taken, or it would be let go and taken again every frame, its debris' splashes with it
-            if (Spent(ageS * ratio, ev.FireballS * life))
+            if (Spent(ageS * ratio, ballS * life))
                 continue;
             // her mounts' bearings, if she's in view (a new event's array: the start may allocate, the frames don't)
             var bearings = new double[cls.Mounts.Length];
@@ -117,7 +121,7 @@ public sealed class MagazineBook : IThrownTurrets
             {
                 Ms = ms, Ship = v.Ship[i], Event = ev,
                 At = v.At[i] + fwd * ev.X + stbd * ev.Y, Forward = fwd, Starboard = stbd,
-                FireballM = ev.FireballM * scale, FireballS = ev.FireballS * life, Seed = (h & 0xffff) / 65536f,
+                FireballM = ballM * scale, FireballS = ballS * life, Seed = (h & 0xffff) / 65536f,
                 T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio,
                 Hit = new P3(hit.X, hit.Y, hit.Z - cls.Vertical.Waterline), Bearings = bearings,
                 Debris = new MagazineDebris(ev, h, cls), Hash = h,
