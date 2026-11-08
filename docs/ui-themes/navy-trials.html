@@ -54,6 +54,18 @@ html[data-theme=light]{
   --border:#41537A;--key:#52668F;--hover:#2A3A59;--tag-bg:rgba(13,19,32,.84);
   --go-bg:#E8772E;--go-hover:#F28A45;
 }
+/* 0 Flat grey: neutral grey a step lighter than gunmetal, no warm cast, every fill flat; the sea the only blue */
+html[data-theme=grey]{
+  --ground:#1A1A1A;--panel:#262626;--panel2:#2E2E2E;--inset:#151515;--line:#333333;--edge:#0B0B0B;--bevel:rgba(255,255,255,.04);
+  --title-bg:#303030;--title-hi:transparent;--rivet:#5E5E5E;
+  --header:#202020;--text:#D6D6D6;--bright:#F5F5F5;--muted:#949494;--faint:#5E5E5E;
+  --brass-darker:rgba(232,119,46,.18);--sel-bg:rgba(232,119,46,.11);
+  --amb-edge:#7A5E26;--amb-bg:#2F2817;--ok-bg:rgba(141,190,107,.11);
+  --plan:#2B2B2B;--planline:#B2B2B2;
+  --btn-bg:#363636;--btn-hover:#414141;--btn-hi:transparent;
+  --border:#484848;--key:#575757;--hover:#353535;--tag-bg:rgba(18,18,18,.84);
+  --go-bg:#E8772E;--go-hover:#F28A45;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--edge)}
 #app{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--text);font:13px/1.3 var(--font-ui)}
@@ -493,10 +505,10 @@ function drawRight() {
 $('loadBar').innerHTML = ['borodino', 'oslyabya', 'aurora', 'buyny', 'mikasa', 'izumo', 'ikazuchi'].map(k => `<span style="flex:${CL[k].t};background:var(--muted);border-right:1px solid var(--edge)" title="${CL[k].name}"></span>`).join('');
 
 // ------------------------------------------------------------------ the skins (7 8 9)
-const THEMES = [['gunmetal', 'Gunmetal'], ['navy', 'Navy'], ['light', 'Light navy']];
+const THEMES = [['gunmetal', 'Gunmetal', 7], ['navy', 'Navy', 8], ['light', 'Light navy', 9], ['grey', 'Flat grey', 0]];
 function drawThemes() {
   const cur = document.documentElement.dataset.theme || 'gunmetal';
-  $('themes').innerHTML = '<span class="mut">Skin</span>' + THEMES.map(([k, n], i) => `<span class="${cur === k ? 'on' : ''}" data-k="${k}">${n} <span class="kbd">${7 + i}</span></span>`).join('');
+  $('themes').innerHTML = '<span class="mut">Skin</span>' + THEMES.map(([k, n, key]) => `<span class="${cur === k ? 'on' : ''}" data-k="${k}">${n} <span class="kbd">${key}</span></span>`).join('');
   for (const el of $('themes').querySelectorAll('[data-k]')) el.onclick = () => setTheme(el.dataset.k);
 }
 function setTheme(k) { document.documentElement.dataset.theme = k; drawThemes(); }
@@ -510,7 +522,8 @@ for (const h of location.hash.slice(1).split(',')) {
 }
 addEventListener('keydown', e => {
   if (e.key >= '1' && e.key <= '3') { S.tab = +e.key; draw(); }
-  if (e.key >= '7' && e.key <= '9') setTheme(THEMES[+e.key - 7][0]);
+  const th = THEMES.find(t => String(t[2]) === e.key);
+  if (th) setTheme(th[0]);
   if (e.key === 'Tab') { e.preventDefault(); S.playAs = (S.playAs + 1) % 3; draw(); }
 });
 draw();
