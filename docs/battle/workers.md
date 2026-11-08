@@ -1,5 +1,5 @@
 # Plan: the sim's workers (the job system)
-Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07; W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
+Status: **agreed 2026-10-24** (the decisions below answered); W16 (explosions off the sim thread) built 2026-11-07, to be replaced by "Explosions in time" (ET, drafted 2026-11-08); W0-W4 and W6 built 2026-10-24; W7 tried and left serial; W8's curve measured; the default count capped at 2 (the user, 2026-10-24), reassessed whenever more goes onto the workers. The AI on workers (W9-W15, superseding W5) drafted 2026-11-01; W9-W13 built 2026-11-01, W14 2026-11-02, W15's curve measured 2026-11-02 (the cap's answer waits on the user).
     Updated: 2026-11-01
 
 The job system the architecture agreed from the start (`docs/world/architecture.md` "Threaded throughout", decision 1)
@@ -592,6 +592,87 @@ did (its splash and mark don't: they're the shell's). Fire control spots by the 
 Bismarck's races at 18 km run 1.1-1.2 s (several magazines, slow burns). The lead hides up to 0.3 s. Left: a longer lead
 (the ships drawn further past the world), or a cheaper race (explosions.md item 7: the step's count, the cells a step
 visits). The delay can't grow with the speed (`same-at-any-compression`).
+
+## Explosions in time (ET) - drafted 2026-11-08, replaces W16's batches
+
+The user, 2026-11-08: "The whole thing compresses up to 2 minutes of gas propagation into a single tick. I think we probably
+should just scrap it and make it tick based, so that 2 minutes of gas propagation and effects would take 2 minutes to happen in
+game."
+
+**What W16 does, read again.** An explosion's gas is worked to its end (`GasNetwork.Run`, up to `GasRunS` 180 s of gas, a slow
+burn 4,500-8,600 steps) at one moment, as today's model always did; W16 only moved that moment a second later and the work onto a
+thread. So a magazine whose stow burns for two minutes has torn every plate, killed every man its gas reached and broken her girder
+in the second after the flash, while nothing else in the world moved. The batches are the price of keeping that one moment
+consistent: a copy of her condition, a guard on it, her flood and fire step, her outages' clear and a salvo's shock all waiting behind
+the batch, a flush before any command on her, two reentrancy flags. And the cost is still one lump: at 100x a race longer than its
+slack stalls the sim (W16f's 1.1 s).
+
+**The rule instead: an explosion's gas is a process on her, and the world steps it.**
+
+1. **Her gas is her own, live:** one run a ship (the network's working state, today one a thread and reset every run, becomes a
+   ship's, pooled by class: `GasRun`), from her first explosion until it's done (every panel caught up, nothing burning, nothing
+   more can give: today's `Done`), at most `GasRunS`.
+2. **It's stepped on a lattice of world time,** `GasSliceMs` (100 [EST], a divisor of `FloodMs`): an event a slice while she has a
+   run. Within a slice the solver keeps its own steps (the step's control as now, clipped at the slice's end, and the step it wanted
+   carried over to the next).
+3. **Every advance lands what it did on her live condition at once:** what tore (today's `Commit`, already written as deltas), the
+   holes to the sea (her water's step wakes for them), the men and gear in the spaces it reached as their boundaries' felt rises
+   (`Casualties.Gas` takes the conditional risk from the last level to the new: the risk is a curve of the peak felt), a train's
+   handling room gone hot (the flash), a gunhouse vented or lifted, a magazine lit (spent from then: her mounts there have no more
+   rounds), her girder read when her section lost something, and what she can do worked out again when anything changed. There's
+   nothing to guard, copy or hold back: everything reads her as she is.
+4. **An explosion joins her run at its moment:** the run advanced to then, its near field applied at once (shock and holes are
+   microseconds: the hit's marks and the screens' ring keep them), its gas into the network from then. A salvo's second shell, or a
+   magazine her fire sets off while the first one's gas is still in her, meets that gas: one gas in one ship (today each run starts
+   from still air and only the tears carry over).
+5. **The same in every tier.** The lattice is world time, so a race takes its two minutes at any compression
+   (`same-at-any-compression`); in the coarse tier too, as the flood step already runs there. `HitDelayMs` and the coarse tier's
+   "at once" go: a hit's own parts (the walk, fragments, spall, the near field, fires started, stores struck) land when it comes,
+   in every tier.
+6. **Read once a slice:** her liquid in each cell (cached once a run now), her waterline (her list moves the faces under the sea),
+   and her stows' flooded share, so a magazine flooding mid-race (valves, holes) burns less from then. Her own water's step stays at
+   `FloodMs`.
+
+**What it costs.** The same steps as today, spread over the gas's own time. A slice's worst case is bounded by the solver's
+shortest step (`DtMin` 0.1 ms): at most 1,000 steps in 100 ms, about 48 ms on Bismarck at 48 µs a step, and only in a violent
+phase's first slices; a slow burn at `DtMax` is 5 steps a slice, about 0.25 ms. At 1x that's under the map's 0.3 s lead (W16e); at
+100x a race's 700 ms spreads over the 1.2 s of real time its two minutes take, so the achieved speed dips instead of the map
+freezing. Live runs at once are few (a shell's gas is done in a slice or two), so threads wait: the slices of several ships are
+independent, a worker pass if ET5's numbers ask.
+
+**What moves** (nothing tuned; read in ET4): a race's damage lands over its minutes, not in its first second; a ship can flood
+through a torn side, counterflood or list while her magazine still burns, and break late (or not) as the moment and the section say;
+her unharmed turrets fight on meanwhile; a second explosion meets the first's gas; a flooded magazine stops feeding the fire.
+Historically that's the record's texture (gunhouses burning out for a minute, Seydlitz fighting on); for the look, the magazine
+explosion's event (tier 3) comes when she's lost, which is now when her girder gives, not at the flash.
+
+**What goes:** `HitDelayMs`, the batches (`DamageSystem.Batches.cs`: gather, close, land, flush, guard, the waits), the copies' pool,
+`BatchWorker` and `DamageSystem.Threaded`, `steppingSlot` and `landingSlot`, and `ShipCondition.CopyFrom` with its reflection
+test (nothing else reads it). **What stays:** W16b's `Capture`/`Work`/`Land` (a hit's own parts, at its moment), W16e's lead
+(any stall, not only this one), W16f's figures in `-frametimes`.
+
+### The steps
+
+| | |
+|---|---|
+| ET0 | Measured first: over the 75 races of "Cost and convergence" and a shell burst of each size, the steps and the ms in each 100 ms of gas time (`explode --slices`), so `GasSliceMs` and the worst slice are numbers, not the bound above |
+| ET1 | W16c-d out: back to every explosion worked at once (the output of `1817567b`, the freeze with it for a step), the items under "What goes" removed |
+| ET2 | `GasRun`: the network's working state a ship's, pooled by class and made when the class comes in (no allocation in play); `Begin`, `Add` (a source at its moment), `Advance(to)` (steps to then and lands what they did), `Done`. Still run to its end at once: byte for byte as ET1 (benches and scenarios with `--hashes`) |
+| ET3 | The world steps it (rule 1-6): the slice's event, the per-slice landing (casualties and gear by the rise in felt, the flash, vents, the girder, recompute, the wake), a source joining a live run, the stows' flooding read. The run's state in the hash, with a reflection test that it reads every field. Zero-allocation and replay tests; same hash on 1 and N workers |
+| ET4 | The benches through the same slices: `Strike` then the run out (`DamageSystem.Settle` advances it slice by slice), `explode`, `magazine --race`, `hits`, the three history benches. The convergence check again with the slices' clip (`explode --step`; "Check again whenever the inputs move"). Readouts: Lion's four, `losses`, the panel (`balance --fc-runs 0`) beside W16c's |
+| ET5 | Measured in the game, as W16f: the 2000 mm salvo at 1x, 30x, 100x, 240x, the sim's longest gap and the map's longest still; the Jutland's ms a game second while a race runs. A worker pass for the slices only if this asks |
+| ET6 | Docs: explosions.md's model ("It runs to the end at the moment of the event" goes), CLAUDE.md, `magazine-explosions.md`'s event timing |
+
+### Decisions
+
+1. **The slice: 100 ms** (proposed), or `FloodMs`'s 1 s (a tenth of the events, the gas's tears up to a second late). ET0 decides
+   if the worst slice is too heavy at 100 ms.
+2. **One gas a ship** (rule 4, proposed): a second explosion joins the live run. The other way, separate runs side by side, has two
+   gases in one space that never meet.
+3. **The coarse tier steps it too** (rule 5, proposed), against landing at once there (`coarse-statistically-rough` would allow it,
+   but it's a second rule and the old freeze at 1000x).
+4. **Seams sprung at the run's end** (proposed): a boundary that held is drawn by the most it felt (review finding 1), and before the
+   end that most isn't known. A two-minute burn's sprung seams leak from its end; they're slow leaks.
 
 ## What to expect
 
