@@ -1,4 +1,4 @@
-# Destruction in the world view: what rides with her, the gas in time, plating blown out, ships broken (plan, draft 2026-11-08)
+# Destruction in the world view: what rides with her, the gas in time, plating blown out, ships broken (plan agreed 2026-11-08)
 
 The sim now tears ships apart properly (`docs/battle/explosions.md`: every explosion through one gas network, the
 girder from the same boundaries; `docs/battle/workers.md` ET0-ET6: the gas runs in game time, a magazine burning for
@@ -89,21 +89,27 @@ of D2 below, which are attached.
 - **D8, by eye.** Side-by-side captures, day and night: the 2000 mm shell on a destroyer at 0, 1, 5, 30 s and 2 min;
   bismarck's `-ignite` through its race; a torpedo breaking a destroyer's back; a cruiser losing her bow.
 
-## Decisions for the user
+## Decisions (the user, 2026-11-08)
 
-1. **Two pieces in the sim or only on the map?** Recommended: **in the sim**, as `Attitude.At` is one model the hit
-   queries and the screens both read (`single-implementation`). Each piece gets its own attitude after a break, so
-   shells falling on a broken wreck hit what's drawn. Hashes move only for runs where a ship breaks; the benches'
-   results don't (she's lost either way). The other way, display-only pieces, leaves a shell hitting the gap between
-   them.
-2. **Thrown parts in the sim?** Recommended: **yes, as a record**: a component over a torn face or a lifted ring is
-   thrown when the gas's impulse on its base gives it more than a few m/s (v = I A / m, from the face's pressure and
-   the run's slices), flagged `Thrown` with its speed, and already Destroyed as today. Nothing else reads it. The
-   alternative, the map guessing from Destroyed parts near torn faces, could throw a funnel the sim only dented.
-3. **A burst in the open drifting off her by her way on the effects' clock** (D0, built). Confirm, or have every
-   short burst ride with her wholly.
-4. **Budgets.** Plating pieces at most ~60 a ship and ~400 in the view, jets out of torn faces at most 16 a ship, the
-   columns' lights in the fires' pool of 8. Tuned in D7.
+1. **Two pieces in the sim**, as `Attitude.At` is one model the hit queries and the screens both read
+   (`single-implementation`). "Be reasonable in at what precision to simulate the broken halves, because they are already
+   gone so we don't really care too much about them except that they block shells for a very short time." So: each piece
+   turns about the break (its broken end down, its far end rising) and sinks; no drift apart, no hydrostatics of its own.
+   A shell is traced once a piece, each with its own attitude, keeping only the crossings on that piece's side of the
+   break (twice the trace, for wrecks only). A shell that would enter a piece through the break's open face is let pass.
+   The same clip keeps shells off an end that's gone (`CutBowX`, `CutSternX`). Hashes move only where a ship lost an end
+   or broke.
+2. **Thrown parts in the sim, as a record**: a part standing over a weather deck the gas tore goes when the gas's
+   pressure under its footprint beats its weight (the gunhouses' rule, `LiftKPa`, research 10 §2.2, with the part's
+   weight from its plating), flagged with the moment and the speed it leaves at. It's already Destroyed; nothing else
+   reads the flag.
+3. **The fireball drifts off** (built). The user: "The reason jets stay with the ship is because the hole the jet comes
+   from is with the ship, so the delayed visual means a solid block of steel is passing gas. So think of how the physics
+   works in this." So a jet is fed from her hole and stays rooted in it, but the gas in it is the air's once out: it
+   **leans back by her way** (the apparent wind's, as the fires' tongues already do), the more the longer the jet.
+4. **Budgets** as proposed (~60 pieces a ship, ~400 in the view, 16 jets a ship, the columns' lights in the fires' pool),
+   **ships in view first**: what's spent on a fight off screen never starves the one being watched, so nothing in view
+   flickers when hits land elsewhere.
 
 ## Later
 

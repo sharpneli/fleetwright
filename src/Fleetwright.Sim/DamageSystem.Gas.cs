@@ -82,7 +82,7 @@ public sealed partial class DamageSystem
             {
                 var gas = net.Report();
                 if (gas.Magazines > 0)
-                    Blew(world, slot, k, net.LitRoom(0), (BlastCause)Math.Max(net.MagazineCause, 0), default, Magazines.Result(gas, girder, fx));
+                    Blew(world, slot, k, net.LitRoom(0), (BlastCause)Math.Max(net.MagazineCause, 0), net.SourceAt, Magazines.Result(gas, girder, fx));
                 else
                     Lose(world, slot, k, LossKind.BrokeInTwo);
                 return;

@@ -1818,6 +1818,12 @@ public sealed record SimSettings
     public double MagazineRoofShare { get; init; } = 0.4;
     public double MagazineTrunkShare { get; init; } = 0.05;
     public double MagazineHoistM2 { get; init; } = 0.25;
+    /// <summary>A part thrown off her by her gas (docs/visuals/destruction.md decision 2: a record for the screens): its weight
+    /// is its plating's (its box's surface at its plate) times ThrownWeightK for what's in and on it [EST], and the gas under its
+    /// footprint lifts it as the gunhouses' rule does; it leaves at the speed the excess gives it over its own height, at most
+    /// ThrownMostMs [EST: Queen Mary's turret roof, seen ~ 100 m up].</summary>
+    public double ThrownWeightK { get; init; } = 2;
+    public double ThrownMostMs { get; init; } = 60;
     /// <summary>The moment on her hull as shares of shipgen's design moment (docs/battle/explosions.md EX3): still water, the
     /// waves in a seaway [EST, 07 §3.1].</summary>
     public double[] GirderMoment { get; init; } = [0.35, 0.6];

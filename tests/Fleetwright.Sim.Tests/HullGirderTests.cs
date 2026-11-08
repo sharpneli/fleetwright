@@ -281,6 +281,83 @@ public class HullGirderTests
         k.Damaged = true;
         w.Damage.Settle(w, w.Ships.NewestEntity, 600);
         Assert.Equal(LossKind.BrokeInTwo, k.Loss);
+        // where she broke is kept: her pieces part there (docs/visuals/destruction.md decision 1)
+        Assert.True(k.Broken);
+        Assert.InRange(k.BreakX, c.Hull.X0, c.Hull.X1);
+        Assert.True(k.BreakMs > 0);
+    }
+
+    /// <summary>A broken ship's pieces (docs/visuals/destruction.md decision 1): each turns about the break, its broken end going
+    /// under first and its far end standing up out of the sea, then all of it gone when she is; the frame's maths round-trips
+    /// about the break as about the centre of flotation.</summary>
+    [Fact]
+    public void A_broken_ships_pieces_go_down_by_their_broken_ends()
+    {
+        var c = Class("destroyer");
+        double at = c.Hydrostatics.Lcf + 5, wl = c.Vertical.Waterline;
+        long loss = 0, gone = 300_000;
+        foreach (bool bow in new[] { true, false })
+        {
+            double far = bow ? c.Hull.X1 : c.Hull.X0;
+            var early = Attitude.Piece(c, Attitude.Upright, at, bow, loss, gone, 60_000);
+            var w = HitQuery.WaterOf(c, early);
+            Assert.True(w.At(at, 0) > wl + 1, $"the break under at a minute: sea {w.At(at, 0) - wl:0.0} m over the waterline there");
+            Assert.True(w.At(far, 0) < wl - 5, $"the far end standing up at a minute: sea {w.At(far, 0) - wl:0.0} m");
+            Assert.Equal(bow, early.TrimDeg < 0);   // bow down is positive: the bow's piece stands bow up
+            var end = Attitude.Piece(c, Attitude.Upright, at, bow, loss, gone, gone);
+            Assert.True(HitQuery.WaterOf(c, end).At(far, 0) > c.Solids.Bounds.Top, "all of her under when she's gone");
+            var frame = ShipFrame.At(new Vec3d(Earth.Radius, 0, 0), new Vec3d(0, 1, 0));
+            var p = new P3(far * 0.8, 2, wl + 3);
+            var back = HitQuery.ToShip(c, frame, early, HitQuery.ToWorld(c, frame, early, p));
+            Assert.True(Math.Abs(back.X - p.X) + Math.Abs(back.Y - p.Y) + Math.Abs(back.Z - p.Z) < 1e-6);
+        }
+    }
+
+    /// <summary>A charge that tears her open is recorded for the screens (docs/visuals/destruction.md D1): each outside face it tore
+    /// stamped with when, and what its gas threw off her deck (of what's wrecked there) flagged with the speed it left at.</summary>
+    [Fact]
+    public void A_big_burst_records_the_plating_it_tore_and_what_it_threw()
+    {
+        var (c, _, k) = Ship("destroyer");
+        var x = Explosives.Get("TNA")!;
+        var shell = new ShellTypeRow { CalibreMm = 2000, FillerKg = 8600, FillerRe = x.Re ?? 1, FillerQDet = x.QDet ?? 4.5, FillerQComb = x.QComb ?? 15, FillerAirM3Kg = x.AirM3Kg ?? 0, FillerEta = x.Eta ?? 1 };
+        int room = Enumerable.Range(0, c.Rooms.Length).Where(i => c.Rooms[i].Kind == RoomKind.BoilerRoom).OrderBy(i => Math.Abs((c.Rooms[i].X0 + c.Rooms[i].X1) / 2 - c.Hydrostatics.Lcf)).First();
+        int cell = c.Links(c.Rooms[room].Cells)[0];
+        var b = c.Cells[cell].Box;
+        // what a shell's own burst wrecks in its reach (Effects), before its gas lands: everything on her deck within 20 m
+        for (int j = 0; j < c.Components.Length; j++)
+            if (Math.Abs((c.Components[j].Bounds.X0 + c.Components[j].Bounds.X1) / 2 - (b.X0 + b.X1) / 2) < 20)
+                k.Worsen(j, PartState.Destroyed);
+        var rng = RandomStream.Named(1, "destruction test");
+        var net = GasNetwork.For(c);
+        net.Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), shell.FillerKg, shell,
+            NearField.Charge(Math.Cbrt(shell.FillerKg), 1, 0, Settings), Settings, ref rng);
+        net.Land(1000, ref rng);   // what it did, on her (the game lands each slice as it goes)
+        int torn = 0, thrown = 0;
+        for (int f = 0; f < k.FaceTornM2.Length; f++)
+        {
+            Assert.Equal(k.FaceTornM2[f] > 0, k.FaceTornMs[f] != 0);
+            torn += k.FaceTornM2[f] > 0 ? 1 : 0;
+        }
+        for (int j = 0; j < k.ThrownMs.Length; j++)
+            if (k.ThrownMs[j] != 0)
+            {
+                thrown++;
+                Assert.Equal(PartState.Destroyed, k.State[j]);   // a record of what its gas wrecked, never a wreck of its own
+                Assert.InRange(k.ThrownV[j], 0, Settings.ThrownMostMs);
+            }
+        Assert.True(torn >= 4, $"{torn} faces torn");
+        var why = new System.Text.StringBuilder();
+        for (int f = 2; f < k.FaceTornM2.Length; f += 4)
+            if (k.FaceTornM2[f] > 0)
+            {
+                var cb = c.Cells[f / 4].Box;
+                why.Append($" cell {f / 4} x {cb.X0:0}..{cb.X1:0} top {cb.Top:0.0} torn {k.FaceTornM2[f]:0} felt {net.FeltMPa(f / 4):0.000} MPa;");
+            }
+        for (int j = 0; j < c.Components.Length; j++)
+            if (k.State[j] == PartState.Destroyed)
+                why.Append($" {c.Components[j].Kind} x {c.Components[j].Bounds.X0:0}..{c.Components[j].Bounds.X1:0} base {c.Components[j].Bounds.Base:0.0};");
+        Assert.True(thrown >= 1, $"{thrown} parts thrown:{why}");
     }
 
     /// <summary>A read allocates nothing, stale or not.</summary>

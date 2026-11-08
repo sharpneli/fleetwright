@@ -639,6 +639,8 @@
   "MagazineRoofShare": 0.4,
   "MagazineTrunkShare": 0.05,
   "MagazineHoistM2": 0.25,
+  "ThrownWeightK": 2,
+  "ThrownMostMs": 60,
   "GirderMoment": [0.35, 0.6],
   "GirderWhipK": 0.2,
   "GirderSeawayMs": 15,

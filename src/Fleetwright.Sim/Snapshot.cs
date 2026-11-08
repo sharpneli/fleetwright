@@ -709,6 +709,10 @@ public sealed class BlastsView
     public BlastCause[] Cause = [];
     public Vec3d[] At = [], Forward = [];
     public P3[] Point = [];
+    /// <summary>How far its race went and the propellant it burned fast (docs/battle/magazines.md; NaN: the dev's or a fire's,
+    /// sized by the class).</summary>
+    public Combat.MagazineTier[] Tier = [];
+    public double[] FastKg = [];
 
     public void EnsureCapacity(int n)
     {
@@ -716,6 +720,8 @@ public sealed class BlastsView
             return;
         n = Math.Max(n, Math.Max(4, Ms.Length * 2));
         Array.Resize(ref Ms, n);
+        Array.Resize(ref Tier, n);
+        Array.Resize(ref FastKg, n);
         Array.Resize(ref Ship, n);
         Array.Resize(ref Class, n);
         Array.Resize(ref Room, n);
@@ -1162,6 +1168,50 @@ public sealed class ShipsView
     public P3[] ShowAt = [];
     public int ShowTotal;
 
+    /// <summary>What her explosions did that shows from outside (docs/visuals/destruction.md D1), every ship's alike: where an
+    /// end came off (ship x, infinite: it hasn't) and where she broke in two and when (NaN: she hasn't); her torn plating,
+    /// <see cref="TornCount"/> from <see cref="TornStart"/>: the outside face (cell x 4 + face: port, starboard, the weather deck,
+    /// the bottom; its middle and area the class's <c>HullFaces</c>), the m² torn, when it first tore, the gas behind it now
+    /// (gauge MPa, while her gas runs); her parts thrown, <see cref="ThrownCount"/> from <see cref="ThrownStart"/>: the
+    /// component, when, and the speed it left at; and while her gas runs (<see cref="GasMs"/> its clock, 0: none) her
+    /// magazines' burning (kg/s in all) and the ways up it opened, <see cref="WayCount"/> from <see cref="WayStart"/>: the mount
+    /// and how (1 vented, 2 its gunhouse lifted).</summary>
+    public double[] CutBowX = [], CutSternX = [], BreakX = [];
+    public long[] BreakMs = [], GasMs = [], CutBowMs = [], CutSternMs = [];
+    public float[] GasKgS = [];
+    public int[] TornStart = [], TornCount = [], ThrownStart = [], ThrownCount = [], WayStart = [], WayCount = [];
+    public int[] TornFace = [], ThrownPart = [], WayMount = [];
+    public float[] TornM2 = [], TornMPa = [], ThrownV = [];
+    public long[] TornMs = [], ThrownMs = [];
+    public byte[] WayState = [];
+    public int TornTotal, ThrownTotal, WayTotal;
+
+    /// <summary>Room for so many torn faces, thrown parts and opened ways in all; grows only past the most yet.</summary>
+    public void EnsureWrecks(int torn, int thrown, int ways)
+    {
+        if (torn > TornFace.Length)
+        {
+            int n = Math.Max(torn, Math.Max(64, TornFace.Length * 2));
+            Array.Resize(ref TornFace, n);
+            Array.Resize(ref TornM2, n);
+            Array.Resize(ref TornMPa, n);
+            Array.Resize(ref TornMs, n);
+        }
+        if (thrown > ThrownPart.Length)
+        {
+            int n = Math.Max(thrown, Math.Max(16, ThrownPart.Length * 2));
+            Array.Resize(ref ThrownPart, n);
+            Array.Resize(ref ThrownV, n);
+            Array.Resize(ref ThrownMs, n);
+        }
+        if (ways > WayMount.Length)
+        {
+            int n = Math.Max(ways, Math.Max(16, WayMount.Length * 2));
+            Array.Resize(ref WayMount, n);
+            Array.Resize(ref WayState, n);
+        }
+    }
+
     /// <summary>Room for n showing fires in all; grows only past the most yet.</summary>
     public void EnsureShows(int n)
     {
@@ -1274,6 +1324,20 @@ public sealed class ShipsView
         Array.Resize(ref FireCount, n);
         Array.Resize(ref ShowStart, n);
         Array.Resize(ref ShowCount, n);
+        Array.Resize(ref CutBowX, n);
+        Array.Resize(ref CutSternX, n);
+        Array.Resize(ref BreakX, n);
+        Array.Resize(ref BreakMs, n);
+        Array.Resize(ref CutBowMs, n);
+        Array.Resize(ref CutSternMs, n);
+        Array.Resize(ref GasMs, n);
+        Array.Resize(ref GasKgS, n);
+        Array.Resize(ref TornStart, n);
+        Array.Resize(ref TornCount, n);
+        Array.Resize(ref ThrownStart, n);
+        Array.Resize(ref ThrownCount, n);
+        Array.Resize(ref WayStart, n);
+        Array.Resize(ref WayCount, n);
         Array.Resize(ref TorpedoesLoaded, n);
         Array.Resize(ref TorpedoesLeft, n);
         Array.Resize(ref LoadStart, n);
@@ -1287,6 +1351,9 @@ public sealed class ShipsView
         int had = MountStart.Length;
         Array.Resize(ref MountStart, n);
         Array.Fill(MountStart, -1, had, n - had);   // at rest, unless filled
+        Array.Fill(CutBowX, double.PositiveInfinity, had, n - had);   // whole, unless filled
+        Array.Fill(CutSternX, double.NegativeInfinity, had, n - had);
+        Array.Fill(BreakX, double.NaN, had, n - had);
     }
 
     /// <summary>Ship k's position and forward carried on to a time, ms: along its arc, and straight on past its turn's end.</summary>

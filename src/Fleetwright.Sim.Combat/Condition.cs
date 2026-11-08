@@ -336,6 +336,18 @@ public sealed class ShipCondition
     /// each edge's tension gone, as <see cref="JoinOpenM2"/>, of each outside face's (cell x 4 + face), and the m² a face has
     /// torn. <see cref="HullGirder"/> reads them.</summary>
     public double[] EdgeLost = [], FaceLost = [], FaceTornM2 = [];
+    /// <summary>When each outside face first tore, world ms (0: it hasn't), for the screens (docs/visuals/destruction.md D1):
+    /// display only, read by nothing in the sim. <see cref="TearMs"/> is the moment a hit's own tears are stamped at.</summary>
+    public long[] FaceTornMs = [];
+    public long TearMs;
+    /// <summary>Where she broke in two, ship x (NaN: she hasn't), and when, world ms: each piece goes down about it
+    /// (<see cref="Attitude.Piece"/>; docs/visuals/destruction.md decision 1).</summary>
+    public double BreakX = double.NaN;
+    public long BreakMs;
+    /// <summary>The parts her gas threw off her (docs/visuals/destruction.md decision 2): when, world ms (0: not thrown), and the
+    /// speed each left at, m/s. A record for the screens; the part is Destroyed as any wrecked one, and nothing else reads it.</summary>
+    public long[] ThrownMs = [];
+    public float[] ThrownV = [];
     /// <summary>Each section's modulus with what's gone gone, and whether what's gone has moved since (<see cref="HullGirder"/>).</summary>
     public double[] GirderZ = [];
     public bool GirderStale;
@@ -346,8 +358,17 @@ public sealed class ShipCondition
     /// <summary>Her whip so far (<see cref="HullGirder.Bear"/>): design moments squared (whips add as energies), as of a moment, world ms.</summary>
     public double WhipSq;
     public long WhipMs;
+    /// <summary>A face's first tear stamped for the screens, at ms (once).</summary>
+    public void Torn(int face, long ms)
+    {
+        if (FaceTornMs[face] == 0)
+            FaceTornMs[face] = Math.Max(ms, 1);
+    }
+
     /// <summary>Where her bow and stern have come off, ship x (infinite: they haven't).</summary>
     public double CutBowX = double.PositiveInfinity, CutSternX = double.NegativeInfinity;
+    /// <summary>When they came off, world ms (the screens' record: the piece going down on its own).</summary>
+    public long CutBowMs, CutSternMs;
     /// <summary>When the next timed outage ends, world ms (-1: none does; one for the battle never ends), and the
     /// damage system's event for it: its generation and when it's set for.</summary>
     public long NextClearMs = -1, ClearAtMs = -1;
@@ -474,6 +495,12 @@ public sealed class ShipCondition
     /// <summary>Its attitude at a moment (ms): the one it settled to, or going down, how far under it is then
     /// (<see cref="Attitude.At"/>).</summary>
     public Attitude AttitudeAt(long ms) => Attitude.At(Class, Attitude, Loss, LossMs, GoneMs, ms);
+
+    /// <summary>Whether she's in two pieces (going down broken).</summary>
+    public bool Broken => !double.IsNaN(BreakX) && Loss != LossKind.None;
+
+    /// <summary>A piece's attitude at a moment, the bow's or the stern's, once she's broken (<see cref="Attitude.Piece"/>).</summary>
+    public Attitude PieceAt(long ms, bool bow) => Attitude.Piece(Class, Attitude, BreakX, bow, LossMs, GoneMs, ms);
     /// <summary>The water aboard, tonnes, and the transverse GM with it in, m (the class's while dry).</summary>
     public double WaterT, GmM;
     /// <summary>The share of its power the plant can still make (boilers and shafts), 0-1.</summary>
@@ -603,6 +630,8 @@ public sealed class ShipCondition
             (Fix, FixManMin, Drowned) = (new byte[c.NodeCount], new double[c.NodeCount], new bool[c.NodeCount]);
             Faces = HullFaces.Of(c);
             (EdgeLost, FaceLost, FaceTornM2) = (new double[c.NeighbourCount], new double[4 * c.Cells.Length], new double[4 * c.Cells.Length]);
+            FaceTornMs = new long[4 * c.Cells.Length];
+            (ThrownMs, ThrownV) = (new long[c.Components.Length], new float[c.Components.Length]);
             GirderZ = new double[c.Sections.Length];
             int groups = c.Components.Length + c.Cells.Length;
             (Gone, Away, RiskK, RiskC, RiskStamp, Touched) = (new int[groups], new int[groups], new double[groups], new double[groups], new int[groups], new int[groups]);
@@ -637,6 +666,9 @@ public sealed class ShipCondition
             Array.Clear(EdgeLost);
             Array.Clear(FaceLost);
             Array.Clear(FaceTornM2);
+            Array.Clear(FaceTornMs);
+            Array.Clear(ThrownMs);
+            Array.Clear(ThrownV);
             Array.Clear(Mount);
             Array.Clear(DownUntil);
             Array.Clear(DownWhy);
@@ -690,6 +722,7 @@ public sealed class ShipCondition
         Array.Fill(SearchlightWorks, true);
         (CrewLost, Killed, Wounded, Returns) = (0, 0, 0, 0);
         (GirderStale, WhipSq, WhipMs, CutBowX, CutSternX) = (true, 0, 0, double.PositiveInfinity, double.NegativeInfinity);
+        (BreakX, BreakMs, TearMs, CutBowMs, CutSternMs) = (double.NaN, 0, 0, 0, 0);
         Gas?.Release();
         (Gas, GasNextMs) = (null, -1);
         GasGen++;
@@ -1262,6 +1295,11 @@ public sealed class ShipCondition
         {
             h.Add(CutBowX);
             h.Add(CutSternX);
+        }
+        if (!double.IsNaN(BreakX))
+        {
+            h.Add(BreakX);
+            h.Add(BreakMs);
         }
         if (SteerCause != SteerCause.None)
             h.Add((int)SteerCause);

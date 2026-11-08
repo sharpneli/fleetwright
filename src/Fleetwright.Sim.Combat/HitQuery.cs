@@ -6,10 +6,36 @@ namespace Fleetwright.Sim.Combat;
 
 /// <summary>A ship's attitude in the water: how far it has settled (m), its trim (degrees, bow down positive) and heel
 /// (degrees, to starboard positive), about the centre of flotation at the waterline. The flooding model gives them
-/// (docs/battle/fighting.md 4.3b); upright until then.</summary>
-public readonly record struct Attitude(double SinkageM, double TrimDeg, double HeelDeg)
+/// (docs/battle/fighting.md 4.3b); upright until then. A broken ship's piece turns about her break instead: its
+/// <see cref="PivotDx"/>, m forward of the centre of flotation (<see cref="Piece"/>; the sinkage is the pivot's).</summary>
+public readonly record struct Attitude(double SinkageM, double TrimDeg, double HeelDeg, double PivotDx = 0)
 {
     public static readonly Attitude Upright = default;
+
+    /// <summary>The most a piece stands up, degrees: a short one on end, a long one less (the pieces of Invincible and
+    /// Queen Mary, their ends standing out of the water) [EST].</summary>
+    public const double PieceMostDeg = 75, PieceLeastDeg = 35;
+
+    /// <summary>A piece of a ship broken in two at <paramref name="breakX"/> (ship x), the bow's or the stern's, as it goes
+    /// under (docs/visuals/destruction.md decision 1: reasonable, not precise; they're gone in minutes and only stop shells
+    /// for that while): it turns about the break, its broken end going down and its far end rising, steeper for a shorter
+    /// piece, most of the way up in the first third of the time; the break goes under in the first tenth (the V forms at
+    /// once: her back gone, nothing holds the middle up), then the piece sinks steadily until its far end is under when
+    /// she's gone. The same moments as <see cref="At"/>.</summary>
+    public static Attitude Piece(ShipClass c, in Attitude settled, double breakX, bool bow, long lossMs, long goneMs, long ms)
+    {
+        double p = Math.Clamp((ms - lossMs) / (double)Math.Max(goneMs - lossMs, 1), 0, 1);
+        double x0 = c.Hull.X0, x1 = c.Hull.X1, length = Math.Max(x1 - x0, 1);
+        double piece = Math.Clamp(bow ? x1 - breakX : breakX - x0, 0, length);
+        double most = PieceMostDeg - (PieceMostDeg - PieceLeastDeg) * piece / length;
+        double up = 1 - Math.Pow(1 - Math.Min(p / 0.35, 1), 2);
+        double deg = most * up, top = c.Solids.Bounds.Top - c.Vertical.Waterline + 3;
+        // the break: her deck there a couple of metres under; then the rest, down to her highest point under at the end
+        double first = 1 - Math.Pow(1 - Math.Min(p / 0.1, 1), 2), deck = Math.Max(c.Vertical.Freeboard, 0) + 2;
+        double sink = settled.SinkageM + first * deck + Math.Pow(p, 1.5) * Math.Max(piece * Math.Sin(double.DegreesToRadians(most)) + top - deck, 0);
+        // bow down is positive: the stern's piece goes down by its forward (broken) end, the bow's by its after one
+        return new Attitude(sink, bow ? -deg : deg, settled.HeelDeg, breakX - c.Hydrostatics.Lcf);
+    }
 
     /// <summary>A lost ship's attitude at a moment (ms) as it goes under, from the attitude it settled to when lost
     /// (<paramref name="lossMs"/>) to its top under the sea when it's gone (<paramref name="goneMs"/>): foundered, down
@@ -87,7 +113,7 @@ public static class HitQuery
     public static P3 ToShip(ShipClass c, in ShipFrame frame, in Attitude a, Vec3d world)
     {
         var (x, y, h) = frame.ToLocal(world);
-        double wl = c.Vertical.Waterline, lcf = c.Hydrostatics.Lcf;
+        double wl = c.Vertical.Waterline, lcf = c.Hydrostatics.Lcf + a.PivotDx;
         if (a == Attitude.Upright)
             return new P3(x, y, h + wl);
         Trig(a, out double ct, out double st, out double cp, out double sp);
@@ -101,7 +127,7 @@ public static class HitQuery
     /// <summary>A ship-local point in the world: ToShip's inverse.</summary>
     public static Vec3d ToWorld(ShipClass c, in ShipFrame frame, in Attitude a, P3 p)
     {
-        double wl = c.Vertical.Waterline, lcf = c.Hydrostatics.Lcf;
+        double wl = c.Vertical.Waterline, lcf = c.Hydrostatics.Lcf + a.PivotDx;
         if (a == Attitude.Upright)
             return frame.ToWorld(p.X, p.Y, p.Z - wl);
         Trig(a, out double ct, out double st, out double cp, out double sp);
@@ -117,7 +143,7 @@ public static class HitQuery
     {
         if (a == Attitude.Upright)
             return Waterplane.Level(c);
-        var (z0, dzdx, dzdy) = Flotation.Sea(c.Vertical.Waterline, c.Hydrostatics.Lcf, a.SinkageM, double.DegreesToRadians(a.TrimDeg),
+        var (z0, dzdx, dzdy) = Flotation.Sea(c.Vertical.Waterline, c.Hydrostatics.Lcf + a.PivotDx, a.SinkageM, double.DegreesToRadians(a.TrimDeg),
             double.DegreesToRadians(a.HeelDeg));
         return new Waterplane(z0, dzdx, dzdy);
     }

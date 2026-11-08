@@ -492,6 +492,20 @@ public sealed unsafe class MagazineRenderer : IDisposable
         });
     }
 
+    /// <summary>A dark piece thrown off a ship (docs/visuals/destruction.md D2: her plating), <paramref name="r"/> m across, at
+    /// <paramref name="at"/> (metres east and north of the sea point <paramref name="seaAt"/>, its height already drawn up the
+    /// screen): the debris' unlit fleck. Off the screen, nothing.</summary>
+    public void AddPiece(in MapView view, Vec3d seaAt, Vector2 at, double r, double strength)
+    {
+        if (strength <= 0.002 || !view.Project(seaAt, out double px, out double py))
+            return;
+        double reach = (at.Length() + 2 * r) / view.MetresPerPixel + 4;
+        if (px < -reach || py < -reach || px > view.Width + reach || py > view.Height + reach)
+            return;
+        var rel = seaAt - view.Eye;
+        AddTrail(new Vector4((float)rel.X, (float)rel.Y, (float)rel.Z, 0), at, at, (float)r, (float)r, 0.9f, 0.9f, (float)strength);
+    }
+
     void AddTrail(Vector4 baseV, Vector2 a, Vector2 b, float ra, float rb, float alphaA, float alphaB, float opacity)
     {
         float pad = 1.2f * Math.Max(ra, rb);

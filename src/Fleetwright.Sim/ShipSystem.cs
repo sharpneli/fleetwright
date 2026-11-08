@@ -416,7 +416,7 @@ public sealed partial class ShipSystem : IWorldSystem
         var s = Store;
         v.EnsureCapacity(s.Count);
         int n = 0, w = 0, mounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = v.TornTotal = v.ThrownTotal = v.WayTotal = 0;
         for (int i = 0; i < s.Slots; i++)
             if (s.IsAlive(i) && shownSides[s[i].Side])
                 Put(v, i, n++, ref w, ref mounts, orders: true);
@@ -434,8 +434,8 @@ public sealed partial class ShipSystem : IWorldSystem
         v.EnsureCapacity(contacts.Count);
         fading.EnsureCapacity(contacts.Count);
         int n = 0, w = 0, mounts = 0, f = 0, fw = 0, fmounts = 0;
-        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = 0;
-        fading.PartTotal = fading.FireTotal = fading.LoadTotal = fading.ShowTotal = fading.BatteryTotal = 0;
+        v.PartTotal = v.FireTotal = v.LoadTotal = v.ShowTotal = v.BatteryTotal = v.TornTotal = v.ThrownTotal = v.WayTotal = 0;
+        fading.PartTotal = fading.FireTotal = fading.LoadTotal = fading.ShowTotal = fading.BatteryTotal = fading.TornTotal = fading.ThrownTotal = fading.WayTotal = 0;
         for (int j = 0; j < contacts.Count; j++)
         {
             bool inSight = contacts.InSight[j];
@@ -569,6 +569,7 @@ public sealed partial class ShipSystem : IWorldSystem
         (v.PartStart[n], v.PartCount[n], v.FireStart[n], v.FireCount[n]) = (v.PartTotal, 0, v.FireTotal, 0);
         (v.ShowStart[n], v.ShowCount[n]) = (v.ShowTotal, 0);
         (v.Attitude[n], v.Loss[n], v.LossMs[n], v.GoneMs[n]) = (k.Attitude, k.Loss, k.LossMs, k.GoneMs);
+        PutWrecks(v, k, n);
         if (!k.Damaged)
             return;
         var c = k.Class;
@@ -623,6 +624,57 @@ public sealed partial class ShipSystem : IWorldSystem
             var (at, width) = FireOpening(c, k, f);
             (v.ShowSpace[j], v.ShowMW[j], v.ShowChargesMW[j], v.ShowPhase[j]) = (f, (float)x.Q, x.Charges > 0 ? (float)x.ChargesMW : 0, x.Phase);
             (v.ShowWaterLpm[j], v.ShowBoil[j], v.ShowAt[j], v.ShowWidthM[j]) = ((float)k.FireFlow[f].Lpm, (float)k.FireFlow[f].BoilShare, at, (float)width);
+        }
+    }
+
+    /// <summary>What her explosions did that shows from outside, every ship's alike (docs/visuals/destruction.md D1): her ends off
+    /// and her break, her torn plating, her parts thrown, and while her gas runs her magazines' burning and the ways up it opened
+    /// (an enemy's too: it's the flame out of her that shows, not which magazine feeds it).</summary>
+    void PutWrecks(ShipsView v, ShipCondition k, int n)
+    {
+        (v.CutBowX[n], v.CutSternX[n], v.BreakX[n], v.BreakMs[n]) = (k.CutBowX, k.CutSternX, k.BreakX, k.BreakMs);
+        (v.CutBowMs[n], v.CutSternMs[n]) = (k.CutBowMs, k.CutSternMs);
+        (v.TornStart[n], v.TornCount[n], v.ThrownStart[n], v.ThrownCount[n], v.WayStart[n], v.WayCount[n]) = (v.TornTotal, 0, v.ThrownTotal, 0, v.WayTotal, 0);
+        (v.GasMs[n], v.GasKgS[n]) = (0, 0);
+        if (!k.Damaged || k.FaceTornMs.Length == 0)
+            return;
+        var c = k.Class;
+        var gas = k.Gas;
+        int torn = 0, thrown = 0;
+        foreach (long ms in k.FaceTornMs)
+            torn += ms != 0 ? 1 : 0;
+        foreach (long ms in k.ThrownMs)
+            thrown += ms != 0 ? 1 : 0;
+        v.EnsureWrecks(v.TornTotal + torn, v.ThrownTotal + thrown, v.WayTotal + (gas != null ? c.Mounts.Length : 0));
+        for (int x = 0; x < k.FaceTornMs.Length; x++)
+            if (k.FaceTornMs[x] != 0)
+            {
+                int j = v.TornTotal++;
+                v.TornCount[n]++;
+                (v.TornFace[j], v.TornM2[j], v.TornMs[j]) = (x, (float)k.FaceTornM2[x], k.FaceTornMs[x]);
+                v.TornMPa[j] = gas != null ? (float)gas.PressureMPa(x / 4) : 0;
+            }
+        for (int p = 0; p < k.ThrownMs.Length; p++)
+            if (k.ThrownMs[p] != 0)
+            {
+                int j = v.ThrownTotal++;
+                v.ThrownCount[n]++;
+                (v.ThrownPart[j], v.ThrownMs[j], v.ThrownV[j]) = (p, k.ThrownMs[p], k.ThrownV[p]);
+            }
+        if (gas == null || gas.Done)
+            return;
+        double kgS = 0;
+        for (int i = 0; i < gas.LitCount; i++)
+            kgS += gas.LitKgS(i);
+        (v.GasMs[n], v.GasKgS[n]) = (Math.Max(gas.NowMs, 1), (float)kgS);
+        for (int mt = 0; mt < c.Mounts.Length; mt++)
+        {
+            byte way = (byte)((gas.VentedMount(mt) ? 1 : 0) | (gas.LiftedMount(mt) ? 2 : 0));
+            if (way == 0)
+                continue;
+            int j = v.WayTotal++;
+            v.WayCount[n]++;
+            (v.WayMount[j], v.WayState[j]) = (mt, way);
         }
     }
 

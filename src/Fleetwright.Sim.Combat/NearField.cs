@@ -90,6 +90,7 @@ public static class NearField
             return;
         double area = k.Faces.Area[x];
         k.FaceTornM2[x] = Math.Min(k.FaceTornM2[x] + areaM2, area);
+        k.Torn(x, k.TearMs);
         double share = Blast.HoleShare(k.FaceTornM2[x], area);
         if (share > k.FaceLost[x])
             (k.FaceLost[x], k.GirderStale) = (share, true);

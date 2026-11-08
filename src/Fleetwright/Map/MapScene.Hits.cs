@@ -17,6 +17,8 @@ public sealed partial class MapScene
     /// <summary>The dev's follow: the camera kept on this ship (an entity; 0 none) until a pan, as a middle click on her.</summary>
     public int Follow { get => follow; init => follow = value; }
     readonly HitMarks hitMarks = new();
+    /// <summary>What her explosions tear out of her (docs/visuals/destruction.md D2-D3).</summary>
+    readonly WreckEffects wreck = new();
 
     /// <summary>The continuous smoke sources: fires (I5), funnels (I6).</summary>
     readonly Fires.SmokeTrails smokeTrails = new();
@@ -30,6 +32,7 @@ public sealed partial class MapScene
 
     int benchShot;
     long benchNextMs = long.MinValue, benchSeenMs = long.MinValue;
+    string benchFate = "";
 
     /// <summary>The bench's shots: battery, kind, where along her (a share of her half length, + forward), how high over
     /// her waterline (m; NaN: the first main mount's roof), from how far (m) and from what aspect (degrees off her bow).</summary>
@@ -51,6 +54,7 @@ public sealed partial class MapScene
     void BuildHits(in MapView view, Snapshot s, double dt)
     {
         shipRenderer.List.Marks ??= hitMarks;
+        shipRenderer.List.Parts ??= wreck;
         hitBook.Update(s.Hits, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, classOf);
         HitEffects.Hand(hitBook, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, classOf, hitMarks);
         HitEffects.Build(view, hitBook, WorldView.Factor(view), shipRenderer.Magazines, shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book,
@@ -76,6 +80,16 @@ public sealed partial class MapScene
                 Console.WriteLine($"hits bench {new WorldTime(h.Ms[i]).ToUtc():HH:mm:ss.f}: {h.Kind[i]} {h.CalibreMm[i]:0} mm {h.Outcome[i]}, burst {h.Burst[i]} " +
                                   $"after {h.BurstS[i] * 1000:0} ms, W {h.FillerKg[i]:0.0} kg, {h.Shows[i]}");
             }
+        // the target's fate as it changes: lost, broken, an end off, plating torn, parts thrown (docs/visuals/destruction.md)
+        int kt = s.Ships.IndexOf(target);
+        if (kt >= 0)
+        {
+            var v = s.Ships;
+            string fate = $"{v.Loss[kt]} break {v.BreakX[kt]:0.0} cut {v.CutSternX[kt]:0.0}..{v.CutBowX[kt]:0.0} torn {v.TornCount[kt]} thrown {v.ThrownCount[kt]} " +
+                          $"gas {(v.GasMs[kt] > 0 ? $"live{(v.GasKgS[kt] > 0 ? ", burning" : "")}, ways {v.WayCount[kt]}" : "-")}";
+            if (fate != benchFate)
+                Console.WriteLine($"hits bench {new WorldTime(now).ToUtc():HH:mm:ss.f}: target {benchFate = fate}");
+        }
         if (benchNextMs == long.MinValue)
             benchNextMs = now + 1000;
         if (now < benchNextMs)

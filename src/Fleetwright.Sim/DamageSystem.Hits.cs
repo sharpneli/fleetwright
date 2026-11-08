@@ -110,7 +110,7 @@ public sealed partial class DamageSystem
         ref readonly var hit = ref at.Hit;
         long now = at.Now;
         bool near = hit.Source == HitSource.NearMiss, own = hit.Source == HitSource.Store;
-        k.Damaged = true;
+        (k.Damaged, k.TearMs) = (true, now);
         k.Experience = at.Experience;   // her men's nerve (docs/battle/crew.md N3b)
         if (!near && !own)
             k.Hits++;

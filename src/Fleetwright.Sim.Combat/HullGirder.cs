@@ -435,22 +435,27 @@ public sealed class HullGirder
         k.WhipSq = Math.Max(k.WhipSq * Math.Exp(-Math.Max(now - k.WhipMs, 0) / (1000 * PeriodS)) + bubble * bubble, gas * gas);
         k.WhipMs = now;
         var r = Read(k, sea, Math.Sqrt(k.WhipSq), s);
+        if (r.Broken && double.IsNaN(k.BreakX))
+            (k.BreakX, k.BreakMs) = (X(r.Station), now);   // every broken reading loses her: where her pieces part
         if (r.EndLoad >= 1 && !r.Broken)
         {
-            TakeOff(k, r.EndStation, s);
+            TakeOff(k, r.EndStation, now, s);
             r.EndOff = true;
         }
         return r;
     }
 
-    void TakeOff(ShipCondition k, double at, SimSettings s)
+    /// <summary>Ship x at a station along her (0 stern, 1 bow).</summary>
+    public double X(double station) => x0 + station * (x1 - x0);
+
+    void TakeOff(ShipCondition k, double at, long now, SimSettings s)
     {
         bool bow = at > 0.5;
-        double cut = x0 + at * (x1 - x0);
+        double cut = X(at);
         if (bow)
-            k.CutBowX = cut;
+            (k.CutBowX, k.CutBowMs) = (cut, now);
         else
-            k.CutSternX = cut;
+            (k.CutSternX, k.CutSternMs) = (cut, now);
         for (int i = 0; i < c.Cells.Length; i++)
         {
             var b = c.Cells[i].Box;

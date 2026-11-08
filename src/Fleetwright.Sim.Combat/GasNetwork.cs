@@ -169,6 +169,9 @@ public sealed partial class GasNetwork
     /// <summary>The world's: what set her gas going (its first explosion) and what set her first magazine off in it, as its own
     /// tags (-1: none yet); and her girder's last reading while it ran. Reports: read by no step.</summary>
     public int SourceCause = -1, MagazineCause = -1;
+    /// <summary>Where this run's first charge went off, her frame (the origin until one has): a magazine record's hit point.</summary>
+    public P3 SourceAt;
+    bool sourced;
     public GirderReading Girder;
 
     /// <summary>The world's time her run is at, ms.</summary>
@@ -347,6 +350,8 @@ public sealed partial class GasNetwork
     int[] linkFrom = [], linkTo = [], linkMount = [], rounds = [];
     double[] linkAt = [], linkArea = [];
     bool[] linkOpen = [], ventedMount = [], liftedMount = [];
+    /// <summary>The gas under each gunhouse as it lifted, MPa (the thrown record's speed).</summary>
+    double[] liftMPa = [];
     int links;
     /// <summary>The stows alight: a pool, one for every magazine of the largest class this thread has met.</summary>
     Stow[] stows = [];
@@ -547,6 +552,8 @@ public sealed partial class GasNetwork
         public double Ck, Open, Cased, Flooded, Pkg, TBurn, LitOpen, LitCased, CohortT0, EnergyJKg;
         public readonly double[] Cnt = new double[Cohorts], Z = new double[Cohorts];
         public double Burning, Pending, MadePa;
+        /// <summary>What it burned in the last step, kg/s (the screens' flame; nothing reads it back).</summary>
+        public double KgS;
         /// <summary>Whether the flash has been through its trains (<see cref="TrainsLanded"/>).</summary>
         public bool Trains;
     }
@@ -592,6 +599,7 @@ public sealed partial class GasNetwork
         if (ventedMount.Length < nm)
         {
             (ventedMount, liftedMount, rounds) = (new bool[nm], new bool[nm], new int[nm]);
+            liftMPa = new double[nm];
             (ventLanded, liftLanded) = (new bool[nm], new bool[nm]);
             int lm = 2 * nm + 8;
             (linkFrom, linkTo, linkMount, linkAt, linkArea, linkOpen) = (new int[lm], new int[lm], new int[lm], new double[lm], new double[lm], new bool[lm]);
@@ -632,6 +640,7 @@ public sealed partial class GasNetwork
     public GasResult AddBurst(int cell, P3 at, double w, in ShellTypeRow f, in NearCharge near)
     {
         var was = res;
+        Source(at);
         Walk(cell, out double gas, out double vents);
         Near(at, near);
         bool open = Blast.Open(gas, vents, s);
@@ -661,6 +670,7 @@ public sealed partial class GasNetwork
     public GasResult AddContact(int cell, P3 at, in NearCharge near, double w = 0, in ShellTypeRow f = default)
     {
         var was = res;
+        Source(at);
         Walk(cell, out double gas, out double vents);
         intoBubble = true;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
         Near(at, near);
@@ -767,7 +777,7 @@ public sealed partial class GasNetwork
         res = new GasResult { FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN };
         (whipKg, whipJ, whipPeak, whipSince) = (0, 0, 0, 0);
         (started, finished, lastSourceS, startMs, nTouched, stowsLanded, sourceCell) = (false, true, 0, 0, 0, 0, -1);
-        (SourceCause, MagazineCause, Girder) = (-1, -1, default);
+        (SourceCause, MagazineCause, Girder, SourceAt, sourced) = (-1, -1, default, default, false);
         // any run can light a magazine (EX6a): what it would stow, and how its trains stand
         if (!armed)
             for (int mt = 0; mt < c.Mounts.Length; mt++)
@@ -777,8 +787,15 @@ public sealed partial class GasNetwork
         water = HitQuery.WaterOf(c, k.Attitude);
         Array.Clear(ventedMount);
         Array.Clear(liftedMount);
+        Array.Clear(liftMPa);
         Array.Clear(ventLanded);
         Array.Clear(liftLanded);
+    }
+
+    void Source(P3 at)
+    {
+        if (!sourced)
+            (SourceAt, sourced) = (at, true);
     }
 
     /// <summary>A charge's space and what's open to it: where its near field's walk starts (<see cref="Near"/>), in the run; its gas
@@ -970,6 +987,7 @@ public sealed partial class GasNetwork
             Spill(i);
             k.Hole(i, hole, on);
             k.FaceTornM2[x] = b.Torn;
+            k.Torn(x, NowMs);
             res.HoleM2 += hole;
             res.Holed++;
             vent[i] += hole * (intoBubble || f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
@@ -1020,7 +1038,7 @@ public sealed partial class GasNetwork
         st.Pkg = s.MagazinePackageR[Math.Min((int)charge.Packaging, s.MagazinePackageR.Length - 1)] * st.Pr.Sensitivity;
         st.TBurn = st.Pr.WebM / Magazines.Rate(101_325, st.Pr);
         st.EnergyJKg = s.MagazineHeatKeep * st.Pr.ImpetusJkg / GammaK;
-        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa, st.Trains) = (0, 0, 0, -1, 0, 0, 0, false);
+        (st.LitOpen, st.LitCased, st.Cohort, st.CohortT0, st.Burning, st.Pending, st.MadePa, st.Trains, st.KgS) = (0, 0, 0, -1, 0, 0, 0, false, 0);
         if (nOpen * (1 - st.Flooded) < 1 && nCased * (1 - st.Flooded) >= 1)
         {
             st.LitCased = 1;
@@ -1232,6 +1250,7 @@ public sealed partial class GasNetwork
         {
             var st = stows[t];
             double made = BurnStow(st, dt);
+            st.KgS = dt > 0 ? made / dt : 0;
             st.Pending = made / 2;
             st.MadePa = made * st.EnergyJKg * GammaK / v[st.Cell];
             m[st.Cell] += st.Pending;
@@ -1574,6 +1593,7 @@ public sealed partial class GasNetwork
             if (mount >= 0 && !liftedMount[mount] && p[from] - P0 >= c.LiftKPa(mount) * 1e3 && c.LiftKPa(mount) > 0)
             {
                 liftedMount[mount] = true;
+                liftMPa[mount] = (p[from] - P0) / 1e6;   // what threw it, for the screens' record
                 res.Lifted++;
             }
         }
@@ -1724,6 +1744,7 @@ public sealed partial class GasNetwork
                 {
                     k.Hole(i, more, hull.Point[x]);
                     k.FaceTornM2[x] = b.Torn;
+                    k.Torn(x, NowMs);
                     res.HoleM2 += more;
                 }
                 double share = Blast.LostShare(b.Torn, fa, s);
@@ -1848,6 +1869,12 @@ public sealed partial class GasNetwork
     public int LitCount => nStows;
     public int LitRoom(int i) => stows[i].Room;
 
+    /// <summary>What a lit magazine burned in the last step, kg/s (docs/visuals/destruction.md D1: the screens' flame).</summary>
+    public double LitKgS(int i) => stows[i].KgS;
+
+    /// <summary>The gas in a cell now, gauge MPa (0: the run isn't there).</summary>
+    public double PressureMPa(int cell) => stamp[cell] == id ? Math.Max(p[cell] - P0, 0) / 1e6 : 0;
+
     /// <summary>Whether a mount's way up vented this run, and whether its gunhouse lifted.</summary>
     public bool VentedMount(int mount) => ventedMount[mount];
     public bool LiftedMount(int mount) => liftedMount[mount];
@@ -1966,6 +1993,7 @@ public sealed partial class GasNetwork
             h.Add(rounds[mt]);
             h.Add(ventedMount[mt]);
             h.Add(liftedMount[mt]);
+            h.Add(liftMPa[mt]);
             h.Add(ventLanded[mt]);
             h.Add(liftLanded[mt]);
         }

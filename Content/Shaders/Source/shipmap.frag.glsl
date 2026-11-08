@@ -29,6 +29,7 @@ layout(location = 11) flat in float fragSoot;
 layout(location = 12) in vec3 fragPos;
 layout(location = 13) flat in vec3 fragAxisU;
 layout(location = 14) flat in vec3 fragAxisV;
+layout(location = 15) flat in vec4 fragClip;
 
 layout(set = 2, binding = 0) uniform sampler2D spriteTex;
 layout(set = 2, binding = 1) uniform sampler2D heightTex;
@@ -38,6 +39,7 @@ layout(set = 2, binding = 3) uniform sampler2D materialTex; // its roughness and
 layout(location = 0) out vec4 outColour;
 
 #define LIGHTS_BINDING 0
+#define SHIP_CLIP
 #include "Include/shiplight.glsl"
 #include "Include/shipshadow.glsl"
 
@@ -101,9 +103,25 @@ float iconAt(vec2 u, vec2 du)
 
 void main()
 {
+    shipClip = fragClip;
     float opacity = fragMode.y;
     vec2 px = fwidth(fragShip);   // ship metres a pixel: shownAt's step
     float pxM = max(px.x, px.y);
+    if (fragMode.x > 4.5)
+    {
+        // a part thrown off her (docs/visuals/destruction.md D4): her sprite where it stood, only what stands over its foot (z:
+        // its foot over the waterline), lit in the quad's frame; sooted by the gas that threw it
+        vec2 uvp = fragShip * fragHmap.xy + fragHmap.zw;
+        if (shadowHeight(heightTex, fragHmap, fragShip, 0.0) < fragMode.z)
+            discard;
+        vec4 c = texture(spriteTex, uvp);
+        vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);
+        rgb *= 0.55;
+        vec4 nt = texture(normalTex, uvp);
+        rgb = shipShade(rgb, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0, nt.a, 1.0, flashLit(unpackNormal(nt)));
+        outColour = hazePremul(vec4(rgb * c.a, c.a)) * opacity;
+        return;
+    }
     if (fragMode.x > 2.5)
     {
         // a scorch: on the hull's point that shows here (tilted, as the hull), its relief, matte and sooty
@@ -119,7 +137,10 @@ void main()
             // (z: its share of the radius) a ragged near-black core
             float d = length(fragUv - 0.5) * 2.0;
             edge = 1.0 - smoothstep(0.35, 1.0, d);
-            float rag = 0.85 + 0.3 * fract(sin(dot(floor(fragShip * 8.0), vec2(27.17, 91.73))) * 15731.743);
+            // ragged at a hand's breadth, and torn in tongues round it at the mark's own scale (docs/visuals/destruction.md D2)
+            float a = atan(fragUv.y - 0.5, fragUv.x - 0.5) * 1.2732;   // 8 tongues round it
+            float tongue = mix(fract(sin(floor(a) * 41.37 + fragTint.a) * 9137.31), fract(sin((floor(a) + 1.0) * 41.37 + fragTint.a) * 9137.31), smoothstep(0.0, 1.0, fract(a)));
+            float rag = 0.8 + 0.2 * fract(sin(dot(floor(fragShip * 8.0), vec2(27.17, 91.73))) * 15731.743) + 0.25 * (tongue - 0.5);
             hole = 1.0 - smoothstep(0.8 * fragMode.z * rag, fragMode.z * rag, d);
         }
         // wreckage, rust and soot: mottled at a metre and a quarter-metre
@@ -127,8 +148,14 @@ void main()
         float n = 0.6 * fract(sin(dot(cellA, vec2(12.9898, 78.233))) * 43758.5453) + 0.4 * fract(sin(dot(cellB, vec2(39.346, 11.135))) * 24634.6345);
         vec4 nt = texture(normalTex, at * fragHmap.xy + fragHmap.zw);
         float depth = depthAt(at, h);
-        vec3 rgb = shipShade(fragTint.rgb * (0.55 + 0.9 * n) * (1.0 - 0.95 * hole), unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
-            nt.a * (0.45 + 0.35 * n), specAt(depth), flashLit(unpackNormal(nt)));
+        // the hole: her insides, gutted (docs/visuals/destruction.md D2): burnt frames across her every 0.6 m over the dark
+        // of the spaces below, not a black void (a ship torn open along her length must still read as a ship)
+        float rib = smoothstep(0.55, 0.85, abs(fract(at.x / 0.6) - 0.5) * 2.0);
+        float bay = step(0.5, fract(at.x / 3.6 + 0.3 * n));   // the spaces below, bay by bay: some lit through, some deep
+        vec3 inside = vec3(0.17, 0.12, 0.085) * (0.55 + 0.9 * n) * (0.65 + 0.35 * bay) + vec3(0.2, 0.13, 0.08) * rib;
+        vec3 albedo = mix(fragTint.rgb * (0.55 + 0.9 * n), inside, hole);
+        vec3 rgb = shipShade(albedo, unpackNormal(nt), normalize(fragEye), fragLightSun, fragLightMoon, 1.0, 0.0,
+            nt.a * (0.45 + 0.35 * n) * (1.0 - 0.5 * hole), specAt(depth), flashLit(unpackNormal(nt)));
         vec4 c = vec4(rgb, 1.0) * max(fragTint.a * edge * (0.7 + 0.3 * n), hole);
         outColour = hazePremul(drown(c, depth)) * opacity;
         return;
@@ -168,6 +195,11 @@ void main()
     }
     if (fragMode.x < 0.5 && fragMode.w > 0.0 && heightAt(shownAt(heightTex, fragHmap, fragShip, fragSea, pxM)) >= fragMode.w)
         discard;   // a casemate, under the deck over it: hidden where the hull that shows here stands over its cover
+    // a piece of her: what's past the cut isn't there, and the torn edge is charred (docs/visuals/destruction.md D5-D6)
+    float inside = fragMode.x < 0.5 ? clipInside(at) : 1e30;
+    if (inside < 0.0)
+        discard;
+    float charred = 1.0 - smoothstep(0.0, 1.2 + 0.25 * fragClip.z, inside);
     if (fragMode.x > 1.5)
     {
         // the icon, in a quad padded for its casing and glow (z, w: the padding's share along and across; soot: the
@@ -212,6 +244,7 @@ void main()
         vec3 rgb = c.a > 0.0 ? c.rgb / c.a : vec3(0.0);   // the albedo as drawn, sRGB-coded
         if (fragTint.a > 0.0)
             rgb = mix(rgb, rgb * fragTint.rgb, fragTint.a);
+        rgb = mix(rgb, vec3(0.05, 0.045, 0.04), 0.85 * charred);
         // a ship out of sight goes gray: soot's 0-1, plus 2 per 32nd of gray
         float grayed = floor(fragSoot / 2.0), soot = fragSoot - 2.0 * grayed;
         rgb = mix(rgb, vec3(dot(rgb, vec3(0.3, 0.59, 0.11))), grayed / 32.0);

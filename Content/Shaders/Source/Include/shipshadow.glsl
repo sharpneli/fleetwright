@@ -7,9 +7,38 @@
 // that plane: what's under it casts none, and the sea's surface over a drowned deck is what takes them (the light's
 // direction stays the level one: close enough).
 
-// The height map at ship-local metres q (hmap: uv = q * xy + zw), 0 off the map.
+#ifdef SHIP_CLIP
+// A piece of a ship (docs/visuals/destruction.md D5-D6: broken in two, an end come off): only her stretch from x lo to x hi
+// is there, its cut ragged across her beam by z m at most (w: on). Set by the shader's main before anything reads a height:
+// past the cut the height map reads as the sea, so nothing there shows, casts or takes a shadow.
+vec4 shipClip = vec4(-1e30, 1e30, 0.0, 0.0);
+
+float clipNoise(float t)
+{
+    float i = floor(t), f = fract(t);
+    float a = fract(sin(i * 127.1) * 43758.5453), b = fract(sin((i + 1.0) * 127.1) * 43758.5453);
+    return mix(a, b, f * f * (3.0 - 2.0 * f));
+}
+
+// How far inside her stretch the point q is, m (< 0: cut away; huge when there's no cut)
+float clipInside(vec2 q)
+{
+    if (shipClip.w < 0.5)
+        return 1e30;
+    float r = shipClip.z;
+    float lo = shipClip.x + r * (0.65 * clipNoise(q.y * 0.9 + 3.1) + 0.35 * clipNoise(q.y * 3.7 + 11.0));
+    float hi = shipClip.y - r * (0.65 * clipNoise(q.y * 0.9 + 17.3) + 0.35 * clipNoise(q.y * 3.7 + 29.0));
+    return min(q.x - lo, hi - q.x);
+}
+#endif
+
+// The height map at ship-local metres q (hmap: uv = q * xy + zw), 0 off the map (and past a cut, SHIP_CLIP).
 float shadowHeight(sampler2D heightTex, vec4 hmap, vec2 q, float lod)
 {
+#ifdef SHIP_CLIP
+    if (clipInside(q) < 0.0)
+        return 0.0;
+#endif
     vec2 huv = q * hmap.xy + hmap.zw;
     if (any(lessThan(huv, vec2(0.0))) || any(greaterThan(huv, vec2(1.0))))
         return 0.0;

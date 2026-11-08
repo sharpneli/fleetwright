@@ -51,6 +51,8 @@ public static class FireEffects
                 var windPlan = new Vector2((float)Vec3d.Dot(wind, view.Right), (float)Vec3d.Dot(wind, view.Up));
                 for (int j = v.ShowStart[k]; j < v.ShowStart[k] + v.ShowCount[k]; j++)
                 {
+                    if (!Wreck.Shows(c, v, k, v.ShowAt[j], drawMs))
+                        continue;   // gone under with her, or with the end that came off (docs/visuals/destruction.md)
                     Fire(view, v, j, p, f, stbd, c.Vertical.Waterline, windPlan, world, clock, bodies, lights, span, v.Entity[k]);
                     if (smoke != null && trails != null && (FireLook.Parts & 4) != 0)
                         Smoke(v, j, p, f, stbd, c.Vertical.Waterline, wind.Length, SmokeAir.Of(s.Weather), v.Speed[k], drawMs / 1000.0, smoke, trails, v.Entity[k]);

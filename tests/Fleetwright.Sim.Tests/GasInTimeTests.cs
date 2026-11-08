@@ -159,7 +159,7 @@ public class GasInTimeTests(ITestOutputHelper output)
             "nStows", "stowsLanded", "burned", "fastKg", "peakSource", "whipKg", "whipJ", "whipPeak", "whipSince", "res", "region", "v", "m", "u", "p",
             "rt", "vent", "lagged", "felt", "hottest", "hyd", "dose", "spilled", "nTouched", "touched", "feltLanded", "hotLanded", "open",
             "opened", "edges", "faceBack", "faceDry", "faces", "stows", "linkFrom", "linkTo", "linkMount", "linkAt", "linkArea", "linkOpen",
-            "rounds", "ventedMount", "liftedMount", "ventLanded", "liftLanded", "trainStamp", "edgeStamp", "faceStamp", "stamp", "touchStamp",
+            "rounds", "ventedMount", "liftedMount", "liftMPa", "ventLanded", "liftLanded", "trainStamp", "edgeStamp", "faceStamp", "stamp", "touchStamp",
         ];
         string[] named =
         [
@@ -179,7 +179,7 @@ public class GasInTimeTests(ITestOutputHelper output)
             // a landing's scratch
             "rose",
             // reports, read by no step
-            "SourceCause", "MagazineCause", "Girder",
+            "SourceCause", "MagazineCause", "Girder", "SourceAt", "sourced",
         ];
         var fields = typeof(GasNetwork).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).Select(fi => fi.Name).ToArray();
         var missing = fields.Except(hashed).Except(named).ToArray();

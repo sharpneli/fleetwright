@@ -39,6 +39,7 @@ public sealed unsafe partial class MapScene
         torpedoBook.Clear();
         hitBook.Clear();
         hitMarks.Clear();
+        wreck.Clear();
         smokeTrails.Clear();
         sinking.Clear();
         (benchShot, benchNextMs) = (0, long.MinValue);

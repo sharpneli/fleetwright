@@ -20,6 +20,7 @@ struct Quad
     vec4 hmap;   // height map uv = ship metres * xy + zw
     vec4 tint;   // the icon's colour (mode 2); a turret's tint (mode 0, by its alpha); a scorch's colour (mode 3)
     vec4 sea;    // the sea's plane over the waterline, ship frame: z at the origin, slopes along x and y; w: on
+    vec4 clip;   // a piece of her (docs/visuals/destruction.md): ship x from, to, the cut's ragged depth, m; w: on
 };
 
 layout(std430, set = 0, binding = 0) readonly buffer Quads { Quad quads[]; };
@@ -49,6 +50,7 @@ layout(location = 11) flat out float fragSoot;
 layout(location = 12) out vec3 fragPos;             // metres from the eye, Earth-fixed (the flashes' lights)
 layout(location = 13) flat out vec3 fragAxisU;      // the quad's u, Earth-fixed, unit
 layout(location = 14) flat out vec3 fragAxisV;      // and its v
+layout(location = 15) flat out vec4 fragClip;       // a piece of her: Include/shipshadow.glsl's shipClip
 
 // v turned by the rotation that takes up (0, 0, 1) to the unit n, the shortest way: a level frame's vector in a hull
 // heeled and trimmed so that the level's up is n in its own frame
@@ -82,6 +84,7 @@ void main()
     fragPos = r;
     fragAxisU = fu;
     fragAxisV = fv;
+    fragClip = q.clip;
     if (q.sea.w > 0.5)
     {
         // heeled and trimmed: the level's up in the hull's frame is the sea plane's normal, its slopes taken along the

@@ -464,6 +464,11 @@ Seen in the AI's baseline after the detail passes (2026-10-20, docs/battle/comma
   whose felt pressure passes its rupture opens `RupturedShare` of its whole area in one step, so a long space's side
   goes at once. Rare (about one in 12,000 hits under 130 mm) and from the sourced rule, so not touched. Next: whether a
   rupture's opening should be limited by the panel between frames or the charge's energy (damage/11 §4.1).
+- [ ] **An end comes off at her very tip** (found 2026-11-08, docs/visuals/destruction.md D5): a 2000 mm HE (8.6 t) burst in
+  a dreadnought's thin stern took her stern off at x −79.2 m, under a metre from her end, with 12 of her outside faces
+  torn around it. `HullGirder.Bear` cuts at the worst end section's station (`EndStation`), and near the tip a section's
+  capacity falls as fast as its moment, so the tip can read worst. Not chased: whether the cut should go at the inboard
+  edge of what failed (the torn cells' extent), or the end's load be read over the stretch past each section.
 
 ## Map
 

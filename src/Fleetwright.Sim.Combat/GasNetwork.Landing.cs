@@ -29,6 +29,7 @@ public sealed partial class GasNetwork
         TrainsLanded();
         WaysUpLanded(ref fx);
         FeltLanded(ref fx);
+        ThrownLanded(now);
         FlashLanded(now, ref fx, ref r);
         Casualties.Draw(c, k, now, s, ref fx, ref r);
         if (fx.Changed || fx.Killed + fx.Wounded > 0)
@@ -80,6 +81,7 @@ public sealed partial class GasNetwork
             {
                 liftLanded[mt] = true;
                 Wreck(mr.Component, ref fx);
+                Throw(mr.Component, liftMPa[mt], c.LiftKPa(mt) * 1e-3, NowMs);
             }
             if (!ventedMount[mt] || ventLanded[mt])
                 continue;
@@ -123,6 +125,70 @@ public sealed partial class GasNetwork
             if (most > 0 && most >= s.RuptureMPaMm * Effects.Armour(c, j))
                 Effects.Pressed(c, k, j, s.PartBlastMPa[Math.Min((int)comps[j].Kind, s.PartBlastMPa.Length - 1)], most, s, ref fx);
         }
+    }
+
+    /// <summary>The parts standing on a weather deck her gas tore open (docs/visuals/destruction.md decision 2): one its gas wrecked
+    /// goes when the most its cell felt beats its weight over its footprint (the gunhouses' rule, <see cref="ShipClass.LiftKPa"/>),
+    /// flagged thrown with its speed (<see cref="Throw"/>). A record only: what wrecks a part is the gas's pressure classes
+    /// (<see cref="FeltLanded"/>), as before. An enclosed gunhouse goes by its own way up (<see cref="WaysUpLanded"/>).</summary>
+    void ThrownLanded(long now)
+    {
+        var comps = c.Components;
+        for (int a = 0; a < n; a++)
+        {
+            int i = region[a];
+            if (i == partNode || i >= c.Cells.Length || !(k.FaceTornM2[i * Faces + 2] > 0) || !(felt[i] > 0))
+                continue;
+            var box = c.Cells[i].Box;
+            for (int j = 0; j < comps.Length; j++)
+            {
+                if (k.ThrownMs[j] != 0 || k.State[j] != PartState.Destroyed || !Throwable(j))
+                    continue;
+                var b = comps[j].Bounds;
+                // standing on this deck (its foot within half a deck of the cell's top) over this cell
+                if (Math.Abs(b.Base - box.Top) > 1.5 || b.X1 <= box.X0 || b.X0 >= box.X1 || b.Y1 <= box.Y0 || b.Y0 >= box.Y1)
+                    continue;
+                double weight = WeightKPa(j);
+                if (felt[i] * 1e3 < weight)
+                    continue;
+                Throw(j, felt[i], weight * 1e-3, now);
+            }
+        }
+    }
+
+    /// <summary>A part that can be thrown off the deck: what stands on it, but an enclosed gunhouse (its own rule) and its barbette.</summary>
+    bool Throwable(int j)
+    {
+        var kind = c.Components[j].Kind;
+        if (kind is ComponentKind.Main or ComponentKind.Secondary)
+            return c.MountOf(j) is int mt && mt >= 0 && !c.Enclosed(mt);
+        return kind is ComponentKind.Superstructure or ComponentKind.ConningTower or ComponentKind.Funnel or ComponentKind.Mast
+            or ComponentKind.Top or ComponentKind.Sponson or ComponentKind.Aa or ComponentKind.Torpedo or ComponentKind.TorpedoTube;
+    }
+
+    /// <summary>A part's weight over its footprint, kPa: its box's surface at its plate (or armour), steel, times what's in and
+    /// on it (<see cref="SimSettings.ThrownWeightK"/>).</summary>
+    double WeightKPa(int j)
+    {
+        ref readonly var p = ref c.Components[j];
+        var b = p.Bounds;
+        double w = Math.Max(b.X1 - b.X0, 0.3), l = Math.Max(b.Y1 - b.Y0, 0.3), h = Math.Max(b.Top - b.Base, 0.3);
+        double mm = Math.Max(Math.Max(p.PlateMm, p.ArmourMm), 6);
+        double tonnes = 7.85 * mm / 1000 * (2 * w * l + 2 * h * (w + l)) * s.ThrownWeightK;
+        return tonnes * 9.81 / (w * l);
+    }
+
+    /// <summary>A part thrown at a moment: the gas at <paramref name="mpa"/> under it against its weight of
+    /// <paramref name="weightMPa"/> over its footprint drives it up through its own height, at most
+    /// <see cref="SimSettings.ThrownMostMs"/>.</summary>
+    void Throw(int j, double mpa, double weightMPa, long now)
+    {
+        if (k.ThrownMs[j] != 0)
+            return;
+        var b = c.Components[j].Bounds;
+        double excess = Math.Max(mpa / Math.Max(weightMPa, 1e-6) - 1, 0) * 9.81;   // its rise's acceleration, m/s²
+        double v = Math.Min(Math.Sqrt(2 * excess * Math.Max(b.Top - b.Base, 1)), s.ThrownMostMs);
+        (k.ThrownMs[j], k.ThrownV[j]) = (Math.Max(now, 1), (float)v);
     }
 
     /// <summary>A handling room or passage its gas reached hot enough to light charges since (<see cref="Hot"/>): a flash source for

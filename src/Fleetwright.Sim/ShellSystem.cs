@@ -447,32 +447,40 @@ public sealed class ShellSystem : IWorldSystem
                     var cls = ships.Class(store[ship].ClassIndex);
                     long midMs = s.FiredMs + (long)Math.Round((chordTime[j] + chordTime[j + 1]) / 2 * 1000);
                     var frame = ships.FrameAt(ship, midMs);
-                    var attitude = store.Combat.Condition(ship).AttitudeAt(midMs);   // a ship going down sinks under it
+                    var k = store.Combat.Condition(ship);
                     int mounts = cls.Mounts.Length;
                     if (bearings.Length < mounts)
                         bearings = new double[Math.Max(mounts, bearings.Length * 2)];
                     for (int m = 0; m < mounts; m++)
                         bearings[m] = CombatStore.BearingAt(store.Combat.Mount(ship, m), cls.Mounts[m], midMs);
-                    if (!HitQuery.Trace(cls, frame, attitude, chordPoint[j], chordPoint[j + 1], bearings.AsSpan(0, mounts), path))
-                        continue;
-                    var xs = path.Crossings;
-                    for (int i = 0; i < xs.Length; i++)
+                    // a ship going down sinks under it; one broken in two is two pieces, each traced on its own attitude for what's on
+                    // its side of the break; an end that's come off stops nothing (docs/visuals/destruction.md decision 1)
+                    bool broken = k.Broken;
+                    for (int piece = 0; piece < (broken ? 2 : 1); piece++)
                     {
-                        ref readonly var x = ref xs[i];
-                        if (x.Kind is CrossingKind.HullIn or CrossingKind.PartIn)
+                        var attitude = broken ? k.PieceAt(midMs, bow: piece == 0) : k.AttitudeAt(midMs);
+                        double xLo = broken && piece == 0 ? k.BreakX : k.CutSternX, xHi = broken && piece == 1 ? k.BreakX : k.CutBowX;
+                        if (!HitQuery.Trace(cls, frame, attitude, chordPoint[j], chordPoint[j + 1], bearings.AsSpan(0, mounts), path))
+                            continue;
+                        var xs = path.Crossings;
+                        for (int i = 0; i < xs.Length; i++)
                         {
-                            if (x.T < bestT)
+                            ref readonly var x = ref xs[i];
+                            if (x.Kind is CrossingKind.HullIn or CrossingKind.PartIn && x.Point.X >= xLo && x.Point.X <= xHi)
                             {
-                                bestT = x.T;
-                                s.Hit = store[ship].Entity;
-                                s.End = HitQuery.ToWorld(cls, frame, attitude, x.Point);
-                                s.EndS = chordTime[j] + (chordTime[j + 1] - chordTime[j]) * x.T / Math.Max(path.Length, 1e-9);
-                                double dx = path.End.X - path.Start.X, dy = path.End.Y - path.Start.Y, dz = path.End.Z - path.Start.Z;
-                                double l = Math.Max(Math.Sqrt(dx * dx + dy * dy + dz * dz), 1e-9);
-                                (s.HitPoint, s.HitDirection, s.HitSpeed) = (x.Point, new P3(dx / l, dy / l, dz / l), speed);
-                                s.WaterRunM = WaterRun.RunM(path, i);   // the ship's own waterplane, at its flotation
+                                if (x.T < bestT)
+                                {
+                                    bestT = x.T;
+                                    s.Hit = store[ship].Entity;
+                                    s.End = HitQuery.ToWorld(cls, frame, attitude, x.Point);
+                                    s.EndS = chordTime[j] + (chordTime[j + 1] - chordTime[j]) * x.T / Math.Max(path.Length, 1e-9);
+                                    double dx = path.End.X - path.Start.X, dy = path.End.Y - path.Start.Y, dz = path.End.Z - path.Start.Z;
+                                    double l = Math.Max(Math.Sqrt(dx * dx + dy * dy + dz * dz), 1e-9);
+                                    (s.HitPoint, s.HitDirection, s.HitSpeed) = (x.Point, new P3(dx / l, dy / l, dz / l), speed);
+                                    s.WaterRunM = WaterRun.RunM(path, i);   // the ship's own waterplane, at its flotation
+                                }
+                                break;
                             }
-                            break;
                         }
                     }
                 }

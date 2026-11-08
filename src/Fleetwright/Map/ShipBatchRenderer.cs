@@ -18,13 +18,14 @@ using static SDL.SDL3;
 
 namespace Fleetwright.Map;
 
-/// <summary>One quad the ship shaders draw (shipmap.vert's Quad, std430: 10 vec4s). Corners are metres from the eye, so
-/// the floats are small numbers and nothing jitters at the ship band.</summary>
+/// <summary>One quad the ship shaders draw (shipmap.vert's Quad, std430: 11 vec4s). Corners are metres from the eye, so
+/// the floats are small numbers and nothing jitters at the ship band. Clip: a piece of her (docs/visuals/destruction.md
+/// D5-D6), ship x from and to, the cut's ragged depth, on.</summary>
 [StructLayout(LayoutKind.Sequential)]
 public struct ShipQuad
 {
-    public Vector4 O, U, V, Ship, ShipV, Sun, March, Hmap, Tint, Sea;
-    public const int SizeInBytes = 160;
+    public Vector4 O, U, V, Ship, ShipV, Sun, March, Hmap, Tint, Sea, Clip;
+    public const int SizeInBytes = 176;
 }
 
 public enum ShipDrawKind : byte
@@ -72,10 +73,20 @@ public interface IThrownTurrets
     bool Thrown(int entity, int classMount, out ThrownTurret pose);
 }
 
+/// <summary>The parts her gas threw off her (docs/visuals/destruction.md D4), by the class's component: where each is on its
+/// arc (as a thrown gunhouse's pose), or gone into the sea; false while it's still on her or wasn't thrown.</summary>
+public interface IThrownParts
+{
+    bool Thrown(int entity, int component, out ThrownTurret pose);
+}
+
 public sealed class ShipDrawList
 {
     /// <summary>The gunhouses thrown by magazines going up, drawn on their arcs (null: none).</summary>
     public IThrownTurrets? Thrown { get; set; }
+
+    /// <summary>The parts thrown off by her gas, drawn on their arcs (null: none; docs/visuals/destruction.md D4).</summary>
+    public IThrownParts? Parts { get; set; }
 
     /// <summary>The marks shells left on the ships (docs/visuals/hits-and-fires.md I3), drawn with the scorches.</summary>
     public Hits.HitMarks? Marks { get; set; }
@@ -87,7 +98,7 @@ public sealed class ShipDrawList
     public const double IconLengthPx = 22, IconWidthPx = 8;
 
     /// <summary>The icons scale by tonnage, so the table shows the balance of power at a glance: the length as the cube
-    /// root of the full-load displacement (the icon's area as tonnage^⅔, a destroyer a third of a dreadnought's length),
+    /// root of the full-load displacement (the icon's area as tonnage^â…”, a destroyer a third of a dreadnought's length),
     /// from <see cref="IconMinLengthPx"/> (a torpedo boat still shows) to <see cref="IconMaxLengthPx"/>; the width
     /// with it, at least <see cref="IconMinWidthPx"/>.</summary>
     public const double IconRefT = 20000, IconMinLengthPx = 6, IconMaxLengthPx = 40, IconMinWidthPx = 2.5;
@@ -163,7 +174,7 @@ public sealed class ShipDrawList
 
     /// <summary>The wave field's fade astern of the pivot, a Gaussian over this many lengths, going straight, and in a
     /// hard turn (the user, 2026-10-15: long arms looked silly in a turn; a subtle field near the ship is enough). Not
-    /// physical: the field is kept to where it reads as the ship's own. A turn is hard at κ·L = <see cref="HardTurnKL"/>
+    /// physical: the field is kept to where it reads as the ship's own. A turn is hard at ÎºÂ·L = <see cref="HardTurnKL"/>
     /// (a turning circle's radius ~4 lengths).</summary>
     public const double WakeFadeL = 1.0, WakeFadeTurnL = 0.4, HardTurnKL = 0.25;
     /// <summary>This frame's light, at the view's centre; the muzzle flashes' lights are set into it after the build
@@ -224,7 +235,23 @@ public sealed class ShipDrawList
         /// everywhere): the shadows, by the heights over it, may reach that much further. A ship settling or going down
         /// stands lower over it, so her shadows reach less far, not more.</summary>
         public double SeaSpan;
+        /// <summary>Her stretch drawn (<see cref="ShipQuad.Clip"/>: all of her when off), and whether this entry is a second
+        /// piece of a ship already placed (no wake, not counted as drawn).</summary>
+        public Vector4 Clip;
+        public bool Piece;
+        /// <summary>Her plan foreshortened by her attitude (<see cref="SquashOf"/>): the pivot's ship x, and the cosines of her
+        /// trim and heel.</summary>
+        public Vector3 Squash;
     }
+
+    static readonly Vector3 Unsquashed = new(0, 1, 1);
+
+    /// <summary>A hull trimmed or heeled seen from above is shorter or narrower by the angle's cosine, about where she turns (the
+    /// centre of flotation, or a piece's break): the quads are placed so, sampling her frame as before (her heights' shift is the
+    /// tilt's other half, shipmap.frag's shownAt). Nothing at the small angles a ship afloat takes; a piece of a broken ship
+    /// standing up at 50° shows two-thirds of its length.</summary>
+    static Vector3 SquashOf(ShipClass c, in Attitude a) =>
+        new((float)(c.Hydrostatics.Lcf + a.PivotDx), (float)Math.Cos(double.DegreesToRadians(a.TrimDeg)), (float)Math.Cos(double.DegreesToRadians(a.HeelDeg)));
 
     Placed[] placed = new Placed[64];
     int placedCount;
@@ -280,7 +307,8 @@ public sealed class ShipDrawList
 
         if (wakeOn)
             for (int i = 0; i < placedCount; i++)
-                Wake(ref placed[i], wakes!, view);
+                if (!placed[i].Piece)
+                    Wake(ref placed[i], wakes!, view);
 
         // the sprites, layer by layer, a draw per class (and turret type)
         foreach (int cls in classes)
@@ -397,6 +425,7 @@ public sealed class ShipDrawList
                 Class = cls, Entity = ships.Entity[k], Side = ships.Side[k], Bearings = ships.MountBearingDeg, MountStart = ships.MountStart[k],
                 View = ships, Row = k, Cls = c, Sea = sea, Fade = fade, Gray = gray,
                 SeaSpan = c != null ? Math.Max(0, -sea.X + Math.Abs(sea.Y) * c.Length / 2 + Math.Abs(sea.Z) * c.Beam / 2) : 0,
+                Squash = c != null ? SquashOf(c, Attitude.At(c, ships.Attitude[k], ships.Loss[k], ships.LossMs[k], ships.GoneMs[k], timeMs)) : Unsquashed,
             };
             if (k < drawnAs.Length && !wakeOnly)
                 drawnAs[k] = (byte)((sprite > 0 ? 2 : 0) | (sprite < 1 ? 1 : 0));
@@ -409,8 +438,72 @@ public sealed class ShipDrawList
                 list.Add(placedCount);
             }
             placedCount++;
+            if (sprite > 0 && c != null && art != null)
+                Pieces(ships, k, c, art, timeMs);
         }
 
+    }
+
+    /// <summary>How long an end that came off is drawn going down on its own, ms [EST: a minute; it's gone from the sim at once].</summary>
+    public const long CutPieceMs = 60_000;
+
+    /// <summary>The newest placed ship in pieces (docs/visuals/destruction.md D5-D6), as the sim has her: broken in two, the
+    /// entry becomes her bow's piece and a second the stern's, each on its own attitude (<see cref="Attitude.Piece"/>, the one
+    /// the hit queries read) and clipped at the break; an end come off, her drawn short at the cut and the end, for a minute,
+    /// going down on its own. The cut's edge is ragged and charred (shipmap.frag).</summary>
+    void Pieces(ShipsView v, int k, ShipClass c, ShipArt art, long now)
+    {
+        int whole = placedCount - 1;
+        double lo = v.CutSternX[k], hi = v.CutBowX[k], at = v.BreakX[k];
+        bool broken = !double.IsNaN(at) && v.Loss[k] != LossKind.None;
+        if (!broken && double.IsInfinity(lo) && double.IsInfinity(hi))
+            return;
+        float rag = (float)Math.Clamp(0.12 * c.Beam, 0.8, 4);
+        if (broken)
+        {
+            var bow = Attitude.Piece(c, v.Attitude[k], at, true, v.LossMs[k], v.GoneMs[k], now);
+            var stern = Attitude.Piece(c, v.Attitude[k], at, false, v.LossMs[k], v.GoneMs[k], now);
+            // what was blown out at the break is gone from both: each piece ends a cut's ragged depth short of it
+            ref var p = ref placed[whole];
+            Repose(ref p, c, art, bow, Clip(at + rag, hi, rag));
+            AddPiece(whole, c, art, stern, Clip(lo, at - rag, rag), 1);
+            return;
+        }
+        placed[whole].Clip = Clip(lo, hi, rag);
+        // the ends going down by themselves for a while
+        if (double.IsFinite(hi) && now - v.CutBowMs[k] < CutPieceMs)
+            AddPiece(whole, c, art, Attitude.Piece(c, v.Attitude[k], hi, true, v.CutBowMs[k], v.CutBowMs[k] + CutPieceMs, now),
+                Clip(hi, double.PositiveInfinity, rag), PieceFade(now - v.CutBowMs[k]));
+        if (double.IsFinite(lo) && now - v.CutSternMs[k] < CutPieceMs)
+            AddPiece(whole, c, art, Attitude.Piece(c, v.Attitude[k], lo, false, v.CutSternMs[k], v.CutSternMs[k] + CutPieceMs, now),
+                Clip(double.NegativeInfinity, lo, rag), PieceFade(now - v.CutSternMs[k]));
+    }
+
+    static double PieceFade(long ageMs) => 1 - SmoothStep(0.85, 1, ageMs / (double)CutPieceMs);
+
+    static Vector4 Clip(double lo, double hi, float rag) =>
+        new((float)Math.Max(lo, -1e30), (float)Math.Min(hi, 1e30), rag, 1);
+
+    void Repose(ref Placed p, ShipClass c, ShipArt art, in Attitude a, Vector4 clip)
+    {
+        p.Sea = SeaOf(c, art, a);
+        p.Squash = SquashOf(c, a);
+        p.SeaSpan = Math.Max(0, -p.Sea.X + Math.Abs(p.Sea.Y) * c.Length / 2 + Math.Abs(p.Sea.Z) * c.Beam / 2);
+        p.Clip = clip;
+    }
+
+    /// <summary>Another piece of the placed ship at <paramref name="of"/>: her copy on its own attitude and stretch, faded by
+    /// <paramref name="fade"/>.</summary>
+    void AddPiece(int of, ShipClass c, ShipArt art, in Attitude a, Vector4 clip, double fade)
+    {
+        if (placed.Length <= placedCount)
+            Array.Resize(ref placed, placed.Length * 2);
+        ref var p = ref placed[placedCount];
+        p = placed[of];
+        Repose(ref p, c, art, a, clip);
+        (p.Piece, p.SpriteAlpha) = (true, p.SpriteAlpha * fade);
+        byClass[p.Class].Add(placedCount);
+        placedCount++;
     }
 
     /// <summary>The sea's plane over a ship's waterline in its own frame (z at the origin, the slopes along and across, and
@@ -421,17 +514,24 @@ public sealed class ShipDrawList
     {
         // going down, the sim's own attitude for the moment (the one the hit queries see)
         var a = Attitude.At(c, v.Attitude[k], v.Loss[k], v.LossMs[k], v.GoneMs[k], now);
-        var w = HitQuery.WaterOf(c, a);
-        double z = w.Z - c.Vertical.Waterline, dx = w.DzDx, dy = w.DzDy, fade = 1;
+        double fade = 1;
         if (v.Loss[k] != LossKind.None)
             fade = 1 - SmoothStep(0.85, 1, Math.Clamp((now - v.LossMs[k]) / (double)Math.Max(v.GoneMs[k] - v.LossMs[k], 1), 0, 1));
+        return (SeaOf(c, art, a), fade);
+    }
+
+    /// <summary>The sea's plane over the waterline at an attitude (off when she sits on her lines).</summary>
+    static Vector4 SeaOf(ShipClass c, ShipArt art, in Attitude a)
+    {
+        var w = HitQuery.WaterOf(c, a);
+        double z = w.Z - c.Vertical.Waterline, dx = w.DzDx, dy = w.DzDy;
         bool on = z != 0 || dx != 0 || dy != 0;
         double tallest = Math.Max(art.Meta.Shadow.MaxHeightM + art.Meta.Shadow.HeightStepM, 1);
-        return (on ? new Vector4((float)z, (float)dx, (float)dy, (float)tallest) : Vector4.Zero, fade);
+        return on ? new Vector4((float)z, (float)dx, (float)dy, (float)tallest) : Vector4.Zero;
     }
 
     /// <summary>A ship's wave field (docs/visuals/wakes.md K3): one quad over the bakes' crop in its frame, which
-    /// wakesplat.frag fills from the two bakes round its speed, each scaled about the stem by (its speed / the ship's)²
+    /// wakesplat.frag fills from the two bakes round its speed, each scaled about the stem by (its speed / the ship's)Â²
     /// so their crests line up, the field bent along a turn. Ahead only, from <see cref="WakeFromMs"/>.</summary>
     void Wake(ref Placed p, WakeLibrary wakes, in MapView view)
     {
@@ -455,7 +555,7 @@ public sealed class ShipDrawList
         double x0 = Math.Min(stem + (a.X0 - a.StemX) / sa, stem + (b.X0 - b.StemX) / sb);
         double x1 = Math.Max(stem + (a.X1 - a.StemX) / sa, stem + (b.X1 - b.StemX) / sb);
         double y1 = Math.Max(a.HalfY / sa, b.HalfY / sb);
-        // the turn: the field astern of the pivot bent onto the arc the ship has come along, y' = y + κ·x²/2 (κ the
+        // the turn: the field astern of the pivot bent onto the arc the ship has come along, y' = y + ÎºÂ·xÂ²/2 (Îº the
         // path's curvature, + to starboard), held to a length's offset at the stamp's end
         double kappa0 = p.View.YawRate[p.Row] / u, turn = Math.Clamp(Math.Abs(kappa0) * h.LengthM / HardTurnKL, 0, 1);
         double fadeM = h.LengthM * (WakeFadeL + (WakeFadeTurnL - WakeFadeL) * turn);
@@ -532,6 +632,8 @@ public sealed class ShipDrawList
             var tint = st == PartState.Destroyed ? ScorchWrecked : st == PartState.Disabled ? ScorchOut : ScorchDamaged;
             Emit(ref p, art, b.X0, b.Y0, b.X1 - b.X0, 0, 0, b.Y1 - b.Y0, mode: 3, opacity: p.SpriteAlpha, roof: 0, tint);
         }
+        Torn(ref p, art, c);
+        ThrownParts(ref p, art, c);
         // the shells' marks: round, a hole in a scorch (mode 4; roof: the hole's share of its radius)
         if (Marks is null)
             return;
@@ -543,6 +645,76 @@ public sealed class ShipDrawList
             Emit(ref p, art, m.X - m.R + sx, m.Y - m.R + sy, 2 * m.R, 0, 0, 2 * m.R, mode: 4, opacity: p.SpriteAlpha, roof: m.Hole, HitScorch);
         }
     }
+
+    /// <summary>Her plating torn out (docs/visuals/destruction.md D2), from the sim's own list of her outside faces torn, as the
+    /// shells' marks are drawn (mode 4: a ragged near-black hole in a scorch), stretched over what tore: a weather deck's tear a
+    /// hole over the torn share of its cell; a side's a bite out of her deck edge along it, as deep as its torn area over its
+    /// length allows (the half outboard of her is off the hull and doesn't show). Her bottom's don't show.</summary>
+    void Torn(ref Placed p, ShipArt art, ShipClass c)
+    {
+        var v = p.View;
+        if (v.TornCount[p.Row] == 0)
+            return;
+        var faces = HullFaces.Of(c);
+        double wl = c.Vertical.Waterline, minR = 0.6 / p.PxPerM;
+        for (int j = v.TornStart[p.Row], end = j + v.TornCount[p.Row]; j < end; j++)
+        {
+            int x = v.TornFace[j], f = x & 3;
+            double area = faces.Area[x], torn = v.TornM2[j];
+            if (f == 3 || !(area > 0) || torn < 0.5)
+                continue;
+            var b = c.Cells[x >> 2].Box;
+            var at = faces.Point[x];
+            double share = Math.Clamp(torn / area, 0, 1), hx, hy, cy;
+            if (f == 2)
+                (hx, hy, cy) = (0.5 * (b.X1 - b.X0) * Math.Sqrt(share), 0.5 * (b.Y1 - b.Y0) * Math.Sqrt(share), (b.Y0 + b.Y1) / 2);
+            else
+            {
+                double length = b.X1 - b.X0;
+                (hx, hy, cy) = (0.5 * length * Math.Sqrt(share), Math.Clamp(torn / Math.Max(length, 1), 0.5, 0.35 * c.Beam), at.Y);
+            }
+            if (Math.Max(hx, hy) < minR)
+                continue;
+            const double Rim = 1.35;
+            double z = (f == 2 ? b.Top : at.Z) - wl, sx = z * p.Sea.Y, sy = z * p.Sea.Z;   // tilted with the hull
+            double cx = f == 2 ? (b.X0 + b.X1) / 2 : at.X;
+            Emit(ref p, art, cx - Rim * hx + sx, cy - Rim * hy + sy, 2 * Rim * hx, 0, 0, 2 * Rim * hy, mode: 4, opacity: p.SpriteAlpha, roof: 1 / Rim,
+                TornScorch);
+        }
+    }
+
+    /// <summary>The parts her gas threw off her deck (docs/visuals/destruction.md D4), from the sim's record: where each stood, a
+    /// gutted hole (the baked sprite's part under it hidden: the shells' marks' mode); and while it flies, the part itself, cut
+    /// from her sprite by its footprint and its height over its foot (shipmap.frag mode 5), on its arc (<see cref="Parts"/>),
+    /// turned, tumbling and lifted up the screen by its height (the effects camera). A mount's gunhouse goes with the turrets.</summary>
+    void ThrownParts(ref Placed p, ShipArt art, ShipClass c)
+    {
+        var v = p.View;
+        if (v.ThrownCount[p.Row] == 0)
+            return;
+        double wl = c.Vertical.Waterline;
+        var north = new Vector2((float)Vec3d.Dot(viewNorth, p.F), (float)Vec3d.Dot(viewNorth, p.S));
+        for (int j = v.ThrownStart[p.Row], end = j + v.ThrownCount[p.Row]; j < end; j++)
+        {
+            int part = v.ThrownPart[j];
+            var b = c.Components[part].Bounds;
+            double hx = 0.5 * (b.X1 - b.X0), hy = 0.5 * (b.Y1 - b.Y0), cx = (b.X0 + b.X1) / 2, cy = (b.Y0 + b.Y1) / 2;
+            double z = b.Base - wl, sx = z * p.Sea.Y, sy = z * p.Sea.Z;
+            const double Rim = 1.25;
+            Emit(ref p, art, cx - Rim * hx + sx, cy - Rim * hy + sy, 2 * Rim * hx, 0, 0, 2 * Rim * hy, mode: 4, opacity: p.SpriteAlpha, roof: 0.85, TornScorch);
+            if (c.MountOf(part) >= 0 || Parts is null || !Parts.Thrown(p.Entity, part, out var th) || th.Gone)
+                continue;
+            // the part in the air: its own pixels of her sprite (sampled at its footprint), placed on its arc
+            double a = th.TurnDeg * Math.PI / 180, ca = Math.Cos(a), sa = Math.Sin(a), up = Effects.K * th.Dz;
+            double wx = cx + th.Dx + up * north.X, wy = cy + th.Dy + up * north.Y;
+            double ux = 2 * hx * ca * th.Scale, uy = 2 * hx * sa * th.Scale, vx = -2 * hy * sa * th.Scale * th.Tilt, vy = 2 * hy * ca * th.Scale * th.Tilt;
+            EmitMapped(ref p, art, b.X0, b.Y0, 2 * hx, 0, 0, 2 * hy, wx - (ux + vx) / 2, wy - (uy + vy) / 2, ux, uy, vx, vy, mode: 5,
+                opacity: p.SpriteAlpha, roof: z + 0.3, Vector4.Zero);
+        }
+    }
+
+    /// <summary>Torn plating's scorch: blackened and blistered round the hole.</summary>
+    static readonly Vector4 TornScorch = new(0.1f, 0.085f, 0.07f, 0.85f);
 
     /// <summary>A shell's mark's scorch: soot over burnt paint (its hole near black in the shader).</summary>
     static readonly Vector4 HitScorch = new(0.07f, 0.06f, 0.05f, 0.92f);
@@ -578,13 +750,16 @@ public sealed class ShipDrawList
             if (art.MountType[i] != type)
                 continue;
             var m = meta.Mounts[i];
+            if (p.Clip.W > 0.5 && (m.PosM[0] < p.Clip.X || m.PosM[0] > p.Clip.Y))
+                continue;   // on the other piece of her
             // on its bearing from the snapshot (fire control's), else at rest
             int cm = art.ClassMount[i];
             double deg = p.MountStart >= 0 && cm >= 0 ? p.Bearings[p.MountStart + cm] : m.RestDeg;
             // thrown off its barbette by its magazine: on its arc, turned and tilted, raised up the screen by its height
             // (the effects camera), or gone into the sea
             ThrownTurret th = default;
-            bool thrown = cm >= 0 && Thrown != null && Thrown.Thrown(p.Entity, cm, out th);
+            bool thrown = cm >= 0 && (Thrown != null && Thrown.Thrown(p.Entity, cm, out th)
+                || Parts != null && p.Cls is { } pc && cm < pc.Mounts.Length && Parts.Thrown(p.Entity, pc.Mounts[cm].Component, out th));
             if (thrown && th.Gone)
                 continue;
             if (thrown)
@@ -615,7 +790,7 @@ public sealed class ShipDrawList
             {
                 var (tint, soot) = TurretTint(p, cm);
                 Emit(ref p, art, ox, oy, axx, axy, ayx, ayy, mode: 0, opacity: p.SpriteAlpha, roof: m.TopM, tint,
-                    p.Shadows ? HullMarch(p, art, m.TopM) : default, CoverM(m), soot);
+                    p.Shadows ? HullMarch(p, art, m.TopM) : default, CoverM(m), soot, clip: false);
             }
         }
     }
@@ -679,13 +854,23 @@ public sealed class ShipDrawList
 
     /// <summary>A quad from ship-local metres: corner (ox, oy), edges (ux, uy) and (vx, vy).</summary>
     void Emit(ref Placed p, ShipArt? art, double ox, double oy, double ux, double uy, double vx, double vy, int mode, double opacity,
-        double roof, Vector4 tint, Vector4 march = default, float cover = 0, float soot = 0)
+        double roof, Vector4 tint, Vector4 march = default, float cover = 0, float soot = 0, bool clip = true) =>
+        EmitMapped(ref p, art, ox, oy, ux, uy, vx, vy, ox, oy, ux, uy, vx, vy, mode, opacity, roof, tint, march, cover, soot, clip);
+
+    /// <summary>A quad that samples her frame at one place (ship-local corner and edges) and is drawn at another (a part thrown
+    /// off her: docs/visuals/destruction.md D4); <see cref="Emit"/> draws it where it samples. A thrown part (mode 5) is in the
+    /// air, off her sea and her cut.</summary>
+    void EmitMapped(ref Placed p, ShipArt? art, double ox, double oy, double ux, double uy, double vx, double vy,
+        double wox, double woy, double wux, double wuy, double wvx, double wvy, int mode, double opacity,
+        double roof, Vector4 tint, Vector4 march = default, float cover = 0, float soot = 0, bool clip = true)
     {
         if (quadCount == quads.Length)
             Array.Resize(ref quads, quads.Length * 2);
-        var o = p.Rel + p.F * ox + p.S * oy;
-        var u = p.F * ux + p.S * uy;
-        var v = p.F * vx + p.S * vy;
+        // foreshortened by her attitude about her pivot (the icons are the table's: never)
+        double kx = mode == 2 ? 1 : p.Squash.Y, ky = mode == 2 ? 1 : p.Squash.Z, px = p.Squash.X;
+        var o = p.Rel + p.F * (px + (wox - px) * kx) + p.S * (woy * ky);
+        var u = p.F * (wux * kx) + p.S * (wuy * ky);
+        var v = p.F * (wvx * kx) + p.S * (wvy * ky);
         var hmap = art != null
             ? new Vector4((float)(art.Scale / art.Meta.SizePx[0]), (float)(art.Scale / art.Meta.SizePx[1]), 0.5f, 0.5f)
             : Vector4.Zero;
@@ -701,7 +886,8 @@ public sealed class ShipDrawList
             March = march,
             Hmap = hmap,
             Tint = tint,
-            Sea = p.Sea,
+            Sea = mode == 5 ? default : p.Sea,
+            Clip = clip && mode is not (2 or 5) ? p.Clip : default,
         };
     }
 

@@ -1475,7 +1475,7 @@ public sealed partial class DamageSystem : IWorldSystem
             if (x.Ms < oldest)
                 break;
             (b.Ms[n], b.Ship[n], b.Class[n], b.Room[n], b.Cause[n]) = (x.Ms, x.Ship, x.Class, x.Room, x.Cause);
-            (b.At[n], b.Forward[n], b.Point[n]) = (x.At, x.Forward, x.Point);
+            (b.At[n], b.Forward[n], b.Point[n], b.Tier[n], b.FastKg[n]) = (x.At, x.Forward, x.Point, x.Tier, x.FastKg);
             n++;
         }
         b.Count = n;
