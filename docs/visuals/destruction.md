@@ -94,6 +94,13 @@ under. And a fire under a weather deck torn open wider than its hatches now burn
 not up a hatch as a narrow jet (`ShipSystem.FireOpening`, the smoke field's too: the squadrons' hash unchanged; a big
 fight's smoke may move a little where fires burn under torn decks).
 
+**The vent out of the entry hole (the user again, with a capture of Mons going down).** The long jet out of her side was a
+shell's burst inside venting back out of its hole (I1), timed as 0.6 of its fireball's life: for a burst of tonnes, 5 s
+on the effects' clock, longer in world time at speed, long after her plating had gone and she'd broken. Now it lasts
+only while something holds its gas in: once the snapshot shows her gas run over or her lost (`HitBook.Entry.SpentT`),
+the vent and the light inside die within 0.3 s. A 3.2 t burst inside a dreadnought: her run over 0.3 s after the hit,
+the jet gone by 4 s, where it stood about 4 s before.
+
 **D7, cost.** The Jutland at 60x, the 2000 mm bench, a melee of destroyers under 15" fire: frame time, pieces,
   jets, lights, as I8 did.
 - **D8, by eye.** Side-by-side captures, day and night: the 2000 mm shell on a destroyer at 0, 1, 5, 30 s and 2 min;

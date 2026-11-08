@@ -34,6 +34,9 @@ public sealed class HitBook
         public double T0, SeaT0;
         /// <summary>Its smoke handed to the smoke's book, and what flew off it to the splashes' (I2).</summary>
         public bool Smoked, Handed;
+        /// <summary>When nothing held its gas in any longer, s after the hit on the effects' clock (NaN: not yet seen): her gas run
+        /// over, or her lost (docs/visuals/destruction.md: a vent with nothing behind it stops).</summary>
+        public double SpentT;
 
         /// <summary>The sea point under a point of her frame.</summary>
         public readonly Vec3d Sea(P3 p) => At + Forward * p.X + Starboard * p.Y;
@@ -99,7 +102,7 @@ public sealed class HitBook
                 BurstS = v.BurstS[i], ExitMs = v.ExitMs[i], CalibreMm = v.CalibreMm[i], FillerKg = v.FillerKg[i], FillerRe = v.FillerRe[i],
                 VentM2 = v.VentM2[i], Pieces = v.Pieces[i], Outcome = v.Outcome[i], Burst = v.Burst[i], Kind = v.Kind[i], Shows = v.Shows[i],
                 Seed = (Hash((uint)ms ^ Hash((uint)i * 977u + (uint)v.Ship[i])) & 0xffff) / 65536f,
-                T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio,
+                T0 = Clock - ageS * ratio, SeaT0 = SeaClock - ageS * seaRatio, SpentT = double.NaN,
             };
             head = (head + 1) % ring.Length;
             count = Math.Min(count + 1, ring.Length);

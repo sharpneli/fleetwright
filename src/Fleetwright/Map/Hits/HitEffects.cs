@@ -27,6 +27,9 @@ namespace Fleetwright.Map.Hits;
 /// on the sprite), heights over it going up the screen through the effects camera. Nothing allocates.</summary>
 public static class HitEffects
 {
+    /// <summary>How fast a vent dies once nothing holds its gas in, s on the effects' clock.</summary>
+    const double SpentFadeS = 0.3;
+
     /// <summary>The reference calibre the plate flash and the dust are sized against, mm.</summary>
     const double RefCalibreMm = 305;
 
@@ -68,6 +71,11 @@ public static class HitEffects
             {
                 var up = at.Normalized();
                 (ride.At, ride.Forward, ride.Starboard, way) = (at, f, Vec3d.Cross(f, up).Normalized(), f * v);
+                // what holds its gas in: her gas run, live in the sim; once that's over, or she's lost, a vent has nothing behind it
+                var sv = row >= 0 ? ships! : sighted!;
+                int r = row >= 0 ? row : ~row;
+                if (double.IsNaN(e.SpentT) && drawMs > e.Ms + 100 && (sv.GasMs[r] == 0 || sv.Loss[r] != LossKind.None))
+                    e.SpentT = ride.SpentT = age;
             }
             Draw(view, ride, age, world, bodies, lights, way);
         }
@@ -143,18 +151,21 @@ public static class HitEffects
             else
             {
                 // inside: a warm light through what's open, and its gas back out of the hole it came in by
-                double lit = HitLook.InsideLightShare * life;
+                // the light and the vent last their share of the fireball's life, or until nothing holds the gas in (her run over, her
+                // lost: the sim's), dying in a third of a second then
+                double spent = double.IsNaN(e.SpentT) ? double.PositiveInfinity : e.SpentT - e.BurstS + SpentFadeS;
+                double lit = Math.Min(HitLook.InsideLightShare * life, spent);
                 if ((HitLook.Parts & 8) != 0 && tb < lit)
                 {
                     double u = tb / lit, kel = 1300 + 500 * (1 - u);
                     lights.Add(sea + up * h, bodies.Light(kel, Math.PI * 0.09 * d * d, HitLook.LightShare) * (1 - u) * (1 - u), FlashPhotometry.Chroma(kel), 0.3 * d);
                 }
-                double vent = HitLook.VentShare * life;
-                if ((HitLook.Parts & 4) != 0 && tb < vent)
+                double vent = HitLook.VentShare * life, alive = 1 - SmoothStep(spent - SpentFadeS, spent, tb);
+                if ((HitLook.Parts & 4) != 0 && tb < vent && alive > 0)
                 {
                     double hole = Math.PI * Math.Pow(1.2 * e.CalibreMm / 1000, 2) / 4 + Math.Max(e.VentM2, 0);
                     double dEq = Math.Sqrt(4 * hole / Math.PI);
-                    double len = Math.Min(45 * dEq * Math.Sqrt(2), HitLook.VentReach * d) * Math.Min(1, tb / 0.08) * (1 - SmoothStep(0.5 * vent, vent, tb));
+                    double len = Math.Min(45 * dEq * Math.Sqrt(2), HitLook.VentReach * d) * Math.Min(1, tb / 0.08) * (1 - SmoothStep(0.5 * vent, vent, tb)) * alive;
                     if (len > 0.5)
                     {
                         var entry = e.Sea(e.Point);
@@ -163,7 +174,7 @@ public static class HitEffects
                         var plan = e.Forward * back.X + e.Starboard * back.Y;
                         var tip = new Vector2((float)(Vec3d.Dot(plan, east) * len), (float)(Vec3d.Dot(plan, north) * len + k * back.Z * len));
                         double r0 = Math.Max(0.45 * dEq, 0.6 * view.MetresPerPixel), r1 = Math.Max(0.45 * dEq + 0.06 * len, 0.9 * view.MetresPerPixel);
-                        bodies.AddJet(view, entry, Vector2.Zero, tip, r0, r1, 1, 0.7, len, world * (1 - tb / vent), tb, e.Seed);
+                        bodies.AddJet(view, entry, Vector2.Zero, tip, r0, r1, 1, 0.7, len, world * (1 - tb / vent) * alive, tb, e.Seed);
                     }
                 }
             }
