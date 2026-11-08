@@ -66,6 +66,41 @@ html[data-theme=grey]{
   --border:#484848;--key:#575757;--hover:#353535;--tag-bg:rgba(18,18,18,.84);
   --go-bg:#E8772E;--go-hover:#F28A45;
 }
+/* 4 5 6 Naval paints at flat grey's lightness, only the hue moved (text at 0.4 of the tint):
+   USN haze grey (5-H, a blue cast), the Admiralty's 507 (a green cast), the Kriegsmarine's Dunkelgrau 50 (a faint cool cast) */
+html[data-theme=haze]{
+  --ground:#171A1D;--panel:#21262B;--panel2:#282E34;--inset:#121518;--line:#2C333A;--edge:#0A0B0C;--bevel:rgba(255,255,255,.04);
+  --title-bg:#2A3036;--title-hi:transparent;--rivet:#525D6A;
+  --header:#1C2024;--text:#D4D6D8;--bright:#F4F5F6;--muted:#8E949A;--faint:#525D6A;
+  --brass-darker:rgba(232,119,46,.18);--sel-bg:rgba(232,119,46,.11);
+  --amb-edge:#7A5E26;--amb-bg:#2F2817;--ok-bg:rgba(141,190,107,.11);
+  --plan:#252B31;--planline:#AEB2B6;
+  --btn-bg:#2F363D;--btn-hover:#394049;--btn-hi:transparent;
+  --border:#3F4751;--key:#4C5662;--hover:#2E353C;--tag-bg:rgba(16,18,20,.84);
+  --go-bg:#E8772E;--go-hover:#F28A45;
+}
+html[data-theme=admiralty]{
+  --ground:#171D1B;--panel:#222A27;--panel2:#293330;--inset:#131716;--line:#2E3835;--edge:#0A0C0B;--bevel:rgba(255,255,255,.04);
+  --title-bg:#2B3532;--title-hi:transparent;--rivet:#556761;
+  --header:#1D2321;--text:#D4D8D7;--bright:#F5F5F5;--muted:#909895;--faint:#556761;
+  --brass-darker:rgba(232,119,46,.18);--sel-bg:rgba(232,119,46,.11);
+  --amb-edge:#7A5E26;--amb-bg:#2F2817;--ok-bg:rgba(141,190,107,.11);
+  --plan:#272F2C;--planline:#AFB5B3;
+  --btn-bg:#313B38;--btn-hover:#3A4843;--btn-hi:transparent;
+  --border:#414F4A;--key:#4E605A;--hover:#303A37;--tag-bg:rgba(16,20,19,.84);
+  --go-bg:#E8772E;--go-hover:#F28A45;
+}
+html[data-theme=dunkel]{
+  --ground:#181B1C;--panel:#242728;--panel2:#2B2F31;--inset:#141616;--line:#303536;--edge:#0A0B0C;--bevel:rgba(255,255,255,.04);
+  --title-bg:#2D3133;--title-hi:transparent;--rivet:#586164;
+  --header:#1E2122;--text:#D5D6D7;--bright:#F5F5F5;--muted:#919597;--faint:#586164;
+  --brass-darker:rgba(232,119,46,.18);--sel-bg:rgba(232,119,46,.11);
+  --amb-edge:#7A5E26;--amb-bg:#2F2817;--ok-bg:rgba(141,190,107,.11);
+  --plan:#282C2E;--planline:#B0B3B4;
+  --btn-bg:#333839;--btn-hover:#3D4345;--btn-hi:transparent;
+  --border:#444A4C;--key:#525A5C;--hover:#323738;--tag-bg:rgba(17,19,19,.84);
+  --go-bg:#E8772E;--go-hover:#F28A45;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--edge)}
 #app{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--ground);color:var(--text);font:13px/1.3 var(--font-ui)}
@@ -505,7 +540,8 @@ function drawRight() {
 $('loadBar').innerHTML = ['borodino', 'oslyabya', 'aurora', 'buyny', 'mikasa', 'izumo', 'ikazuchi'].map(k => `<span style="flex:${CL[k].t};background:var(--muted);border-right:1px solid var(--edge)" title="${CL[k].name}"></span>`).join('');
 
 // ------------------------------------------------------------------ the skins (7 8 9)
-const THEMES = [['gunmetal', 'Gunmetal', 7], ['navy', 'Navy', 8], ['light', 'Light navy', 9], ['grey', 'Flat grey', 0]];
+const THEMES = [['gunmetal', 'Gunmetal', 7], ['navy', 'Navy', 8], ['light', 'Light navy', 9], ['grey', 'Flat grey', 0],
+  ['haze', 'Haze grey', 4], ['admiralty', 'Admiralty 507', 5], ['dunkel', 'Dunkelgrau', 6]];
 function drawThemes() {
   const cur = document.documentElement.dataset.theme || 'gunmetal';
   $('themes').innerHTML = '<span class="mut">Skin</span>' + THEMES.map(([k, n, key]) => `<span class="${cur === k ? 'on' : ''}" data-k="${k}">${n} <span class="kbd">${key}</span></span>`).join('');
