@@ -54,7 +54,7 @@ public sealed partial class MapScene
         hitBook.Update(s.Hits, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, dt, classOf);
         HitEffects.Hand(hitBook, world.DrawMs, s.Paused ? 0 : s.AchievedSpeed, shipRenderer.Splashes.Book, classOf, hitMarks);
         HitEffects.Build(view, hitBook, WorldView.Factor(view), shipRenderer.Magazines, shipRenderer.Flashes.Lights, shipRenderer.Smoke.Book,
-            shipRenderer.Flashes.Book.SeaClock);
+            shipRenderer.Flashes.Book.SeaClock, s.Ships, s.Sighted, world.DrawMs);
         RunHitBench(s);
     }
 

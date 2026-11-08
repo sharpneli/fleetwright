@@ -36,11 +36,18 @@ public static class HitEffects
 
     /// <summary>A frame's hits: the bursts, flashes and vents into the magazine renderer's instances, their light into
     /// the flashes' (finished again), their smoke handed once to the smoke's book (<paramref name="smokeNow"/> its clock).</summary>
+    /// <para>What a hit leaves on her rides with her (the user, 2026-11-08): each frame its points are posed on her pose now
+    /// (<paramref name="ships"/> and <paramref name="sighted"/> at <paramref name="drawMs"/>, as her sprite is), so the
+    /// jet out of the hole, the light inside, the plate's flash and its sparks stay where they were struck. A burst in the
+    /// open is gas let go into the air: it drifts off her by her own way over its age on the effects' clock, so it parts
+    /// from her as at 1x at any compression. A ship no longer in either view keeps the pose she was hit in. The smoke,
+    /// once laid, is the air's.</para></summary>
     public static void Build(in MapView view, HitBook book, double world, MagazineRenderer bodies, FlashLights lights, SmokeBook smoke,
-        double smokeNow)
+        double smokeNow, ShipsView? ships = null, ShipsView? sighted = null, long drawMs = 0)
     {
         if (!HitLook.On || book.Count == 0)
             return;
+        Index(ships, sighted);
         for (int i = 0; i < book.Count; i++)
         {
             ref var e = ref book.Edit(i);
@@ -55,7 +62,14 @@ public static class HitEffects
             double age = HitLook.AtS >= 0 ? HitLook.AtS : book.Clock - e.T0;
             if (age < 0)
                 continue;
-            Draw(view, e, age, world, bodies, lights);
+            var ride = e;
+            var way = Vec3d.Zero;
+            if (rows.TryGetValue(e.Ship, out int row) && Pose(row >= 0 ? ships! : sighted!, row >= 0 ? row : ~row, drawMs, out var at, out var f, out double v))
+            {
+                var up = at.Normalized();
+                (ride.At, ride.Forward, ride.Starboard, way) = (at, f, Vec3d.Cross(f, up).Normalized(), f * v);
+            }
+            Draw(view, ride, age, world, bodies, lights, way);
         }
         lights.Finish(view);
     }
@@ -70,7 +84,32 @@ public static class HitEffects
 
     static bool Under(in HitBook.Entry e, P3 p) => (e.Shows & HitShows.Underwater) != 0 && p.Z < 0;
 
-    static void Draw(in MapView view, in HitBook.Entry e, double age, double world, MagazineRenderer bodies, FlashLights lights)
+    /// <summary>The frame's ships by entity: a row of the own view, or ~row of the sighted (a frame's lookups by id, not
+    /// a scan a hit). Allocates only to grow.</summary>
+    static readonly Dictionary<int, int> rows = [];
+
+    static void Index(ShipsView? ships, ShipsView? sighted)
+    {
+        rows.Clear();
+        if (sighted != null)
+            for (int k = 0; k < sighted.Count; k++)
+                rows[sighted.Entity[k]] = ~k;
+        if (ships != null)
+            for (int k = 0; k < ships.Count; k++)
+                rows[ships.Entity[k]] = k;
+    }
+
+    /// <summary>Ship k's pose and way now in a view.</summary>
+    static bool Pose(ShipsView v, int k, long ms, out Vec3d at, out Vec3d forward, out double speed)
+    {
+        (at, forward) = v.PoseAt(k, ms);
+        speed = v.Speed[k];
+        return true;
+    }
+
+    /// <param name="way">Her velocity now, m/s over the sea (zero for a hit on a ship no longer seen): a burst in the
+    /// open drifts off her by it.</param>
+    static void Draw(in MapView view, in HitBook.Entry e, double age, double world, MagazineRenderer bodies, FlashLights lights, Vec3d way)
     {
         double cal = e.CalibreMm / RefCalibreMm, k = Effects.K;
         double tb = age - e.BurstS;
@@ -84,6 +123,8 @@ public static class HitEffects
             double h = e.BurstAt.Z;
             if (Open(e))
             {
+                // let go into the air: she steams on out from under it, over its age on the effects' clock
+                sea -= way * tb;
                 double dd = (e.Burst == BurstKind.Inside && e.Outcome != Outcome.BurstBeyond ? HitLook.OpenShare : 1) * d;
                 // its centre at the burst at first (BodyAt's: 0.7 of 0.35 of its radius over its foot)
                 if ((HitLook.Parts & 1) != 0)
@@ -117,10 +158,10 @@ public static class HitEffects
                     if (len > 0.5)
                     {
                         var entry = e.Sea(e.Point);
-                        var way = new P3(-e.Direction.X, -e.Direction.Y, -e.Direction.Z);   // back out along its line in
+                        var back = new P3(-e.Direction.X, -e.Direction.Y, -e.Direction.Z);   // back out along its line in
                         var (east, north) = (view.Right, view.Up);
-                        var plan = e.Forward * way.X + e.Starboard * way.Y;
-                        var tip = new Vector2((float)(Vec3d.Dot(plan, east) * len), (float)(Vec3d.Dot(plan, north) * len + k * way.Z * len));
+                        var plan = e.Forward * back.X + e.Starboard * back.Y;
+                        var tip = new Vector2((float)(Vec3d.Dot(plan, east) * len), (float)(Vec3d.Dot(plan, north) * len + k * back.Z * len));
                         double r0 = Math.Max(0.45 * dEq, 0.6 * view.MetresPerPixel), r1 = Math.Max(0.45 * dEq + 0.06 * len, 0.9 * view.MetresPerPixel);
                         bodies.AddJet(view, entry, Vector2.Zero, tip, r0, r1, 1, 0.7, len, world * (1 - tb / vent), tb, e.Seed);
                     }

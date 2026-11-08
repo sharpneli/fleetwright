@@ -370,3 +370,6 @@ Fire smoke keeps its physical trail.
 - **Steam** from wrecked boiler and engine rooms and a holed funnel: white jets, from the parts' states.
 - **Night lights** (searchlights, star shell) with their sim.
 - **A ship broken in two** parting in halves, with I6's layers at the break (`magazine-explosions.md` "Later").
+- **Destruction** (plating blown out, the gas in time, thrown parts, ends off, ships broken in two) and what rides with
+  her: `destruction.md` (2026-11-08). Since then a hit's jet, flash, sparks and light are posed on her pose now, and a
+  burst in the open drifts off her by her way on the effects' clock (D0).

@@ -460,6 +460,7 @@ docs/visuals/wakes.md         # wakes: the Kelvin field baked per class and spee
 docs/visuals/magazine-explosions.md   # magazine explosions in the world view: the sim's record, the event per class, the analytic body, jets, debris, the blast and light, the after-smoke (X0-X7 done and approved 2026-10-15)
 docs/visuals/torpedoes.md     # torpedoes in the world view: the bubble track as foam, the torpedo, launches, the hit's column on the splash model (agreed 2026-10-15; R0-R5 built, R6 cost measured, tuning by eye next)
 docs/visuals/splashes.md      # shell splashes in the world view: columns through the 3/4 effects camera, foam, shadow, dye, time compression (P0-P5 done 2026-10-15)
+docs/visuals/destruction.md   # destruction in the world view: effects ride with the ship (D0 done), the gas in time, plating blown out, thrown parts, ends off, ships broken in two (draft 2026-11-08; D1-D8)
 docs/visuals/ship-lighting.md # the ship sprites lit: relief and normals, materials, the sun and moon, in the one forward pass (L1 done)
 research/                     # research notes, see below
 ```
