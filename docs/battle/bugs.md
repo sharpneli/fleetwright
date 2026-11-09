@@ -230,6 +230,7 @@ runs 5-7, after its fix, and the Debug run had none.
      adapted to her lit decks, and the bench runs the boats `Darkened` (silent running): found at ~1.1 km in the
      searchlights, 8.5 torpedoes a run, Russia losing 1.8 ships, the boats 7.5 of 10. Left: the boats attack again and
      again for four hours.
+     2026-11-09 (Q16): a torpedo attack runs dark by itself now, the bench's doctrine back to the default.
   The Bosporus (day) case is unchanged by 1-3 (2.2 torpedoes a game before and after): another cause. Seen by day too (2026-11-09, the Bosporus coup, docs/missions/scenarios.md E4): nine Ottoman torpedo boats against three barbette ships and four slow transports fire 3-4 of their 18 torpedoes a game.
 
 - [ ] **A ship runs through her own torpedoes** (found 2026-11-06, EX2, `AimsTests`' raid on seed 3). Emden fired at the tramps, turned for home at 29 kn and took two of her own: shooter 4 is her, 533 mm, `HitSource.Torpedo`, broken in two by `Underwater`'s old chance. Torpedoes have always been able to do this and it's a real accident (HMS Trinidad, 1942), but a captain with a spread running should keep out of its way. The test now plays seed 4; the raid passes on 4, 5 and 6.

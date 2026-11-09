@@ -17,8 +17,9 @@ public class NightDoctrineTests(ITestOutputHelper output)
 
     /// <summary>A light cruiser (side 1, entity 1) steaming north at 10 kn and a destroyer (side 2, entity 2) stopped 0.75 km
     /// to the east of her, on the Dover Strait's moonless night (or this far apart under a full moon high over the North Sea);
-    /// the AI on both, both sides' star shell off.</summary>
-    static (World W, AiSystem Ai) Night(double apartLonDeg = 0.012, bool fullMoon = false)
+    /// the AI on both, both sides' star shell off; their torpedoes at will, or only on order (a test of lights alone: a ship
+    /// whose torpedoes are running keeps dark, Q16).</summary>
+    static (World W, AiSystem Ai) Night(double apartLonDeg = 0.012, bool fullMoon = false, bool torpedoes = true)
     {
         var w = new World(fullMoon ? WorldTime.FromUtc(1916, 9, 12, 23, 30) : WorldTime.FromUtc(1917, 4, 21, 0), 7, S);
         var ai = new AiSystem(w);
@@ -28,7 +29,11 @@ public class NightDoctrineTests(ITestOutputHelper output)
         w.Apply(ShipSystem.Spawn(cl, Lat, Lon, 0, 10, 1));
         w.Apply(ShipSystem.Spawn(dd, Lat, Lon + apartLonDeg, 180, 0, 2));
         foreach (int side in new[] { 1, 2 })
+        {
             w.Apply(ai.Orders.SideDoctrine(side, DoctrineField.StarShell, (double)StarShellUse.Never));
+            if (!torpedoes)
+                w.Apply(ai.Orders.SideDoctrine(side, DoctrineField.Torpedoes, (double)TorpedoUse.OnOrder));
+        }
         return (w, ai);
     }
 
@@ -41,7 +46,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
     {
         (double Course, CaptainReason Why, SearchlightOrder Lights) Play(WhenLit rule)
         {
-            var (w, ai) = Night(0.03, fullMoon: true);
+            var (w, ai) = Night(0.03, fullMoon: true, torpedoes: false);
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.WhenLit, (double)rule));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
             w.AdvanceTo(w.Time + 30_000);
@@ -67,7 +72,7 @@ public class NightDoctrineTests(ITestOutputHelper output)
     {
         SearchlightOrder Play(SearchlightUse use, Unknowns unknowns)
         {
-            var (w, ai) = Night(0.03, fullMoon: true);
+            var (w, ai) = Night(0.03, fullMoon: true, torpedoes: false);
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Searchlights, (double)use));
             w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Unknowns, (double)unknowns));
             w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Hold));
@@ -169,5 +174,36 @@ public class NightDoctrineTests(ITestOutputHelper output)
         Assert.Equal(S.DuressStraddle * S.DuressStraddleGreen, greenStraddled, 3);
         Assert.Equal(0, greenDark, 6);
         Assert.Equal(0, trainedLit, 6);
+    }
+
+    /// <summary>A ship whose torpedoes are on their way keeps dark (docs/battle/night.md Q16; the user: "no captain would
+    /// start firing when the torpedoes are still in the water"): the destroyer, the cruiser in sight and taken for a foe,
+    /// looses her torpedoes and holds her guns till they're due; with her torpedoes only on order, her guns open on her.
+    /// The cruiser holds her fire (an unknown to her, her searchlights never), so nobody fires on the destroyer.</summary>
+    [Fact]
+    public void A_ship_with_torpedoes_running_holds_her_guns_till_they_are_due()
+    {
+        (long Launched, long Gunned) Play(bool torpedoes)
+        {
+            var (w, ai) = Night(0.03, fullMoon: true, torpedoes: torpedoes);
+            w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Unknowns, (double)Unknowns.Hold));
+            w.Apply(ai.Orders.SideDoctrine(1, DoctrineField.Searchlights, (double)SearchlightUse.Never));
+            w.Apply(ai.Orders.SideDoctrine(2, DoctrineField.Unknowns, (double)Unknowns.Fire));
+            long launched = 0;
+            for (int s = 0; s < 120; s++)
+            {
+                w.AdvanceTo(w.Time + 1_000);
+                if (launched == 0 && w.Torpedoes.Fired > 0)
+                    launched = w.Time.Ms;
+            }
+            int slot = w.Ships.Store.SlotOf(2);
+            return (launched, w.Ships.Store.Combat.LastFired(slot));
+        }
+        var dark = Play(true);
+        var open = Play(false);
+        output.WriteLine($"torpedoes at will: launched at {dark.Launched}, guns last fired at {dark.Gunned}; on order: guns last fired at {open.Gunned}");
+        Assert.True(dark.Launched > 0, "her torpedoes went");
+        Assert.True(dark.Gunned == 0 || dark.Gunned < dark.Launched, "her guns held after her torpedoes went");
+        Assert.True(open.Gunned > 0, "with no torpedoes running her guns open");
     }
 }

@@ -154,7 +154,8 @@ public sealed partial class CaptainLayer
     void HeldLights(in AiContext ctx, ref Captain cap, int slot)
     {
         var own = ctx.Ships[slot];
-        candDark = doctrine.Of(own.Entity, own.Side, DoctrineField.Darkened) != 0 && InDark(ctx, own, out _);
+        bool dark = InDark(ctx, own, out _);
+        candDark = dark && (Sneaking(ctx, cap, own, slot) || doctrine.Of(own.Entity, own.Side, DoctrineField.Darkened) != 0);   // as Darken (Q16)
         NightLights(ctx, ref cap, own, slot);
     }
 

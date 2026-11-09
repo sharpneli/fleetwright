@@ -176,10 +176,18 @@ public sealed partial class CaptainLayer
 
     /// <summary>Darkened (doctrine's <see cref="DoctrineField.Darkened"/>, docs/battle/night.md Q9) in the dark: his guns
     /// hold until she or a ship of her squadron is fired upon (an enemy battery on her), then fight by his orders for
-    /// <see cref="SimSettings.DarkenedFreeS"/> after the last time; never while the player keeps her beams on.</summary>
+    /// <see cref="SimSettings.DarkenedFreeS"/> after the last time; never while the player keeps her beams on. A ship pressing a
+    /// torpedo attack in the dark, or with her torpedoes on their way there (<see cref="Captain.TorpedoDueMs"/>), runs dark
+    /// so whatever her doctrine (Q16; the user: "no captain would start firing when the torpedoes are still in the water
+    /// as that just alerts the enemy"): her guns, her lamps and her challenge kept dark till she's found. Not one whose
+    /// guns have fired within <see cref="SimSettings.DarkenedFreeS"/>: she has nothing left to hide.</summary>
     void Darken(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
-        candDark = doctrine.Of(own.Entity, own.Side, DoctrineField.Darkened) != 0 && InDark(ctx, own, out _);
+        bool dark = InDark(ctx, own, out _);
+        bool sneaking = dark && Sneaking(ctx, cap, own, slot);
+        if (cap.TorpedoDueMs != 0 && cap.TorpedoDueMs <= ctx.NowMs)
+            cap.TorpedoDueMs = 0;   // they've had their time
+        candDark = sneaking || doctrine.Of(own.Entity, own.Side, DoctrineField.Darkened) != 0 && dark;
         if (!candDark)
         {
             cap.Holding = false;
@@ -188,6 +196,16 @@ public sealed partial class CaptainLayer
         if (FiredUpon(ctx.Ships, own, slot))
             cap.FiredOnMs = ctx.NowMs;
         cap.Holding = !cap.BeamsHeld && (cap.FiredOnMs == 0 || ctx.NowMs - cap.FiredOnMs > ctx.Settings.DarkenedFreeS * 1000);
+    }
+
+    /// <summary>Whether he's creeping up unseen (docs/battle/night.md Q16): pressing a torpedo attack, or his torpedoes on
+    /// their way, and his guns not heard from lately (a ship already firing has nothing left to hide).</summary>
+    bool Sneaking(in AiContext ctx, in Captain cap, ShipState own, int slot)
+    {
+        if (!Pressing(cap) && !(cap.TorpedoDueMs > ctx.NowMs))
+            return false;
+        long fired = ctx.Ships.Combat.LastFired(slot);
+        return fired == 0 || ctx.NowMs - fired > ctx.Settings.DarkenedFreeS * 1000;
     }
 
     /// <summary>Her lights shown (a ship lit at anchor, docs/battle/night.md Q13): put out, darkened, once she or her squadron
@@ -575,7 +593,7 @@ public sealed partial class CaptainLayer
         }
         int ti = pic.IndexOf(target);
         var (tq, tv, _) = pic.EstimateAt(ti, now, s);
-        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
+        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out double runM))
             return;
         var aim = own.Position;
         var fwd = Earth.Forward(aim, toward);
@@ -586,7 +604,7 @@ public sealed partial class CaptainLayer
             return;
         }
         ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
-        cap.TorpedoMs = now;
+        (cap.TorpedoMs, cap.TorpedoDueMs) = (now, Math.Max(cap.TorpedoDueMs, now + (long)(runM / speed * 1000)));
     }
 
     // the coarse fire watch's ships (docs/battle/night.md Q11): those whose think found a target for their torpedoes but
@@ -690,7 +708,7 @@ public sealed partial class CaptainLayer
         var own = ctx.Ships[slot];
         var (range, speed) = AttackSetting(ctx, own.Handling.Class, own.Position);   // by day the long setting (BL5)
         var (tq, tv, _) = pic.EstimateAt(ti, ctx.NowMs, s);
-        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out _))
+        if (!TorpedoAim.Intercept(own.Position, tq, tv, speed, out double toward, out double runM))
             return false;
         if (tubesDeg != 0 && Math.Abs(Wrap180(Wrap180(toward - own.HeadingDeg) - tubesDeg)) > 90)
             return false;   // the turn not yet round far enough
@@ -700,7 +718,7 @@ public sealed partial class CaptainLayer
         if (lines.TorpedoFoul(ctx, own, aim, range, speed))
             return false;
         ctx.Issue(TorpedoSystem.Launch(entity, target, s.TorpedoSpread));
-        cap.TorpedoMs = ctx.NowMs;
+        (cap.TorpedoMs, cap.TorpedoDueMs) = (ctx.NowMs, Math.Max(cap.TorpedoDueMs, ctx.NowMs + (long)(runM / speed * 1000)));
         return true;
     }
 

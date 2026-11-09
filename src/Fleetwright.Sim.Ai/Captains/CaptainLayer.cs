@@ -124,6 +124,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool AttackOrdered;      // fighting by an Attack order: a torpedo craft presses it home whatever the matchup
         public bool Met;                // doctrine's Engage taken up in this encounter
         public long TorpedoMs;          // when he last fired torpedoes (0: never)
+        public long TorpedoDueMs;       // when his last spread is due at its target (its run at its speed; 0: none): in the dark he runs dark till then (docs/battle/night.md Q16)
         public bool TorpedoHeld;        // his flotilla attacking together: his torpedoes wait for its signal
         public int SignalTarget;        // his flotilla's signal standing: fire at her as his tubes bear (0: none)
         public long SignalMs;           // when it was made
@@ -761,6 +762,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 h.Add(c.StarHeld);
                 h.Add(c.FiredOnMs);
                 h.Add(c.Holding);
+            }
+            if (c.TorpedoDueMs != 0)
+            {
+                h.Add(0x7D0Eu);   // only then: worlds where nobody fires torpedoes hash as before
+                h.Add(c.TorpedoDueMs);
             }
             if (c.FleeMs != 0)
             {

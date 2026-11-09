@@ -1559,6 +1559,27 @@ ship trying a sneak attack during night won't allow even cigarettes on deck."
   one that is, its candela [EST] by research. And the funnels' glow: boats ordered to keep sparks down (Jutland) ran
   below forcing.
 
+### Q16 A torpedo attack runs dark (2026-11-09)
+
+The user (2026-11-09): "Being darkened and trying to be sneaky is crucial for torpedo attack. No captain would start
+firing when the torpedoes are still in the water as that just alerts the enemy, even though history had few examples of
+silly admirals derping this."
+
+- **Built.** In the dark a ship pressing a torpedo attack (`Pressing`: her own, or torpedoes held for her flotilla's
+  signal), or with her torpedoes on their way (`Captain.TorpedoDueMs`: the launch's run at its speed, set as she fires),
+  runs dark whatever her doctrine, as `Darkened` does (Q9): guns held until she or her squadron is fired upon (then
+  `DarkenedFreeS`), no searchlights, star shell or challenge lamp (`CaptainLayer.Sneaking`, `Darken`). Not one whose guns
+  have fired within `DarkenedFreeS`: she's been heard already. Port Arthur's night bench no longer needs the doctrine set
+  (its boats on the default): 8.5 torpedoes a run, Russia losing 1.5 ships, the boats 7.5 of 10.
+- **Tests:** `NightDoctrineTests.A_ship_with_torpedoes_running_holds_her_guns_till_they_are_due`; the lit and searchlight
+  tests keep their torpedoes on order (a test of lights alone).
+- **What moved** (`night-history --runs 20`, against Q15): the boats now close unseen. The 4th Flotilla's Germans see
+  and fire first at 0.4 km (1.7: the record's searchlights and guns at 1,500-2,000 yd came after Tipperary's challenge,
+  a flotilla meeting ships it took for friends, not one attacking), the British losing 3.0 boats of 10 (3.8); Dover's
+  first salvos at 0.6-0.8 km (0.3-0.5); Black Prince, Southampton, Tsushima within their noise.
+  The balance panel (against Q14b): every day scenario the same to the last digit; Dover's British losses 0.5 → 0.3,
+  their torpedo hits 0.0 → 0.3; Jutland (4 seeds) Britain 34.0 → 33.0, Germany 42.3 → 42.5; Tsushima unchanged.
+
 ## Decided (the user, 2026-10-29)
 
 1. **No friendly fire for now.** Own ships stay known (no CPU spent on seeing friends, as today). Captains may still be
