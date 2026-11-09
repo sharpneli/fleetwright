@@ -236,6 +236,18 @@ public static class SightModel
     public static double DazzleCdM2(double flashCd, double ageS, SimSettings s) =>
         flashCd <= 0 || ageS < 0 ? 0 : flashCd * s.SightDazzleCdM2PerCd * Math.Exp(-ageS / s.SightDazzleS);
 
+    /// <summary>What her own lights shown leave her eyes adapted to, cd/m² (docs/battle/night.md Q15): her lit decks and
+    /// upperworks in their view, <see cref="SimSettings.SightShownLightsLux"/> on them at <see cref="SimSettings.SightHullAlbedo"/>
+    /// (ρE/π, a matt surface), some 0.02 cd/m² against a moonless sky's 10⁻³: a lit ship's lookouts aren't dark adapted
+    /// (lookouts' practice: "never a white light", night-fighting.md §3.2; at Port Arthur the lit squadron didn't see the
+    /// boats before their torpedoes, launched at ~650 yd, §3.3). 0 when darkened.</summary>
+    public static double OwnLightsCdM2(bool shown, SimSettings s) =>
+        shown ? s.SightHullAlbedo * s.SightShownLightsLux / Math.PI : 0;
+
+    /// <summary>What an eye on a ship is adapted to, cd/m²: the brighter of her own guns' dazzle and her own lights shown.</summary>
+    public static double AdaptedCdM2(double flashCd, double flashAgeS, bool lightsShown, SimSettings s) =>
+        Math.Max(DazzleCdM2(flashCd, flashAgeS, s), OwnLightsCdM2(lightsShown, s));
+
     /// <summary>The eye's pupil, mm, adapted to a scene of this luminance (cd/m²): Moon and Spencer (1944),
     /// 4.9 − 3 tanh(0.4 log₁₀ L), about 3 mm by day and 7.5 in the dark.</summary>
     public static double PupilMm(double skyCdM2) => 4.9 - 3 * Math.Tanh(0.4 * Math.Log10(Math.Max(skyCdM2, 1e-9)));

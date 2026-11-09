@@ -413,6 +413,7 @@ public sealed class Sightings
             double brg = Earth.Bearing(os.Position, ts.Position);
             double rel = brg - os.HeadingDeg;
             double back = Earth.Bearing(ts.Position, os.Position), aspect = back - ts.HeadingDeg;
+            double ownAdapted = SightModel.OwnLightsCdM2(os.LightsShown, settings);
             var line = new SightLine(d, aspect, vis, lookNight.Toward(brg), Silhouette(brg), SpeedMs: speed,
                 LitLux: (litLux > 0 ? litLux * Lights.Facing(litFrom, back) : 0) + ownLux, AdaptedCdM2: Dazzled(store, os.Slot));
             if (lights.Flares > 0)
@@ -464,9 +465,10 @@ public sealed class Sightings
                 rate += SightModel.Rate(margin, SightModel.SearchFactor(eyes[e], settings), settings);
                 best = Math.Max(best, margin);
                 // dazzled by her own guns, her eyes take no fresh sighting but keep the one they hold: where they last saw her
-                keep = Math.Max(keep, inSight && line.AdaptedCdM2 > 0 && margin < 1
-                    ? Math.Max(SightModel.Margin(eyes[e].HeightM, mag, tc, line with { AdaptedCdM2 = 0 }, settings),
-                        SightModel.BowWaveMargin(eyes[e].HeightM, mag, tc, line with { AdaptedCdM2 = 0 }, settings))
+                // (her own lights shown aren't a moment's dazzle: their adaptation stays, Q15)
+                keep = Math.Max(keep, inSight && line.AdaptedCdM2 > ownAdapted && margin < 1
+                    ? Math.Max(SightModel.Margin(eyes[e].HeightM, mag, tc, line with { AdaptedCdM2 = ownAdapted }, settings),
+                        SightModel.BowWaveMargin(eyes[e].HeightM, mag, tc, line with { AdaptedCdM2 = ownAdapted }, settings))
                     : margin);
                 if (margin < 1)
                     continue;
@@ -612,12 +614,12 @@ public sealed class Sightings
         probes.Add(smokeLookProbe, p0);
     }
 
-    /// <summary>What her own guns' last flash leaves an observer's eyes adapted to now, cd/m² (docs/battle/night.md Q2,
-    /// <see cref="SightModel.DazzleCdM2"/>).</summary>
+    /// <summary>What an observer's eyes are adapted to now, cd/m²: her own guns' last flash (docs/battle/night.md Q2,
+    /// <see cref="SightModel.DazzleCdM2"/>) or her own lights shown (Q15, <see cref="SightModel.OwnLightsCdM2"/>).</summary>
     double Dazzled(ShipStore store, int observerSlot)
     {
         var (cd, ms) = store.Combat.LastFlash(observerSlot);
-        return cd > 0 ? SightModel.DazzleCdM2(cd, (lookNow - ms) / 1000.0, settings) : 0;
+        return SightModel.AdaptedCdM2(cd, (lookNow - ms) / 1000.0, store[observerSlot].LightsShown, settings);
     }
 
     /// <summary>Her funnels' glow while she forces coal fires (docs/battle/night.md Q2): <see cref="SimSettings.SightFunnelGlowCd"/>

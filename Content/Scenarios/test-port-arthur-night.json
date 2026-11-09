@@ -28,10 +28,10 @@
   "readiness": { "Japan": "closed up", "Russia": "unprepared" },
   "damage_control": { "Japan": "1905", "Russia": "1905" },
   "fire_discipline": { "Japan": "independent", "Russia": "independent" },
-  // the Russians: at anchor (Engage "carry on": they stay where they lie), lights sweeping for torpedo craft (1904's
+  // the boats run dark (Darkened: guns held until fired upon, no lights; docs/battle/night.md Q15); the Russians: at anchor (Engage "carry on": they stay where they lie), lights sweeping for torpedo craft (1904's
   // preset), and slow to believe a boat is the enemy's (their own pickets were out: challenge first); the boats press home
   "doctrine": {
-    "Japan": { "preset": "default", "Aggression": 1, "StrikeColours": 0.1, "Scuttle": 0.5 },
+    "Japan": { "preset": "default", "Aggression": 1, "StrikeColours": 0.1, "Scuttle": 0.5, "Darkened": 1 },
     "Russia": { "preset": "russia-1904", "Engage": "carry on", "NightAction": "accept", "Unknowns": "challenge", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" } },
   "crews": { "Japan": "trained", "Russia": "green" },
   "player": "Japan",

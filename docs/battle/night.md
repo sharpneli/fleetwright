@@ -1534,6 +1534,31 @@ at 540-900 m couldn't aim at a darkened ship lying still (under margin 1 to ~800
   layer laying on the flash itself (the reading's bearing is where she was); the matchup's night judgement still asks
   whether each side can make the other out (Q7), not whether it can lay on flashes.
 
+### Q15 A lit ship's lookouts, and running dark (2026-11-09)
+
+The user (2026-11-09): "check out the deck lights"; and "the realistic option of silent running so to speak. Naturally a
+ship trying a sneak attack during night won't allow even cigarettes on deck."
+
+- **Her own lights blind her lookouts (built).** A ship with her lights shown (Q13) has her eyes adapted to her lit decks
+  and upperworks in their view (`SightModel.OwnLightsCdM2`: `SightShownLightsLux` 0.2 lux at `SightHullAlbedo` 0.3, ρE/π,
+  some 0.02 cd/m² against a moonless sky's 8·10⁻⁴ [EST, from Q13's own numbers: no new knob]), her lookouts' and her fire
+  control's (`SightModel.AdaptedCdM2`, the brighter of that and her guns' dazzle). A darkened destroyer at 25 kn on Port
+  Arthur's night is made out to 850 m from a darkened ship (margin 1.0) and not from a lit one (0.07 there and half way;
+  `LightsShownTests`): a darkened bridge on a lit ship would see more, so the number is an estimate to revisit. The
+  sightings' keep through a moment's dazzle keeps her own lights' adaptation. The record: the lit squadron at Port Arthur
+  knew nothing before the torpedoes, launched at ~650 yd (night-fighting.md §3.3).
+- **Running dark is `Darkened`** (Q9: no searchlights, star shell or challenge lamp, guns held until fired upon). Traced on
+  Port Arthur's night bench: the lit squadron first knew of the boats when they opened fire with their guns at 2.2 km
+  (fire at will; Q13 then darkened the squadron, its lookouts dark adapted again). With the Japanese `Darkened` (the
+  bench's doctrine now) the squadron finds them at ~1.1 km in its sweeping searchlights, their funnels' glow at 27 kn a
+  margin of 0.5 to its lookouts before: 8.5 torpedoes a run, Russia losing 1.8 ships (0.8), the boats 7.5 of 10 (8.5); the
+  boats' losses now come from attacking again and again for four hours (the record's made one pass and went home).
+- **Not yet: what a darkened ship leaks.** Today every ship not shown is perfectly dark, so "darkened" is already the
+  strict silent running; a ship darkened in the ordinary way leaked (a cigarette, a scuttle, a door to a lit flat), and
+  only one under strict discipline didn't. Proposed: a leak lamp all round for a ship not `Darkened` at night, none for
+  one that is, its candela [EST] by research. And the funnels' glow: boats ordered to keep sparks down (Jutland) ran
+  below forcing.
+
 ## Decided (the user, 2026-10-29)
 
 1. **No friendly fire for now.** Own ships stay known (no CPU spent on seeing friends, as today). Captains may still be

@@ -1378,7 +1378,7 @@ public sealed class GunnerySystem : IWorldSystem
         var weather = world.Weather.At(at, world.Time);
         var (cd, ms) = world.Ships.Store.Combat.LastFlash(slot);
         return new Air(weather.VisibilityM, NightLight.At(at, world.Time, weather.Cloud, settings), low ? Light.SunBearingDeg(at, world.Time) : double.NaN,
-            smoked, world.Lights, SightModel.DazzleCdM2(cd, (world.Time.Ms - ms) / 1000.0, settings));
+            smoked, world.Lights, SightModel.AdaptedCdM2(cd, (world.Time.Ms - ms) / 1000.0, world.Ships.Store[slot].LightsShown, settings));
     }
 
     /// <summary>A battery's sensor's margin on the target (fire-control.md F5c: the sighting model's, through its optics'
