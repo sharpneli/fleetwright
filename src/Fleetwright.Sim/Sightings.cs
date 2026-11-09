@@ -623,7 +623,9 @@ public sealed class Sightings
     /// <summary>Her funnels' glow while she forces coal fires (docs/battle/night.md Q2): <see cref="SimSettings.SightFunnelGlowCd"/>
     /// a funnel at her rated power, as the smoke's forcing grows (<see cref="SmokeSources.Forcing"/>: the square of the load
     /// over <see cref="SimSettings.SmokeForcingFrom"/>), at her highest funnel's top; none on oil. cd, and the height, m.</summary>
-    (double Cd, double HeightM) FunnelGlow(ShipState ts)
+    (double Cd, double HeightM) FunnelGlow(ShipState ts) => FunnelGlow(ts, settings);
+
+    internal static (double Cd, double HeightM) FunnelGlow(ShipState ts, SimSettings settings)
     {
         var c = ts.Handling.Class;
         double cd = SmokeSources.FunnelGlowCd(c, ts.Speed, settings);

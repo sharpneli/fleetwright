@@ -1072,12 +1072,15 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>The contacts his navy holds in sight within his widest reach: range now and to come, bearing from ahead,
-    /// type's rank.</summary>
+    /// type's rank. With no foe in sight among them, those seen by their lights lately (docs/battle/night.md Q14b,
+    /// <see cref="Picture.Aimable"/>): a flash is a bearing to lay on, with no fall of shot to spot against her, so what
+    /// he can see comes first (by day an escort gone into smoke, her flashes still seen, isn't kept over the tramps in
+    /// sight: AimsTests).</summary>
     void Candidates(in AiContext ctx, Picture pic, ShipState own, double widest)
     {
         var p = own.Position;
         double heading = own.HeadingDeg;
-        var near = seen.Near(ctx.World, own.Side, p, widest);
+        var near = seen.Aimable(ctx.World, own.Side, p, widest);
         if (candEntity.Length < near.Length)
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
@@ -1088,12 +1091,17 @@ public sealed partial class CaptainLayer
         candCount = 0;
         candUnknown = 0;
         double unknownD = double.MaxValue;
+        for (int pass = 0; pass < 2 && (pass == 0 || candCount == 0); pass++)
         foreach (int i in near)
         {
+            if (pic[i].InSight != (pass == 0))
+                continue;   // in sight first; by her lights only with no foe in sight
             var q = seen.Position(own.Side, i);
             int e = pic[i].Entity;
             if (!Opens(ctx, own, pic[i], q))
             {
+                if (pass > 0)
+                    continue;
                 double d = (q - p).LengthSquared;
                 if (!pic[i].TakenForFriend(ctx.NowMs, ctx.Settings) && d < unknownD)
                     (candUnknown, unknownD, candUnknownM) = (e, d, Math.Sqrt(d));

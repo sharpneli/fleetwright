@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en" data-skin="night"><head><meta charset="utf-8">
+<title>Fleetwright battle map: the admiral's plot (mockup)</title>
+<link rel="stylesheet" href="fresh.css">
+<style>
+:root{--sea1:#1F4E72;--sea2:#16395A}
+[data-skin="night"]{--sea1:#0E2030;--sea2:#07121C}
+.screen{display:block;background:radial-gradient(1500px 900px at 50% 40%,var(--sea1),var(--sea2))}
+#sea{position:absolute;inset:0}
+.float{position:absolute;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
+.top{position:absolute;left:0;right:0;top:0;background:var(--desk);height:30px}
+.clock{font:500 15px "Besley";color:var(--ink)}
+[data-skin="day"] .clock{color:var(--paper)}
+.top .seg .btn{height:20px;background:transparent;color:var(--desk-ink);border-color:#4a4f4c;padding:0 7px}
+.top .seg .btn.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+[data-skin="day"] .top .seg .btn.on{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.bottom{position:absolute;left:0;right:0;bottom:0;background:var(--desk)}
+
+/* marks on the sea */
+.lab{position:absolute;color:var(--friend);font-size:13px;text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.6);white-space:nowrap;line-height:1.2}
+.lab b{font-weight:600}.lab small{display:block;font-size:12px;opacity:.85}
+.lab.en{color:#FF9A8B}.lab .why{color:#F0BE62;opacity:1}.lab .bad{color:#FF9A8B;opacity:1}
+.lab.ghost{color:#F0BE62;font-size:12px}.lab.ghost.q{color:var(--friend);opacity:.75}.lab.ghost.e{color:#FF9A8B;opacity:.8}
+.lab.sel b{background:var(--friend);color:#10161a;padding:0 4px;text-shadow:none}
+.lab.fight{color:var(--friend);text-align:center;font-size:12.5px}
+.edge{position:absolute;color:var(--friend);opacity:.75;font-size:12px;text-shadow:0 1px 2px #000;white-space:nowrap}
+
+/* the action: the rail by engagement */
+.rail{left:8px;top:38px;width:300px}
+.eng{padding:6px 10px 7px;border-bottom:1px solid var(--rule);cursor:pointer}
+.eng:hover{background:var(--paper2)}
+.eng.sel{background:var(--ink);color:var(--paper)}
+.eng .l1{display:flex;gap:8px;align-items:baseline}.eng .l1 b{font-weight:600;flex:1}
+.eng .l2{color:var(--ink2);font-size:12.5px;margin-top:1px;display:flex;gap:8px}
+.eng.sel .l2{color:color-mix(in srgb,var(--paper) 68%,var(--ink))}
+.eng .vs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:5px;font-size:12.5px}
+.pips{display:flex;gap:2px}.pips.r{justify-content:flex-end}
+.pips i{width:9px;height:9px;background:var(--ink);display:block}
+.pips i.low{background:var(--amber)}.pips i.down{background:var(--hostile)}.pips i.e{background:none;border:1.5px solid var(--hostile);transform:rotate(45deg) scale(.82)}
+.pips i.e.burn{background:var(--hostile)}
+.eng.sel .pips i{background:var(--paper)}
+.ex{display:grid;grid-template-columns:54px 1fr 54px;gap:6px;align-items:center;font-size:12px;color:var(--ink2);margin-top:4px}
+.ex .bar2{height:6px;display:flex;background:var(--paper2)}.ex .bar2 i{display:block;height:100%}
+.railh{padding:5px 10px 3px;font-size:11.5px;color:var(--ink2);border-bottom:1px solid var(--ink3);background:var(--paper2)}
+
+/* the order: one sentence */
+.slip{left:316px;right:8px;bottom:100px}
+.slip .who{display:flex;align-items:center;gap:6px;padding:6px 12px 0;color:var(--ink2)}
+.slip .who .lv{padding:1px 6px;border:1px solid transparent;border-radius:2px;cursor:pointer}
+.slip .who .lv.on{color:var(--ink);font:500 15px "Besley";border:0;padding:0 4px}
+.slip .who .fit{margin-left:auto;display:flex;gap:14px;align-items:center;color:var(--ink)}
+.slip .who .fit span span{color:var(--ink2);margin-right:4px}
+.sent{display:flex;align-items:center;gap:7px;padding:6px 12px 8px;font-size:15px;flex-wrap:nowrap;white-space:nowrap}
+.sent .now{color:var(--ink2)}
+.word{border-bottom:1.5px dashed var(--ink3);padding:0 2px 1px;cursor:pointer}
+.word:hover{background:var(--paper2)}
+.sent.new .word{border-bottom-color:var(--amber);color:var(--amber)}
+.sent.new .verb{font-weight:700;color:var(--amber)}
+.sent .then{color:var(--ink2);font-size:13.5px;margin-left:8px}
+.sent .then b{color:var(--ink);font-weight:600}
+.sent .go{margin-left:auto;display:flex;gap:6px}
+.pal{display:flex;gap:16px;padding:6px 12px 8px;border-top:1px solid var(--rule);white-space:nowrap}
+.pal .g{display:flex;gap:3px;align-items:center}
+.pal .g>span:first-child{color:var(--ink2);font-size:12px;margin-right:4px}
+.pal .btn{height:22px;padding:0 6px;gap:4px;font-size:13px}
+.pal .btn.cur{background:var(--amber-wash);border-color:var(--amber);color:var(--amber)}
+.tape{height:30px;background:var(--well);border:1px solid var(--ink3);position:relative;overflow:hidden;width:354px}
+.tele{display:flex}.tele .btn{border-radius:0;margin-left:-1px;height:22px;padding:0 9px}
+.conn{display:flex;gap:18px;align-items:center;padding:4px 12px 10px}
+
+/* looking ahead */
+.ahead{left:316px;right:8px;bottom:32px;height:62px;background:var(--paper)}
+.ahead svg{position:absolute;inset:0}
+.ahead .t{position:absolute;top:3px;font-size:11.5px;color:var(--ink2);transform:translateX(-50%);white-space:nowrap}
+.ahead .ev{position:absolute;bottom:4px;font-size:12px;white-space:nowrap;padding-left:5px;border-left:1.5px solid currentColor;line-height:14px}
+.ahead .ev.pre{color:var(--amber)}.ahead .ev.h{color:var(--hostile)}
+.ahead .hd{position:absolute;top:0;bottom:0;width:2px;background:var(--amber)}
+.ahead .hd span{position:absolute;top:2px;right:5px;background:var(--amber);color:#16130a;font-size:12px;font-weight:600;padding:0 5px;white-space:nowrap}
+
+/* states and notes */
+body[data-s="1"] [data-in]:not([data-in*="1"]),body[data-s="2"] [data-in]:not([data-in*="2"]),body[data-s="3"] [data-in]:not([data-in*="3"]){display:none!important}
+.note{position:absolute;display:none;max-width:250px;background:#F6E9A8;color:#1b1a10;font-size:12.5px;line-height:1.3;padding:5px 8px 6px 28px;box-shadow:0 2px 8px rgba(0,0,0,.5);z-index:9}
+.note b{position:absolute;left:6px;top:5px;width:17px;height:17px;border-radius:50%;background:#1b1a10;color:#F6E9A8;text-align:center;font-size:11.5px;line-height:17px}
+body.notes .note{display:block}
+</style></head>
+<body data-s="1"><div class="screen">
+<div id="sea"></div>
+
+<div class="top deskbar">
+  <span class="clock">Wednesday 31 May 1916, 16:02:10</span>
+  <span class="seg"><span class="btn">Pause <kbd>Space</kbd></span></span>
+  <span class="seg"><span class="btn">1</span><span class="btn on">10</span><span class="btn">60</span><span class="btn">240</span><span class="btn">3,000</span></span>
+  <span>In action 14 min</span><span>Hits: 4 scored, 7 taken</span><span class="hostile">Indefatigable going down</span>
+  <span class="sp"></span>
+  <span>Jutland, the run to the south. You are Beatty</span>
+  <span class="m">States <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span class="m">Notes <kbd>0</kbd></span><span class="m" onclick="toggleSkin()">Skin <kbd>N</kbd></span>
+</div>
+
+<!-- 1. The rail lists fights, not ships -->
+<div class="float sheet rail">
+  <h2>The action <span class="r">2 fights</span></h2>
+  <div class="eng">
+    <div class="l1"><b>The battlecruisers</b><span class="amber">losing the exchange</span></div>
+    <div class="l2"><span>1st, 2nd BCS against 1st Scouting Group</span></div>
+    <div class="vs"><span class="pips"><i class="low"></i><i></i><i></i><i></i><i></i><i class="down"></i></span><span>14.2 km</span><span class="pips r"><i class="e"></i><i class="e"></i><i class="e burn"></i><i class="e"></i><i class="e"></i></span></div>
+    <div class="ex"><span>guns 40</span><span class="bar2"><i style="width:48%;background:var(--ink)"></i><i style="width:52%;background:var(--hostile)"></i></span><span class="n hostile">44</span></div>
+    <div class="ex"><span>hits 4</span><span class="bar2"><i style="width:36%;background:var(--ink)"></i><i style="width:64%;background:var(--hostile)"></i></span><span class="n hostile">7</span></div>
+    <div class="l2"><span>closing 300 m a minute; their light is better</span></div>
+  </div>
+  <div class="eng">
+    <div class="l1"><b>13th Flotilla's attack</b><span>fires 16:05</span></div>
+    <div class="l2"><span>8 boats running in on 1st Scouting Group</span></div>
+    <div class="vs"><span class="pips"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>7.1 km</span><span class="pips r"><i class="e" style="border-style:dashed"></i><i class="e" style="border-style:dashed"></i><i class="e" style="border-style:dashed"></i></span></div>
+    <div class="l2"><span>met by torpedo boats, about 11, not made out</span></div>
+  </div>
+  <div class="railh">Not in action</div>
+  <div class="eng sel"><div class="l1"><b>5th Battle Squadron</b><span>19.6 km off</span></div>
+    <div class="l2"><span>follows 1st BCS, 8 km astern</span><span class="pips" style="margin-left:auto"><i></i><i></i><i></i><i></i></span></div></div>
+  <div class="eng"><div class="l1"><b>2nd Light Cruiser Squadron</b><span class="dim">AI</span></div>
+    <div class="l2"><span>scouts 12 km ahead; smoke reported</span><span class="pips" style="margin-left:auto"><i></i><i></i><i></i><i></i></span></div></div>
+  <div class="eng"><div class="l1"><b>1st, 3rd Light Cruiser Squadrons</b><span class="dim">AI</span></div>
+    <div class="l2"><span>screen, on the disengaged side</span><span class="pips" style="margin-left:auto"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div></div>
+  <div class="eng"><div class="l1"><b>9th, 10th Flotillas</b><span class="dim">AI</span></div>
+    <div class="l2"><span>screen 1st BCS</span><span class="pips" style="margin-left:auto"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div></div>
+  <div class="railh">The enemy, not engaged</div>
+  <div class="eng"><div class="l1"><b class="hostile">2nd Scouting Group</b><span>16.8 km</span></div>
+    <div class="l2"><span>4 light cruisers, ahead of his line</span></div></div>
+  <div class="railh">Log <kbd style="float:right">J</kbd></div>
+  <div style="padding:4px 10px 7px;font-size:12.5px;line-height:1.45"><span class="dim">16:02</span> Indefatigable out of the line, sinking<br><span class="dim">16:00</span> Lion: Q turret out, magazine flooded<br><span class="dim">15:59</span> 2nd LCS: smoke bearing 140°, 22 km</div>
+</div>
+
+<!-- 2. The order: one sentence, its words the controls -->
+<div class="float sheet slip">
+  <div class="who">
+    <span class="lv">Battle Cruiser Fleet</span>›<span class="lv on" data-in="12">5th Battle Squadron</span><span class="lv" data-in="3">5th Battle Squadron</span><span data-in="12">›</span><span class="lv" data-in="12">Barham</span><span data-in="3">›</span><span class="lv on" data-in="3">Barham</span>
+    <span class="dim" style="margin-left:6px"><kbd>Q</kbd> up, <kbd>Shift+Q</kbd> down</span>
+    <span class="fit"><span><span>ships</span>4 of 4</span><span><span>speed</span>24 of 24 kn</span><span><span>guns</span>32 × 381 mm</span><span><span>afloat</span>sound</span><span><span>shell</span>98 %</span><span class="btn" style="height:20px">Card <kbd>V</kbd></span></span>
+  </div>
+  <!-- state 1: composing -->
+  <div class="sent new" data-in="1"><span class="now">Follows 1st BCS. New order:</span>
+    <span class="verb">Engage</span><span class="word">the rear of 1st Scouting Group</span><span class="word">closing to 14 km</span><span class="word">at 24 kn</span>
+    <span class="then">At 14 km by <b>16:10</b>, in range from <b>16:06</b>. As now: 17 km at 16:10.</span>
+    <span class="go"><span class="btn">Cancel <kbd>Esc</kbd></span><span class="btn primary">Send <kbd>Enter</kbd></span></span></div>
+  <div class="pal" data-in="1">
+    <div class="g"><span>The enemy</span><span class="btn">Fight <kbd>B</kbd></span><span class="btn cur">Engage <kbd>E</kbd></span><span class="btn">Intercept</span><span class="btn">Shadow</span><span class="btn off" title="no torpedo craft">Attack</span><span class="btn">Run from</span></div>
+    <div class="g"><span>One of ours</span><span class="btn">Follow <kbd>F</kbd></span><span class="btn">Cover</span><span class="btn">Join</span><span class="btn">Station</span><span class="btn off">Screen</span></div>
+    <div class="g"><span>A place</span><span class="btn">Go to</span><span class="btn">Patrol</span><span class="btn">Search</span><span class="btn">Withdraw</span></div>
+    <div class="g"><span>Manoeuvre</span><span class="btn">Turn <kbd>U</kbd></span><span class="btn">Deploy <kbd>N</kbd></span><span class="btn">Form <kbd>Z</kbd></span></div>
+    <div class="g"><span>Or</span><span class="btn">Hold <kbd>H</kbd></span><span class="btn">Conn <kbd>C</kbd></span><span class="btn">To the AI <kbd>I</kbd></span></div>
+  </div>
+  <!-- state 2: watching -->
+  <div class="sent" data-in="2"><span class="verb" style="font-weight:700">Follows</span><span class="word">1st Battle Cruiser Squadron</span><span class="word">8 km astern</span><span class="word">at 24 kn</span>
+    <span class="then">Given by the scenario. Click a word to change it; right-click the sea or a ship for a new order; <kbd>T</kbd> lists every order.</span></div>
+  <!-- state 3: on the conn -->
+  <div class="sent" data-in="3"><span class="verb" style="font-weight:700">On the conn.</span><span class="now">Nothing but your helm moves Barham; her squadron follows her.</span>
+    <span class="go"><span class="btn">Hand her back <kbd>C</kbd></span></span></div>
+  <div class="conn" data-in="3"><div class="tape" id="tape"></div>
+    <span class="btn" style="height:22px">Port 10 <kbd>←</kbd></span><span class="btn" style="height:22px">Stbd 10 <kbd>→</kbd></span>
+    <span class="tele"><span class="btn">Astern</span><span class="btn">Stop</span><span class="btn">Slow</span><span class="btn">Half</span><span class="btn on">Full, 24 kn</span><span class="btn">Flank</span></span>
+    <span class="btn" style="height:22px">Hard over <kbd>O</kbd></span><span class="btn" style="height:22px">Make smoke <kbd>M</kbd></span></div>
+</div>
+
+<!-- 3. Looking ahead -->
+<div class="float ahead" id="ahead"></div>
+
+<div class="bottom deskbar" style="height:24px;font-size:12.5px">
+  <div class="keys" data-in="1"><span class="amber">Engage: right-click an enemy, drag to set the range</span><span><kbd>Enter</kbd>send</span><span><kbd>Esc</kbd>cancel</span><span><kbd>Ctrl</kbd>and the wheel looks ahead</span></div>
+  <div class="keys" data-in="2"><span>Right-click: the sea steers, an enemy engages, one of ours follows</span><span><kbd>T</kbd>every order</span><span><kbd>Ctrl</kbd>and the wheel looks ahead</span><span><kbd>Tab</kbd>held: every unit's order</span></div>
+  <div class="keys" data-in="3"><span><kbd>←</kbd><kbd>→</kbd>ten degrees, <kbd>Shift</kbd> ninety</span><span><kbd>↑</kbd><kbd>↓</kbd>telegraph</span><span><kbd>C</kbd>hand her back</span></div>
+  <span class="sp"></span><span>5 km <svg width="180" height="8" style="vertical-align:-1px"><path d="M.5,0V8M.5,4H179.5M179.5,0V8" stroke="currentColor" fill="none"/></svg></span><span>56°50′N 5°40′E</span>
+</div>
+
+<!-- notes -->
+<div class="note" style="left:320px;top:44px"><b>1</b>The rail lists fights, not a tree of ships: who against whom, the range, guns and hits each way, and how it goes. Units out of action follow with their order in words. A click selects; the camera never moves by itself.</div>
+<div class="note" style="left:960px;top:150px"><b>2</b>Every unit carries its order and the reason for what it does on its label. A fight is marked between the two lines.</div>
+<div class="note" data-in="1" style="left:1250px;top:610px"><b>3</b>Looking ahead: the plot run forward on present courses and orders. Your order in amber, the rest in outline, the enemy as a fan of three courses, since he may turn.</div>
+<div class="note" style="left:330px;top:770px"><b>4</b>One sentence replaces the five panes. Its words are the controls: click one, or right-drag on the sea. The verbs are listed once, by what they are about.</div>
+<div class="note" style="left:1560px;top:790px"><b>5</b>The squadron's fitness in one line. The full card opens on V; it no longer opens on every click.</div>
+<div class="note" style="left:1190px;top:740px"><b>6</b>The ribbon is the next twenty minutes. Drag it, or hold Ctrl and turn the wheel; let go and the plot is now again.</div>
+<div class="note" data-in="3" style="left:330px;top:680px"><b>7</b>The helm and telegraph appear only on the conn, the one case where you steer by hand.</div>
+</div>
+
+<script src="ship.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const K = 36, CREAM = '#F1ECDD', RED = '#FF8A7A', AMB = '#F0BE62';
+const dir = h => [Math.sin(h * Math.PI / 180), -Math.cos(h * Math.PI / 180)];
+// a line of ships: guide at x,y on course h, n ships astern sp px apart
+function line(x, y, h, n, o = {}) {
+  const [dx, dy] = dir(h), sp = o.sp ?? 18, len = o.len ?? 15, c = o.c ?? CREAM; let q = '';
+  for (let i = 0; i < n; i++) { const px = x - dx * sp * i, py = y - dy * sp * i, t = `translate(${px.toFixed(1)},${py.toFixed(1)}) rotate(${h - 90})`;
+    if (o.ghost) q += `<path transform="${t}" d="M${len / 2},0 L${-len / 2},${-len * .16} L${-len / 2},${len * .16}Z" fill="none" stroke="${c}" stroke-width="1.2" stroke-dasharray="${o.dash ?? '0'}" opacity="${o.op ?? .9}"/>`;
+    else if (o.enemy) q += `<path transform="translate(${px.toFixed(1)},${py.toFixed(1)}) rotate(${h - 90})" d="M${len / 2 + 1},0 L0,${-len * .3} L${-len / 2 - 1},0 L0,${len * .3}Z" fill="${o.fill ?? 'none'}" stroke="${c}" stroke-width="1.3" ${o.dashed ? 'stroke-dasharray="2 2"' : ''}/>`;
+    else q += `<path transform="${t}" d="M${len / 2},0 C${len * .2},${-len * .19} ${-len * .4},${-len * .19} ${-len / 2},${-len * .12} L${-len / 2},${len * .12} C${-len * .4},${len * .19} ${len * .2},${len * .19} ${len / 2},0Z" fill="${o.state?.[i] ?? c}"/>`; }
+  return q;
+}
+const lead = (x, y, h, px, c, dash) => { const [dx, dy] = dir(h); return `<line x1="${x}" y1="${y}" x2="${x + dx * px}" y2="${y + dy * px}" stroke="${c}" stroke-width="1" ${dash ? `stroke-dasharray="${dash}"` : ''} opacity=".8"/>`; };
+
+(function () {
+  let g = `<defs><filter id="w" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .05" numOctaves="3" seed="4"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  .5 0 0 0 -.18"/></filter>
+    <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L8,4L0,8Z" fill="${AMB}"/></marker>
+    <marker id="ac" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L8,4L0,8Z" fill="${CREAM}"/></marker></defs>
+    <rect width="1920" height="1080" filter="url(#w)" opacity=".22"/>`;
+  for (const x of [520, 1240]) g += `<line x1="${x}" x2="${x}" y1="30" y2="1056" stroke="#fff" stroke-opacity=".06"/>`;
+  g += `<line x1="0" x2="1920" y1="450" y2="450" stroke="#fff" stroke-opacity=".06"/>`;
+  let pre = '', conn = '';
+
+  // ours, now. Velocity leaders run six minutes ahead.
+  g += lead(800, 330, 165, 60, CREAM) + line(800, 330, 165, 4, { state: [AMB] }) + line(800 - 4.66 * 5, 330 - 17.4 * 5, 165, 1) +
+       `<path transform="translate(${800 - 4.66 * 6 - 14},${330 - 17.4 * 6 - 4}) rotate(40)" d="M7,0L-6,-2.4L-6,2.4Z" fill="#E0564A"/>`;
+  g += lead(700, 90, 163, 58, CREAM) + line(700, 90, 163, 4);
+  // 5th BS selected: a bracket along its line
+  g += `<circle cx="700" cy="90" r="12" fill="none" stroke="${CREAM}" stroke-width="1.5"/>`;
+  g += line(912, 747, 172, 4, { sp: 14, len: 9 }) + lead(912, 747, 172, 50, CREAM);
+  g += line(690, 380, 165, 4, { sp: 13, len: 8 }) + line(672, 300, 165, 4, { sp: 13, len: 8 });       // light cruisers, disengaged side
+  for (const [x, y] of [[830, 392], [846, 372], [780, 400]]) g += line(x, y, 165, 3, { sp: 9, len: 6 }); // screening flotillas
+  // 13th Flotilla: its attack as an object: the run in, the firing point, the turn away
+  g += line(905, 398, 110, 8, { sp: 9, len: 6 });
+  g += `<path d="M905,398 C980,430 1050,470 1118,512" fill="none" stroke="${CREAM}" stroke-width="1.2" marker-end="url(#ac)"/>
+        <circle cx="1124" cy="516" r="6" fill="none" stroke="${CREAM}" stroke-width="1.2"/><circle cx="1124" cy="516" r="2" fill="${CREAM}"/>
+        <path d="M1124,516 L1262,498 M1124,516 L1268,530 M1124,516 L1256,470" stroke="${CREAM}" stroke-width=".8" stroke-dasharray="1 4"/>
+        <path d="M1128,524 C1120,580 1040,590 990,560" fill="none" stroke="${CREAM}" stroke-width="1" stroke-dasharray="5 4" marker-end="url(#ac)"/>`;
+  // the enemy, now
+  g += lead(1311, 350, 190, 60, RED) + line(1311, 350, 190, 5, { enemy: 1, c: RED }) + `<path transform="translate(${1311 + 3.1 * 2},${350 - 17.7 * 2}) rotate(100)" d="M7.5,0L0,-3.9L-7.5,0L0,3.9Z" fill="${RED}"/>`;
+  g += line(1450, 430, 188, 4, { enemy: 1, c: RED, sp: 14, len: 9 });
+  g += line(1392, 300, 190, 4, { enemy: 1, c: RED, sp: 11, len: 7, dashed: 1 }) + line(1410, 330, 190, 3, { enemy: 1, c: RED, sp: 11, len: 7, dashed: 1 });
+  // the fight, marked between the lines
+  g += `<path d="M826,333 L1290,349" stroke="${CREAM}" stroke-width=".8" stroke-dasharray="1 5" opacity=".9"/>`;
+
+  // state 1: the order being composed, and the plot eight minutes on
+  pre += `<path d="M700,90 C760,120 820,170 868,209" fill="none" stroke="${AMB}" stroke-width="1.6" marker-end="url(#ah)"/>`;
+  pre += line(875, 212, 125, 4, { ghost: 1, c: AMB, dash: '0', op: 1 });
+  pre += `<path d="M880,216 L1280,496" stroke="${AMB}" stroke-width="1" stroke-dasharray="6 5"/><circle cx="1285" cy="498" r="13" fill="none" stroke="${AMB}" stroke-width="1.4"/>`;
+  pre += lead(800 + 15.6, 330 + 58, 165, 162, CREAM, '1 4') + line(858, 544, 165, 5, { ghost: 1, c: CREAM, op: .7 });
+  pre += `<path d="M912,797 L940,996" stroke="${CREAM}" stroke-width="1" stroke-dasharray="1 4" opacity=".7"/>`;
+  // the enemy ahead: a fan, since he may turn
+  for (const h of [176, 190, 204]) { const [dx, dy] = dir(h); pre += `<line x1="${1311 + dir(190)[0] * 60}" y1="${350 + dir(190)[1] * 60}" x2="${1311 + dx * 222}" y2="${350 + dy * 222}" stroke="${RED}" stroke-width="1" stroke-dasharray="1 4" opacity="${h === 190 ? .9 : .5}"/>`;
+    pre += line(1311 + dx * 222, 350 + dy * 222, h, h === 190 ? 5 : 1, { ghost: 1, c: RED, op: h === 190 ? .85 : .45 }); }
+  pre += `<path d="M872,548 L1262,567" stroke="${CREAM}" stroke-width=".8" stroke-dasharray="1 5" opacity=".7"/>`;
+  // state 3: the conn's steer line
+  conn += `<path d="M700,90 L742,318" stroke="${AMB}" stroke-width="1.4" stroke-dasharray="6 5" marker-end="url(#ah)"/>`;
+
+  const L = (x, y, html, cls = '', st = '') => `<div class="lab ${cls}" style="left:${x}px;top:${y}px;${st}">${html}</div>`;
+  let labs = '';
+  labs += L(574, 316, '<b>1st Battle Cruiser Squadron</b><small>fights 1st Scouting Group</small><small class="why">will turn away 2 points at 16:04: outgunned</small>', '', 'text-align:right;width:190px');
+  labs += L(560, 226, '<b>2nd BCS</b><small class="bad">Indefatigable going down</small>', '', 'text-align:right;width:190px');
+  labs += L(726, 66, '<b>5th Battle Squadron</b><small>follows 1st BCS, 8 km astern</small>', 'sel');
+  labs += L(916, 372, '<b>13th Flotilla</b><small>attacks 1st Scouting Group, running in</small>');
+  labs += L(1136, 520, '<small>fires 16:05, then away</small>');
+  labs += L(930, 736, '<b>2nd Light Cruiser Squadron</b><small>scouts 12 km ahead</small>');
+  labs += L(520, 372, '<small>1st, 3rd LCS: screen</small>', '', 'text-align:right;width:140px');
+  labs += L(1336, 322, '<b>1st Scouting Group</b><small>5 heavy ships, Seydlitz burning</small><small>170°, 25 kn, as estimated</small>', 'en');
+  labs += L(1474, 416, '<b>2nd Scouting Group</b><small>4 light cruisers</small>', 'en');
+  labs += L(1424, 280, '<small>torpedo boats, about 11, not made out</small>', 'en');
+  labs += L(960, 314, '14.2 km, closing 300 m a minute<br>hits 4 for 7', 'fight', 'width:220px');
+  // looking ahead
+  labs += `<div data-in="1">` + L(892, 186, '<b>16:10</b> 5th Battle Squadron, as ordered', 'ghost') + L(1176, 392, '14 km', 'ghost') +
+          L(676, 548, '<b>16:10</b> 1st BCS, if it holds on', 'ghost q', 'text-align:right;width:164px') + L(1296, 566, '<b>16:10</b> on 190°', 'ghost e') + L(1352, 540, 'if he turns away', 'ghost e') + L(1128, 566, 'if he turns in', 'ghost e') +
+          L(1010, 562, '11.5 km', 'ghost q') + `</div>`;
+  labs += `<div data-in="3">` + L(722, 168, 'steering 170°, 24 kn', 'ghost') + `</div>`;
+  labs += `<div class="edge" style="left:316px;top:44px">Grand Fleet, 98 km to the north-north-west</div><div class="edge" style="left:1010px;top:826px">smoke reported 140°, 22 km from 2nd LCS, off the plot</div>`;
+  $('#sea').innerHTML = `<svg width="1920" height="1080">${g}<g data-in="1">${pre}</g><g data-in="3">${conn}</g></svg>${labs}`;
+})();
+
+// the ribbon: the next twenty minutes
+(function () {
+  const W = 1596, x = m => 70 + m * (W - 110) / 20; let h = '', s = '';
+  for (let m = 0; m <= 20; m++) { s += `<line x1="${x(m)}" x2="${x(m)}" y1="${m % 5 ? 17 : 14}" y2="23" stroke="var(--ink${m % 5 ? 3 : 2})"/>`;
+    if (m % 5 === 0 && m) h += `<span class="t" style="left:${x(m)}px">16:${String(2 + m).padStart(2, '0')}</span>`; }
+  s += `<line x1="${x(0)}" x2="${x(20)}" y1="23" y2="23" stroke="var(--ink3)"/>`;
+  h += `<span class="t" style="left:36px;color:var(--ink);font-weight:600;top:14px">Now 16:02</span>`;
+  const ev = (m, t, c = '', row = 0) => `<span class="ev ${c}" style="left:${x(m)}px;bottom:${row ? 20 : 4}px">${t}</span>`;
+  h += ev(1.9, '1st BCS turns away', 'amber', 1) + ev(3, '13th Flotilla fires') + `<span data-in="1">${ev(4.2, '5th BS in range', 'pre', 1)}</span><span data-in="23">${ev(8, '5th BS in range')}</span>` +
+       ev(11.2, 'his torpedo boats can reach 1st BCS', 'h') + ev(15.6, 'range under 10 km');
+  
+  h += `<div class="hd" data-in="1" style="left:${x(8)}px"><span>16:10, eight minutes ahead</span></div><div class="hd" data-in="23" style="left:${x(0)}px;background:var(--ink)"></div>`;
+  $('#ahead').innerHTML = `<svg width="${W}" height="62">${s}<rect data-in="1" x="${x(0)}" y="14" width="${x(8) - x(0)}" height="9" fill="var(--amber)" opacity=".25"/></svg>` + h;
+})();
+
+// the conn's compass tape
+(function () {
+  const W = 354, c = W / 2, k = 5.6, head = 163, ord = 170; let g = '';
+  for (let d = head - 34; d <= head + 34; d++) { const x = c + (d - head) * k;
+    if (d % 10 === 0) g += `<line x1="${x}" x2="${x}" y1="17" y2="28" stroke="var(--ink)"/><text x="${x}" y="13" font-size="12" text-anchor="middle" fill="var(--ink)">${String(d).padStart(3, '0')}</text>`;
+    else if (d % 5 === 0) g += `<line x1="${x}" x2="${x}" y1="21" y2="28" stroke="var(--ink2)"/>`; else g += `<line x1="${x}" x2="${x}" y1="24" y2="28" stroke="var(--ink3)" stroke-width=".8"/>`; }
+  const ox = c + (ord - head) * k;
+  g += `<rect x="${c}" y="15" width="${ox - c}" height="13" fill="var(--ink)" opacity=".14"/><path d="M${ox - 5},14 h10 l-5,8z" fill="var(--ink)"/><line x1="${c}" x2="${c}" y1="0" y2="30" stroke="var(--hostile)" stroke-width="1.5"/>`;
+  $('#tape').innerHTML = `<svg width="${W}" height="28">${g}</svg>`;
+})();
+
+addEventListener('keydown', e => { if ('123'.includes(e.key)) document.body.dataset.s = e.key; if (e.key === '0') document.body.classList.toggle('notes'); });
+const q = new URLSearchParams(location.search); if (q.get('s')) document.body.dataset.s = q.get('s'); if (q.get('notes')) document.body.classList.add('notes');
+if (q.get('skin')) document.documentElement.dataset.skin = q.get('skin');
+</script>
+</body></html>

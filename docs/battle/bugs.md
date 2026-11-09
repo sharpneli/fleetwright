@@ -18,6 +18,12 @@ Hunted 2026-10-24: every flaky entry below is closed. The check was seven full D
 together, plus one full Debug run of `Fleetwright.Sim.Tests`. Runs 1-4 had one failure in all, the achieved speed (below);
 runs 5-7, after its fix, and the Debug run had none.
 
+- [ ] **`NearMissTests.Salvos_short_of_a_ship_burst_beside_her_the_same_each_run` hashed two runs differently** (2026-11-09,
+  once in four full DevRelease runs of `Fleetwright.Sim.Tests`; passes alone, and the full suite twice after). The two
+  ships share a side and the salvos are a dev `ShellSystem.FireAt`, so neither the AI's target choice nor gunnery runs:
+  something in the shell, near-miss or damage path that differs between two worlds under load (a static, or a parallel
+  reduction's order). Replays must be exact: chase with the suite under load beside it, as the hang above was.
+
 - [x] **The Sim suite hung at 0% CPU now and then** (2026-10-28, twice, beside a CLI build and the history benches).
   Fixed 2026-10-28, reproduced first with 32 busy loops beside the suite and `--blame-hang` dumps. Two causes, both in
   the class registry, not in the workers' job system (`Workers.cs` read through: generations keep a late worker off a

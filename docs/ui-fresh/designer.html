@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" data-skin="day"><head><meta charset="utf-8">
+<title>Fleetwright designer, fresh mockup</title>
+<link rel="stylesheet" href="fresh.css">
+<style>
+.screen{grid-template-rows:30px 62px 1fr 24px;gap:2px}
+.main{display:grid;grid-template-columns:284px 1fr 372px;gap:2px;min-height:0}
+.sec td{height:auto;padding-top:5px;padding-bottom:6px;white-space:normal}
+.sec .l1{display:flex;gap:8px;align-items:baseline}.sec .l1 b{font-weight:600;flex:1}
+.sec .l2{display:flex;gap:8px;align-items:center;color:var(--ink2);font-size:12.5px;margin-top:1px}
+.sec .l2 span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sec .l2 .bar{width:70px;height:5px}
+.sec .k{width:14px;color:var(--ink2)} tr.sel .l2,tr.sel .k{color:inherit;opacity:.75}
+.part td{height:21px;font-size:13px}
+.draw{display:grid;grid-template-rows:212px 262px 54px}
+.draw .lay{position:relative}
+.toggles{display:flex;gap:4px}
+.toggles .btn{height:20px;padding:0 7px;font-size:12.5px}
+.wstrip{padding:4px 14px 0}
+.wstrip .lab{display:flex;font-size:11.5px;color:var(--ink2);height:16px}
+.wstrip .lab div{overflow:hidden;white-space:nowrap;padding-left:1px}
+.wstrip .lab b{font-weight:600;color:var(--ink)}
+.wstrip .segs{display:flex;height:14px;gap:1px}
+.wstrip .mark{position:relative;height:14px;font-size:11.5px;color:var(--ink2)}
+.wstrip .mark i{position:absolute;top:-16px;height:22px;border-left:1.5px dashed var(--ink)}
+.wstrip .mark span{position:absolute;top:2px;transform:translateX(-100%);padding-right:5px;white-space:nowrap}
+.trim{display:grid;grid-template-columns:1fr 1fr;gap:0 2px;background:var(--desk);height:100%}
+.trim>div{background:var(--paper)}
+.cost{display:grid;grid-template-columns:50px 46px 1px 46px 50px;align-items:center;gap:0 3px}
+.cost .a{height:8px;background:var(--ok);justify-self:end;opacity:.8}
+.cost .b{height:8px;background:var(--ink)}
+.cost .x{height:16px;background:var(--ink3)}
+.cost span{font-size:12.5px}
+.swatch{display:inline-block;width:9px;height:9px;margin-right:7px}
+</style></head>
+<body><div class="screen">
+
+<div class="deskbar">
+  <span class="m">File</span><span class="m">Edit</span><span class="m">View</span><span class="m">Design</span>
+  <span class="sp"></span>
+  <span class="skin-btn m" onclick="toggleSkin()">Day / night skin <kbd>N</kbd></span>
+  <div class="tabs"><span class="t">Map <kbd>F1</kbd></span><span class="t">Scenarios <kbd>F2</kbd></span><span class="t on">Designer <kbd>F3</kbd></span><span class="t">Ship card <kbd>F4</kbd></span></div>
+</div>
+
+<div class="head">
+  <div class="name"><b>Bismarck-like</b><span>Battleship, as completed 1940 &nbsp; bismarck.json</span></div>
+  <div class="fig"><b>40,442 t</b><span>Standard</span></div>
+  <div class="fig"><b>44,337 t</b><span>Full load</span></div>
+  <div class="fig"><b>233.7 m</b><span>Length</span></div>
+  <div class="fig"><b>32.2 m</b><span>Beam</span></div>
+  <div class="fig"><b class="amber">10.4 m</b><span>Draught</span></div>
+  <div class="fig"><b>30.0 kn</b><span>Speed</span></div>
+  <div class="fig"><b>9,000 nm</b><span>Range</span></div>
+  <div class="fig"><b>143,000 shp</b><span>Power</span></div>
+  <div class="fig"><b>1.93 m</b><span>GM</span></div>
+  <div class="fig"><b>1,263</b><span>Crew</span></div>
+  <div class="fig" style="flex:1"></div>
+  <div class="fig" style="display:flex;gap:6px;align-items:center;padding-top:0;padding-right:12px">
+    <span class="btn">Compare <kbd>Tab</kbd></span><span class="btn">Sea trials <kbd>T</kbd></span></div>
+</div>
+
+<div class="main">
+  <!-- left: what the design is made of -->
+  <div class="col">
+    <div class="sheet grow"><h2>Sections <span class="r">tons standard</span></h2>
+      <div class="body"><table id="sections"></table></div></div>
+    <div class="sheet"><h2>Templates <span class="note">the technology it is built from</span></h2>
+      <table id="templates"><colgroup><col style="width:82px"><col></colgroup></table></div>
+  </div>
+
+  <!-- centre: the drawing, then the section's sheet -->
+  <div class="col">
+    <div class="sheet"><h2>As designed <span class="note">plan and inboard profile, to one scale</span>
+        <span class="r toggles">
+          <span class="btn on" data-t="arcs">Arcs <kbd>A</kbd></span><span class="btn on" data-t="armour">Armour <kbd>R</kbd></span>
+          <span class="btn">Magazines <kbd>M</kbd></span><span class="btn on" data-t="tags">Tags <kbd>G</kbd></span></span></h2>
+      <div class="linen draw">
+        <div class="lay" id="plan"></div>
+        <div class="lay" id="profile"></div>
+        <div class="wstrip">
+          <div class="lab" id="wlab"></div>
+          <div class="segs" id="wsegs"></div>
+          <div class="mark"><i style="left:100%"></i><span style="left:100%">request 42,000 t</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="sheet grow"><h2>Trim sheet <span class="note">the broad strokes. Each bar is what one step saves or costs, in tons</span>
+        <span class="r">38 probe builds, one step each way</span></h2>
+      <div class="body trim"><div><table id="trimL"></table></div><div><table id="trimR"></table></div></div>
+    </div>
+  </div>
+
+  <!-- right: the reckoning -->
+  <div class="col">
+    <div class="sheet"><h2>Against the request <span class="r pick-field btn" style="height:20px">Yard request, 1936 <i class="caret"></i></span></h2>
+      <div class="verdict"><div class="fig">1,558 t to spare</div>
+        <div class="why">One consequence: <span class="amber">draught 0.4 m over</span></div></div>
+      <table id="limits"><colgroup><col><col style="width:50px"><col style="width:78px"><col style="width:78px"><col style="width:66px"></colgroup>
+        <tr><th>Limit</th><th></th><th class="n">Asked</th><th class="n">Now</th><th class="n">Margin</th></tr></table>
+      <div style="padding:8px 10px;display:flex;gap:6px;align-items:center">
+        <span class="btn">Fit with one lever</span><span class="btn">Fit evenly</span><span class="dim" style="margin-left:auto">limits report, never refuse</span></div>
+    </div>
+    <div class="sheet"><h2>Weights <span class="note">standard displacement</span></h2>
+      <table id="weights"><colgroup><col><col style="width:74px"><col style="width:52px"><col style="width:96px"></colgroup></table></div>
+    <div class="sheet grow"><h2>Particulars</h2>
+      <table id="parts"><colgroup><col style="width:104px"><col></colgroup></table></div>
+    <div class="sheet"><h2>Remarks <span class="r">3</span></h2>
+      <ul class="remarks">
+        <li><span class="amber">Draught 10.4 m</span> is over the 10.0 m asked; the Kiel locks take 10.2 m.</li>
+        <li>The belt keeps out her own 380 mm shell between 11 and 21 km.</li>
+        <li>Metacentric height 1.93 m: a stiff, quick roll of 15.9 s.</li>
+      </ul></div>
+  </div>
+</div>
+
+<div class="deskbar" style="height:24px;font-size:12.5px">
+  <span><span class="dot" style="color:#8DBE6B"></span>Built in 1,051 ms</span><span>History: opened</span>
+  <span class="sp"></span>
+  <div class="keys"><span><kbd>0</kbd>to<kbd>7</kbd>sections</span><span><kbd>Ctrl+Z</kbd>undo</span><span><kbd>Ctrl+S</kbd>save</span><span>wheel over a value steps it, <kbd>Shift</kbd> by four</span><span>click a value to type</span></div>
+</div>
+</div>
+
+<script src="ship.js"></script>
+<script>
+const $ = s => document.querySelector(s), f = n => n.toLocaleString('en-US');
+
+// sections
+const SECTIONS = [
+  [0, 'Trim sheet', 'the whole design, in broad strokes', 40442],
+  [1, 'Main battery', '8 × 380 mm in four twin turrets', 5022, [['Turrets ×4', 3991], ['Magazines ×4', 1030]]],
+  [2, 'Secondary, AA, torpedoes', '12 × 150 mm, 16 × 105 mm', 990],
+  [3, 'Protection', 'belt 320, deck 80 mm', 15387, [['Deck armour ×3', 4878], ['Belt', 3217], ['Barbettes ×18', 2772], ['Torpedo protection', 1503], ['Bulkheads', 1265], ['Upper belt', 978], ['Conning tower', 306], ['End belts', 447]]],
+  [4, 'Speed and machinery', '30 kn, 9,000 nm', 8077, [['Fuel', 3895], ['Machinery', 3318], ['Generators', 709], ['Uptakes', 154]]],
+  [5, 'Hull and upperworks', 'block 0.55, tower 6', 11398],
+  [6, 'Fire control', '9 directors', 296],
+  [7, 'Crew', '1,263 berths, 42 days of stores', 3168],
+];
+$('#sections').innerHTML = SECTIONS.map(([k, n, note, t, parts]) =>
+  `<tr class="sec pick ${k === 0 ? 'sel' : ''}"><td><div class="l1"><span class="k">${k}</span><b>${n}</b><span>${f(t)}</span></div>
+   <div class="l2"><span style="margin-left:22px">${note}</span>${k ? `<i class="bar"><i style="width:${t / 15387 * 100}%"></i></i>` : ''}</div></td></tr>` +
+  (parts || []).map(([p, w]) => `<tr class="part"><td><div style="display:flex;padding-left:22px"><span style="flex:1" class="dim">${p}</span><span>${f(w)}</span></div></td></tr>`).join('')).join('');
+document.querySelectorAll('#sections .sec').forEach(tr => tr.onclick = () => { document.querySelectorAll('#sections .sec').forEach(x => x.classList.remove('sel')); tr.classList.add('sel'); });
+
+$('#templates').innerHTML += [['Plant', 'High-pressure geared turbines, 1935'], ['Hull', 'High-tensile steel, welded internals'], ['Crew', 'Tiered bunks, separate messdecks'],
+  ['Armour', 'Krupp cemented, Wotan decks'], ['Protection', 'Turtleback, modern'], ['Shells', 'German, 1939'], ['Guns', 'Second war, diglycol'], ['Torpedoes', 'None'], ['Outfit', 'Interwar, 1939']]
+  .map(([a, b]) => `<tr class="pick"><td class="dim">${a}</td><td><div class="pick-field"><span style="overflow:hidden;text-overflow:ellipsis">${b}</span><i class="caret"></i></div></td></tr>`).join('');
+
+// the drawing
+const tagText = (x, y, t, anchor = 'middle') => `<text x="${x}" y="${y}" font-size="2.7" text-anchor="${anchor}" fill="var(--ink)">${t}</text>`;
+function draw() {
+  const on = k => document.querySelector(`[data-t=${k}]`).classList.contains('on');
+  $('#plan').innerHTML = Ship.plan('bismarck', { pad: 14, vh: 22, arcs: on('arcs'), arcR: 46, extra: s => !on('tags') ? '' :
+    `<g stroke="var(--ink)" stroke-width=".2"><line x1="0" x2="${s.L}" y1="-19.5" y2="-19.5"/><line x1="0" x2="0" y1="-21" y2="-18"/><line x1="${s.L}" x2="${s.L}" y1="-21" y2="-18"/></g>
+     <rect x="${s.L / 2 - 22}" y="-21" width="44" height="3" fill="var(--linen)"/>${tagText(s.L / 2, -18.6, '233.7 m overall, 32.2 m beam')}` +
+    s.turrets.map(t => tagText(t.x, t.s ? -9 : 11.2, `${t.id}, 2 × 380 mm`)).join('') +
+    `<g stroke="var(--ink)" stroke-width=".25"><line x1="0" x2="20" y1="19.5" y2="19.5"/><line x1="0" x2="0" y1="18.5" y2="20.5"/><line x1="20" x2="20" y1="18.5" y2="20.5"/></g>${tagText(22, 20.4, '20 m', 'start')}` });
+  $('#profile').innerHTML = Ship.profile('bismarck', { pad: 14, top: 41, armour: on('armour'), extra: (s) => !(on('tags') && on('armour')) ? '' :
+    `<text x="115" y="1.2" font-size="3" text-anchor="middle" fill="#F3EFE4" font-weight="600">320</text>
+     <text x="60" y="-3.6" font-size="2.8" text-anchor="middle" fill="var(--ink)">145</text>
+     <text x="19" y="1.1" font-size="2.8" text-anchor="middle" fill="var(--ink)">80</text><text x="212" y="1.1" font-size="2.8" text-anchor="middle" fill="var(--ink)">60</text>
+     <text x="-11" y="-1.2" font-size="2.7" fill="var(--water)">WL</text>` });
+}
+document.querySelectorAll('.toggles .btn').forEach(b => b.onclick = () => { b.classList.toggle('on'); draw(); }); draw();
+
+// weights: one bar the width of the sheet, and the same groups as a table
+const W = [['Armour', 15387, 'armour'], ['Hull', 9677, 'hull'], ['Armament', 6012, 'arm'], ['Machinery', 4182, 'mach'], ['Fuel', 3895, 'fuel'], ['Equipment and crew', 3168, 'equip'], ['Superstructure', 1721, 'super'], ['Fire control', 296, 'fc']];
+const REQ = 42000;
+$('#wlab').innerHTML = W.map(([n, t]) => `<div style="width:${t / REQ * 100}%">${t > 3500 ? `<b>${n}</b> ${f(t)}` : ''}</div>`).join('');
+$('#wsegs').innerHTML = W.map(([n, t, c]) => `<div title="${n}" style="width:${t / REQ * 100}%;background:var(--g-${c})"></div>`).join('');
+$('#weights').innerHTML += W.map(([n, t, c]) => `<tr><td><i class="swatch" style="background:var(--g-${c})"></i>${n}</td><td class="n">${f(t)}</td><td class="n dim">${(t / 40442 * 100).toFixed(1)}</td>
+  <td><i class="bar"><i style="width:${t / 15387 * 100}%;background:var(--g-${c})"></i></i></td></tr>`).join('') +
+  `<tr><td><b style="font-weight:600">Standard</b></td><td class="n"><b style="font-weight:600">40,442</b></td><td class="n dim">t</td><td class="dim n">full 44,337</td></tr>`;
+
+// limits
+$('#limits').innerHTML += [['Standard', 'max', '42,000 t', '40,442 t', '+1,558', 'ok'], ['Speed', 'min', '29.0 kn', '30.0 kn', '+1.0', 'ok'], ['Draught', 'max', '10.0 m', '10.4 m', '−0.4', 'amber'],
+  ['GM', 'min', '1.50 m', '1.93 m', '+0.43', 'ok'], ['Main calibre', 'max', '380 mm', '380 mm', '0', 'dim'], ['Length', 'max', 'none', '233.7 m', '', 'dim']]
+  .map(r => `<tr><td>${r[0]}</td><td class="dim">${r[1]}</td><td class="n dim">${r[2]}</td><td class="n">${r[3]}</td><td class="n ${r[5]}">${r[4]}</td></tr>`).join('');
+
+$('#parts').innerHTML += [['Dimensions', '234 × 32 × 10.4 m'], ['Machinery', '143,000 shp, three shafts'], ['Armament', '8 × 380, 12 × 150, 16 × 105 mm'], ['Protection', 'belt 320, deck 80, faces 360 mm'],
+  ['Stability', 'GM 1.93 m, roll 15.9 s'], ['Block coeff.', '0.550'], ['Bridge', 'eye 15.2 m, horizon 15.1 km'], ['Berths', '1.77 m² a man, standard 1.30'], ['Role', 'Line of battle; catches nothing above 30 kn']]
+  .map(([a, b]) => `<tr><td class="dim">${a}</td><td>${b}</td></tr>`).join('');
+
+// the trim sheet
+const T = {
+  L: [['Speed and machinery', '4,182 t', 4], ['Speed', '30.0', 'kn', -1053, 1159, 'power, fuel, hull length'], ['Range', '9,000', 'nm', -101, 106, 'fuel, bunkers'], ['Machinery rating', '0.4', '', 1116, -1087, 'lighter plant, worked harder'],
+      ['Protection', '15,387 t', 3], ['Belt', '320', 'mm', -157, 157, 'inner edge of immunity'], ['Upper belt', '145', 'mm', -55, 55, 'the side above the belt'], ['Main deck', '50', 'mm', -274, 276, 'citadel deck; top weight'],
+      ['Third deck', '80', 'mm', -166, 166, 'citadel deck'], ['Citadel bulkheads', '220', 'mm', -92, 92, 'raking fire'], ['End belts, both', '70', 'mm', -105, 106, 'flooding at the ends'],
+      ['Turret faces', '360', 'mm', -156, 156, 'barbettes follow'], ['All armour, scale', '100', '%', -1168, 1164, 'every plate alike']],
+  R: [['Armament', '6,012 t', 1], ['Main calibre', '380', 'mm', -801, 821, 'guns, turrets, magazines'], ['Main rounds per gun', '100', '', -161, 161, 'magazines, endurance'], ['Secondaries per side', '3', '', -814, 2602, 'against torpedo boats'],
+      ['Light AA mounts', '20', '', -10, 12, 'air defence'],
+      ['Hull and crew', '14,566 t', 5], ['Freeboard', '1.00', '', -469, 480, 'wetness, hull girder, GM'], ['Hull form, block', '0.55', '', -77, 89, 'resistance, length, beam'], ['Bridge tower', '6', '', -30, 112, 'horizon, top weight'],
+      ['Stores for', '42', 'days', -30, 45, 'provisions, fresh water']],
+};
+const px = t => Math.min(46, Math.sqrt(Math.abs(t)) * 1.15);
+const sg = t => (t < 0 ? '−' : '+') + f(Math.abs(t));
+for (const k of ['L', 'R']) $('#trim' + k).innerHTML = `<colgroup><col style="width:132px"><col style="width:118px"><col style="width:218px"><col></colgroup>
+  <tr><th>Lever</th><th>Value</th><th style="text-align:center">One step down, one step up</th><th>Drives</th></tr>` + T[k].map(r => r.length === 3
+  ? `<tr class="grp"><td colspan="2">${r[0]} <span class="dim" style="font-weight:400;margin-left:6px">${r[1]}</span></td><td></td><td class="n dim" style="font-weight:400">section <kbd>${r[2]}</kbd></td></tr>`
+  : `<tr class="pick"><td>${r[0]}</td><td><span class="step"><b></b><i>${r[1]}<span class="u">${r[2]}</span></i><b class="plus"></b></span></td>
+     <td><div class="cost"><span class="n">${sg(r[3])}</span><i class="a" style="width:${px(r[3])}px;${r[3] > 0 ? 'background:var(--ink)' : ''}"></i><i class="x"></i><i class="b" style="width:${px(r[4])}px;${r[4] < 0 ? 'background:var(--ok)' : ''}"></i><span>${sg(r[4])}</span></div></td>
+     <td class="dim">${r[5]}</td></tr>`).join('');
+</script>
+</body></html>

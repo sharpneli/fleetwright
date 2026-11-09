@@ -702,7 +702,7 @@ commander), **Q7d** the admirals at night (close order, losing touch).
   and this are one held course now (`Captain.HeldUntilMs`, `HeldFor`: Combing or Lit); the card says "lit: lights out,
   turned away".
 - **Not built:** a darkened ship (navigation lights aren't modelled: every ship is darkened; Q13 since: lights shown); firing at a gun's flash alone
-  (fire control lays on lamps and bow waves, not a flash: Q14b; torpedoes since Q14a).
+  (Q14 since: torpedoes on any light, guns on a flash's bearing with no spotting).
 - **Tests:** `NightDoctrineTests` (lit, turn away to 279° with her lights out or fight on; searchlights never, to fire,
   search; challenged within 2.5 km, not within 1 km).
 
@@ -836,7 +836,7 @@ lost (Frauenlob), Black Prince sunk in four runs of five.
 
 **Open after Q7:** every number is [EST] until the research; presets one a period (the doctrine rows' values by navy and
 year) wait for the tuning pass; the roles question above (a side of destroyers alone); firing at a gun's flash alone (fire
-control lays on lamps and bow waves only), which also keeps the matchup's night gunfights mutual; a ship turned away from
+control lays on lamps and bow waves only; Q14 since), which also keeps the matchup's night gunfights mutual; a ship turned away from
 a light doesn't zigzag or make smoke; searching sweeps toward the nearest contact only; the wake's foam isn't a sight of
 its own (the station-keeping look borrows the bow wave's); collisions (4.11) for close order; the coarse tier runs all
 of it at its thinks (Q11).
@@ -1507,10 +1507,32 @@ at 540-900 m couldn't aim at a darkened ship lying still (under margin 1 to ~800
   British torpedoes 9.9 → 12.3 (hits 1.2 → 1.8); the 4th Flotilla's 18.5 → 22.2, its boats lost 4.3 → 3.4 of 10; Dover's
   ~3 → ~5.5 each side. Port Arthur's night bench (`test-port-arthur-night.json`, 4 seeds): 7.0 torpedoes a run (5.8),
   Russia losing 1.2 ships (0.8), the boats 9.2 of 10 (the squadron sees them at 2.7 km: `bugs.md`).
-- **Q14b, guns (next).** Fire control lays on a lamp or a bow wave, not a flash: a battery firing at a flash's bearing,
-  its range from the picture's rough estimate and no fall of shot to spot against her (`GunnerySystem`'s sensors and
-  spotting see the ship herself). Its own step: what a director or layer takes off a flash, how the spotting ladder runs
-  blind, and the matchup's night gunfights mutual again (Q7's open item).
+- **Q14b, guns (built 2026-11-09; the user: "go ahead, let's see what goes out of it").** A battery's sensor that can't
+  make its target out takes a reading on her lights (`GunnerySystem.LightRead`) while her navy holds them
+  (`Picture.Aimable`): her latest salvo's flash if it came since his last reading and he catches it (`FlashChance`),
+  where she was when she fired; else her steady lights where she is (her funnels' glow, her lights shown, her
+  searchlight's lamp or its beam from beside), at a margin of 1. Its bearing to the sensor's error, its range a guess
+  (`SightLightRangeShare`: no rangefinder cut on a flash, "no distance was found"). A battery with no track can start one
+  on such readings. They never count as seeing her: the fall of shot isn't spotted (every salvo doubtful, the ladder
+  blind), and the captains' "to fire" lights still go on her. The captains take a ship seen by her lights lately for a
+  gun target only with no foe in sight (`CaptainLayer.Candidates`: what he can see comes first; by day an escort gone
+  into smoke, her flashes still seen, was kept over the tramps in sight, `AimsTests`).
+- **What moved** (`night-history --runs 20`, against Q14a): small. The 4th Flotilla's fight runs on (British hits 101 →
+  141, German 118 → 151; the boats lost 3.4 → 3.8 of 10); Dover's German torpedoes 5.7 → 7.8; Black Prince's British fire
+  down (86 → 55 shells), the Germans laying on her searchlight from 1.8 km (1.4) instead of lighting her; Tsushima
+  unchanged (over 60 runs, Japan's torpedoes 0.7 a run against Q14a's 0.9: its 1.6 at 20 runs was a high draw). Port
+  Arthur's night bench: 8.5 torpedoes a run (7.0), the boats lost 8.5 of 10 (9.2), Russia 1.0 ships (1.2).
+  The balance panel (`balance --fc-runs 0`, 8 seeds, Jutland 4; against Q14a) moves more, by day too: a big gun's flash is
+  made out by day at battle ranges (Allard's law against the day sky: a 15" twin's at 15 km in 20 km visibility at a
+  margin of about 7; at Jutland the British saw "only the flashes" in the mist), so a ship gone into smoke or haze is
+  followed by her flashes on the track her last cuts left. Losses, before → after: Jutland Britain 21.0 → 34.0 of 151
+  (German torpedo hits 5.0 → 12.5; 4 seeds, 13-30 against 20-57), Germany 41.5 → 42.3; Heligoland Bight Britain 1.8 →
+  4.0, Germany 16.3 → 16.5; Dogger Bank Britain 5.9 → 7.6, Germany 11.5 → 10.8; Tsushima Russia 2.4 → 4.0 (into the
+  record's band), Japan 8.3 → 7.3; Åland Finland 6.0 → 7.1, Sweden 3.4 → 2.0; Coronel, Dover, Cape Sarych and the
+  prizes' war within their noise. Sides within twice the record: 4 of 14 (5).
+- **Open:** a flash's range by its sound (the flash-to-bang interval, sound ranging) isn't modelled; nor a director's
+  layer laying on the flash itself (the reading's bearing is where she was); the matchup's night judgement still asks
+  whether each side can make the other out (Q7), not whether it can lay on flashes.
 
 ## Decided (the user, 2026-10-29)
 

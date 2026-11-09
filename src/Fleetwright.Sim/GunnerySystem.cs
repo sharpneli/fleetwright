@@ -1021,7 +1021,9 @@ public sealed class GunnerySystem : IWorldSystem
         var pic = world.Sightings.Of(ship.Side);
         int ci = pic?.IndexOf(fc.Target) ?? -1;
         bool inSight = ci >= 0 && pic![ci].InSight;
-        if (!fc.Tracking && !inSight)
+        // seen by her lights lately (docs/battle/night.md Q14b): her sensors look for them, a bearing to lay on
+        bool lit = !inSight && ci >= 0 && pic!.Aimable(ci, now, settings);
+        if (!fc.Tracking && !inSight && !lit)
         {
             fc.State = BatteryState.NoContact;
             store.Combat.SetSees(slot, fc.Battery, false);
@@ -1073,13 +1075,22 @@ public sealed class GunnerySystem : IWorldSystem
                 ? FireControl.Held(optics, fc.Roll.RateSigmaRadS, fc.Pitch.RateSigmaRadS, Earth.Bearing(at, tpos) - ship.HeadingDeg,
                     settings.InstrumentFollowS, settings.InstrumentFieldDeg, settings.GunneryErrors.Seaway)
                 : 1;
-            s.NextMs = now + (long)(60_000 / (Rate(optics, s) * Math.Max(held, MinHeld) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)) * r.NextDouble(0.7, 1.3));
-            if (!seen || columns && Masked(at, s.HeightM, tslot, target, now))
+            long every = (long)(60_000 / (Rate(optics, s) * Math.Max(held, MinHeld) * (s.Eye >= 0 ? cond.EyeCrew[s.Eye] : 1)));
+            s.NextMs = now + (long)(every * r.NextDouble(0.7, 1.3));
+            // not made out, her lights may be (Q14b): a flash since his last reading, or a steady light; where she was then
+            var readAt = tpos;
+            bool byLight = !seen && lit && LightRead(world, cls, s, at, ship.HeadingDeg, target, air, now, every, ref r, out readAt) &&
+                           !GlassWet(world, fc.Shooter, slot, ship, cls, cond, s.SeaPoint, s.HeightM + cls.Vertical.Waterline, now);
+            if (!seen && !byLight || seen && columns && Masked(at, s.HeightM, tslot, target, now))
                 continue;   // nothing to read; or she stands behind the shorts' columns, no cut till they fall (ES2)
-            double range = Earth.Distance(at, tpos), brg = Earth.Bearing(at, tpos), sr, bias, sb;
+            double range = Earth.Distance(at, readAt), brg = Earth.Bearing(at, readAt), sr, bias, sb;
             double st = Steadiness.Stress(cls, cond, s.Eye >= 0 ? cls.Eyes[s.Eye].Component : cls.Mounts[mounts[0]].Component, now, settings);   // BL1d
             st *= Vibration(cls, ship, s.Support, s.X);   // BL1h: the ship's own shaking at speed
-            if (Ranges(optics, s))
+            if (byLight)
+                // a light's bearing, its range a guess (night-fighting.md §3.6: "no distance was found"): no rangefinder
+                // cuts on a flash, as a light contact's (SightLightRangeShare)
+                (sr, bias, sb) = (settings.SightLightRangeShare * range, 0, s.BearingMil * FireControl.Mil);
+            else if (Ranges(optics, s))
             {
                 // its unit of error, worse as the air takes the target's contrast toward the eye's threshold (F5c)
                 double kAir = SightModel.RangingFactor(margin, optics, settings);
@@ -1410,6 +1421,41 @@ public sealed class GunnerySystem : IWorldSystem
             ? Math.Max(margin, SightModel.LightMargin(s.HeightM, lamp, lampM, d, air.VisibilityM, line.SkyCdM2 + line.VeilCdM2, settings,
                 air.Smoked ? SightModel.SmokeAt(line.Smoke, lampM, tc.Silhouette.TopM, settings) : 0, air.DazzleCdM2))
             : margin;
+    }
+
+    /// <summary>Whether a sensor that can't make the target out takes a reading on her lights (docs/battle/night.md Q14b):
+    /// her latest salvo's flash, if it came since his last reading (<paramref name="everyMs"/>) and he catches it (its
+    /// chance, <see cref="SightModel.FlashChance"/>), where she was when she fired; else her steady lights, where she is: her
+    /// funnels' glow, her lights shown, her searchlight's lamp or its beam from beside, made out at a margin of 1. Each by
+    /// <see cref="SightModel.LightMargin"/> against the sky on his bearing and his own guns' dazzle, no smoke asked (a flash
+    /// shows through more than a hull does, as the sightings' look has it).</summary>
+    bool LightRead(World world, ShipClass cls, in Sensor s, Vec3d at, double headingDeg, in ShipState target, in Air air, long now, long everyMs,
+        ref RandomStream r, out Vec3d where)
+    {
+        var tp = target.Position;
+        where = tp;
+        double d = Earth.Distance(at, tp), brg = Earth.Bearing(at, tp);
+        if (s.Eye >= 0 && !cls.Eyes[s.Eye].Sees(brg - headingDeg))
+            return false;
+        var tc = target.Handling.Class;
+        double sky = air.Sky.Toward(brg), mid = settings.FireGlowHeightShare * tc.Silhouette.TopM;
+        var (flashCd, flashMs) = world.Ships.Store.Combat.LastFlash(target.Slot);
+        if (flashCd > 0 && flashMs <= now && now - flashMs <= everyMs &&
+            r.NextDouble() < SightModel.FlashChance(SightModel.LightMargin(s.HeightM, flashCd, mid, d, air.VisibilityM, sky, settings, 0, air.DazzleCdM2), settings))
+        {
+            where = tp - target.Forward * (target.Speed * (now - flashMs) / 1000.0);
+            return true;
+        }
+        var (glow, glowM) = Sightings.FunnelGlow(target, settings);
+        if (target.LightsShown)
+            (glow, glowM) = (glow + settings.SightShownLightsCd, Math.Max(glowM, mid));
+        double margin = glow > 0 ? SightModel.LightMargin(s.HeightM, glow, glowM, d, air.VisibilityM, sky, settings, 0, air.DazzleCdM2) : 0;
+        if (margin < 1 && air.Lights.HasBeam(target.Slot))
+        {
+            var (lamp, column, lampM) = air.Lights.LampsOf(target.Slot, at, air.VisibilityM, settings);
+            margin = SightModel.LightMargin(s.HeightM, lamp + column, lampM, d, air.VisibilityM, sky, settings, 0, air.DazzleCdM2);
+        }
+        return margin >= 1;
     }
 
     /// <summary>The oldest reading into the computer: the first starts the track, from the eye's guess at the target's

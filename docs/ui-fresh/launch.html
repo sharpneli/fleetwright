@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en" data-skin="day"><head><meta charset="utf-8">
+<title>Fleetwright scenarios, fresh mockup</title>
+<link rel="stylesheet" href="fresh.css">
+<style>
+.screen{grid-template-rows:30px 62px 1fr 24px;gap:2px}
+.main{display:grid;grid-template-columns:300px 1fr 372px;gap:2px;min-height:0}
+.flag{width:17px;height:11px;vertical-align:-1px;outline:1px solid var(--ink3);margin-right:2px}
+#scen td,#scen th,#oob td,#oob th{padding-left:6px;padding-right:6px}
+#scen td:first-child,#oob td:first-child,#scen th:first-child,#oob th:first-child{padding-left:10px}
+#scen td.i1{padding-left:25px}#oob td.i1{padding-left:24px}#oob td.i2{padding-left:38px}#oob td.i3{padding-left:54px}
+.chart{height:372px;background:var(--water-wash)}
+.chart svg{position:absolute;inset:0}
+.chart .tag{white-space:nowrap}
+.tag.en{border-color:var(--hostile);color:var(--hostile)}
+.tabrow{display:flex;gap:2px;align-items:flex-end;background:var(--desk);padding-top:2px}
+.tabrow .t{padding:5px 12px;background:var(--paper2);display:flex;gap:7px;align-items:center;color:var(--ink2);border-top:2px solid transparent}
+.tabrow .t.on{background:var(--paper);color:var(--ink);font:500 14px "Besley";border-top-color:var(--ink)}
+.tabrow .sp{flex:1}.tabrow .side{padding:0 0 3px;display:flex;gap:8px;align-items:center;color:var(--desk-ink)}
+.oob{display:grid;grid-template-columns:1fr 430px;gap:2px;background:var(--desk);min-height:0;flex:1}
+.oob>div{background:var(--paper);min-height:0;overflow:hidden}
+.sil{display:inline-block;height:9px;background:currentColor;border-radius:60% 90% 90% 60%/50%;vertical-align:middle;opacity:.8}
+.radio{display:inline-block;width:11px;height:11px;border:1.5px solid currentColor;border-radius:50%;vertical-align:-1px;margin-right:8px;position:relative}
+tr.sel .radio::after{content:"";position:absolute;inset:2px;background:currentColor;border-radius:50%}
+.bf{display:grid;grid-template-columns:40px 60px 1fr 60px 40px;white-space:nowrap;align-items:center;gap:0 6px;padding:0 10px;height:23px;border-bottom:1px solid var(--rule)}
+.bf .c{text-align:center}.bf i{height:8px;display:block}.bf .l{background:var(--ink);justify-self:end}.bf .r{background:var(--hostile)}
+.bf.h{height:22px;color:var(--ink2);font-size:11.5px;border-bottom-color:var(--ink)}
+.brief{padding:2px 12px 10px;line-height:1.42;font-size:14px;max-width:62ch}
+.drawing{height:168px;display:grid;grid-template-rows:60px 1fr;padding:4px 0}
+.sub{padding:5px 10px 4px;font-weight:600;background:var(--paper2);display:flex;gap:8px;align-items:baseline;border-bottom:1px solid var(--ink3)}
+.sub span{font-weight:400;color:var(--ink2)}
+</style></head>
+<body><div class="screen">
+
+<div class="deskbar">
+  <span class="m">File</span><span class="m">Edit</span><span class="m">View</span><span class="m">Scenario</span>
+  <span class="sp"></span>
+  <span class="skin-btn m" onclick="toggleSkin()">Day / night skin <kbd>N</kbd></span>
+  <div class="tabs"><span class="t">Map <kbd>F1</kbd></span><span class="t on">Scenarios <kbd>F2</kbd></span><span class="t">Designer <kbd>F3</kbd></span><span class="t">Ship card <kbd>F4</kbd></span></div>
+</div>
+
+<div class="head">
+  <div class="name"><b>Tsushima</b><span>Saturday 27 May 1905, Russia against Japan &nbsp; tsushima.json</span></div>
+  <div class="fig"><b>13:20</b><span>Local time</span></div>
+  <div class="fig"><b>34°07′N 130°04′E</b><span>Position</span></div>
+  <div class="fig"><b>13 km, haze</b><span>Visibility</span></div>
+  <div class="fig"><b>SW 18 kn</b><span>Wind</span></div>
+  <div class="fig"><b>SW 2 m</b><span>Swell</span></div>
+  <div class="fig"><b>19:03</b><span>Sunset</span></div>
+  <div class="fig"><b>28 May, 10:40</b><span>Ends</span></div>
+  <div class="fig"><b>13 <span class="dim" style="font-size:13px">against</span> <span class="hostile">14</span></b><span>Ships</span></div>
+  <div class="fig"><b>94,872 <span class="dim" style="font-size:13px">against</span> <span class="hostile">120,330 t</span></b><span>Tonnage</span></div>
+  <div class="fig" style="flex:1"></div>
+</div>
+
+<div class="main">
+  <div class="col">
+    <div class="sheet grow"><h2>Scenarios <span class="r">9 battles, 15 tests</span></h2>
+      <div class="body"><table id="scen"><colgroup><col><col style="width:54px"><col style="width:46px"><col style="width:60px"></colgroup>
+        <tr><th>Name</th><th>Sides</th><th>Year</th><th class="n">Ships</th></tr></table></div></div>
+    <div class="sheet"><h2>Your setups <span class="note">a scenario file each</span></h2>
+      <div style="padding:2px 10px 12px" class="dim">None yet. Change a scenario, then Save setup.</div></div>
+  </div>
+
+  <div class="col">
+    <div class="sheet"><h2>The opening <span class="note">each unit at its start, its ships astern; dashes run 30 minutes ahead</span>
+      <span class="r toggles" style="display:flex;gap:4px"><span class="btn on" style="height:20px">Courses <kbd>C</kbd></span><span class="btn on" style="height:20px">Range <kbd>R</kbd></span><span class="btn on" style="height:20px">Labels <kbd>L</kbd></span><span class="btn" style="height:20px">Grid <kbd>G</kbd></span></span></h2>
+      <div class="linen chart" id="chart"></div>
+    </div>
+    <div class="col grow" style="gap:0">
+      <div class="tabrow"><span class="t on">Order of battle <kbd>1</kbd></span><span class="t">Standing orders <kbd>2</kbd></span><span class="t">Conditions <kbd>3</kbd></span>
+        <span class="sp"></span><span class="side">Side shown <kbd>V</kbd><span class="seg"><span class="btn on">Russia, yours</span><span class="btn">Japan, the enemy</span></span></span></div>
+      <div class="oob">
+        <div><table id="oob"><colgroup><col><col style="width:66px"><col style="width:76px"><col style="width:60px"><col style="width:34px"><col style="width:62px"><col style="width:66px"><col style="width:42px"><col style="width:64px"><col style="width:66px"></colgroup>
+          <tr><th>Unit, class, ship</th><th>To scale</th><th>Ships</th><th class="n">Tons</th><th class="n">kn</th><th class="n">Main</th><th class="n">Second</th><th class="n">Belt</th><th class="n">Reach</th><th>State</th></tr></table></div>
+        <div style="display:flex;flex-direction:column">
+          <div class="sub">Borodino-like <span>the chosen class, as the scenario wrote it &nbsp; borodino.json</span></div>
+          <div class="linen drawing"><div id="bplan"></div><div id="bprof"></div></div>
+          <table id="bpart"><colgroup><col style="width:110px"><col style="width:116px"><col></colgroup></table>
+          <div style="padding:7px 10px;display:flex;gap:6px"><span class="btn">Change design <kbd>P</kbd></span><span class="btn">Edit a copy in the designer <kbd>E</kbd></span></div>
+          <div class="sub">Captains <span>each temper is added to the admiral's</span></div>
+          <table id="capt"><colgroup><col><col style="width:110px"><col style="width:110px"></colgroup></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="sheet"><h2>Play as <span class="r"><kbd>Tab</kbd> to switch</span></h2>
+      <table><colgroup><col style="width:110px"><col><col style="width:70px"></colgroup>
+        <tr class="sel pick"><td><i class="radio"></i><span id="f1"></span> Russia</td><td class="dim">V-Adm Rozhestvensky</td><td class="n">13 ships</td></tr>
+        <tr class="pick"><td><i class="radio"></i><span id="f2"></span> Japan</td><td class="dim">Adm Togo</td><td class="n">14 ships</td></tr>
+        <tr class="pick"><td><i class="radio"></i>Watch</td><td class="dim">the AI plays both sides</td><td class="n dim">all seen</td></tr></table></div>
+    <div class="sheet"><h2>Strength <span class="note">the sides as written</span></h2>
+      <div id="strength"></div></div>
+    <div class="sheet grow"><h2>Brief</h2>
+      <div class="brief">27 May 1905, 13:40. Rozhestvensky's Second Pacific Squadron, black with yellow funnels, steams up the Tsushima Strait for Vladivostok: four Borodinos leading, the old second division astern, cruisers and destroyers in company. Out of the haze to the north-east come Togo's battleships and Kamimura's armoured cruisers, faster, crossing ahead to cap your line. Get through, or make them pay for it.</div></div>
+    <div class="sheet"><h2>Remarks <span class="r">4</span></h2>
+      <ul class="remarks"><li>R-Adm Enkvist's temper is −0.40: he kept his cruisers clear of the line.</li><li>Adm Togo's temper is +0.20: he closes once he holds the range.</li>
+        <li>V-Adm Kamimura's temper is +0.40: he presses a damaged enemy.</li><li>The flotilla's captain is +0.30: night attacks pressed home.</li></ul></div>
+    <div class="sheet"><h2>Begin <span class="note">7 of 7 classes built, art drawn</span><span class="r"><span class="btn off" style="height:20px">Save setup <kbd>Ctrl+S</kbd></span></span></h2>
+      <div class="verdict"><div class="fig">Ready</div><div class="why">Russia yours, Japan the AI's, as written</div></div>
+      <div style="padding:0 10px 10px;display:flex;gap:6px"><span style="flex:1"></span><span class="btn">Begin paused <kbd>Shift+Enter</kbd></span><span class="btn primary">Begin <kbd>Enter</kbd></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="deskbar" style="height:24px;font-size:12.5px">
+  <span><span class="dot" style="color:#8DBE6B"></span>7 classes built in 0.17 s on 8 threads</span><span>History: as written</span>
+  <span class="sp"></span>
+  <div class="keys"><span><kbd>1</kbd>to<kbd>3</kbd>tabs</span><span><kbd>Tab</kbd>side played</span><span><kbd>V</kbd>side shown</span><span><kbd>W A S D</kbd>pan, wheel zooms</span><span><kbd>A</kbd>add a unit</span><span><kbd>Ctrl+Z</kbd>undo</span></div>
+</div>
+</div>
+
+<script src="ship.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const FL = {
+  ru: '<rect width="17" height="11" fill="#fff"/><path d="M0,0L17,11M17,0L0,11" stroke="#2A4E9B" stroke-width="2"/>',
+  jp: '<rect width="17" height="11" fill="#fff"/><circle cx="7" cy="5.5" r="3" fill="#C8102E"/>',
+  uk: '<rect width="17" height="11" fill="#fff"/><path d="M8.5,0V11M0,5.5H17" stroke="#C8102E" stroke-width="2"/>',
+  de: '<rect width="17" height="11" fill="#fff"/><path d="M7.5,0V11M0,5.5H17" stroke="#111" stroke-width="1.6"/>',
+  fr: '<rect width="6" height="11" fill="#1F4E9E"/><rect x="6" width="5" height="11" fill="#fff"/><rect x="11" width="6" height="11" fill="#C8102E"/>',
+  tr: '<rect width="17" height="11" fill="#C8102E"/><circle cx="7" cy="5.5" r="2.6" fill="#fff"/><circle cx="7.8" cy="5.5" r="2.1" fill="#C8102E"/>',
+  fi: '<rect width="17" height="11" fill="#fff"/><path d="M5.5,0V11M0,5.5H17" stroke="#1F4E9E" stroke-width="2.4"/>',
+  se: '<rect width="17" height="11" fill="#2A6FB0"/><path d="M5.5,0V11M0,5.5H17" stroke="#F2C230" stroke-width="2"/>',
+};
+const flag = c => c ? `<svg class="flag" viewBox="0 0 17 11">${FL[c]}</svg>` : '';
+$('#f1').innerHTML = flag('ru'); $('#f2').innerHTML = flag('jp');
+
+const S = [['1890 to 1905'], ['Tsushima', 'ru', 'jp', 1905, '13 : 14', 1],
+  ['1906 to 1925'], ['Heligoland Bight', 'uk', 'de', 1914, '44 : 24'], ['Coronel', 'uk', 'de', 1914, '3 : 5'], ['Cape Sarych', 'ru', 'tr', 1914, '7 : 2'], ['Dogger Bank', 'uk', 'de', 1915, '33 : 26'],
+  ['Jutland', 'uk', 'de', 1916, '151 : 99'], ['Night in the Dover Strait', 'uk', 'de', 1917, '2 : 6'], ["The prizes' war, 1920", 'fr', 'de', 1920, '6 : 6'], ['The battle for Åland, 1921', 'fi', 'se', 1921, '10 : 11'],
+  ['Tests'], ['Night: Tsushima 1905', 'ru', 'jp', 1905, '3 : 8'], ['Raider', 'uk', 'de', 1916, '8 : 1'], ['Escorted convoy', 'uk', 'de', 1916, '10 : 3'], ['Ladder 1: one squadron', 'uk', '', 1916, '8'],
+  ['Ladder 2: the scouting forces', 'uk', 'de', 1916, '52 : 40'], ['Ladder 4: Jutland and a world', 'uk', 'de', 1916, '650'], ['Ladder 5: two thousand ships', '', '', 1916, '2,000'], ['Breakout', 'uk', 'de', 1916, '4 : 2'],
+  ['Squadrons', 'uk', 'de', 1916, '4 : 5'], ['Running fight', 'uk', 'de', 1916, '2 : 3'], ['Flotilla', 'uk', 'de', 1916, '4 : 6'], ['Night: Southampton, Jutland', 'uk', 'de', 1916, '4 : 5'],
+  ['Night: the 4th Flotilla, Jutland', 'uk', 'de', 1916, '10 : 6'], ['Night: Black Prince, Jutland', 'uk', 'de', 1916, '1 : 3'], ['Night: the 12th Flotilla, Jutland', 'uk', 'de', 1916, '8 : 6']];
+$('#scen').innerHTML += S.map(r => r.length === 1 ? `<tr class="grp"><td colspan="4"><i class="tw"></i>${r[0]}</td></tr>` :
+  `<tr class="pick ${r[5] ? 'sel' : ''}"><td class="i1" >${r[0]}</td><td>${flag(r[1])}${flag(r[2])}</td><td class="dim">${r[3]}</td><td class="n">${r[4]}</td></tr>`).join('');
+
+// the opening, as a chart: own ships in ink, the enemy in red
+(function () {
+  const W = 1244, H = 372; let g = '';
+  for (let x = 90; x < W; x += 180) g += `<line x1="${x}" x2="${x}" y1="0" y2="${H}" stroke="var(--water)" stroke-width=".5" opacity=".45"/>`;
+  for (let y = 60; y < H; y += 180) g += `<line y1="${y}" y2="${y}" x1="0" x2="${W}" stroke="var(--water)" stroke-width=".5" opacity=".45"/>`;
+  const unit = (x, y, brg, n, col, sp, lead) => { // brg: course, degrees from north
+    const a = (brg - 90) * Math.PI / 180, dx = Math.cos(a), dy = Math.sin(a); let q = '';
+    q += `<line x1="${x}" y1="${y}" x2="${x + dx * lead}" y2="${y + dy * lead}" stroke="${col}" stroke-width="1" stroke-dasharray="5 4"/>`;
+    for (let i = 0; i < n; i++) q += `<g transform="translate(${x - dx * i * sp},${y - dy * i * sp}) rotate(${brg - 90})">${Ship.mark(i ? 11 : 15, col)}</g>`;
+    return q;
+  };
+  g += `<line x1="604" y1="262" x2="918" y2="122" stroke="var(--ink2)" stroke-width=".8" stroke-dasharray="1.5 3"/>`;
+  g += unit(604, 262, 23, 7, 'var(--ink)', 15, 130) + unit(556, 300, 23, 2, 'var(--ink)', 15, 130) + unit(572, 244, 23, 4, 'var(--ink)', 9, 120);
+  g += unit(918, 122, 252, 10, 'var(--hostile)', 15, 150) + unit(966, 62, 255, 4, 'var(--hostile)', 9, 180);
+  g += `<g stroke="var(--ink)" stroke-width="1"><line x1="20" x2="100" y1="350" y2="350"/><line x1="20" x2="20" y1="346" y2="354"/><line x1="100" x2="100" y1="346" y2="354"/></g><text x="106" y="354" font-size="12" fill="var(--ink)">5 km</text>`;
+  g += `<g transform="translate(34,40)" stroke="var(--ink)" fill="none"><circle r="16" stroke-width=".6"/><path d="M0,16V-22M-16,0H16" stroke-width=".6"/><path d="M0,-22l-4,9h8z" fill="var(--ink)"/></g><text x="30" y="12" font-size="12" fill="var(--ink)">N</text>`;
+  const tag = (x, y, t, en) => `<div class="tag ${en ? 'en' : ''}" style="left:${x}px;top:${y}px">${t}</div>`;
+  $('#chart').innerHTML = `<svg viewBox="0 0 ${W} ${H}">${g}</svg>` + tag(622, 266, 'Second Pacific Squadron, 7') + tag(420, 318, 'Cruiser Division, 2') + tag(396, 222, '1st Destroyer Detachment, 4')
+    + tag(900, 140, 'Combined Fleet, 10', 1) + tag(960, 30, '1st Destroyer Flotilla, 4', 1) + tag(742, 172, '26.6 km');
+})();
+
+// order of battle
+const step = v => `<span class="step"><b></b><i style="min-width:26px">${v}</i><b class="plus"></b></span>`;
+const O = [
+  ['u', 'Second Pacific Squadron', 'V-Adm Rozhestvensky', 7, '84,196'],
+  ['d', '1st Armoured Division', '', 4, '55,576'],
+  ['c', 'Borodino-like', 46, 4, '13,894', 18, '4 × 305', '12 × 152', 194, 11.8, 1],
+  ['s', 'Knyaz Suvorov'], ['s', 'Imperator Aleksandr III', '+0.30'], ['s', 'Borodino'], ['s', 'Oryol'],
+  ['d', '2nd Armoured Division', "Oslyabya's captain; Fölkersam dead, unannounced", 3, '28,620'],
+  ['c', 'Oslyabya-like', 50, 3, '9,540', 16, '4 × 254', '10 × 152', 229, 11.8],
+  ['s', 'Oslyabya'], ['s', 'Sissoi Veliky'], ['s', 'Navarin'],
+  ['u', 'Cruiser Division', 'R-Adm Enkvist', 2, '7,348', 'cautious −0.40'],
+  ['c', 'Aurora-like protected cruiser', 48, 2, '3,674', 20, '8 × 152', '12 × 75', '', 9.1],
+  ['s', 'Oleg'], ['s', 'Aurora'],
+  ['u', '1st Destroyer Detachment', 'the senior captain', 4, '3,328'],
+  ['c', 'Buyny-like destroyer', 24, 4, '832', 26, '1 × 75', '1 × 47', '', 6.0],
+  ['s', 'Buyny'], ['s', 'Bravy'], ['s', 'Bedovy', '−0.50'], ['s', 'Grozny'],
+];
+$('#oob').innerHTML += O.map(r => {
+  if (r[0] === 'u') return `<tr class="grp"><td colspan="2"><i class="tw"></i>${r[1]} <span class="dim" style="font-weight:400;margin-left:6px">${r[2]}</span> ${r[5] ? `<span class="chip amber" style="font-weight:400;margin-left:6px">${r[5]}</span>` : ''}</td><td class="n" style="text-align:center">${r[3]}</td><td class="n">${r[4]}</td><td colspan="6" class="n dim" style="font-weight:400">add a division</td></tr>`;
+  if (r[0] === 'd') return `<tr><td colspan="2" class="i1" style="font-weight:600"><i class="tw"></i>${r[1]} <span class="dim" style="font-weight:400;margin-left:6px">${r[2]}</span></td><td style="text-align:center">${r[3]}</td><td class="n">${r[4]}</td><td colspan="6"></td></tr>`;
+  if (r[0] === 'c') return `<tr class="pick ${r[10] ? 'sel' : ''}"><td class="i2"><i class="tw"></i>${r[1]}</td><td><i class="sil" style="width:${r[2]}px"></i></td><td>${step(r[3])}</td><td class="n">${r[4]}</td><td class="n">${r[5]}</td><td class="n">${r[6]}</td><td class="n">${r[7]}</td><td class="n">${r[8] || '<span class="faint">–</span>'}</td><td class="n">${r[9].toFixed(1)}<span class="u">km</span></td><td><span class="${r[10] ? '' : 'ok'}"><i class="dot"></i>ready</span></td></tr>`;
+  return `<tr><td class="i3" colspan="10" style="height:21px"><span class="dim">${r[1]}</span>${r[2] ? `<span class="amber" style="margin-left:10px">temper ${r[2]}</span>` : ''}</td></tr>`;
+}).join('') + `<tr class="pick"><td colspan="10"><b style="font-weight:600">Add a unit</b> <kbd>A</kbd> <span class="dim" style="margin-left:8px">it joins a unit on its station, or stands alone where you place it on the opening</span></td></tr>`;
+
+$('#bplan').innerHTML = Ship.plan('borodino', { pad: 60, vh: 13.5, sw: .4 });
+$('#bprof').innerHTML = Ship.profile('borodino', { pad: 60, top: 38, sw: .4, frames: false });
+$('#bpart').innerHTML += [['Displacement', '13,894 t', 'standard'], ['Speed', '18 kn', ''], ['Main', '4 × 305 mm', 'two twin turrets'], ['Secondary', '12 × 152 mm', 'six twin turrets'], ['Belt', '194 mm', 'at the waterline'], ['Reach', '11.8 km', "the main guns'"]]
+  .map(r => `<tr><td class="dim">${r[0]}</td><td class="n">${r[1]}</td><td class="dim">${r[2]}</td></tr>`).join('');
+$('#capt').innerHTML += [['Knyaz Suvorov', '0.00', 'flag'], ['Imperator Aleksandr III', '+0.30', 'bold'], ['Borodino', '0.00', ''], ['Oryol', '0.00', '']]
+  .map(r => `<tr><td>${r[0]}</td><td class="${r[2] === 'bold' ? 'amber' : 'dim'}">${r[2]}</td><td class="n"><span class="step"><b></b><i style="min-width:44px">${r[1]}</i><b class="plus"></b></span></td></tr>`).join('');
+
+$('#strength').innerHTML = `<div class="bf h"><span class="n">Russia</span><span></span><span class="c"></span><span></span><span>Japan</span></div>` +
+  [['Battleships', 7, 4], ['Armoured cruisers', 0, 6], ['Cruisers', 2, 0], ['Destroyers', 4, 4], ['Guns 254 mm and up', 28, 16], ['Guns 120 to 253 mm', 94, 164], ['Line speed, kn', 16, 18], ['Tonnage, thousands', 94.9, 120.3]]
+  .map(([n, a, b]) => { const m = Math.max(a, b); return `<div class="bf"><span class="n">${a}</span><i class="l" style="width:${a / m * 60}px"></i><span class="c">${n}</span><i class="r" style="width:${b / m * 60}px"></i><span class="hostile">${b}</span></div>`; }).join('') +
+  `<div class="bf" style="border:0"><span class="n dim" style="grid-column:1/3">average</span><span class="c">Gun crews</span><span class="dim" style="grid-column:4/6">trained</span></div>`;
+</script>
+</body></html>
