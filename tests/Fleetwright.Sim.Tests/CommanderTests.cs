@@ -393,6 +393,32 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.True(hour < Settings.LostSearchMinChance, "not an hour on");
     }
 
+    /// <summary>The player is above the chain (the user, 2026-11-09): a unit taken from the commander is out of his hands
+    /// at once, the task the AI gave it ended and a search's spread line given back as the squadron had it; he gives it
+    /// nothing after.</summary>
+    [Fact]
+    public void A_unit_the_player_takes_drops_the_ais_task_and_gets_its_line_back()
+    {
+        var (w, ai) = Make();
+        var u = Column(w, ai, Class(w, "dreadnought"), Earth.Position(Lat, Lon), 0, 3, kn: 12);
+        w.Apply(Command.SetPlayerSide(0));
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        var (sla, slo) = LatLon(Off(0, 80_000));
+        w.Apply(ai.Orders.Search(u, sla, slo));   // as the commander or a scenario would give it: the AI's, not by hand
+        Run(w, 3 * 60);
+        var g = w.Groups.Get(u.GroupId)!;
+        var spread = (g.Formation, g.SpacingM, ai.Tasks.Of(u).Kind);
+        w.Apply(ai.Orders.Automate(u, false));
+        Run(w, 10 * 60);
+        output.WriteLine($"searching: {spread}; taken: {g.Formation} {g.SpacingM:F0} m, task {ai.Tasks.Of(u).Kind}, commands {ai.Commanders.Commands(u, 0, w.PlayerSide)}");
+        Assert.Equal((Formation.LineAbreast, TaskKind.Search), (spread.Formation, spread.Kind));
+        Assert.True(spread.SpacingM > 5_000);
+        Assert.Equal(TaskKind.None, ai.Tasks.Of(u).Kind);
+        Assert.Equal(Formation.Column, g.Formation);
+        Assert.Equal(600, g.SpacingM, 1);
+        Assert.False(ai.Commanders.Commands(u, 0, w.PlayerSide));
+    }
+
     /// <summary>A search line spreads no wider than the sea about it (AdmiralLayer.SeaRoom): three cruisers off Pungdo sent
     /// to search the mouth of Asan Bay, 15 km visibility, would spread 27 km abreast over the Taean peninsula; they keep to
     /// the sea room, closed up, and none ends up sliding along the coast short of a station ashore.</summary>

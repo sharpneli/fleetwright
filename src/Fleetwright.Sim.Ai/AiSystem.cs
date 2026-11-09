@@ -224,6 +224,8 @@ public sealed class AiSystem : IWorldSystem
                 return;
             case AiCommand.Automate:
                 Commanders.Automate(u, c.X);
+                if (c.X == 0)
+                    Tasks.Taken(Context(world), u);   // the player's now: the AI's task on it ends (decision 14)
                 WakeAll(world);
                 return;
         }
@@ -242,7 +244,7 @@ public sealed class AiSystem : IWorldSystem
             return;
         }
         if (source == OrderSource.Player && EndsTask(code))
-            Tasks.Overridden(u, c);
+            Tasks.Overridden(Context(world), u, c);
         Route(world, c, u);
     }
 

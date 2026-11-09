@@ -107,6 +107,9 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         public SearchPattern Pattern;   // Search: its pattern (a ladder, or sectors through the point)
         public long StartMs, QuietMs;   // when it began; when the unit last had an enemy in sight
         public bool Hand;               // given by the player's hand: carried out as the AI's, but literally
+        public bool Spread;             // Search: its squadron spread abreast for it, its own line kept to give back
+        public Formation WasFormation;
+        public double WasSpacingM, WasBearingDeg;
     }
 
     Task[] tasks = new Task[8];
@@ -227,14 +230,39 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
     };
 
     /// <summary>The player's own order to a unit: its task ends (a speed is the task's speed).</summary>
-    internal void Overridden(Unit u, in Command c)
+    internal void Overridden(in AiContext ctx, Unit u, in Command c)
     {
         if (Find(u.Id) is not (int i and >= 0))
             return;
         if ((AiCommand)c.Code == AiCommand.Speed)
             tasks[i].Kn = c.X;
         else
+        {
+            Unspread(ctx, ref tasks[i]);
             Remove(i);
+        }
+    }
+
+    /// <summary>A unit taken from its side's commander by the player (docs/battle/command.md decision 14): a task the AI
+    /// gave it (his, or a scenario's opening one) ends, its line given back, so nothing but the player's own orders moves
+    /// it; one the player gave by hand goes on.</summary>
+    internal void Taken(in AiContext ctx, Unit u)
+    {
+        if (Find(u.Id) is not (int i and >= 0) || tasks[i].Hand)
+            return;
+        Unspread(ctx, ref tasks[i]);
+        Remove(i);
+    }
+
+    /// <summary>A search's spread line given back to the player: the squadron's own formation and spacing as before the
+    /// AI spread it (the AI's own tasks after a search keep the line as it is).</summary>
+    void Unspread(in AiContext ctx, ref Task t)
+    {
+        if (!t.Spread)
+            return;
+        t.Spread = false;
+        if (new Unit(t.Unit) is { IsGroup: true } u && groups.Get(u.GroupId) is { } g)
+            ctx.Issue(GroupSystem.SetFormation(g.GroupId, t.WasFormation, t.WasSpacingM, t.WasBearingDeg));
     }
 
     /// <summary>A task for a unit (its command): at once, in place of its task and its plan; or, given as
@@ -262,6 +290,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         var kind = KindOf((AiCommand)c.Code);
         var s = ctx.Settings;
         ref var t = ref Get(u.Id);
+        var was = (t.Spread, t.WasFormation, t.WasSpacingM, t.WasBearingDeg);   // a search's line, kept for the player
         t = new Task
         {
             Unit = u.Id, Kind = kind, Status = TaskState.OnTask, StartMs = ctx.NowMs, QuietMs = ctx.NowMs, Hand = OrderFrom.Of(c).Hand,
@@ -279,6 +308,7 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
             OffBowDeg = kind == TaskKind.Scout ? c.Y : 0,
             Pattern = kind == TaskKind.Search ? (SearchPattern)(int)c.Y : SearchPattern.Ladder,
         };
+        (t.Spread, t.WasFormation, t.WasSpacingM, t.WasBearingDeg) = was;
         if (kind == TaskKind.Patrol && ctx.Ships.SlotOf(Lead(u)) is int slot and >= 0)
         {
             var (lat, lon) = Earth.LatLon(ctx.Ships[slot].Position);
@@ -599,7 +629,12 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
         // room for it, here and at the datum; else closed up
         int ships = Admirals!.SearchLine(ctx, u, datum);
         if (ships > 1)
+        {
+            // a squadron's own line kept to give back when the search ends (a force's shape goes down its tree: kept)
+            if (!t.Spread && u.IsGroup && groups.Get(u.GroupId) is { IsForce: false } sq)
+                (t.Spread, t.WasFormation, t.WasSpacingM, t.WasBearingDeg) = (true, sq.Formation, sq.SpacingM, sq.BearingDeg);
             ctx.Issue(o.Shape(u, LineShape.Abreast, OrderSource.Task, spacing));
+        }
         double axis = Earth.Bearing(guide.Position, datum);
         Span<Vec3d> legs = stackalloc Vec3d[12];
         // a ladder of four legs on from the point, or three sectors through it, out to the leg and back

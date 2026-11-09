@@ -770,6 +770,11 @@ doesn't hold the T.
      *Changed 2026-10-23 (decision 14):* a scenario gives every side `On`, the player's too; the player's order by hand
      (`UnitOrders.Hand`) takes a unit at once, before he's thought as after, and a scenario's opening orders never do
      (the "once he's thought" rule, and his `Started`, are gone).
+     *Changed 2026-11-09 (the user: "the player is above the chain of command"):* taking a unit with `Automate` ends the
+     task the AI gave it (his, or a scenario's opening one; one the player gave by hand goes on: `TaskLayer.Taken`), so
+     nothing but the player's orders moves it; a search's spread line is given back as the squadron had it, then and when
+     the player's order by hand overrides the task (`TaskLayer.Unspread`). Found in Pungdo: the commander's search had
+     spread the player's squadron abreast with Akitsushima's station ashore.
    - *Plans:* tasks queue (`UnitOrders.Then`), each begun when the one before ends, done or not; a scenario's `"tasks"`
      list is a top unit's plan, its first given at once. A unit's plan is the task layer's, so it runs on the player's
      side too; a new task in place of a plan drops what was to come.
