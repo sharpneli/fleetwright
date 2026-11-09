@@ -1,0 +1,52 @@
+// Pungdo, 25 July 1894 (inspired by the war's opening shots): China's reinforcements for Asan come in by sea; Japan's Flying
+// Squadron waits off the islands. History: Jiyuan and Guangyi, leaving Asan Bay, met Yoshino, Naniwa and Akitsushima off
+// Pungdo; Guangyi was driven ashore, Jiyuan fled (her captain's white flag and Japanese ensign a lasting scandal), and Naniwa
+// (Captain Tōgō) sank the chartered transport Kowshing with some 1,100 soldiers aboard.
+// Not history's forces: an even fight with a shape (the user, 2026-11-09: scenarios are inspired by history for play),
+// three cruisers a side, the escort already with the transport, China to bring her into Asan Bay, Japan to stop her.
+// Zhiyuan (with the fleet at Weihaiwei that day) joins the escort; China's crews green, Japan's trained.
+// The classes: jiyuan, zhiyuan, guangyi for the Chinese, troopship for Kowshing; yoshino for Yoshino and Akitsushima (a
+// smaller near sister), naniwa for Naniwa.
+//   Japan, the Flying Squadron: the fastest cruisers in Asia, quick-firers, well drilled.
+//   China, the escort: big Krupp guns on small hulls, slower, and a transport full of soldiers to bring in.
+// The weather: a hazy summer morning in the Yellow Sea, a light southwesterly, a slight sea [EST].
+{
+  "scenario": 1,
+  "name": "Pungdo, 1894",
+  "brief": "25 July 1894, morning. War between China and Japan is days away, and China is reinforcing its garrison at Asan by sea. The transport Kowshing is coming in from the west with a thousand soldiers aboard, and the cruisers Zhiyuan, Jiyuan and Guangyi, out of Asan Bay before dawn, have met her and lead her in. Japan's Flying Squadron lies across their way off Pungdo: the fastest cruisers in Asia, with quick-firing guns. Bring the transport into the bay, or stop her.",
+  "place": "off Pungdo, at the mouth of Asan Bay",
+  "about": {
+    "Japan": { "character": "The Flying Squadron: three fast cruisers with quick-firers and trained crews.", "commander": "R-Adm Tsuboi", "ensign": "japan" },
+    "China": { "character": "The escort: three small cruisers with big Krupp guns, slower, and a transport to bring in.", "commander": "Capt Fang Boqian", "ensign": "china" } },
+  "start": "1894-07-24T23:15",
+  "seed": 1894,
+  "camera": [37.0, 126.35, 60],
+  "sides": ["Japan", "China"],
+  "readiness": { "Japan": "closed up", "China": "closed up" },
+  "damage_control": { "Japan": "1905", "China": "1905" },
+  "fire_discipline": { "Japan": "independent", "China": "independent" },
+  "doctrine": {
+    "Japan": { "preset": "default", "StrikeColours": 0.1, "Scuttle": 0.5 },
+    "China": { "preset": "default" } },
+  "crews": { "Japan": "trained", "China": "green" },
+  "player": "Japan",
+  "until": "1894-07-25T05:15",
+  // the transport into the bay; Japan stops her
+  "aims": {
+    "China": { "reach": "Transport", "zone": { "at": [37.064, 126.679], "km": 4, "name": "Asan Bay" }, "of": 1 },
+    "Japan": { "stop": "China" } },
+  // where ships out of the fight go: the Japanese south to the fleet's anchorage; the Chinese into the bay
+  "home": { "Japan": [36.60, 126.00], "China": [37.064, 126.679] },
+  "weather": { "visibility_km": 15, "wind_from": 220, "wind_kn": 8, "swell_m": 0.5, "swell_s": 6, "swell_from": 220 },
+  "units": [
+    // ------------------------------------------------------------- China: 4
+    // the transport coming in from the west, the escort met with her at dawn and steaming ahead of her
+    { "name": "Transport", "admiral": "Capt Galsworthy", "side": 1, "at": [37.215, 125.80], "course": 105, "kn": 10,
+      "ships": [ { "design": "troopship", "names": ["Kowshing"] } ] },
+    { "name": "Escort", "admiral": "Capt Fang Boqian", "side": 1, "at": [37.205, 125.86], "course": 105, "kn": 10, "spacing": 600,
+      "ships": [ { "design": "zhiyuan", "names": ["Zhiyuan"] }, { "design": "jiyuan", "names": ["Jiyuan"] }, { "design": "guangyi", "names": ["Guangyi"] } ] },
+    // ------------------------------------------------------------- Japan: 3
+    { "name": "Flying Squadron", "admiral": { "name": "R-Adm Tsuboi", "temper": 0.3, "why": "opened fire before war was declared" }, "side": 0, "at": [37.13, 126.33], "course": 285, "kn": 12, "spacing": 600,
+      "ships": [ { "design": "yoshino", "names": ["Yoshino"] }, { "design": "naniwa", "names": ["Naniwa"] }, { "design": "yoshino", "names": ["Akitsushima"] } ] }
+  ]
+}

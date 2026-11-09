@@ -1,0 +1,553 @@
+{
+ "version": 22,
+ "id": "zhiyuan",
+ "name": "Zhiyuan-like protected cruiser (1887)",
+ "type": "CL",
+ "speed_kn": 18,
+ "range_nm": 3500,
+ "funnels": 2,
+ "hull": {
+  "block_coefficient": 0.55,
+  "freeboard": 1,
+  "construction": {
+   "name": "Mild steel, riveted",
+   "yield_mpa": 235,
+   "join_factor": 1.1,
+   "standard": 1.0,
+   "shell": "riveted",
+   "internals": "riveted"
+  },
+  "plating": {
+   "shell_mm": 0,
+   "material": "mild steel",
+   "deck_wood_mm": 50
+  },
+  "raised": [
+   {
+    "from": "bow",
+    "to": "bridge",
+    "decks": 1
+   }
+  ]
+ },
+ "main": [
+  {
+   "calibre_mm": 210,
+   "calibre_length": 35,
+   "barrels": 2,
+   "armour_mm": 51,
+   "rounds_per_gun": 80,
+   "fore": 1,
+   "aft": 0,
+   "superfire": false,
+   "gun": "Victorian, single-base",
+   "housing": "barbette",
+   "shells": [
+    {
+     "ammo": "Forged steel APC, soft cap (1895)",
+     "share": 0.4
+    },
+    {
+     "ammo": "Common shell, forged steel (1895)",
+     "share": 0.6
+    }
+   ]
+  },
+  {
+   "calibre_mm": 210,
+   "calibre_length": 35,
+   "barrels": 1,
+   "armour_mm": 51,
+   "rounds_per_gun": 80,
+   "fore": 0,
+   "aft": 1,
+   "superfire": false,
+   "gun": "Victorian, single-base",
+   "housing": "barbette",
+   "shells": [
+    {
+     "ammo": "Forged steel APC, soft cap (1895)",
+     "share": 0.4
+    },
+    {
+     "ammo": "Common shell, forged steel (1895)",
+     "share": 0.6
+    }
+   ]
+  }
+ ],
+ "secondary": [
+  {
+   "calibre_mm": 150,
+   "calibre_length": 35,
+   "barrels": 1,
+   "armour_mm": 0,
+   "rounds_per_gun": 120,
+   "per_side": 1,
+   "mount": "deck",
+   "gun": "Victorian, single-base",
+   "shells": [
+    {
+     "ammo": "Forged steel APC, soft cap (1895)",
+     "share": 0.4
+    },
+    {
+     "ammo": "Common shell, forged steel (1895)",
+     "share": 0.6
+    }
+   ]
+  }
+ ],
+ "torpedoes": {
+  "mounts": 2,
+  "tubes": 1,
+  "torpedo": "Victorian torpedo"
+ },
+ "aa": {
+  "heavy": 0,
+  "light": 0
+ },
+ "armour": {
+  "belt_mm": 0,
+  "belt_bottom_mm": 0,
+  "belt_depth_m": 1.8,
+  "belt_height_m": 1.8,
+  "bulkhead_mm": 0,
+  "decks": [
+   {
+    "deck": 0,
+    "mm": 76,
+    "extent": "full"
+   }
+  ],
+  "upper_belt": {
+   "mm": 0,
+   "to_deck": 0,
+   "extent": "citadel"
+  },
+  "end_belts": {
+   "fore": {
+    "mm": 0,
+    "tip_mm": 0,
+    "reach": 1,
+    "bulkhead_mm": 0
+   },
+   "aft": {
+    "mm": 0,
+    "tip_mm": 0,
+    "reach": 1,
+    "bulkhead_mm": 0
+   }
+  },
+  "steering_box": {
+   "mm": 0,
+   "deck_mm": 0,
+   "bulkhead_mm": 0
+  },
+  "materials": {
+   "belt": "Krupp cemented",
+   "upper_belt": "Krupp cemented",
+   "end_belts": "Harvey nickel steel",
+   "bulkheads": "Krupp cemented",
+   "decks": "nickel steel",
+   "turrets": "Krupp cemented",
+   "barbettes": "Krupp cemented",
+   "conning_tower": "Krupp cemented",
+   "secondary": "Krupp cemented"
+  }
+ },
+ "superstructure": {
+  "t_per_m2": 0.32,
+  "material": "steel",
+  "plating_mm": 0,
+  "control_mm": 0,
+  "tower_levels": 4,
+  "deckhouse_levels": 1,
+  "aft_control": false,
+  "levels_over_bridge": 1
+ },
+ "machinery": {
+  "tech": {
+   "name": "Triple expansion, large-tube water-tube boilers (1900)",
+   "fuel": "coal",
+   "weight_kg_per_kw": 127.1,
+   "stress_floor": 0.45,
+   "sfc_g_per_kwh": 972,
+   "density_t_per_m3": 0.28,
+   "unit_max_mw": 9.9,
+   "unit": {
+    "mw": 5,
+    "height_m": 7.5,
+    "width_m": 4.5,
+    "length_m": 9
+   },
+   "boiler_fraction": 0.55,
+   "crew_k": 34,
+   "part_load": "REC",
+   "draught": {
+    "system": "forced",
+    "velocity_m_s": 8.0,
+    "reach_m": 8.0,
+    "gas_temp_k": 600,
+    "air_fuel_ratio": 16
+   },
+   "boilers": "large_tube",
+   "engines": "vte"
+  },
+  "stress": 0.3,
+  "shafts": 2,
+  "units_per_shaft": 1,
+  "transmission": "mechanical",
+  "arrangement": "grouped",
+  "centreline_bulkhead": false,
+  "bunkers": "wing",
+  "wing_bunker_m": 2,
+  "rudders": 1
+ },
+ "crew": {
+  "endurance_days": 17,
+  "distiller": true,
+  "buffer_days": 5,
+  "water_l_per_day": 15,
+  "berth_ratio": 1,
+  "officer_fraction": 0.08,
+  "standard": {
+   "name": "Hammocks over mess tables",
+   "sleep_rating_m2": 1.1,
+   "sleep_cpo_m2": 1.8,
+   "sleep_officer_m2": 5,
+   "mess_seats_per_man": 0,
+   "galley_k": 0.3,
+   "galley_min_m2": 4,
+   "sanitary_m2": 0.1,
+   "sickbay_beds_per_man": 0.01,
+   "welfare_m2": 0,
+   "services_k": 0.03,
+   "passage_factor": 1.15,
+   "deck_height_m": 2.3,
+   "provisions_m3_per_day": 0.007,
+   "water_l_per_day": 15,
+   "hotel_fraction": 0.05,
+   "cpo_fraction": 0.08,
+   "tolerance_days": 30
+  }
+ },
+ "fire_control": {
+  "main": {
+   "directors": 2,
+   "rangefinder_m": 1.4,
+   "armour_mm": 0,
+   "radar_t": 0,
+   "fit": [
+    "Barr & Stroud FA (O1)",
+    "Hand plot",
+    "Early telescopic sights"
+   ],
+   "sights": "Early telescopic sights"
+  },
+  "secondary": {
+   "directors": 0,
+   "rangefinder_m": 0.0,
+   "armour_mm": 0,
+   "radar_t": 0.0,
+   "sights": "Early telescopic sights"
+  },
+  "aa": {
+   "directors": 0,
+   "rangefinder_m": 0.0,
+   "armour_mm": 0,
+   "radar_t": 0.0,
+   "sights": "Early telescopic sights"
+  },
+  "search_radar_t": 0.0
+ },
+ "look": {
+  "navy": "weihaiwei",
+  "era": "victorian"
+ },
+ "ammunition": {
+  "Forged steel APC, soft cap (1895)": {
+   "kind": "ap",
+   "mass_k_kg_m3": 13010,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "soft",
+    "share": 0.06
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 15,
+    "break_t_d": 0.5,
+    "quality": 0.95
+   },
+   "filler": {
+    "share": 0.025,
+    "body": 0.9,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1.25,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.33,
+    "ogive": 0,
+    "body": 0.55,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0.005,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   }
+  },
+  "Common shell, forged steel (1895)": {
+   "kind": "common",
+   "mass_k_kg_m3": 12460,
+   "nose_crh": 2,
+   "form_factor": 1.8,
+   "cap": {
+    "kind": "none"
+   },
+   "windscreen": false,
+   "body": {
+    "break_ob_deg": 10,
+    "break_t_d": 0.33,
+    "quality": 0.9
+   },
+   "filler": {
+    "share": 0.07,
+    "body": 0.85,
+    "explosive": "Black powder",
+    "booster": "basic"
+   },
+   "steel": {
+    "size": 1,
+    "speed": 1
+   },
+   "casing": {
+    "nose": 0.25,
+    "ogive": 0,
+    "body": 0.63,
+    "plug": 0.08,
+    "tail": 0.04
+   },
+   "fuze": {
+    "position": "base",
+    "delay_s": 0,
+    "start_cal": 0.07,
+    "oblique": 0.45,
+    "plates": "single",
+    "scatter": 0.1,
+    "blind": 0.05,
+    "water_ms": 0.5,
+    "water_fires": 1
+   }
+  }
+ },
+ "explosives": {},
+ "materials": {
+  "Harvey nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.82,
+   "q_scale": 0,
+   "face_hardened": {
+    "share": 0.08,
+    "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94,
+    "big": 0.5
+   },
+   "fragments": "fh"
+  },
+  "Krupp cemented": {
+   "density_t_per_m3": 7.85,
+   "q": 0.88,
+   "q_scale": 0.05,
+   "face_hardened": {
+    "share": 0.34,
+    "min_mm": 81.3
+   },
+   "back": {
+    "spall_u": 0.85,
+    "holed_u": 0.94,
+    "big": 0.5
+   },
+   "fragments": "fh"
+  },
+  "mild steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.7,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1,
+    "big": 0.5
+   },
+   "fragments": "mild"
+  },
+  "nickel steel": {
+   "density_t_per_m3": 7.85,
+   "q": 0.85,
+   "back": {
+    "spall_u": 0.9,
+    "holed_u": 1,
+    "big": 0.5
+   },
+   "fragments": "ductile"
+  }
+ },
+ "fittings": {
+  "shock_grade": "G0",
+  "turret_drive": "steam_hydraulic",
+  "auxiliaries": "steam"
+ },
+ "fire_control_tech": {
+  "Barr & Stroud FA (O1)": {
+   "optics": {
+    "kind": "coincidence",
+    "delta_arcsec": 14,
+    "rigid_base_m": 2,
+    "flex_exp": 0.75,
+    "magnification": 24,
+    "m_max": 20,
+    "readings_per_min": 2,
+    "coated": false,
+    "gyro_stabilised": false,
+    "mass_kg_m2": 30
+   }
+  },
+  "Hand plot": {
+   "computer": {
+    "tracker": "rate_clock",
+    "helm_free": false,
+    "latency_s": 15,
+    "q": 0.02,
+    "max_range_rate_ms": 0,
+    "max_bearing_rate_deg_s": 0,
+    "accel_tau_s": 0,
+    "accel_sigma_ms2": 0,
+    "turn_q": 0,
+    "speed_q": 0,
+    "detect": false,
+    "course_rate": false,
+    "range_clock": false,
+    "rejudge_s": 0,
+    "prior_kn": 4,
+    "prior_deg": 25,
+    "wind_input": "none",
+    "wind_err_kn": 0,
+    "density_err_pct": 1.5,
+    "mv_err_pct": 1,
+    "own_speed_lag_s": 0,
+    "first_step_m": 366,
+    "mass_t": 0.2,
+    "crew": 3,
+    "power_kw": 0
+   }
+  },
+  "Early telescopic sights": {
+   "mount": {
+    "director_firing": false,
+    "stable_vertical": false,
+    "lay_mil": 0.73
+   }
+  }
+ },
+ "masts": [
+  {
+   "kind": "pole",
+   "top": "fighting",
+   "top_radius_m": 2
+  },
+  {
+   "kind": "pole",
+   "top": "fighting",
+   "top_radius_m": 2
+  }
+ ],
+ "outfit": {
+  "name": "Pre-dreadnought (1905)",
+  "fitted": {
+   "quarters": 450,
+   "cabins": 900,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 400
+  },
+  "stripped": {
+   "quarters": 380,
+   "cabins": 600,
+   "offices": 420,
+   "stores": 1500,
+   "machinery": 150,
+   "deck": 350
+  },
+  "paint_mj_m2": 60,
+  "growth": 1.5
+ },
+ "gun_tech": {
+  "Victorian, single-base": {
+   "reload_share": 1,
+   "heavy_slow": 1.3,
+   "heavy_slow_under_40_cal": 2.5,
+   "heavy_slow_under_30_cal": 4,
+   "train_share": 0.7,
+   "dp_train_share": 1,
+   "max_elevation_deg": 13,
+   "dp_max_elevation_deg": 13,
+   "pattern_pct": 3.5,
+   "pattern_exp": 0,
+   "pattern_light_pct": 3.5,
+   "propellant": "single-base",
+   "black_powder_under_cal": 36,
+   "packaging": "tank"
+  }
+ },
+ "torpedo_tech": {
+  "Victorian torpedo": {
+   "fast_kn": 30,
+   "fast_range_m": 1000,
+   "slow_kn": 24,
+   "slow_range_m": 2700,
+   "charge_share": 0.45,
+   "mount_train_deg_s": 3,
+   "mount_reload_s": 600,
+   "tube_reload_s": 180,
+   "gyro_deg": 5,
+   "fail": 0.25,
+   "dud": 0.15,
+   "filler": "Wet guncotton",
+   "case_mm": 6,
+   "oxygen": false
+  }
+ },
+ "drainage": {
+  "name": "Pre-dreadnought (1905)",
+  "pumps_tph_per_1000t": 40,
+  "portable_pumps": 4,
+  "portable_tph": 8,
+  "counterflood_tpm_per_10000t": 8,
+  "tightness": 2
+ },
+ "searchlights": {
+  "name": "Pre-dreadnought (1904)",
+  "capital_count": 6,
+  "mirror_cm": 75,
+  "small_mirror_cm": 40,
+  "lamp_cd_cm2": 16000,
+  "spread_deg": 3,
+  "control": "remote"
+ }
+}

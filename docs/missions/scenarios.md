@@ -341,7 +341,7 @@ from one to the next):
 | # | Scenario | Size | Sides | New |
 |---|---|---|---|---|
 | E1 | **Port Arthur, 1904** (inspired by the dawn action of 10 March): a skirmish off the roads | small, 12 | four boats and two cruisers a side; Russia's boats reach the roads, Japan stops them | yoshino, bayan, novik (built); poltava built for the Yellow Sea; lights shown (night.md Q13) |
-| E2 | **Pungdo, 1894** (real, new): the war's opening shots | small | Japan's flying squadron (Yoshino, Naniwa, Akitsushima) v Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | yoshino, naniwa, jiyuan; troopship reused |
+| E2 | **Pungdo, 1894** (inspired by the war's opening shots) | small, 7 | Japan's Flying Squadron (Yoshino, Naniwa, Akitsushima) v Zhiyuan, Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | naniwa, jiyuan, zhiyuan, guangyi (built); yoshino from E1; troopship reused |
 | E3 | **The Yalu, 1894** (candidate 1) | medium | the Beiyang Fleet v Itō | dingyuan, Chinese cruisers, matsushima; E2's |
 | E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium | Russia's Black Sea fleet landing troops v an Ottoman sortie; Russia reach, the Ottomans stop | ekaterina, Ottoman ironclads; troopship |
 | E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | medium | Pelayo, Carlos V and destroyers v Dewey's cruisers and Monterey | pelayo, carlos_v, olympia, a monitor; the US ensign |
@@ -364,6 +364,20 @@ The night version left behind, and kept: lights shown (night.md Q13, `"lights": 
 opening attack task isn't recalled by its commander until it's through; an attack on a target seen stopped runs
 straight in. Its open bug (boats against a lit squadron at anchor barely fire) stays in docs/battle/bugs.md for any
 later night torpedo scenario. Poltava (11,200 t full against the record's 10,960) waits for the Yellow Sea.
+
+**E2, Pungdo (2026-11-09): played.** The transport Kowshing comes in from the west with the escort (Zhiyuan, Jiyuan,
+Guangyi) ahead of her; the Flying Squadron lies across their way off Pungdo; China brings her into Asan Bay (a 4 km zone
+at its mouth), Japan stops her. Morning, 15 km haze, Japan trained, China green. The new designs, from yoshino's hull
+with China's ammunition (the catalogue's 1895 forged steel pair) and look (`weihaiwei`): naniwa 2,900 t full (the
+record's 3,650), jiyuan 1,640 t (2,300), zhiyuan 2,650 t (2,300), guangyi 1,000 t (1,000). The 1880s cruisers carry one
+conning position, a four-level tower and two deck tubes: with yoshino's aft control and four tubes the layout ran them
+out to 110 m long (guangyi, jiyuan), where they're now 73-102 m.
+
+Balance, AI on both sides (`shipgen scenario Content/Scenarios/pungdo.json --play --seeds 16`): China 9, Japan 7; Japan
+loses 0.5 ships a game, China 1.8. On the way: with the escort coming out of the bay to meet the transport, the Stop
+side's search ("across the enemy's way", aims.md A3) went for the bay, met the escort and never saw the transport 15-20
+km north of the fight (China 11 of 12); with the convoy together and Japan on its track, three escorts and average
+crews gave China 9 of 12, two escorts (history's) gave Japan 9 of 12; three escorts with green crews sits between.
 
 ## Open questions for the user
 
