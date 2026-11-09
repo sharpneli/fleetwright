@@ -342,7 +342,7 @@ from one to the next):
 |---|---|---|---|---|
 | E1 | **Port Arthur, 1904** (inspired by the dawn action of 10 March): a skirmish off the roads | small, 12 | four boats and two cruisers a side; Russia's boats reach the roads, Japan stops them | yoshino, bayan, novik (built); poltava built for the Yellow Sea; lights shown (night.md Q13) |
 | E2 | **Pungdo, 1894** (inspired by the war's opening shots) | small, 7 | Japan's Flying Squadron (Yoshino, Naniwa, Akitsushima) v Zhiyuan, Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | naniwa, jiyuan, zhiyuan, guangyi (built); yoshino from E1; troopship reused |
-| E3 | **The Yalu, 1894** (candidate 1) | medium | the Beiyang Fleet v Itō | dingyuan, Chinese cruisers, matsushima; E2's |
+| E3 | **The Yalu, 1894** (candidate 1) | medium, 15 | the Beiyang Fleet (two ironclads, two armoured cruisers, three cruisers) v Itō's two squadrons (eight cruisers) | dingyuan, laiyuan, matsushima, chiyoda (built); E1's and E2's |
 | E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium | Russia's Black Sea fleet landing troops v an Ottoman sortie; Russia reach, the Ottomans stop | ekaterina, Ottoman ironclads; troopship |
 | E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | medium | Pelayo, Carlos V and destroyers v Dewey's cruisers and Monterey | pelayo, carlos_v, olympia, a monitor; the US ensign |
 | E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy after Messina | medium | Austria (Habsburg, Erzherzog Karl, Radetzky?) v Italy (Brin, Regina Margherita, Garibaldi) | three or four a side |
@@ -381,6 +381,22 @@ crews gave China 9 of 12, two escorts (history's) gave Japan 9 of 12; three esco
 After the user's playthrough (Akitsushima sent to a search station ashore, fixed in docs/battle/bugs.md "A search
 line spread over the land") the squadron searches closed up near the coast: China 10, Japan 6 over 16 seeds, Japan
 losing 0.1 ships a game, China 1.1.
+
+**E3, the Yalu (2026-11-09): played.** Noon, 20 km clear: the Beiyang Fleet out from the Yalu mouth in line abreast of
+three squadrons (Dingyuan and Zhenyuan; Laiyuan and Jingyuan; Zhiyuan, Jiyuan, Guangjia), Itō's Flying Squadron
+(Yoshino, Takachiho, Akitsushima, Naniwa) and Main Squadron (the three Sankeikan, Chiyoda) up from the southwest 40 km
+off; both sides destroy everyone; the old cruisers and gunboats of both sides left out. New designs: dingyuan from
+poltava's hull with compound armour (355 mm belt on a short citadel, 4 x 305 mm/25 en echelon), 10,300 t full against the
+record's 7,670 (heavy, and the strongest ship there, as she was); laiyuan from bayan's (240 mm compound belt, 2 x 210
+mm forward) 2,150 t (2,900); matsushima from naniwa's (one 320 mm Canet forward, 12 x 120 mm in casemates) 2,500 t
+(4,200); chiyoda (10 x 120 mm, a 115 mm belt, no deck tubes: none fit) 2,750 t (2,400). The font has no ō: names in
+the file are written Ito.
+
+Balance, AI on both sides (`shipgen scenario Content/Scenarios/yalu.json --play --seeds 12`), Japan trained, China
+green (as at Pungdo): score 0.18 v 0.17, Japan losing 1.1 ships a game and China 2.2; every game runs to the clock (8 h,
+into the dusk); a few end in a rout either way (an ironclad sunk: Japan 0.5-0.6; three Japanese cruisers: China 0.4),
+two in long-range sparring. With average Chinese crews China led 0.26 v 0.15: its tonnage sits in the ironclads, which
+rarely sink, and the Yoshinos (5,260 t each) are the Japanese ships lost.
 
 ## Open questions for the user
 

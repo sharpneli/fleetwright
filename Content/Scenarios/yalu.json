@@ -1,0 +1,52 @@
+// The Yalu, 17 September 1894 (inspired by the battle off the mouth of the Yalu): the Beiyang Fleet, having seen its
+// transports in, meets Itō's Combined Fleet at noon. History: Ding Ruchang's ships came on in a ragged line abreast, the two
+// German-built ironclads in the centre; the Flying Squadron raced across their front onto the weak right wing, the main
+// squadron circled them, and the quick-firers wrecked the Chinese cruisers (Zhiyuan, Jingyuan, Chaoyong, Yangwei sunk,
+// Guangjia lost aground) while Dingyuan and Zhenyuan, holed over and over, could not be sunk; Matsushima took a 305 mm shell
+// and a cartridge fire that killed a hundred men. The Japanese held the sea; the ironclads lived to fight at Weihaiwei.
+// Not history's forces: made an even fight (the user: scenarios inspired by history for play), the old cruisers and gunboats
+// on both sides left out. The classes: dingyuan for Dingyuan and Zhenyuan, laiyuan for Laiyuan and Jingyuan (her sister),
+// zhiyuan for Zhiyuan, jiyuan for Jiyuan, guangyi for Guangjia (her near sister); yoshino for Yoshino and Akitsushima,
+// naniwa for Naniwa and Takachiho (her sister), matsushima for the three Sankeikan, chiyoda for Chiyoda.
+//   Japan, the quick-firers: eight fast ships, a storm of 120 and 152 mm, three big Canet guns, trained crews.
+//   China, the ironclads: two armoured giants no Japanese gun can stop, slow cruisers with big Krupp guns.
+// The weather: a fine clear September day over the Yellow Sea, a light northerly, a slight sea [EST].
+{
+  "scenario": 1,
+  "name": "The Yalu, 1894",
+  "brief": "17 September 1894, noon. The Beiyang Fleet has seen its transports into the mouth of the Yalu and is steaming out to sea when smoke is sighted to the southwest: Ito's Combined Fleet, come to find it. Ding Ruchang has two German-built ironclads that no Japanese gun can stop and cruisers with big Krupp guns; Ito has the fastest ships in Asia and more quick-firing guns than the Chinese have ever faced. Whoever holds the Yellow Sea after today holds the war.",
+  "place": "off the mouth of the Yalu, Yellow Sea",
+  "about": {
+    "Japan": { "character": "The quick-firers: eight fast ships in two squadrons, three big Canet guns, trained crews.", "commander": "V-Adm Ito", "ensign": "japan" },
+    "China": { "character": "The ironclads: two armoured giants at the centre, slow cruisers with big Krupp guns.", "commander": "Adm Ding Ruchang", "ensign": "china" } },
+  "start": "1894-09-17T04:00",
+  "seed": 1894917,
+  "camera": [39.47, 123.65, 60],
+  "sides": ["Japan", "China"],
+  "readiness": { "Japan": "closed up", "China": "closed up" },
+  "damage_control": { "Japan": "1905", "China": "1905" },
+  "fire_discipline": { "Japan": "independent", "China": "independent" },
+  "doctrine": {
+    "Japan": { "preset": "default", "StrikeColours": 0.1, "Scuttle": 0.5 },
+    "China": { "preset": "default" } },
+  "crews": { "Japan": "trained", "China": "green" },
+  "player": "Japan",
+  "until": "1894-09-17T12:00",
+  "aims": { "Japan": "destroy everyone", "China": "destroy everyone" },
+  // where ships out of the fight go: the Japanese south toward Korea; the Chinese to Port Arthur
+  "home": { "Japan": [38.60, 124.20], "China": [38.80, 121.30] },
+  "weather": { "visibility_km": 20, "wind_from": 20, "wind_kn": 8, "swell_m": 0.5, "swell_s": 6, "swell_from": 200 },
+  "units": [
+    // ------------------------------------------------------------- China: 7, out from the Yalu mouth
+    { "name": "Beiyang Fleet", "admiral": { "name": "Adm Ding Ruchang", "temper": 0.1 }, "side": 1, "at": [39.60, 123.82], "course": 225, "kn": 7, "formation": "abreast", "spacing": 2500,
+      "units": [
+        { "name": "Ironclads", "spacing": 600, "ships": [ { "design": "dingyuan", "names": ["Dingyuan", "Zhenyuan"] } ] },
+        { "name": "Armoured Cruisers", "spacing": 600, "ships": [ { "design": "laiyuan", "names": ["Laiyuan", "Jingyuan"] } ] },
+        { "name": "Cruisers", "spacing": 600, "ships": [ { "design": "zhiyuan", "names": ["Zhiyuan"] }, { "design": "jiyuan", "names": ["Jiyuan"] }, { "design": "guangyi", "names": ["Guangjia"] } ] } ] },
+    // ------------------------------------------------------------- Japan: 8, up from the southwest
+    { "name": "Flying Squadron", "admiral": { "name": "R-Adm Tsuboi", "temper": 0.3, "why": "raced across the Chinese front onto its weak wing" }, "side": 0, "at": [39.36, 123.46], "course": 45, "kn": 10, "spacing": 600,
+      "ships": [ { "design": "yoshino", "names": ["Yoshino"] }, { "design": "naniwa", "names": ["Takachiho"] }, { "design": "yoshino", "names": ["Akitsushima"] }, { "design": "naniwa", "names": ["Naniwa"] } ] },
+    { "name": "Main Squadron", "admiral": { "name": "V-Adm Ito", "temper": 0.1 }, "side": 0, "at": [39.33, 123.43], "course": 45, "kn": 10, "spacing": 600,
+      "ships": [ { "design": "matsushima", "names": ["Matsushima", "Itsukushima", "Hashidate"] }, { "design": "chiyoda", "names": ["Chiyoda"] } ] }
+  ]
+}
