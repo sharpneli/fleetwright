@@ -56,7 +56,7 @@ public sealed partial class CaptainLayer
         bool dark = InDark(ctx, own, out double sky);
         bool doused = cap.HeldUntilMs > ctx.NowMs && cap.HeldFor == CaptainReason.Lit;
         bool held = cap.BeamsHeld && big >= 0;
-        bool burn = dark && (held || !(cap.Attacking && cap.Order == CaptainOrder.Fight) && !doused && encounters.Of(slot, own.Entity) != 0);
+        bool burn = dark && (held || !Pressing(cap) && !doused && encounters.Of(slot, own.Entity) != 0);
         bool beams = big >= 0 && (held || use switch
         {
             SearchlightUse.Never => false,
@@ -203,7 +203,7 @@ public sealed partial class CaptainLayer
     void TurnFromLight(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         long now = ctx.NowMs;
-        if (cap.Attacking || Conned(cap, own.Entity) || cap.HeldUntilMs > now && cap.HeldFor == CaptainReason.Combing ||
+        if (Pressing(cap) || Conned(cap, own.Entity) || cap.HeldUntilMs > now && cap.HeldFor == CaptainReason.Combing ||
             (WhenLit)doctrine.Of(own.Entity, own.Side, DoctrineField.WhenLit) != WhenLit.TurnAway)
             return;
         var world = ctx.World;
@@ -220,6 +220,12 @@ public sealed partial class CaptainLayer
             cap.Reason = CaptainReason.Lit;
         Give(ctx, own, away, own.SpeedOrderKn);
     }
+
+    /// <summary>Whether he's pressing a torpedo attack (his searchlights dark, a light on him not turned from): his own, in a
+    /// fight, or his flotilla's, his torpedoes held for its signal (docs/battle/command.md 5.1b; the guide steering by its
+    /// admiral's course, the rest on station, none of them in a fight of their own: until 2026-11-09 the flotilla turned
+    /// from every beam on its run in and never came within reach of a squadron lit at anchor, docs/battle/bugs.md).</summary>
+    static bool Pressing(in Captain cap) => cap.Attacking && cap.Order == CaptainOrder.Fight || cap.TorpedoHeld;
 
     static bool Held(in AiContext ctx, Picture? pic, ShipState own, int target, double withinM) => Held(ctx, pic, own, target, withinM, out _);
 

@@ -150,8 +150,11 @@ public sealed partial class AdmiralLayer
         double run = TorpedoAim.Intercept(guide.Position, q, v, speed, out _, out double meet) ? meet : double.PositiveInfinity;
         double gain = s.AttackGainShare * range;
         // a target seen stopped (at anchor, or dead in the water) has no bow to gain and can't turn away: the boats run in
-        // from where they are (Port Arthur's roads, 8 February 1904; docs/battle/night.md Q13)
-        bool still = v.Length < s.SeenStoppedKn * Handling.MsPerKnot;
+        // from where they are (Port Arthur's roads, 8 February 1904; docs/battle/night.md Q13). Seen so, as she was last
+        // seen (no bow wave, no wake: SeenFlags.Stopped), never from the track's speed: its noise on a ship lying still
+        // wanders either side of SeenStoppedKn and points her "bow" anywhere, so the run in read as a stern chase and was
+        // given up, and out of sight it can sink to a knot on a ship making 21 (docs/battle/bugs.md, 2026-11-09)
+        bool still = pic.IndexOf(a.AttackTarget) is int ti0 and >= 0 && (pic[ti0].Seen & SeenFlags.Stopped) != 0;
         switch (a.Attack)
         {
             case AttackPhase.Gain:
@@ -218,6 +221,8 @@ public sealed partial class AdmiralLayer
                     Signal(ctx, g, a.AttackTarget, now, a.AttackTubes);
                     return true;
                 }
+                if (still)
+                    (a.AttackMs, a.AttackStartMs) = (now, now);   // one seen stopped can't keep out of reach: the budgets run from when he could
                 if (now - a.AttackMs > s.AttackGainMaxMs)
                 {
                     (a.Attack, a.AttackMs) = (AttackPhase.Away, now);   // never in reach: given up, away

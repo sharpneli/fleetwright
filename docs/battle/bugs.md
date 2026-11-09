@@ -195,7 +195,28 @@ runs 5-7, after its fix, and the Debug run had none.
   The admiral's guide clearance (`AdmiralLayer.Clear`) keeps most lines off; a station ashore might be put at the
   nearest sea instead. Not seen since the fix.
 
-- [ ] **Boats attacking a lit squadron at anchor by night barely fire** (found 2026-11-09, Port Arthur's first version, the night attack, since reworked into a day skirmish: docs/missions/scenarios.md E1; rebuild that night case to chase it). Ten Ikazuchis with opening attack tasks against fifteen ships stopped and lit: 0-5 torpedoes a run of their 20 (history 16, 3 hits) and 4-5 boats lost to the guns (history none), over 4 seeds. The watch (`--watch 16,20,23`, which now prints the captain's order and the attack's phase) shows each flotilla Gain → Run → Away with no torpedoes, turning away 2.5-3 km off its target; all three flotillas pick the same ship. Likeliest: the side's picture of a lit ship ranged by eye at 13 km is off by a kilometre or more, so `run` reads within the fast setting's reach and the signal goes early, and the boats' own `FireOnSignal` then has nothing in reach. Trace one attack second by second before changing anything. Seen by day too (2026-11-09, the Bosporus coup, docs/missions/scenarios.md E4): nine Ottoman torpedo boats against three barbette ships and four slow transports fire 3-4 of their 18 torpedoes a game.
+- [ ] **Boats attacking a lit squadron at anchor by night barely fire** (found 2026-11-09, Port Arthur's first version, the night attack, since reworked into a day skirmish: docs/missions/scenarios.md E1; rebuild that night case to chase it). Ten Ikazuchis with opening attack tasks against fifteen ships stopped and lit: 0-5 torpedoes a run of their 20 (history 16, 3 hits) and 4-5 boats lost to the guns (history none), over 4 seeds. The watch (`--watch 16,20,23`, which now prints the captain's order and the attack's phase) shows each flotilla Gain → Run → Away with no torpedoes, turning away 2.5-3 km off its target; all three flotillas pick the same ship. Likeliest: the side's picture of a lit ship ranged by eye at 13 km is off by a kilometre or more, so `run` reads within the fast setting's reach and the signal goes early, and the boats' own `FireOnSignal` then has nothing in reach. Trace one attack second by second before changing anything. The night case is kept as `Content/Scenarios/test-port-arthur-night.json`.
+  2026-11-09, traced think by think (seed 1904): not the range. Three AI faults and one limit of the night model:
+  1. *Fixed.* The admiral judged "stopped" by the track's speed: on a ship at anchor its noise wanders 0.1-2 kn either
+     side of `SeenStoppedKn` (4-9 kn at first, at 13 km) and points her "bow" anywhere, so the run in kept reading as a
+     stern chase, fell back to Gain (6 min steaming for a gain point off a random bow) and, its budget gone, turned
+     Away 2.8 km out. Now `SeenFlags.Stopped`, as she was last seen (no bow wave); never the track, which out of sight
+     can sink to a knot on a ship making 21 (`MatchupPlayTests`' gain budget).
+  2. *Fixed.* The run's budget (`AttackGainMaxMs`, 15 min from the first gain) ran out before boats sighting a lit
+     squadron at 13 km could close it, and when the target got under way at 1.5 kn with the boats 1.6 km off they gave
+     up at once. The budgets now run from the last moment she was seen stopped.
+  3. *Fixed.* `TurnFromLight` and the searchlights' "dark while attacking" asked `cap.Attacking`, set only by a
+     captain's own Fight: in a flotilla's attack (guide on the admiral's course, the rest on station) every boat turned
+     from each beam for `LitTurnAwayS`, the admiral's course waiting behind it, and the boats ran *away* from a target
+     2 km off. Now both ask `Pressing` (his own attack, or torpedoes held for his flotilla's signal).
+  4. *Open, a design question.* With 1-3 the three flotillas reach their signals (950, 545, 780 m), but the Russians
+     sight the leading boat at 2.7 km, open fire and douse their lights (Q13). A darkened battleship lying still (no bow
+     wave) is under margin 1 from a destroyer's bridge until about 800 m on this moonless night, and torpedoes are aimed
+     only at a ship in sight (`TorpedoSystem.Solve`), not at her gun flashes or searchlights (light fixes; "firing at a
+     flash alone" is Not built in night.md). The boats hold the signal in her beams, fire little, and die: over 4 seeds
+     5.8 torpedoes (3.0 before) and 9.0 of 10 boats lost (4.8 before). Candidates: a torpedo aimed on a light fix (for
+     a ship lying still, the bearing is the aim); a lit ship's lookouts not dark adapted (her own deck lights).
+  The Bosporus (day) case is unchanged by 1-3 (2.2 torpedoes a game before and after): another cause. Seen by day too (2026-11-09, the Bosporus coup, docs/missions/scenarios.md E4): nine Ottoman torpedo boats against three barbette ships and four slow transports fire 3-4 of their 18 torpedoes a game.
 
 - [ ] **A ship runs through her own torpedoes** (found 2026-11-06, EX2, `AimsTests`' raid on seed 3). Emden fired at the tramps, turned for home at 29 kn and took two of her own: shooter 4 is her, 533 mm, `HitSource.Torpedo`, broken in two by `Underwater`'s old chance. Torpedoes have always been able to do this and it's a real accident (HMS Trinidad, 1942), but a captain with a spread running should keep out of its way. The test now plays seed 4; the raid passes on 4, 5 and 6.
 
