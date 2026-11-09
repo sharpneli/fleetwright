@@ -439,7 +439,7 @@ public class ScenarioTests
     [Fact]
     public void Every_shipped_scenario_reads_with_its_designs_and_ensigns()
     {
-        string[] drawn = ["britain", "germany", "russia", "japan", "france", "italy", "ottoman", "finland", "sweden", "austria", "spain", "china"];
+        string[] drawn = ["britain", "germany", "russia", "japan", "france", "italy", "ottoman", "finland", "sweden", "austria", "spain", "china", "usa"];
         var folder = Path.Combine(Fleet.Repo, "Content", "Scenarios");
         var played = new List<string>();
         foreach (var path in Directory.GetFiles(folder, "*.json"))
@@ -454,6 +454,6 @@ public class ScenarioTests
             if (!s.Test)
                 played.Add(name);
         }
-        Assert.Equal(["aland", "bosporus", "cape-sarych", "coronel", "dogger-bank", "dover-strait", "heligoland-bight", "jutland", "port-arthur", "prizes-war", "pungdo", "tsushima", "yalu"], played.Order());
+        Assert.Equal(["aland", "bosporus", "cape-sarych", "coronel", "dogger-bank", "dover-strait", "heligoland-bight", "jutland", "manila", "port-arthur", "prizes-war", "pungdo", "tsushima", "yalu"], played.Order());
     }
 }

@@ -1,0 +1,52 @@
+// Cámara reaches Manila, August 1898 (hypothetical). After Dewey's victory at Manila Bay on 1 May, Spain sent Admiral Cámara
+// east with her one battleship, Pelayo, the new cruiser Carlos V and three destroyers to retake the bay; the squadron got as far
+// as Port Said, was refused coal by the British in Egypt, and was recalled when the Americans threatened Spain's own coast.
+// Here the coal is found: Cámara comes up from the South China Sea for the mouth of Manila Bay, where Dewey waits with his
+// cruisers and the two monitors sent across the Pacific to meet exactly this.
+// Not history's forces: Dewey's smaller cruisers and gunboats left out for an even fight (the user: scenarios inspired by
+// history for play). The classes: pelayo for Pelayo, carlos_v for Carlos V, spanish_dd for Audaz, Osado and Proserpina;
+// olympia for Olympia and Baltimore (her stand-in), monterey for Monterey and Monadnock (a near sister).
+//   Spain, the relief: one barbette battleship, a big cruiser, three fast destroyers and a long way from home.
+//   United States, the holders: two fast cruisers with 8-inch guns and two slow monitors with 12-inch, at the bay's mouth.
+// The weather: the southwest monsoon, a grey morning with rain squalls, a fresh breeze and a moderate swell [EST].
+{
+  "scenario": 1,
+  "name": "Cámara at Manila, 1898",
+  "brief": "20 August 1898, morning. Admiral Cámara has found coal after all: Spain's battleship Pelayo, the cruiser Carlos V and three destroyers have crossed the Indian Ocean and stand in for Manila Bay to break Dewey's hold on the Philippines. Dewey waits inside the mouth with Olympia and Baltimore and the monitors Monterey and Monadnock, sent across the Pacific for exactly this. Fight your way into the bay and off Manila, or keep the Spanish out.",
+  "place": "the mouth of Manila Bay",
+  "about": {
+    "Spain": { "character": "The relief: one barbette battleship, a big cruiser, three fast destroyers, far from home.", "commander": "R-Adm Cámara", "ensign": "spain" },
+    "United States": { "character": "The holders: two fast 8-inch cruisers and two slow 12-inch monitors at the bay's mouth.", "commander": "Cdre Dewey", "ensign": "usa" } },
+  "start": "1898-08-19T22:30",
+  "seed": 1898,
+  "camera": [14.45, 120.55, 70],
+  "sides": ["Spain", "United States"],
+  "readiness": { "Spain": "closed up", "United States": "closed up" },
+  "damage_control": { "Spain": "1905", "United States": "1905" },
+  "fire_discipline": { "Spain": "independent", "United States": "independent" },
+  "doctrine": {
+    "Spain": { "preset": "default" },
+    "United States": { "preset": "default" } },
+  "crews": { "Spain": "average", "United States": "trained" },
+  "player": "Spain",
+  "until": "1898-08-20T10:00",
+  // the battleship and the cruiser in off Manila for half an hour (to bombard the American positions); the Americans stop it
+  "aims": {
+    "Spain": { "reach": "Squadron", "zone": { "at": [14.581, 120.838], "km": 6, "name": "off Manila" }, "of": 2, "stay": 30 },
+    "United States": { "stop": "Spain" } },
+  // where ships out of the fight go: the Spanish out to sea; the Americans into Cavite
+  "home": { "Spain": [14.30, 119.60], "United States": [14.50, 120.88] },
+  "weather": { "visibility_km": 10, "wind_from": 225, "wind_kn": 14, "swell_m": 1.2, "swell_s": 7, "swell_from": 230 },
+  "units": [
+    // ------------------------------------------------------------- Spain: 5, in from the South China Sea
+    { "name": "Squadron", "admiral": { "name": "R-Adm Cámara", "temper": 0.2 }, "side": 0, "at": [14.378, 120.219], "course": 75, "kn": 10, "spacing": 700,
+      "ships": [ { "design": "pelayo", "names": ["Pelayo"] }, { "design": "carlos_v", "names": ["Carlos V"] } ] },
+    { "name": "Destroyers", "admiral": { "name": "Capt Villaamil", "temper": 0.4, "why": "led the destroyers to Santiago and died in their attack" }, "side": 0, "at": [14.395, 120.24], "course": 75, "kn": 12, "spacing": 300,
+      "ships": [ { "design": "spanish_dd", "names": ["Audaz", "Osado", "Proserpina"] } ] },
+    // ------------------------------------------------------------- the United States: 4, inside the mouth
+    { "name": "Asiatic Squadron", "admiral": { "name": "Cdre Dewey", "temper": 0.3, "why": "you may fire when you are ready, Gridley" }, "side": 1, "at": [14.46, 120.67], "course": 250, "kn": 8, "spacing": 600,
+      "ships": [ { "design": "olympia", "names": ["Olympia", "Baltimore"] } ] },
+    { "name": "Monitors", "admiral": "Capt Leutze", "side": 1, "at": [14.44, 120.70], "course": 250, "kn": 6, "spacing": 500,
+      "ships": [ { "design": "monterey", "names": ["Monterey", "Monadnock"] } ] }
+  ]
+}

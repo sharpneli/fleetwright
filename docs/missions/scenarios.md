@@ -344,7 +344,7 @@ from one to the next):
 | E2 | **Pungdo, 1894** (inspired by the war's opening shots) | small, 7 | Japan's Flying Squadron (Yoshino, Naniwa, Akitsushima) v Zhiyuan, Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | naniwa, jiyuan, zhiyuan, guangyi (built); yoshino from E1; troopship reused |
 | E3 | **The Yalu, 1894** (candidate 1) | medium, 15 | the Beiyang Fleet (two ironclads, two armoured cruisers, three cruisers) v Itō's two squadrons (eight cruisers) | dingyuan, laiyuan, matsushima, chiyoda (built); E1's and E2's |
 | E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium, 18 | three Ekaterinas and four transports v two Ottoman ironclads and nine torpedo boats; Russia reach, the Ottomans stop | ekaterina, mesudiye, ottoman_tb (built); troopship |
-| E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | medium | Pelayo, Carlos V and destroyers v Dewey's cruisers and Monterey | pelayo, carlos_v, olympia, a monitor; the US ensign |
+| E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | small, 9 | Pelayo, Carlos V and three destroyers v Olympia, Baltimore and two monitors; Spain reach, the US stop | pelayo, carlos_v, spanish_dd, olympia, monterey (built); the US ensign (drawn) |
 | E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy after Messina | medium | Austria (Habsburg, Erzherzog Karl, Radetzky?) v Italy (Brin, Regina Margherita, Garibaldi) | three or four a side |
 
 **E1, Port Arthur (2026-11-09): a skirmish, played.** First built as the night attack of 8-9 February with history's
@@ -414,6 +414,20 @@ loses 0.7 ships a game, the Ottomans 2.9. On the way: 60 km out, the fight came 
 11 of 12); 35 km out, three of four transports for 30 minutes, Russia 11 of 12; average Ottoman crews and a third
 torpedo boat division, Russia 9 of 12; all four transports, then 45 minutes, to where it is. The torpedo boats fire
 only 3-4 of their 18 torpedoes a game (docs/battle/bugs.md, the boats' attacks).
+
+**E5, Cámara at Manila (2026-11-09): played.** 20 August 1898, the southwest monsoon, 10 km in rain: Cámara's squadron
+(Pelayo, Carlos V) and destroyers (Audaz, Osado, Proserpina) in from the South China Sea, 47 km off; Dewey's Olympia and
+Baltimore and the monitors Monterey and Monadnock inside the mouth of Manila Bay. Spain brings both big ships off Manila
+for half an hour (a 6 km zone); the United States stops it. Spain average, the US trained. New designs, both navies on
+the catalogue's 1895 forged steel shells: pelayo from dingyuan's hull (2 x 320 mm fore and aft, 2 x 280 mm in wing
+barbettes, 12 x 120 mm, a 450 mm compound belt) 12,000 t full against the record's 9,900; carlos_v from bayan's (2 x 280
+mm, 8 x 140 mm, a 152 mm deck, a thin side) 5,860 t (9,200); spanish_dd from ikazuchi (2 x 75 mm, two tubes, 30 kn)
+1,080 t (about 400: the speed costs the generator dear); olympia from yoshino's (4 x 203 mm in twin turrets, 10 x 127
+mm) 5,150 t (5,870); monterey from dingyuan's (2 x 305 mm forward, 2 x 254 mm aft in turrets, a 330 mm Harvey belt,
+freeboard 0.6) 4,430 t (4,080). The launch screen draws the US ensign (`"usa"`: thirteen stripes, a starred canton).
+
+Balance, AI on both sides (`--play --seeds 16`): Spain 7, the US 9 (score 0.56 each); Spain loses 2.1 ships a game, the
+US 0.8. With average American crews Spain met its aim 9 of 12.
 
 ## Open questions for the user
 

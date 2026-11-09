@@ -417,7 +417,7 @@ public sealed unsafe partial class LaunchScene
     }
 
     /// <summary>A side's ensign, small (a card's 26 × 16): drawn, not an image, for the navies the scenarios have
-    /// (britain, germany, russia, japan, france, italy, ottoman, finland, sweden, austria, spain, china); a grey field for any other.</summary>
+    /// (britain, germany, russia, japan, france, italy, ottoman, finland, sweden, austria, spain, china, usa); a grey field for any other.</summary>
     void Ensign(string name, Vector2 at, Vector2 size)
     {
         var b = at + size;
@@ -553,6 +553,18 @@ public sealed unsafe partial class LaunchScene
                     dl.AddPolyline(ref dragon[0], dragon.Length, U(UnionBlue), ImDrawFlags.None, h * 0.13f);
                     dl.AddCircleFilled(dragon[^1], h * 0.11f, U(UnionBlue), 10);
                     dl.AddCircleFilled(at + new Vector2(w * 0.12f, h * 0.2f), h * 0.11f, U(EnsignRed), 12);
+                    break;
+                }
+            case "usa":   // the stars and stripes: thirteen stripes, red and white, the stars on blue in the canton
+                {
+                    dl.AddRectFilled(at, b, U(White));
+                    for (int k = 0; k < 13; k += 2)
+                        dl.AddRectFilled(at + new Vector2(0, h * k / 13f), at + new Vector2(w, h * (k + 1) / 13f), U(EnsignRed));
+                    var c = at + new Vector2(w * 0.4f, h * 7 / 13f);
+                    dl.AddRectFilled(at, c, U(UnionBlue));
+                    for (int r = 0; r < 3; r++)
+                        for (int s = 0; s < 4; s++)
+                            dl.AddCircleFilled(at + new Vector2((c.X - at.X) * (s + 0.5f) / 4, (c.Y - at.Y) * (r + 0.5f) / 3), h * 0.035f + 0.5f, U(White), 4);
                     break;
                 }
             default:
