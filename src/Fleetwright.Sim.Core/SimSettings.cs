@@ -365,7 +365,7 @@ public sealed record SimSettings
     public double SightDazzleS { get; init; } = 2.5;
     public double SightFunnelGlowCd { get; init; } = 10;
     public double SightShownLightsCd { get; init; } = 300;
-    public double SightShownLightsLux { get; init; } = 0.05;
+    public double SightShownLightsLux { get; init; } = 0.2;
 
     /// <summary>Searchlights in the fight (docs/battle/night.md Q4) [EST, every number until the research]. Ordered to burn,
     /// the arc is struck and steady behind its shutter in <see cref="SearchlightStrikeS"/> s (from cold: the USN's arcs
