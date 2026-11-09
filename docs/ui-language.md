@@ -50,7 +50,7 @@ The rules that hold it together:
   on a background, no drop shadows, no rounded corners (rounding 0; popups 1 px).
 - **The screen is full.** No centred column with margins, no empty breathing room. A pane with little to say is
   smaller; it is never padded out. Long content scrolls inside its pane, never the screen.
-- **Every pane has a title strip**: 20 px, flat `TitleStrip`, a rivet, the name in the accent's
+- **Every pane has a title strip**: 20 px, `TitleStrip` with its faint sheen, a rivet, the name in the accent's
   engraved capitals (`UiFonts.Head`), at most one muted note after it ("trim sheet", "the sides as written"), and the pane's toggles or count on
   the right.
 - **Sub-headers** split a pane: 20 px on `HeaderBg`, a small uppercase label, a muted note, controls on the right.
@@ -72,7 +72,7 @@ The rules that hold it together:
 | Segmented | joined grey buttons, the chosen one `BrassDarker` with a brass border and brass text | two to four exclusive options: coverage, fight/carry on, presets |
 | Filter flag | one segment on its own, brass when on | an on/off filter beside others (the design picker's sources, up to the year) |
 | Button | 20 px, `Button` grey, a 1 px border, its key in a `kbd` chip after the word; lit (the order in force) brass on its tint, armed (waiting for a click on the map) amber; a menu's with a caret after it; exclusive ones joined, sharing their edges | actions: Change design… C, Save setup… Ctrl+S; the map's orders (the strip) |
-| Primary button | the same size, filled flat with the accent (`Primary`), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
+| Primary button | the same size, filled with the accent (`Primary`, its faint sheen), dark ink (`PrimaryInk`) | the screen's one main action (Begin); never larger than the others |
 | `kbd` chip | mono 9.5 px, a 1 px border with a 2 px bottom; `Shift+` drawn as an outlined arrow up, ← → as drawn arrows | every key binding shown next to its control |
 | Overlay toggle | a small boxed letter and a word; brass when on | what the work surface draws |
 | Status chip | 10 px text in a 1 px border on a dark tint of its colour (ok, amber, plain, hostile; quiet, muted on `Panel2`, for the usual state beside a plain one) | a state on a row: `bold +0.20`, `in action`, `you`; hostile for the enemy and a ship going down; `AI` quiet beside `you`, `conn` ok (the rail) |
@@ -84,8 +84,10 @@ The rules that hold it together:
 ## Colour: what each one means
 
 Colour says **state**, never decoration. The skin is **Dunkelgrau** (taken 2026-11-08 from the trials in
-`docs/ui-themes/navy-trials.html`, key 6): a naval paint grey with a faint cool cast, every fill flat (no gradients on
-strips, tabs, buttons or bars; a 1 px bevel line is the only relief), one cadmium-orange accent, cream for friends, over
+`docs/ui-themes/navy-trials.html`, key 6): a naval paint grey with a faint cool cast, bodies and wells flat, strips,
+tabs, buttons and bars raised by a very mild vertical sheen (`Pieces.Raised`, `Theme.Sheen` = 7 %: the top that much
+lighter, the bottom that much darker, about half Gunmetal's gradients; added back 2026-11-09; a disabled button lies
+flat) beside the 1 px bevel line, one cadmium-orange accent, cream for friends, over
 a plain physical atlas. It replaced Gunmetal (`docs/ui-themes/ui-style-gunmetal-natural.md`, 2026-10-26: warm graphite
 and gradients), whose type, accent, map and rules it keeps. Blue chrome was tried and dropped: it reads as water. The
 tokens are `Theme`'s (the accent keeps the old name `Brass`):

@@ -12,7 +12,7 @@ public static class Theme
     static Vector4 Hex(uint rgb, float a = 1) => new(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, a);
 
     // the Dunkelgrau skin (docs/ui-themes/navy-trials.html, key 6; 2026-11-08): flat naval-paint grey with a faint cool
-    // cast, every fill flat (no gradients), the sea the only blue
+    // cast, bodies flat and strips, tabs, buttons and bars raised by a very mild sheen (Sheen; 2026-11-09), the sea the only blue
     public static readonly Vector4 Ground = Hex(0x181B1C);
     public static readonly Vector4 Panel = Hex(0x242728);
     /// <summary>A section's own row in the outliner, a tab at rest.</summary>
@@ -156,6 +156,15 @@ public static class Theme
     };
 
     public static uint U32(Vector4 c) => ImGui.ColorConvertFloat4ToU32(c);
+
+    /// <summary>How far a raised fill (title strips, tabs, buttons, bars: <see cref="Pieces.Raised"/>) runs from its top
+    /// to its bottom: the top this much lighter than its token, the bottom this much darker (a share of the colour).
+    /// Very mild by design: about half the old Gunmetal gradients; 0 is the flat skin.</summary>
+    public const float Sheen = 0.07f;
+
+    /// <summary><paramref name="c"/> made lighter (<paramref name="k"/> &gt; 0) or darker by a share of itself, alpha kept.</summary>
+    public static Vector4 Lift(Vector4 c, float k) =>
+        new(Math.Clamp(c.X * (1 + k), 0, 1), Math.Clamp(c.Y * (1 + k), 0, 1), Math.Clamp(c.Z * (1 + k), 0, 1), c.W);
 
     static int pushedColours, pushedVars;
 

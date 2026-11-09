@@ -29,6 +29,16 @@ public static unsafe class Pieces
 
     public static uint U(Vector4 c) => ImGui.ColorConvertFloat4ToU32(c);
 
+    /// <summary>A raised fill: <paramref name="c"/> as a faint vertical gradient, a little lighter at the top and darker at
+    /// the bottom (<see cref="Theme.Sheen"/>). Strips, tabs, buttons and bars take it; bodies, wells and disabled things
+    /// stay flat.</summary>
+    public static void Raised(this ImDrawListPtr dl, Vector2 a, Vector2 b, Vector4 c) =>
+        dl.Raised(a, b, T.Lift(c, T.Sheen), T.Lift(c, -T.Sheen));
+
+    /// <summary>A raised fill from <paramref name="top"/> to <paramref name="bottom"/> (a chosen tab running into its pane).</summary>
+    public static void Raised(this ImDrawListPtr dl, Vector2 a, Vector2 b, Vector4 top, Vector4 bottom) =>
+        dl.AddRectFilledMultiColor(a, b, U(top), U(top), U(bottom), U(bottom));
+
     // ------------------------------------------------------------------ text
 
     public static float Width(ImFontPtr f, string s) => f.CalcTextSizeA(f.FontSize, float.MaxValue, 0, s).X;
@@ -102,7 +112,7 @@ public static unsafe class Pieces
     {
         var b = a + size;
         dl.AddRectFilled(a, b, U(T.Panel));
-        dl.AddRectFilled(a, a + new Vector2(size.X, TitleH), U(T.TitleStrip));
+        dl.Raised(a, a + new Vector2(size.X, TitleH), T.TitleStrip);
         dl.HLine(a.X + 1, b.X - 1, a.Y + 1, T.Bevel);
         dl.HLine(a.X, b.X, a.Y + TitleH, T.Edge);
         dl.HLine(a.X + 1, b.X - 1, a.Y + TitleH + 1, T.Bevel);
@@ -415,7 +425,7 @@ public static unsafe class Pieces
             ImGui.PopID();
             bool hover = enabled && ImGui.IsItemHovered();
             bool sel = i == on;
-            dl.AddRectFilled(a, a + new Vector2(w, h), U(sel ? T.BrassDarker : hover ? T.ButtonHover : T.Button));
+            dl.Raised(a, a + new Vector2(w, h), sel ? T.BrassDarker : hover ? T.ButtonHover : T.Button);
             if (!sel)
                 dl.AddRect(a, a + new Vector2(w, h), U(T.ButtonEdge));
             else
@@ -439,7 +449,7 @@ public static unsafe class Pieces
         ImGui.SetCursorScreenPos(a);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h));
         bool hover = ImGui.IsItemHovered();
-        dl.AddRectFilled(a, a + new Vector2(w, h), U(on ? T.BrassDarker : hover ? T.ButtonHover : T.Button));
+        dl.Raised(a, a + new Vector2(w, h), on ? T.BrassDarker : hover ? T.ButtonHover : T.Button);
         dl.AddRect(a, a + new Vector2(w, h), U(on ? T.Brass : T.ButtonEdge));
         dl.Text(UiFonts.SansSmall, new Vector2(a.X + P(7), Mid(UiFonts.SansSmall, a.Y, h)), on ? T.Brass : T.Text, label);
         x += w + P(3);
@@ -553,7 +563,10 @@ public static unsafe class Pieces
             (fill, edge, ink, keyEdge, keyInk) = (hover ? T.BrassHover : T.BrassDarker, T.Brass, T.Brass, T.BrassDark, T.Brass);
         else if (lit == Lit.Armed)
             (fill, edge, ink, keyEdge, keyInk) = (T.AmberTint, T.Amber, T.Amber, T.AmberEdge, T.Amber);
-        dl.AddRectFilled(at, at + new Vector2(w, h), U(fill));
+        if (enabled)   // a disabled button lies flat
+            dl.Raised(at, at + new Vector2(w, h), fill);
+        else
+            dl.AddRectFilled(at, at + new Vector2(w, h), U(fill));
         dl.AddRect(at, at + new Vector2(w, h), U(edge));
         var font = primary ? UiFonts.SansBold : UiFonts.SansSmall;
         float content = Width(font, label) + (key != null ? KbdWidth(key) + P(6) : 0) + (menu ? CaretW : 0);
@@ -666,7 +679,7 @@ public static unsafe class Pieces
         ImGui.SetCursorScreenPos(a);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, h));
         bool hover = ImGui.IsItemHovered();
-        dl.AddRectFilled(a, a + new Vector2(w, h), U(on ? T.BrassDarker : hover ? T.ButtonHover : T.Toggle));
+        dl.Raised(a, a + new Vector2(w, h), on ? T.BrassDarker : hover ? T.ButtonHover : T.Toggle);
         dl.AddRect(a, a + new Vector2(w, h), U(on ? T.Brass : T.Edge));
         var fg = on ? T.BrassLight : hover ? T.Text : T.Muted;
         dl.AddRect(a + new Vector2(P(3), P(2)), a + new Vector2(P(14), P(13)), U(fg), P(2));
@@ -693,7 +706,10 @@ public static unsafe class Pieces
                 hit = i;
             bool hover = ImGui.IsItemHovered();
             ImGui.PopID();
-            dl.AddRectFilled(ta, ta + new Vector2(w, h), U(sel ? T.TitleStrip : hover ? T.TabHover : T.Tab));
+            if (sel)   // the chosen one runs down into its pane
+                dl.Raised(ta, ta + new Vector2(w, h), T.Lift(T.TitleStrip, T.Sheen), T.Panel);
+            else
+                dl.Raised(ta, ta + new Vector2(w, h), hover ? T.TabHover : T.Tab);
             dl.AddLine(ta, ta + new Vector2(w, 0), U(T.Edge));
             dl.AddLine(ta, ta + new Vector2(0, h), U(T.Edge));
             dl.AddLine(ta + new Vector2(w, 0), ta + new Vector2(w, h), U(T.Edge));
@@ -717,7 +733,7 @@ public static unsafe class Pieces
         ImGui.SetCursorScreenPos(a);
         bool hit = ImGui.InvisibleButton(id, new Vector2(w, P(20)));
         bool hover = ImGui.IsItemHovered();
-        dl.AddRectFilled(a, a + new Vector2(w, P(20)), U(on ? T.BrassDarker : hover ? T.TabHover : T.Panel2));
+        dl.Raised(a, a + new Vector2(w, P(20)), on ? T.BrassDarker : hover ? T.TabHover : T.Panel2);
         var edge = U(on ? T.Brass : T.Edge);
         dl.AddLine(a, a + new Vector2(w, 0), edge);
         dl.AddLine(a, a + new Vector2(0, P(20)), edge);
@@ -731,7 +747,7 @@ public static unsafe class Pieces
     /// <summary>The resource bar's ground across <paramref name="w"/>.</summary>
     public static void ResourceBarBg(this ImDrawListPtr dl, Vector2 a, float w, float h)
     {
-        dl.AddRectFilled(a, a + new Vector2(w, h), U(T.ResourceBar));
+        dl.Raised(a, a + new Vector2(w, h), T.ResourceBar);
         dl.HLine(a.X, a.X + w, a.Y + h - 1, T.Edge);
     }
 

@@ -220,7 +220,7 @@ public sealed partial class MapScene
         if (hover && tip != null)
             Tip(tip);
         var dl = cdl;
-        dl.AddRectFilled(a, a + new Vector2(w, TitleH), U(T.TitleStrip));
+        dl.Raised(a, a + new Vector2(w, TitleH), T.TitleStrip);
         dl.HLine(a.X, a.X + w, a.Y, T.Edge);
         dl.HLine(a.X + 1, a.X + w - 1, a.Y + 1, T.Bevel);
         dl.HLine(a.X, a.X + w, a.Y + TitleH - 1, T.Edge);

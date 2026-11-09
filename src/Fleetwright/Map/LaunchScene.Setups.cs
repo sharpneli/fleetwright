@@ -54,7 +54,7 @@ public sealed unsafe partial class LaunchScene
         var keep = dl;
         dl = ImGui.GetWindowDrawList();
         var o = ImGui.GetWindowPos();
-        dl.AddRectFilled(o, o + new Vector2(w, TitleH), U(T.TitleStrip));
+        dl.Raised(o, o + new Vector2(w, TitleH), T.TitleStrip);
         dl.HLine(o.X, o.X + w, o.Y + TitleH, T.Edge);
         dl.Text(UiFonts.SansBold, new Vector2(o.X + P(7), Mid(UiFonts.SansBold, o.Y, TitleH)), T.Brass, "SAVE SETUP");
         dl.Text(UiFonts.SansSmall, new Vector2(o.X + P(15) + Width(UiFonts.SansBold, "SAVE SETUP"), Mid(UiFonts.SansSmall, o.Y, TitleH)), T.Muted, "My Games/Fleetwright/Setups");
