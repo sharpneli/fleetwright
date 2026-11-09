@@ -184,6 +184,8 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [ ] **Boats attacking a lit squadron at anchor by night barely fire** (found 2026-11-09, Port Arthur, docs/missions/scenarios.md E1). Ten Ikazuchis with opening attack tasks against fifteen ships stopped and lit: 0-5 torpedoes a run of their 20 (history 16, 3 hits) and 4-5 boats lost to the guns (history none), over 4 seeds. The watch (`--watch 16,20,23`, which now prints the captain's order and the attack's phase) shows each flotilla Gain → Run → Away with no torpedoes, turning away 2.5-3 km off its target; all three flotillas pick the same ship. Likeliest: the side's picture of a lit ship ranged by eye at 13 km is off by a kilometre or more, so `run` reads within the fast setting's reach and the signal goes early, and the boats' own `FireOnSignal` then has nothing in reach. Trace one attack second by second before changing anything.
+
 - [ ] **A ship runs through her own torpedoes** (found 2026-11-06, EX2, `AimsTests`' raid on seed 3). Emden fired at the tramps, turned for home at 29 kn and took two of her own: shooter 4 is her, 533 mm, `HitSource.Torpedo`, broken in two by `Underwater`'s old chance. Torpedoes have always been able to do this and it's a real accident (HMS Trinidad, 1942), but a captain with a spread running should keep out of its way. The test now plays seed 4; the raid passes on 4, 5 and 6.
 
 Both seen in `MatchupPlayTests.A_pack_of_destroyers_presses_its_attack_home_on_a_battleship` (2026-10-16, while

@@ -332,6 +332,40 @@ forces may change with the conditions.
   against the shore toward their stations, out of the zone and in touch (bugs.md, "A line abreast stopped against a
   coast").
 
+## The early wave (the user, 2026-11-09)
+
+The Great War is well covered; the new navies (Austria-Hungary, the Ottomans, Spain, China: `pola`, `tersane`, `ferrol`,
+`weihaiwei`, 2026-11-04) open the early period. The user's picks, in the order to build (cheapest first, designs chaining
+from one to the next):
+
+| # | Scenario | Size | Sides | New |
+|---|---|---|---|---|
+| E1 | **Port Arthur, 1904** (real): the night attack on the roads, 8-9 February | medium, 25 | Japan's 10 destroyers v the Pacific Squadron at anchor, lit | poltava, bayan, novik (built); lights shown (night.md Q13) |
+| E2 | **Pungdo, 1894** (real, new): the war's opening shots | small | Japan's flying squadron (Yoshino, Naniwa, Akitsushima) v Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | yoshino, naniwa, jiyuan; troopship reused |
+| E3 | **The Yalu, 1894** (candidate 1) | medium | the Beiyang Fleet v Itō | dingyuan, Chinese cruisers, matsushima; E2's |
+| E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium | Russia's Black Sea fleet landing troops v an Ottoman sortie; Russia reach, the Ottomans stop | ekaterina, Ottoman ironclads; troopship |
+| E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | medium | Pelayo, Carlos V and destroyers v Dewey's cruisers and Monterey | pelayo, carlos_v, olympia, a monitor; the US ensign |
+| E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy after Messina | medium | Austria (Habsburg, Erzherzog Karl, Radetzky?) v Italy (Brin, Regina Margherita, Garibaldi) | three or four a side |
+
+**E1, Port Arthur (2026-11-09): a bench for now** (`"test": true`). The file, history's forces (seven battleships, six
+cruisers and two pickets against ten boats; borodino for Tsesarevich and Retvizan, oslyabya for Peresvet and Pobeda,
+aurora for Pallada, Diana and Askold, the new poltava, bayan and novik), the Russians lit at anchor (`"lights": "shown"`)
+and the boats coming in from the east, each flotilla with an opening attack. The new designs come close to the record
+(poltava 11,200 t full against 10,960 t, bayan 7,100 t against 7,800, novik 2,500 t against 3,080).
+
+What it found, played by the AI on both sides (`shipgen scenario Content/Scenarios/port-arthur.json --play`):
+
+- **Every ship was darkened:** the boats met the squadron at 1.5 km, both sides at once. Built: lights shown (night.md
+  Q13); the boats now make the lit squadron out at about 13 km.
+- **The boats' side was outmatched by the matchup and never went in** (the commander's night withdrawal took even the
+  flotilla his main body). The flotillas' opening `attack` tasks now hold against the commander: a unit on its attack
+  isn't recalled until it's through (`CommanderLayer`, any role). And against a target seen stopped (at anchor, dead in
+  the water) an attack runs straight in, no bow to gain and no turning away (`AdmiralLayer.AttackStep`).
+- **Open (docs/battle/bugs.md, "The AI"):** the boats still fire next to nothing (0-5 torpedoes a run of their 20, where
+  history fired 16 for 3 hits) and lose 4-5 of 10 to the anchored ships' guns (history: none). The attacks run in,
+  signal and turn away well short; the likeliest cause is the picture's range by eye to a lit ship at night, so the run
+  reads in reach at 2.5 km. Green Russian crews changed nothing. Next: trace one attack second by second.
+
 ## Open questions for the user
 
 1. Which of these, and how many for the first release? (A dozen seems about right: three or four a size.)

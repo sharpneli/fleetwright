@@ -701,7 +701,7 @@ commander), **Q7d** the admirals at night (close order, losing touch).
   firing; then her order's course again. Not while combing a track, pressing a torpedo attack or under the conn. The comb
   and this are one held course now (`Captain.HeldUntilMs`, `HeldFor`: Combing or Lit); the card says "lit: lights out,
   turned away".
-- **Not built:** a darkened ship (navigation lights aren't modelled: every ship is darkened); firing at a gun's flash alone
+- **Not built:** a darkened ship (navigation lights aren't modelled: every ship is darkened; Q13 since: lights shown); firing at a gun's flash alone
   (fire control lays on lamps and bow waves, not a flash: a later fire-control item).
 - **Tests:** `NightDoctrineTests` (lit, turn away to 279° with her lights out or fight on; searchlights never, to fire,
   search; challenged within 2.5 km, not within 1 km).
@@ -1459,6 +1459,28 @@ refit; optimism is a separate parameter (doctrine's Aggression).
   (Q12d). Whether the dawn's sight is right (the record's ranges were the firing ones) is the fine tier's, left.
 - `night-history --runs 40`: the night cases within their noise but Tsushima's Japanese line, firing 917 shells for 117
   hits (501 / 77), its torpedo boats 1.2 for 0.3. Sim 877, game 207 passed.
+
+### Q13 Lights shown (2026-11-09)
+
+Port Arthur's roads on the night of 8 February 1904 (`docs/missions/scenarios.md`, the early wave): the Russian squadron
+lay at anchor lit, and the Japanese boats steered in by its lights. Until now every ship was darkened ("Not built" in
+Q9's list).
+
+- **A ship's lights shown** is world state (`ShipStore.lightsShown`, hashed when on; `ShipState.LightsShown`), set by
+  `ShipSystem.ShowLights(entity, on)`, a setting that takes nothing off rails. A scenario's unit starts its ships lit
+  with `"lights": "shown"` (its sub-units too; `"darkened"` the default).
+- **Seen two ways, both through paths that exist:** her decks and upperworks lit all round by her own lamps at
+  `SightShownLightsLux` (0.2 lux [EST]) join the light on her (`SightLine.LitLux`, Q2's lit target), so she's made out
+  as a ship, type, class and all, where the light carries: a lit squadron at about 13 km on a clear moonless night (0.1
+  lux gave 9 km, 0.5 lux 15 km and more); and her lamps, `SightShownLightsCd` (300 cd [EST]: a 6 nm masthead light's 94
+  cd and her deck lights and scuttles beside it), are a lamp all round as her funnels' glow is (`Sightings.LightLook`),
+  a point to aim at farther off still.
+- **Put out once she fights:** her captain darkens her (`CaptainLayer.PutOutLights`) once she or her squadron is fired
+  upon or her own guns open. The player has no button for it yet; the strip's Dark (⇧X) is Q9's doctrine of holding fire.
+- **Tests:** `LightsShownTests` (a lit destroyer made out at 6 km on Port Arthur's moonless night where a darkened one
+  isn't; fired upon, her lights go out).
+- **Not yet:** the map doesn't draw a lit ship's lights (the VFX pass); merchants and neutrals lit by default (a
+  scenario sets it today).
 
 ## Decided (the user, 2026-10-29)
 

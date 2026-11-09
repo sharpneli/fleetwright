@@ -109,6 +109,8 @@
   "SightDazzleCdM2PerCd": 1.2e-9,
   "SightDazzleS": 2.5,
   "SightFunnelGlowCd": 10,
+  "SightShownLightsCd": 300,
+  "SightShownLightsLux": 0.2,
   "SearchlightStrikeS": 10,
   "SearchlightTrainS": 3,
   "SearchlightExposeS": 1,

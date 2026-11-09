@@ -389,6 +389,8 @@ public sealed class Sightings
         double glowMW = store.Combat.Condition(ts.Slot).FireShowMW, glowM = settings.FireGlowHeightShare * tTop;
         var lights = world.Lights;
         var (litLux, litFrom) = lights.On(ts.Slot, ts.Position, vis);
+        // her own lights shown light her decks and upperworks all round (docs/battle/night.md Q13): made out as a lit ship
+        double ownLux = ts.LightsShown ? settings.SightShownLightsLux : 0;
         bool beams = lights.Beams > 0, veiled = beams || lights.Flares > 0;
         var pic = Of(row.By);
         int ci = pic?.IndexOf(ts.Entity) ?? -1;
@@ -412,7 +414,7 @@ public sealed class Sightings
             double rel = brg - os.HeadingDeg;
             double back = Earth.Bearing(ts.Position, os.Position), aspect = back - ts.HeadingDeg;
             var line = new SightLine(d, aspect, vis, lookNight.Toward(brg), Silhouette(brg), SpeedMs: speed,
-                LitLux: litLux > 0 ? litLux * Lights.Facing(litFrom, back) : 0, AdaptedCdM2: Dazzled(store, os.Slot));
+                LitLux: (litLux > 0 ? litLux * Lights.Facing(litFrom, back) : 0) + ownLux, AdaptedCdM2: Dazzled(store, os.Slot));
             if (lights.Flares > 0)
                 line = Backlit(line, lights.BacklightCdM2(os.Position, ts.Position, vis, settings));   // a flare beyond her (Q5)
             var works = store.Combat.Condition(slot[nearIdx[m]]).EyeWorks;   // damage: a wrecked post sees nothing
@@ -652,6 +654,12 @@ public sealed class Sightings
         // (the window's start included: a salvo fired at a look's moment after that look ran is the next's)
         double flash = flashMs > 0 && flashMs >= now - (long)(dt * 1000) && flashMs <= now ? flashCd : 0;
         var (glow, glowM) = FunnelGlow(ts);
+        if (ts.LightsShown)
+        {
+            // her own lights, shown (docs/battle/night.md Q13): a lamp all round, as her funnels' glow is, halfway up her
+            glow += settings.SightShownLightsCd;
+            glowM = Math.Max(glowM, settings.FireGlowHeightShare * ts.Handling.Class.Silhouette.TopM);
+        }
         var lights = world.Lights;
         bool beams = lights.HasBeam(ts.Slot);
         if (flash <= 0 && glow <= 0 && !beams)

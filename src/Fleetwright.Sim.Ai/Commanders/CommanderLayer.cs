@@ -427,6 +427,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 Reach(ctx, s, t, z);
                 continue;   // for the zone, whatever else is going on
             }
+            if (Tasks!.Of(t.Unit) is (TaskKind.Attack, TaskState.OnTask or TaskState.Engaged, _))
+                continue;   // in on its attack: not recalled, night or retiring, until it's through (fired, or beaten off)
             if (t.Role == UnitRole.Flotilla && SendIn(ctx, s, side, held, t))
                 continue;   // in to attack: by day on a line his heavy units engage, by night, or to cover a break off
             if (s.Phase is CommanderPhase.Retiring && reach)

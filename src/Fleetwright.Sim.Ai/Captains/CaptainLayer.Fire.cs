@@ -107,6 +107,7 @@ public sealed partial class CaptainLayer
         Comb(ctx, ref cap, own);   // coarse, also when a track comes into sight between thinks (WatchTracks)
         TurnFromLight(ctx, ref cap, own, slot);   // a light on her in the dark (docs/battle/night.md Q7)
         Darken(ctx, ref cap, own, slot);          // darkened: her guns hold till she's fired upon (Q9)
+        PutOutLights(ctx, own, slot);             // her lights shown, put out once she fights (Q13)
         Flee(ctx, ref cap, own, slot);            // a ship with no main battery from an enemy warship (docs/battle/aims.md A4)
         TakeUpStanding(ctx, ref cap, own, slot);
         if (cap.SignalTarget != 0)
@@ -187,6 +188,15 @@ public sealed partial class CaptainLayer
         if (FiredUpon(ctx.Ships, own, slot))
             cap.FiredOnMs = ctx.NowMs;
         cap.Holding = !cap.BeamsHeld && (cap.FiredOnMs == 0 || ctx.NowMs - cap.FiredOnMs > ctx.Settings.DarkenedFreeS * 1000);
+    }
+
+    /// <summary>Her lights shown (a ship lit at anchor, docs/battle/night.md Q13): put out, darkened, once she or her squadron
+    /// is fired upon or her own guns open; until then the officer of the watch leaves them burning, as the Port Arthur
+    /// roads did on the night of 8 February 1904.</summary>
+    void PutOutLights(in AiContext ctx, ShipState own, int slot)
+    {
+        if (own.LightsShown && (FiredUpon(ctx.Ships, own, slot) || ctx.Ships.Combat.Engaged(slot) > 0))
+            ctx.Issue(ShipSystem.ShowLights(own.Entity, false));
     }
 
     /// <summary>Whether an enemy battery is on her or a ship of her squadron, as of this think.</summary>

@@ -21,6 +21,7 @@ public enum ShipCommand : ushort
     Load,
     ResumeRoute,
     WorkUp,
+    Lights,
 }
 
 /// <summary>The world's ships (docs/battle/plan.md step 2.2), in their clock tiers (ShipSystem.Tiers.cs): on the fine
@@ -178,6 +179,10 @@ public sealed partial class ShipSystem : IWorldSystem
     /// A setting, not a movement: it takes nothing off rails.</summary>
     public static Command WorkUp(int entity, double workUp) => new(Id, (ushort)ShipCommand.WorkUp, entity, B: (int)Math.Round(workUp * 1000));
 
+    /// <summary>A ship's lights shown (her deck, anchor and side lights: seen far off at night, docs/battle/night.md Q13) or
+    /// put out, darkened. A setting, not a movement: it takes nothing off rails.</summary>
+    public static Command ShowLights(int entity, bool on) => new(Id, (ushort)ShipCommand.Lights, entity, B: on ? 1 : 0);
+
     /// <summary>A ship takes a loadout of her class (its registry id, <see cref="ShipClassRegistry.AddLoadout"/>;
     /// docs/battle/shells-armour-damage.md S5), her magazines filled with it: only in port, which until the campaign's
     /// ports means before she's fired a round (CombatStore.Load); otherwise, or for another class's loadout, nothing.
@@ -221,6 +226,11 @@ public sealed partial class ShipSystem : IWorldSystem
         {
             if (c.B is >= 0 and <= (int)Ships.Dye.Black)
                 Store.SetDye(slot, (Ships.Dye)c.B);
+            return;
+        }
+        if (code == ShipCommand.Lights)
+        {
+            Store.SetLightsShown(slot, c.B != 0);
             return;
         }
         if (code == ShipCommand.WorkUp)

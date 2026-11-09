@@ -158,6 +158,8 @@ public static class ScenarioLoader
                     w.Apply(ShipSystem.Dye(e, spec.Dyes[nth]));
                 if (spec.WorkUpOf(nth) != 1)
                     w.Apply(ShipSystem.WorkUp(e, spec.WorkUpOf(nth)));
+                if (sq.LightsShown)
+                    w.Apply(ShipSystem.ShowLights(e, true));
                 // her captain's temper; a ship on her own is her admiral's too (docs/map-ui/launch.md "Tempers")
                 double temper = spec.TemperOf(nth) + (!top.IsForce && top.ShipCount == 1 ? top.Temper ?? 0 : 0);
                 if (temper != 0)

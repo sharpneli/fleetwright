@@ -353,13 +353,19 @@ public sealed record SimSettings
     /// sky (EST); its fading by the flash-blindness record, night-fighting.md §7.3: 2-7 s back to a lit target, 15-30 s to
     /// a silhouette near the threshold (docs/battle/night.md Q5b)]. A ship forcing her fires shows a glow and flare at her
     /// funnel tops, coal or oil (Q5b: the oil-fired boats of the Dover Strait fought by each other's funnel flare),
-    /// <see cref="SightFunnelGlowCd"/> a funnel at her rated power, growing as the smoke's forcing does [EST].</summary>
+    /// <see cref="SightFunnelGlowCd"/> a funnel at her rated power, growing as the smoke's forcing does [EST]. A ship not
+    /// darkened, her deck, anchor and side lights and open scuttles showing (docs/battle/night.md Q13: Port Arthur's roads,
+    /// 1904), is a lamp all round of <see cref="SightShownLightsCd"/> [EST: a few hundred candela, a 6 nm masthead light's
+    /// 94 cd and her deck lights and scuttles beside it], and her decks and upperworks lit all round by them at
+    /// <see cref="SightShownLightsLux"/>, made out as a lit ship is [EST].</summary>
     public double SightHullAlbedo { get; init; } = 0.3;
     public double SightLightRangeShare { get; init; } = 0.3;
     public double SightLightSpeedSigmaMs { get; init; } = 8;
     public double SightDazzleCdM2PerCd { get; init; } = 1.2e-9;
     public double SightDazzleS { get; init; } = 2.5;
     public double SightFunnelGlowCd { get; init; } = 10;
+    public double SightShownLightsCd { get; init; } = 300;
+    public double SightShownLightsLux { get; init; } = 0.05;
 
     /// <summary>Searchlights in the fight (docs/battle/night.md Q4) [EST, every number until the research]. Ordered to burn,
     /// the arc is struck and steady behind its shutter in <see cref="SearchlightStrikeS"/> s (from cold: the USN's arcs

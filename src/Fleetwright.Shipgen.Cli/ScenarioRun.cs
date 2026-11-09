@@ -168,8 +168,9 @@ static class ScenarioRun
         }
     }
 
-    /// <summary>A watched ship's line: where she is, her way and helm, her tier and group.</summary>
-    internal static void Ship(World w, ScenarioStart start, int e)
+    /// <summary>A watched ship's line: where she is, her way and helm, her tier and group; with the AI, her captain's order
+    /// and her group's attack (its phase and target).</summary>
+    internal static void Ship(World w, ScenarioStart start, int e, Fleetwright.Sim.Ai.AiSystem? ai = null)
     {
         var store = w.Ships.Store;
         int k = store.SlotOf(e);
@@ -183,7 +184,16 @@ static class ScenarioRun
         var g = w.Groups.Of(e);
         Console.WriteLine($"    #{e} {start.ShipNames.GetValueOrDefault(e)}: {la:F4}, {lo:F4}, heading {sh.HeadingDeg:F1}, " +
                           $"{sh.Speed / Fleetwright.Sim.Combat.Handling.MsPerKnot:F1} kn, helm {sh.Helm} {sh.CourseOrderDeg:F0}° {sh.SpeedOrderKn:F1} kn, " +
-                          $"{sh.Tier.ToString().ToLowerInvariant()}, {g?.Name ?? "no group"}");
+                          $"{sh.Tier.ToString().ToLowerInvariant()}, {g?.Name ?? "no group"}" + (ai == null ? "" : Orders(ai, e, g)));
+    }
+
+    static string Orders(Fleetwright.Sim.Ai.AiSystem ai, int e, GroupSystem.Group? g)
+    {
+        var (order, target, _) = ai.Captains.Of(e);
+        string s = $"; captain {order}{(target != 0 ? $" #{new Fleetwright.Sim.Ai.Unit(target).Entity}" : "")}";
+        if (g != null && ai.Admirals.AttackOf(g.GroupId) is { Phase: not Fleetwright.Sim.Ai.Admirals.AttackPhase.None } at)
+            s += $", attack {at.Phase} on #{at.Target}";
+        return s;
     }
 }
 

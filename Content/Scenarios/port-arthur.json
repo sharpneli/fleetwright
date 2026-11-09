@@ -1,0 +1,73 @@
+// Port Arthur, the night of 8-9 February 1904 (real): the war's first blow, before its declaration. The Russian Pacific
+// Squadron lies at anchor in the outer roads of Port Arthur, lit, its nets not out, two destroyers on picket; Togo sends
+// in his destroyers from the east. History: the three flotillas came in about 23:30 local, lost touch with each other on
+// meeting the pickets and attacked one by one into the searchlights; 16 torpedoes, 3 hits (Retvizan, Tsesarevich,
+// Pallada, each holed and beached, months out of the war), no Japanese boat lost.
+// The forces are history's: seven battleships, six cruisers, two pickets; ten destroyers. The classes: poltava for
+// Petropavlovsk, Poltava and Sevastopol, oslyabya for Peresvet and Pobeda (her sisters), borodino for Tsesarevich (her
+// near-sister) and Retvizan, aurora for Pallada and Diana (her sisters) and Askold, novik for Novik and Boyarin, bayan for
+// Bayan, buyny for the pickets, ikazuchi for every Japanese boat.
+//   Japan, the knife: ten 30 kn boats, two tubes each, the dark, and a fleet that doesn't know it's at war.
+//   Russia, the giant asleep: fifteen ships and a hundred guns, unprepared, crews half trained, every ship stopped.
+// The weather of the night: clear and cold, a light northerly; the moon (21 days) not up until about one.
+{
+  "scenario": 1,
+  // a bench until the boats' attack on ships at anchor works (docs/missions/scenarios.md, "The early wave")
+  "test": true,
+  "name": "Port Arthur, 1904",
+  "brief": "8 February 1904, 23:25. Diplomatic relations were broken two days ago, but no war is declared. Russia's Pacific Squadron lies at anchor in the outer roads of Port Arthur, lit up, nets stowed, two destroyers on picket. Your three destroyer flotillas have come in from the east in the dark. Run in, fire your torpedoes, and get out before the searchlights and the quick-firers find you: every battleship you put out of action tonight is one Togo won't have to fight.",
+  "place": "the outer roads, Port Arthur",
+  "about": {
+    "Japan": { "character": "The knife: ten fast destroyers with two tubes each, the dark and surprise.", "commander": "Capt Asai", "ensign": "japan" },
+    "Russia": { "character": "The giant asleep: seven battleships and six cruisers at anchor, unprepared, half-trained crews.", "commander": "V-Adm Stark", "ensign": "russia" } },
+  "start": "1904-02-08T15:20",
+  "seed": 1904,
+  "camera": [38.75, 121.33, 25],
+  "sides": ["Japan", "Russia"],
+  // the squadron at anchor in peace: not stripped, doors open; the boats ready for it
+  "readiness": { "Japan": "closed up", "Russia": "unprepared" },
+  "damage_control": { "Japan": "1905", "Russia": "1905" },
+  "fire_discipline": { "Japan": "independent", "Russia": "independent" },
+  // the Russians: at anchor (Engage "carry on": they stay where they lie), lights sweeping for torpedo craft (1904's
+  // preset), and slow to believe a boat is the enemy's (their own pickets were out: challenge first); the boats press home
+  "doctrine": {
+    "Japan": { "preset": "default", "Aggression": 1, "StrikeColours": 0.1, "Scuttle": 0.5 },
+    "Russia": { "preset": "russia-1904", "Engage": "carry on", "NightAction": "accept", "Unknowns": "challenge", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" } },
+  "crews": { "Japan": "trained", "Russia": "green" },
+  "player": "Japan",
+  "until": "1904-02-08T19:30",
+  "aims": { "Japan": "destroy everyone", "Russia": "destroy everyone" },
+  // where ships out of the fight go: the boats back east to the fleet off the Elliot Islands; the Russians into the harbour mouth
+  "home": { "Japan": [38.65, 122.20], "Russia": [38.785, 121.265] },
+  // the sea: a winter night in the Yellow Sea, a light northerly off the land, a slight sea [EST]
+  "weather": { "visibility_km": 15, "wind_from": 0, "wind_kn": 8, "swell_m": 0.5, "swell_s": 6, "swell_from": 120 },
+  "units": [
+    // ------------------------------------------------------------- the Pacific Squadron at anchor (Stark): 15
+    // the battleships in a line east-west in the outer roads, the cruisers in a second line to seaward
+    { "name": "Battleships", "admiral": "V-Adm Stark", "side": 1, "lights": "shown", "at": [38.770, 121.295], "course": 90, "kn": 0, "spacing": 550,
+      "ships": [
+        { "design": "poltava", "names": ["Petropavlovsk", "Poltava", "Sevastopol"] },
+        { "design": "oslyabya", "names": ["Peresvet", "Pobeda"] },
+        { "design": "borodino", "names": ["Tsesarevich", "Retvizan"] } ] },
+    { "name": "Cruisers", "admiral": "R-Adm Molas", "side": 1, "lights": "shown", "at": [38.755, 121.300], "course": 90, "kn": 0, "spacing": 550,
+      "ships": [
+        { "design": "bayan", "names": ["Bayan"] },
+        { "design": "aurora", "names": ["Pallada", "Diana", "Askold"] },
+        { "design": "novik", "names": ["Novik", "Boyarin"] } ] },
+    // the pickets, steaming a beat to seaward of the roads
+    { "name": "Pickets", "admiral": "Lt Sakov", "side": 1, "at": [38.72, 121.30], "course": 90, "kn": 8, "spacing": 800,
+      "route": [[38.72, 121.38], [38.72, 121.24]], "loop": true,
+      "ships": [ { "design": "buyny", "names": ["Rastoropny", "Bestrashny"] } ] },
+    // ------------------------------------------------------------- the destroyers (Asai): 10
+    // coming in from the east, the flotillas a few miles apart, slow to keep their wakes and funnels quiet
+    { "name": "1st Destroyer Flotilla", "admiral": { "name": "Capt Asai", "temper": 0.3, "why": "pressed home into the lights" }, "side": 0, "at": [38.745, 121.47], "course": 270, "kn": 15, "spacing": 300,
+      "task": { "do": "attack" },
+      "ships": [ { "design": "ikazuchi", "names": ["Shirakumo", "Asashio", "Kasumi", "Akatsuki"] } ] },
+    { "name": "2nd Destroyer Flotilla", "admiral": { "name": "Cdr Ishida", "temper": 0.3, "why": "pressed home into the lights" }, "side": 0, "at": [38.725, 121.50], "course": 280, "kn": 15, "spacing": 300,
+      "task": { "do": "attack" },
+      "ships": [ { "design": "ikazuchi", "names": ["Ikazuchi", "Oboro", "Inazuma"] } ] },
+    { "name": "3rd Destroyer Flotilla", "admiral": { "name": "Cdr Tsuchiya", "temper": 0.3, "why": "pressed home into the lights" }, "side": 0, "at": [38.705, 121.53], "course": 285, "kn": 15, "spacing": 300,
+      "task": { "do": "attack" },
+      "ships": [ { "design": "ikazuchi", "names": ["Usugumo", "Shinonome", "Sazanami"] } ] }
+  ]
+}

@@ -43,7 +43,8 @@ namespace Fleetwright.Sim.Missions;
 /// (<c>"readiness": { "Russia": "prepared" }</c>; the settings' default if not listed) is its ships' orders before action
 /// for fire (docs/battle/fire.md B1: a name of the settings' <c>Readiness</c>: stripped, doors, decks wetted), and its
 /// firefighting (<c>"damage_control": { "Russia": "1905" }</c>; B4: a name of the settings' <c>DamageControl</c>) how
-/// its crews fight her fires. A unit or a ship entry may give its ships their own, over the side's and for every ship
+/// its crews fight her fires. A unit's <c>"lights": "shown"</c> (its sub-units' too) starts its ships with their lights
+/// showing, not darkened (docs/battle/night.md Q13: a squadron lit at anchor). A unit or a ship entry may give its ships their own, over the side's and for every ship
 /// below it that doesn't give one (<c>"damage_control": "1916 BCF"</c>; docs/battle/magazines.md "Too safe": a squadron's
 /// flash discipline).</para>
 /// <para>Each side's doctrine (docs/battle/command.md "Doctrine") is a preset of <c>Content/Sim/doctrine.json</c>,
@@ -633,7 +634,8 @@ public sealed record Scenario
         return pairs;
     }
 
-    internal static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null, string? parentDamageControl = null)
+    internal static ScenarioUnit ParseUnit(JsonElement e, string path, bool top, int parentSide, int sides, LoadoutSpec? parentLoadout = null, string? parentDamageControl = null,
+        bool parentLights = false)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new ScenarioException($"{path}: not an object");
@@ -650,6 +652,14 @@ public sealed record Scenario
         var formation = ParseFormation(Str(e, "formation", "column"), path);
         var loadout = ParseLoadout(e, path) ?? parentLoadout;
         string? damageControl = e.TryGetProperty("damage_control", out var ownDc) ? ownDc.GetString() : parentDamageControl;
+        bool lights = parentLights;
+        if (e.TryGetProperty("lights", out var li))
+            lights = li.GetString() switch
+            {
+                "shown" => true,
+                "darkened" => false,
+                _ => throw new ScenarioException($"{path}: lights \"{li.GetString()}\" (want \"shown\" or \"darkened\")"),
+            };
         double spacing = e.TryGetProperty("spacing", out var sp) ? sp.GetDouble() : hasUnits ? 3000 : 600;
         if (spacing is <= 0 or > 100_000)
             throw new ScenarioException($"{path}: spacing {spacing} m (want 0 to 100 km)");
@@ -691,12 +701,13 @@ public sealed record Scenario
             Tasks = ParseTasks(e, path, top),
             Loadout = loadout,
             DamageControl = damageControl,
+            LightsShown = lights,
         };
         if (hasUnits)
         {
             int i = 0;
             foreach (var u in us.EnumerateArray())
-                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides, loadout, damageControl));
+                unit.Units.Add(ParseUnit(u, $"{path} units[{i++}]", top: false, side, sides, loadout, damageControl, lights));
             if (unit.Units.Count == 0)
                 throw new ScenarioException($"{path}: a force of no units");
         }
@@ -961,6 +972,10 @@ public sealed class ScenarioUnit
     /// unless a ship entry gives one: a name of the settings' DamageControl, or null.</summary>
     public string? DamageControl { get; init; }
 
+    /// <summary>Its ships' lights shown at the start (its <c>"lights": "shown"</c>, else its parent's; docs/battle/night.md
+    /// Q13): a squadron lit at anchor, seen far off at night until her captain puts them out; else darkened.</summary>
+    public bool LightsShown { get; init; }
+
     /// <summary>Taken off by a setup (docs/map-ui/launch.md L3b): every ship under it struck, so none is placed; kept in
     /// the tree for the launch screen to show it struck, with its undo.</summary>
     public bool Removed { get; init; }
@@ -974,7 +989,7 @@ public sealed class ScenarioUnit
         var u = new ScenarioUnit
         {
             Name = Name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
-            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, DamageControl = DamageControl, Removed = removed ?? Removed,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = Tasks, Loadout = Loadout, DamageControl = DamageControl, LightsShown = LightsShown, Removed = removed ?? Removed,
             Admiral = Admiral, Temper = Temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(units);
@@ -999,7 +1014,7 @@ public sealed class ScenarioUnit
         var u = new ScenarioUnit
         {
             Name = name, Side = Side, Formation = Formation, SpacingM = SpacingM, At = At, CourseDeg = CourseDeg, Kn = Kn,
-            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, DamageControl = DamageControl, Removed = Removed,
+            Route = Route, Loop = Loop, Doctrine = Doctrine, Tasks = tasks, Loadout = Loadout, DamageControl = DamageControl, LightsShown = LightsShown, Removed = Removed,
             Admiral = admiral, Temper = temper, TemperWhy = TemperWhy,
         };
         u.Units.AddRange(Units);

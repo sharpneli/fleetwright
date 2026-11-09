@@ -238,7 +238,7 @@ static class ScenarioPlay
                         Console.WriteLine($"  {w.Time.ToString()[11..16]} at {w.Speed:G}x asked");
                         ScenarioRun.Sides(w, ai, s);
                         foreach (int e in watch)
-                            ScenarioRun.Ship(w, start, e);
+                            ScenarioRun.Ship(w, start, e, ai);
                     }
                     if (fireTable)
                     {

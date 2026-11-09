@@ -149,6 +149,9 @@ public sealed partial class AdmiralLayer
         var (q, v, _) = pic!.EstimateAt(pic.IndexOf(a.AttackTarget), now, s);
         double run = TorpedoAim.Intercept(guide.Position, q, v, speed, out _, out double meet) ? meet : double.PositiveInfinity;
         double gain = s.AttackGainShare * range;
+        // a target seen stopped (at anchor, or dead in the water) has no bow to gain and can't turn away: the boats run in
+        // from where they are (Port Arthur's roads, 8 February 1904; docs/battle/night.md Q13)
+        bool still = v.Length < s.SeenStoppedKn * Handling.MsPerKnot;
         switch (a.Attack)
         {
             case AttackPhase.Gain:
@@ -164,7 +167,7 @@ public sealed partial class AdmiralLayer
                 Earth.Advance(ref p, ref f, Math.Max(gain, safe));
                 // the gain's budget runs from the attack's first gain, not this one's (a target chosen again, or a run fallen
                 // back to gaining when he turned away, used to start it over: an attack's gain went on for most of an hour)
-                if (offBow <= 90 && run <= gain || Earth.Distance(guide.Position, p) < 1_500 || now - a.AttackStartMs > s.AttackGainMaxMs)
+                if (still || offBow <= 90 && run <= gain || Earth.Distance(guide.Position, p) < 1_500 || now - a.AttackStartMs > s.AttackGainMaxMs)
                 {
                     // ahead of his beam with him in reach of a run in (or there, or no more time): in together
                     (a.Attack, a.AttackMs) = (AttackPhase.Run, now);
@@ -183,7 +186,7 @@ public sealed partial class AdmiralLayer
                 // in reach, and with a chance of a hit: a long shot at a fast ship alone isn't one, at a line it is (BL5)
                 bool inReach = run <= s.TorpedoFireShare * range && pic.IndexOf(a.AttackTarget) is int ai2 and >= 0 &&
                                captains.TorpedoChance(ctx, pic, ai2, run, speed) >= s.TorpedoMinChance;
-                if (!inReach && offBow > 110)
+                if (!inReach && offBow > 110 && !still)
                 {
                     // he's turned away: abaft his beam, a stern chase; ahead of him again first while the gain's budget lasts,
                     // else the attack's given up
