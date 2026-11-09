@@ -289,8 +289,8 @@ public sealed class TorpedoSystem : IWorldSystem
         {
             var pic = world.Sightings.Of(ship.Side);
             int ci = pic?.IndexOf(target) ?? -1;
-            if (ci < 0 || !pic![ci].InSight)
-                return false;
+            if (ci < 0 || !pic!.Aimable(ci, now, settings))
+                return false;   // in sight, or her lights lately (docs/battle/night.md Q14)
             (q, v, _) = pic.EstimateAt(ci, now, settings);
             if (courseZ != 0 || speedZ != 0)
                 v = Judged(world, ship, q, v, pic[ci].Shape, courseZ, speedZ);

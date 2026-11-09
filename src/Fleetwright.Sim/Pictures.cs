@@ -70,6 +70,11 @@ public struct Contact
     /// <summary>When the ship herself was last in sight (0: never, only her smoke or lights): the map's fade, read by nothing
     /// in the sim, so not hashed.</summary>
     public long ShipSeenMs;
+
+    /// <summary>When her lights were last seen while she herself wasn't (docs/battle/night.md Q14: her salvo's flash, her
+    /// funnels' glow, her searchlight, her lights shown; 0: never): she's aimed at on the bearing taken on them for
+    /// <see cref="SimSettings.LightAimS"/> (<see cref="Picture.Aimable"/>).</summary>
+    public long LightMs;
     public Vec3d Position, Velocity;
     public Cov4 P;
     public ContactLevel Level;
@@ -168,6 +173,15 @@ public sealed class Picture
     /// <summary>Whether it holds a ship and sees her out of the fight: going down, gone, or struck (<see cref="Contact.Out"/>).</summary>
     public bool Out(int entity) => IndexOf(entity) is int i and >= 0 && contacts[i].Out;
 
+    /// <summary>Whether contact i is a ship to aim at now (docs/battle/night.md Q14): not seen out of the fight, and in sight,
+    /// or her lights seen within <see cref="SimSettings.LightAimS"/> (a searchlight, a flash: the record's boats steered
+    /// for them and fired on them), the track where the picture has her.</summary>
+    public bool Aimable(int i, long now, SimSettings s)
+    {
+        ref readonly var c = ref contacts[i];
+        return !c.Out && (c.InSight || c.LightMs > 0 && now - c.LightMs <= (long)(s.LightAimS * 1000));
+    }
+
     /// <summary>Room for this many contacts (every ship at sea): a picture grows when the fleets do, not when a contact
     /// comes in (a light seen far, docs/battle/night.md Q2, makes many more), so a look never allocates.</summary>
     internal void Reserve(int n)
@@ -231,6 +245,11 @@ public sealed class Picture
             h.Add(c.EstMs);
             h.Add(c.InSight);
             h.Add(c.SmokeInSight);
+            if (c.LightMs != 0)
+            {
+                h.Add(0x11A1u);   // (only when set: the hashes of worlds with no lights seen as they were)
+                h.Add(c.LightMs);
+            }
             if (c.LightInSight)
                 h.Add(0x119u);   // (only when set: the hashes of worlds with no lights seen as they were)
             h.Add(c.Position.X);

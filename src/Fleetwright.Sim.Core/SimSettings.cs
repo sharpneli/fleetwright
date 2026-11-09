@@ -361,6 +361,12 @@ public sealed record SimSettings
     public double SightHullAlbedo { get; init; } = 0.3;
     public double SightLightRangeShare { get; init; } = 0.3;
     public double SightLightSpeedSigmaMs { get; init; } = 8;
+
+    /// <summary>A ship seen only by her lights (docs/battle/night.md Q14: a searchlight, a salvo's flash, a funnel's glow)
+    /// is aimed at for this long after they were last seen, s: the bearing taken on them, the track where the picture has
+    /// her [EST: a torpedo officer firing on the bearing of the last flash; a quick-firer flashes every few seconds, a big
+    /// gun every half minute or so].</summary>
+    public double LightAimS { get; init; } = 30;
     public double SightDazzleCdM2PerCd { get; init; } = 1.2e-9;
     public double SightDazzleS { get; init; } = 2.5;
     public double SightFunnelGlowCd { get; init; } = 10;

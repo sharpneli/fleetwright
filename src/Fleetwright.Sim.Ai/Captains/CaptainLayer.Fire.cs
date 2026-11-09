@@ -532,7 +532,8 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>His torpedoes at will: at the engaged ship if it's within the fast setting's reach, else the biggest
-    /// contact in sight within it, the nearest first, when his launchers bear on it.</summary>
+    /// contact he can aim at within it (in sight, or her lights seen lately: <see cref="Picture.Aimable"/>), the nearest
+    /// first, when his launchers bear on it.</summary>
     void Torpedoes(in AiContext ctx, ref Captain cap, ShipState own, int slot, Picture? pic)
     {
         var s = ctx.Settings;
@@ -546,14 +547,15 @@ public sealed partial class CaptainLayer
         var (reach, speed) = AttackSetting(ctx, cls, own.Position);
         reach *= s.TorpedoFireShare;
         int target = 0;
-        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic[ei].InSight && !pic[ei].Out && Run(ctx, pic, own, ei, speed) is var er &&
+        // in sight, or seen by her lights lately: the record's boats fired on searchlights and flashes (docs/battle/night.md Q14)
+        if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic.Aimable(ei, now, s) && Run(ctx, pic, own, ei, speed) is var er &&
             er <= reach && TorpedoChance(ctx, pic, ei, er, speed) >= s.TorpedoMinChance)
             target = cap.FireTarget;
         if (target == 0 && !onOrder)
         {
             int bestRank = int.MaxValue;
             double bestRun = double.MaxValue;
-            foreach (int i in seen.Near(ctx.World, own.Side, own.Position, reach))
+            foreach (int i in seen.Aimable(ctx.World, own.Side, own.Position, reach))
             {
                 if (!Opens(ctx, own, pic[i], seen.Position(own.Side, i)))
                     continue;   // not known for a foe (docs/battle/night.md Q6)

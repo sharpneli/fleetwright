@@ -777,6 +777,7 @@ public sealed class Sightings
         con.SeenMs = now;
         con.LookedMs = now;
         con.LightInSight = true;
+        con.LightMs = now;
         con.Observer = os.Entity;
         con.Eye = eye.Kind;
         con.From = os.Position;

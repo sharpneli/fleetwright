@@ -702,7 +702,7 @@ commander), **Q7d** the admirals at night (close order, losing touch).
   and this are one held course now (`Captain.HeldUntilMs`, `HeldFor`: Combing or Lit); the card says "lit: lights out,
   turned away".
 - **Not built:** a darkened ship (navigation lights aren't modelled: every ship is darkened; Q13 since: lights shown); firing at a gun's flash alone
-  (fire control lays on lamps and bow waves, not a flash: a later fire-control item).
+  (fire control lays on lamps and bow waves, not a flash: Q14b; torpedoes since Q14a).
 - **Tests:** `NightDoctrineTests` (lit, turn away to 279° with her lights out or fight on; searchlights never, to fire,
   search; challenged within 2.5 km, not within 1 km).
 
@@ -1481,6 +1481,36 @@ Q9's list).
   isn't; fired upon, her lights go out).
 - **Not yet:** the map doesn't draw a lit ship's lights (the VFX pass); merchants and neutrals lit by default (a
   scenario sets it today).
+
+### Q14 Aimed at lights (2026-11-09)
+
+The user (2026-11-09): aiming at searchlights and gun flashes "should definitely be in the game. It's something which was
+done historically." The record: at Port Arthur Retvizan, on searchlight duty, "attracted many torpedoes"; at Tsushima
+"Russian ships that lit their searchlights were found and torpedoed"; at Coronel Nürnberg found Monmouth by her flashes;
+a flash gives a bearing, "no distance was found" (`research/simulation/night-fighting.md` §3.3-3.6, §5). Found chasing
+`bugs.md`'s boats on a lit squadron at anchor: once the squadron doused its lights and fired, the boats on their signal
+at 540-900 m couldn't aim at a darkened ship lying still (under margin 1 to ~800 m) and held fire under her guns.
+
+- **Q14a, torpedoes (built 2026-11-09).** A ship seen only by her lights (Q2's light contact: a salvo's flash, a funnel's
+  glow, a searchlight seen from beside, her lights shown) is aimed at for `LightAimS` (30 s [EST]) after they were last
+  seen (`Contact.LightMs`, `Picture.Aimable`): the bearing taken on them, the track where the light fixes put her
+  (bearing to the eye's error, range to `SightLightRangeShare`), course and speed judged as her shape was made out
+  (`Contact.Shape`, a light alone the worst: `TorpedoJudgeMargin`). `TorpedoSystem.Solve` and the captains' choice
+  (`SeenContacts.Aimable`, a third grid beside the in-sight ones) ask it; a lamp in the beam or ahead of it already put her
+  in sight (Q4).
+- **Own beams aren't being found.** `Lights.LitBy` (what tells a ship she's lit: the turn-away, a green crew's duress, the
+  benches' "ships lit") counted her own side's beams: a squadron searching at close order lit its own ships, each of which
+  turned away and put its beams out (Port Arthur's line dark and silent for minutes as the boats ran in). Her friends'
+  beams no longer count; the flares still do (nobody's).
+- **What moved** (`night-history --runs 20`, before → after): Tsushima's Japanese torpedoes 0.3 a run from 0.2 km → 1.6
+  from 0.8 km, hits 0.1 → 0.3, the Russians' lights out 184 → 257 ship-min and their hits 18.9 → 26.6; Southampton's
+  British torpedoes 9.9 → 12.3 (hits 1.2 → 1.8); the 4th Flotilla's 18.5 → 22.2, its boats lost 4.3 → 3.4 of 10; Dover's
+  ~3 → ~5.5 each side. Port Arthur's night bench (`test-port-arthur-night.json`, 4 seeds): 7.0 torpedoes a run (5.8),
+  Russia losing 1.2 ships (0.8), the boats 9.2 of 10 (the squadron sees them at 2.7 km: `bugs.md`).
+- **Q14b, guns (next).** Fire control lays on a lamp or a bow wave, not a flash: a battery firing at a flash's bearing,
+  its range from the picture's rough estimate and no fall of shot to spot against her (`GunnerySystem`'s sensors and
+  spotting see the ship herself). Its own step: what a director or layer takes off a flash, how the spotting ladder runs
+  blind, and the matchup's night gunfights mutual again (Q7's open item).
 
 ## Decided (the user, 2026-10-29)
 

@@ -19,6 +19,7 @@ public sealed class Lights
     // its peak that keeps (SearchlightModel.Held), its own beam's spread (full, degrees) and its mirror (m)
     double[] axis = new double[16], sigma = new double[16], keep = new double[16], spread = new double[16], mirror = new double[16];
     bool[] flare = new bool[16];
+    ShipStore? store;   // the look's, for the beams' owners' sides (LitBy)
 
     /// <summary>How many lights there are, how many of them are beams and how many flares.</summary>
     public int Count { get; private set; }
@@ -41,7 +42,7 @@ public sealed class Lights
     /// (<see cref="SimSettings.FireGlowHeightShare"/>); then the beams, added by the searchlights.</summary>
     public void Gather(ShipStore store, SimSettings s)
     {
-        (Count, Beams, Flares) = (0, 0, 0);
+        (Count, Beams, Flares, this.store) = (0, 0, 0, store);
         for (int k = 0; k < store.OffRailsCount; k++)
         {
             int slot = store.OffRailsSlot(k);
@@ -102,7 +103,9 @@ public sealed class Lights
     public (double Lux, double FromDeg) On(int slot, Vec3d position, double visibilityM) => Sum(slot, position, visibilityM, fires: true);
 
     /// <summary>The light on a ship (slot) from the others' beams and the flares (docs/battle/night.md Q7: what tells her
-    /// she's lit; not the fires near her), as <see cref="On"/>.</summary>
+    /// she's lit; not the fires near her), as <see cref="On"/>. Not her own side's beams: she knows her friends' lights
+    /// sweeping past her for theirs (Q14: a squadron searching at anchor lit its own ships, each of which turned away and
+    /// put her beams out, the whole line dark).</summary>
     public (double Lux, double FromDeg) LitBy(int slot, Vec3d position, double visibilityM) =>
         Beams == 0 && Flares == 0 ? (0, 0) : Sum(slot, position, visibilityM, fires: false);
 
@@ -114,7 +117,7 @@ public sealed class Lights
         var north = Earth.North(position);
         for (int i = 0; i < Count; i++)
         {
-            if (owner[i] == slot || !fires && !flare[i] && double.IsNaN(axis[i]))
+            if (owner[i] == slot || !fires && !flare[i] && (double.IsNaN(axis[i]) || store != null && owner[i] >= 0 && store[owner[i]].Side == store[slot].Side))
                 continue;
             double c = Sends(i, position);
             if (!(c > 0))

@@ -106,6 +106,7 @@
   "SightHullAlbedo": 0.3,
   "SightLightRangeShare": 0.3,
   "SightLightSpeedSigmaMs": 8,
+  "LightAimS": 30,
   "SightDazzleCdM2PerCd": 1.2e-9,
   "SightDazzleS": 2.5,
   "SightFunnelGlowCd": 10,

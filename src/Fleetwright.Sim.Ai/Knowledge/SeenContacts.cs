@@ -17,8 +17,8 @@ public sealed class SeenContacts
         public Picture? Picture;
         public Vec3d[] Position = [];
         public Vec3d[] Velocity = [];
-        public bool[] InSight = [];
-        public readonly CubeIndex Wide = new(), Fine = new();
+        public bool[] InSight = [], Aim = [];
+        public readonly CubeIndex Wide = new(), Fine = new(), Aimed = new();
     }
 
     readonly Side?[] sides = new Side?[256];
@@ -83,7 +83,21 @@ public sealed class SeenContacts
         return Filter(v, v.Wide, p, radiusM, wide: true);
     }
 
-    ReadOnlySpan<int> Scan(World world, byte side, Vec3d p, double radiusM)
+    /// <summary>As <see cref="Near"/>, the contacts a side can aim at (docs/battle/night.md Q14, <see cref="Picture.Aimable"/>):
+    /// those in sight, and those seen by their lights lately.</summary>
+    public ReadOnlySpan<int> Aimable(World world, byte side, Vec3d p, double radiusM)
+    {
+        if (radiusM > cell && frozen)
+            return Scan(world, side, p, radiusM, aim: true);
+        if (radiusM > cell)
+            Widen(radiusM);
+        var v = Build(world, side);
+        if (v == null)
+            return [];
+        return Filter(v, v.Aimed, p, radiusM, wide: true);
+    }
+
+    ReadOnlySpan<int> Scan(World world, byte side, Vec3d p, double radiusM, bool aim = false)
     {
         var v = Build(world, side);
         if (v == null)
@@ -94,7 +108,7 @@ public sealed class SeenContacts
         int m = 0;
         double r2 = radiusM * radiusM;
         for (int i = 0; i < v.Picture!.Count; i++)
-            if (v.InSight[i] && (v.Position[i] - p).LengthSquared <= r2)
+            if ((aim ? v.Aim[i] : v.InSight[i]) && (v.Position[i] - p).LengthSquared <= r2)
                 found[m++] = i;
         return found.AsSpan(0, m);
     }
@@ -157,16 +171,22 @@ public sealed class SeenContacts
             Array.Resize(ref v.Position, size);
             Array.Resize(ref v.Velocity, size);
             Array.Resize(ref v.InSight, size);
+            Array.Resize(ref v.Aim, size);
         }
         v.Wide.Clear(n, cell);
         v.Fine.Clear(n, world.Settings.FireLineGapM);
+        v.Aimed.Clear(n, cell);
         for (int i = 0; i < n; i++)
         {
             v.InSight[i] = pic[i].InSight && !pic[i].Out;   // one seen going under or struck is no target, and no threat (striking.md SK3)
-            if (!v.InSight[i])
+            v.Aim[i] = pic.Aimable(i, now, world.Settings);
+            if (!v.Aim[i])
                 continue;
             var (p, vel, _) = pic.EstimateAt(i, now, world.Settings);
             (v.Position[i], v.Velocity[i]) = (p, vel);
+            v.Aimed.Add(i, p);
+            if (!v.InSight[i])
+                continue;
             v.Wide.Add(i, p);
             v.Fine.Add(i, p);
         }
