@@ -12,6 +12,22 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-09 - What a darkened ship showed: light discipline and its leaks, 1890-1925 first
+- Question: (1) Darkening ship in each navy and period: what the regulations shut and covered (scuttles and deadlights,
+  doors and screens to lit flats, galley and engine-room skylights, navigation lights), and how well it was kept; what
+  stricter "darken ship" for an attack added (no smoking on deck, no lights below that could show). (2) What leaked and
+  how far it was seen: a lit scuttle or open door, a cigarette or a match on deck, a binnacle or chart-table light, the
+  galley's fire; any measured intensities (candela) or sighting ranges, and the cases where a light gave a ship away at
+  night (Jutland's masthead light on Shannon, others). (3) Funnel glow and sparks: orders to keep sparks down (the German
+  boats at Jutland), what a stoker did to keep them down and what it cost in speed, and how far sparks and flare were seen.
+  (4) Lookouts on a lit ship: any account of a ship with her lights on (at anchor, in harbour routine) failing to see
+  craft a darkened ship saw, and how much a darkened bridge on a lit ship helped (Port Arthur 1904, Chemulpo, others).
+- Context / relevant files: `docs/battle/night.md` Q13 (lights shown: `SightShownLightsCd` 300 cd, `SightShownLightsLux`
+  0.2 lux [EST]) and Q15 (a lit ship's lookouts adapted to ~0.02 cd/m² [EST]; today every ship not shown is perfectly
+  dark, so the proposed leak lamp for a ship darkened in the ordinary way has no number); `SightModel.LightMargin`
+  (Allard's law, a point light made out at 2e-7 lux on a dark night).
+- Wanted output: candela or sighting ranges for each leak by period with tags; what strict darkening removed; the cases.
+
 ### 2026-11-05 - Did rate first raise the rate of fire, and by how much?
 - Question: (1) Rounds a gun a minute actually fired in battle, by ship and period, above all the BCF beside the Grand Fleet and the High Seas Fleet at Jutland and the Dogger Bank (rounds expended over minutes in action), and any practice shoot's rate with doors propped against doors worked. (2) What's in a heavy turret's battle cycle: the drill's reload against the seconds lost to flash doors, interlocks, cages and handling, and what propping doors or stacking cordite took off it. (3) What held rates down in battle, loading or fire control (waiting for the fall of shot, the layers), and how much each. (4) What the 1913 outfit and "rapid fire" drills were meant to achieve, and how historians weigh it (Lambert and his critics).
 - Context / relevant files: `docs/battle/magazines.md` "The stack and Stupidity". In `duel lion derfflinger` every flash discipline fires 1.05 rounds a gun a minute: the crew's battle factor (`GunneryCrew.Load` 1.2 [EST]) and the layers' 7 s leave the reload at about 54 s against the drill hoists' 59.4 s, so hoists and stack hardly ever bind. The user's view: the ships did fire faster. Until this is answered a placeholder stands in: `FlashDisciplines`' `LoadShare`, rate first 1/1.2 [GUESS]; safe left at 1, nearly free. Does safe want a cost too?
