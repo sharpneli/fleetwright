@@ -343,7 +343,7 @@ from one to the next):
 | E1 | **Port Arthur, 1904** (inspired by the dawn action of 10 March): a skirmish off the roads | small, 12 | four boats and two cruisers a side; Russia's boats reach the roads, Japan stops them | yoshino, bayan, novik (built); poltava built for the Yellow Sea; lights shown (night.md Q13) |
 | E2 | **Pungdo, 1894** (inspired by the war's opening shots) | small, 7 | Japan's Flying Squadron (Yoshino, Naniwa, Akitsushima) v Zhiyuan, Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | naniwa, jiyuan, zhiyuan, guangyi (built); yoshino from E1; troopship reused |
 | E3 | **The Yalu, 1894** (candidate 1) | medium, 15 | the Beiyang Fleet (two ironclads, two armoured cruisers, three cruisers) v Itō's two squadrons (eight cruisers) | dingyuan, laiyuan, matsushima, chiyoda (built); E1's and E2's |
-| E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium | Russia's Black Sea fleet landing troops v an Ottoman sortie; Russia reach, the Ottomans stop | ekaterina, Ottoman ironclads; troopship |
+| E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium, 18 | three Ekaterinas and four transports v two Ottoman ironclads and nine torpedo boats; Russia reach, the Ottomans stop | ekaterina, mesudiye, ottoman_tb (built); troopship |
 | E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | medium | Pelayo, Carlos V and destroyers v Dewey's cruisers and Monterey | pelayo, carlos_v, olympia, a monitor; the US ensign |
 | E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy after Messina | medium | Austria (Habsburg, Erzherzog Karl, Radetzky?) v Italy (Brin, Regina Margherita, Garibaldi) | three or four a side |
 
@@ -397,6 +397,23 @@ green (as at Pungdo): score 0.18 v 0.17, Japan losing 1.1 ships a game and China
 into the dusk); a few end in a rout either way (an ironclad sunk: Japan 0.5-0.6; three Japanese cruisers: China 0.4),
 two in long-range sparring. With average Chinese crews China led 0.26 v 0.15: its tonnage sits in the ironclads, which
 rarely sink, and the Yoshinos (5,260 t each) are the Japanese ships lost.
+
+**E4, the Bosporus coup (2026-11-09): played.** 15 December 1896, dawn, 12 km haze and a fresh northeasterly: the
+Black Sea Fleet (Ekaterina II, Chesma, Sinop) and four transports 35 km northeast of the beaches off Kilyos, west of
+the strait's mouth; the Ottoman fleet, here fit to sail (Mesudiye, Asar-i Tevfik and three divisions of Schichau
+torpedo boats), just outside the mouth. Russia lands all four transports (45 minutes in a 4 km zone); the Ottomans stop
+it. Both sides' crews average. New designs: ekaterina from poltava's hull (6 x 305 mm/30 in three twin barbettes, two
+abreast forward; a 406 mm compound belt) 9,960 t full against the record's 11,000; mesudiye from dingyuan's (12 x 254 mm
+muzzle-loaders, two drawn as chase guns and ten in the battery, the 1867 Palliser and cast-iron shells, a 305 mm
+wrought-iron belt) 5,640 t (9,000); ottoman_tb from ikazuchi (one 47 mm, two tubes, 24 kn) 450 t (about 150: the
+generator runs small craft heavy). Latin Extended letters (ğ, ı, ş, ō) aren't in the UI font: such names are written
+plain (Agasi, Riza, Ito); Latin-1 (ü, Å) is.
+
+Balance, AI on both sides (`--play --seeds 16`): Russia 8, the Ottomans 5, 3 undecided (score 0.56 v 0.44); Russia
+loses 0.7 ships a game, the Ottomans 2.9. On the way: 60 km out, the fight came too late to land at all (the Ottomans
+11 of 12); 35 km out, three of four transports for 30 minutes, Russia 11 of 12; average Ottoman crews and a third
+torpedo boat division, Russia 9 of 12; all four transports, then 45 minutes, to where it is. The torpedo boats fire
+only 3-4 of their 18 torpedoes a game (docs/battle/bugs.md, the boats' attacks).
 
 ## Open questions for the user
 

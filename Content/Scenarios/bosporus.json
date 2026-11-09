@@ -1,0 +1,57 @@
+// The Bosporus coup, December 1896 (hypothetical: Nelidov's plan carried out). The Russian ambassador in Constantinople
+// proposed, at the height of the Armenian crisis, that the Black Sea Fleet land an army corps at the upper Bosporus at a
+// signal from him and seize the straits before Britain could act; the Tsar's council approved it in principle in December
+// 1896, and the plan was quietly dropped. Here the signal is given: the Black Sea Fleet comes down from Sevastopol with its
+// transports for the beaches west of the Bosporus mouth, and what the Ottoman fleet can still raise comes out to meet it.
+// Not history's forces: the Ottoman fleet, laid up in the Golden Horn since 1878, is here made fit to sail, with its new
+// German torpedo boats, for an even fight (the user: scenarios inspired by history for play).
+// The classes: ekaterina for Ekaterina II, Chesma and Sinop, troopship for the transports; mesudiye for Mesudiye and
+// Asar-i Tevfik (a smaller ironclad, her stand-in), ottoman_tb for the torpedo boats.
+//   Russia, the coup: three barbette ships with six 12-inch guns each, and four transports full of soldiers.
+//   Ottoman Empire, the defence: two old ironclads with muzzle-loaders and six fast torpedo boats, at their own front door.
+// The weather: a grey December morning on the Black Sea, a fresh northeasterly, a moderate sea [EST].
+{
+  "scenario": 1,
+  "name": "The Bosporus coup, 1896",
+  "brief": "15 December 1896, morning. The signal from Constantinople has come: the Black Sea Fleet is off the Bosporus with an army corps in its transports, to land on the beaches west of the strait's mouth and seize the straits before Europe can act. The Ottoman fleet, laid up for twenty years, has steam up at last: two old ironclads and a flotilla of new German torpedo boats stand out of the strait to meet it. Land the troops, or drive the transports off.",
+  "place": "off the Black Sea mouth of the Bosporus",
+  "about": {
+    "Russia": { "character": "The coup: three barbette ships with six 12-inch guns each, four transports to bring in.", "commander": "V-Adm Tyrtov", "ensign": "russia" },
+    "Ottoman Empire": { "character": "The defence: two old ironclads with muzzle-loaders, six fast torpedo boats, home waters.", "commander": "Hasan Hüsnü Pasha", "ensign": "ottoman" } },
+  "start": "1896-12-15T05:30",
+  "seed": 1896,
+  "camera": [41.45, 29.25, 70],
+  "sides": ["Russia", "Ottoman Empire"],
+  "readiness": { "Russia": "closed up", "Ottoman Empire": "closed up" },
+  "damage_control": { "Russia": "1905", "Ottoman Empire": "1905" },
+  "fire_discipline": { "Russia": "independent", "Ottoman Empire": "independent" },
+  "doctrine": {
+    "Russia": { "preset": "russia-1904" },
+    "Ottoman Empire": { "preset": "default", "Aggression": 0.5 } },
+  "crews": { "Russia": "average", "Ottoman Empire": "average" },
+  "player": "Russia",
+  "until": "1896-12-15T14:45",
+  // all four transports off the beaches for three quarters of an hour, to put the troops ashore; the Ottomans stop it
+  "aims": {
+    "Russia": { "reach": "Transports", "zone": { "at": [41.323, 28.954], "km": 4, "name": "the beaches off Kilyos" }, "of": 4, "stay": 45 },
+    "Ottoman Empire": { "stop": "Russia" } },
+  // where ships out of the fight go: the Russians home to Sevastopol; the Ottomans into the strait
+  "home": { "Russia": [44.0, 33.0], "Ottoman Empire": [41.24, 29.13] },
+  "weather": { "visibility_km": 12, "wind_from": 45, "wind_kn": 15, "swell_m": 1.2, "swell_s": 7, "swell_from": 40 },
+  "units": [
+    // ------------------------------------------------------------- Russia: 7, down from the northeast, 35 km off the beaches
+    { "name": "Battleships", "admiral": { "name": "V-Adm Tyrtov", "temper": 0.2 }, "side": 0, "at": [41.56, 29.33], "course": 240, "kn": 10, "spacing": 600,
+      "ships": [ { "design": "ekaterina", "names": ["Ekaterina II", "Chesma", "Sinop"] } ] },
+    { "name": "Transports", "admiral": "Capt Pilkin", "side": 0, "at": [41.60, 29.35], "course": 240, "kn": 10, "spacing": 500,
+      "ships": [ { "design": "troopship", "names": ["Odessa", "Kherson", "Rostov", "Tsaritsa"] } ] },
+    // ------------------------------------------------------------- the Ottoman Empire: 8, out of the strait
+    { "name": "Armoured Squadron", "admiral": { "name": "Hasan Hüsnü Pasha", "temper": 0.0 }, "side": 1, "at": [41.32, 29.20], "course": 30, "kn": 8, "spacing": 600,
+      "ships": [ { "design": "mesudiye", "names": ["Mesudiye", "Asar-i Tevfik"] } ] },
+    { "name": "1st Torpedo Boat Division", "admiral": { "name": "Kol Agasi Tahir", "temper": 0.3 }, "side": 1, "at": [41.30, 29.10], "course": 0, "kn": 12, "spacing": 300,
+      "ships": [ { "design": "ottoman_tb", "names": ["Ejder", "Gilyum", "Pelengderya"] } ] },
+    { "name": "2nd Torpedo Boat Division", "admiral": { "name": "Kol Agasi Riza", "temper": 0.3 }, "side": 1, "at": [41.30, 29.30], "course": 30, "kn": 12, "spacing": 300,
+      "ships": [ { "design": "ottoman_tb", "names": ["Berk-i Efsan", "Tayyar", "Nusret"] } ] },
+    { "name": "3rd Torpedo Boat Division", "admiral": { "name": "Kol Agasi Ismail", "temper": 0.3 }, "side": 1, "at": [41.36, 29.00], "course": 30, "kn": 12, "spacing": 300,
+      "ships": [ { "design": "ottoman_tb", "names": ["Sahab", "Satvet", "Galata"] } ] }
+  ]
+}
