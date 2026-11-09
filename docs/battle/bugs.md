@@ -184,6 +184,17 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [x] **A search line spread over the land** (found 2026-11-09 by the user playing Pungdo: Akitsushima "decided to
+  stop before we even found the enemy"). The Stop side's search (aims.md A3) spread the Flying Squadron abreast 0.9 of
+  the 15 km visibility apart, toward a datum in the mouth of Asan Bay: her station, 27 km to starboard, lay over the
+  Taean peninsula, and she slid about the coast short of it, heading anywhere, sometimes stopped. Fixed: the admiral
+  spreads no more ships than the sea has room for, where he is and at the search's datum (`AdmiralLayer.SeaRoom`, in
+  `SearchLine`); `CommanderTests.A_search_line_spreads_no_wider_than_the_sea_room` (20.9 km before, 1.5 km after).
+- [ ] **A station ashore isn't moved to sea.** What's left of the above: any station a captain keeps (a line's, a screen's)
+  can still fall on land as the guide turns along a coast, and the captain only slides along the coast short of it.
+  The admiral's guide clearance (`AdmiralLayer.Clear`) keeps most lines off; a station ashore might be put at the
+  nearest sea instead. Not seen since the fix.
+
 - [ ] **Boats attacking a lit squadron at anchor by night barely fire** (found 2026-11-09, Port Arthur's first version, the night attack, since reworked into a day skirmish: docs/missions/scenarios.md E1; rebuild that night case to chase it). Ten Ikazuchis with opening attack tasks against fifteen ships stopped and lit: 0-5 torpedoes a run of their 20 (history 16, 3 hits) and 4-5 boats lost to the guns (history none), over 4 seeds. The watch (`--watch 16,20,23`, which now prints the captain's order and the attack's phase) shows each flotilla Gain → Run → Away with no torpedoes, turning away 2.5-3 km off its target; all three flotillas pick the same ship. Likeliest: the side's picture of a lit ship ranged by eye at 13 km is off by a kilometre or more, so `run` reads within the fast setting's reach and the signal goes early, and the boats' own `FireOnSignal` then has nothing in reach. Trace one attack second by second before changing anything.
 
 - [ ] **A ship runs through her own torpedoes** (found 2026-11-06, EX2, `AimsTests`' raid on seed 3). Emden fired at the tramps, turned for home at 29 kn and took two of her own: shooter 4 is her, 533 mm, `HitSource.Torpedo`, broken in two by `Underwater`'s old chance. Torpedoes have always been able to do this and it's a real accident (HMS Trinidad, 1942), but a captain with a spread running should keep out of its way. The test now plays seed 4; the raid passes on 4, 5 and 6.

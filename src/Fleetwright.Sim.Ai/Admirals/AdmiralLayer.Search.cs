@@ -14,8 +14,10 @@ public sealed partial class AdmiralLayer
     readonly MatchupSide spreadPiece = new(), spreadEnemy = new();
 
     /// <summary>How many ships abreast a unit searches with: its line's, spread (<see cref="SimSettings.SearchSpacingShare"/>
-    /// of the visibility apart), if its admiral judges the risk worth it; 1 if it keeps closed up (or is a ship alone).</summary>
-    public int SearchLine(in AiContext ctx, Unit u)
+    /// of the visibility apart), if its admiral judges the risk worth it; 1 if it keeps closed up (or is a ship alone).
+    /// No more than the sea has room for (<see cref="SeaRoom"/>), where the guide is and at <paramref name="at"/>, the
+    /// search's datum, if given.</summary>
+    public int SearchLine(in AiContext ctx, Unit u, Vec3d? at = null)
     {
         if (!u.IsGroup || groups.Get(u.GroupId) is not { } g || ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int gs and >= 0))
             return 1;
@@ -25,6 +27,12 @@ public sealed partial class AdmiralLayer
         foreach (var (ship, _, _) in line)
             if (ctx.Ships.SlotOf(ship) >= 0)
                 ships++;
+        if (ships <= 1)
+            return 1;
+        double spacing = ctx.Settings.SearchSpacingShare * ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM;
+        ships = SeaRoom(ctx, guide.Position, ships, spacing);
+        if (at is { } datum)
+            ships = SeaRoom(ctx, datum, ships, spacing);
         if (ships <= 1)
             return 1;
         spreadEnemy.Clear();
@@ -50,5 +58,16 @@ public sealed partial class AdmiralLayer
                 return 1;   // this piece alone would be caught by what he can't beat: closed up
         }
         return ships;
+    }
+
+    /// <summary>How many of <paramref name="ships"/> a line abreast <paramref name="spacingM"/> apart has sea for about a
+    /// point: as many as reach no nearer the coast than the point is (a line spread over a headland or into a bay would
+    /// put its wing's stations ashore, and she'd only slide along the coast short of them).</summary>
+    static int SeaRoom(in AiContext ctx, Vec3d p, int ships, double spacingM)
+    {
+        if (ctx.World.Shore is not { } shore || spacingM <= 0)
+            return ships;
+        double want = (ships - 1) * spacingM, clear = shore.Clearance(p, want, out _);
+        return clear >= want ? ships : Math.Clamp(1 + (int)(clear / spacingM), 1, ships);
     }
 }

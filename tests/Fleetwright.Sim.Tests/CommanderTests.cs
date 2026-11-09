@@ -393,6 +393,30 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.True(hour < Settings.LostSearchMinChance, "not an hour on");
     }
 
+    /// <summary>A search line spreads no wider than the sea about it (AdmiralLayer.SeaRoom): three cruisers off Pungdo sent
+    /// to search the mouth of Asan Bay, 15 km visibility, would spread 27 km abreast over the Taean peninsula; they keep to
+    /// the sea room, closed up, and none ends up sliding along the coast short of a station ashore.</summary>
+    [Fact]
+    public void A_search_line_spreads_no_wider_than_the_sea_room()
+    {
+        var w = new World(WorldTime.FromUtc(1894, 7, 24, 23, 15), 3, Settings, shore: TestLand.Shore);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(15_000));
+        var u = Column(w, ai, Class(w, "yoshino"), Earth.Position(37.13, 126.33), 285, 3, kn: 12);
+        w.Apply(ai.Orders.Search(u, 37.064, 126.679));
+        double widest = 0;
+        for (int s = 0; s < 60; s++)
+        {
+            Run(w, 60);
+            var line = w.Groups.Get(u.GroupId)!.Line;
+            var guide = w.Ships.Store[w.Ships.Store.SlotOf(line[0])].Position;
+            foreach (int e in line)
+                widest = Math.Max(widest, Earth.Distance(guide, w.Ships.Store[w.Ships.Store.SlotOf(e)].Position));
+        }
+        output.WriteLine($"widest from the guide over an hour: {widest / 1000:F1} km");
+        Assert.True(widest < 6_000, $"{widest:F0} m");
+    }
+
     [Fact]
     public void Losses_past_doctrines_share_break_a_side_off()
     {

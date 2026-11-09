@@ -593,12 +593,13 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
             return;
         }
         double spacing = s.SearchSpacingShare * ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM;
-        // spread abreast, a squadron's or a force's whole line, if its admiral judges the risk worth it; else closed up
-        int ships = Admirals!.SearchLine(ctx, u);
-        if (ships > 1)
-            ctx.Issue(o.Shape(u, LineShape.Abreast, OrderSource.Task, spacing));
         var (lat, lon) = Earth.UnpackLatLon(t.Point);
         var datum = Earth.Position(lat, lon);
+        // spread abreast, a squadron's or a force's whole line, if its admiral judges the risk worth it and the sea has
+        // room for it, here and at the datum; else closed up
+        int ships = Admirals!.SearchLine(ctx, u, datum);
+        if (ships > 1)
+            ctx.Issue(o.Shape(u, LineShape.Abreast, OrderSource.Task, spacing));
         double axis = Earth.Bearing(guide.Position, datum);
         Span<Vec3d> legs = stackalloc Vec3d[12];
         // a ladder of four legs on from the point, or three sectors through it, out to the leg and back

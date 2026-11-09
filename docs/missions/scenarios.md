@@ -378,6 +378,9 @@ loses 0.5 ships a game, China 1.8. On the way: with the escort coming out of the
 side's search ("across the enemy's way", aims.md A3) went for the bay, met the escort and never saw the transport 15-20
 km north of the fight (China 11 of 12); with the convoy together and Japan on its track, three escorts and average
 crews gave China 9 of 12, two escorts (history's) gave Japan 9 of 12; three escorts with green crews sits between.
+After the user's playthrough (Akitsushima sent to a search station ashore, fixed in docs/battle/bugs.md "A search
+line spread over the land") the squadron searches closed up near the coast: China 10, Japan 6 over 16 seeds, Japan
+losing 0.1 ships a game, China 1.1.
 
 ## Open questions for the user
 
