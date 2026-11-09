@@ -345,7 +345,7 @@ from one to the next):
 | E3 | **The Yalu, 1894** (candidate 1) | medium, 15 | the Beiyang Fleet (two ironclads, two armoured cruisers, three cruisers) v Itō's two squadrons (eight cruisers) | dingyuan, laiyuan, matsushima, chiyoda (built); E1's and E2's |
 | E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium, 18 | three Ekaterinas and four transports v two Ottoman ironclads and nine torpedo boats; Russia reach, the Ottomans stop | ekaterina, mesudiye, ottoman_tb (built); troopship |
 | E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | small, 9 | Pelayo, Carlos V and three destroyers v Olympia, Baltimore and two monitors; Spain reach, the US stop | pelayo, carlos_v, spanish_dd, olympia, monterey (built); the US ensign (drawn) |
-| E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy after Messina | medium | Austria (Habsburg, Erzherzog Karl, Radetzky?) v Italy (Brin, Regina Margherita, Garibaldi) | three or four a side |
+| E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy in the Bosnian crisis | large, 27 | six Austrian battleships, two armoured cruisers, six destroyers v four Italian battleships, three Garibaldis, six destroyers; both destroy everyone | habsburg, erzherzog_karl, sankt_georg, huszar, regina_margherita, regina_elena, garibaldi, soldato (built) |
 
 **E1, Port Arthur (2026-11-09): a skirmish, played.** First built as the night attack of 8-9 February with history's
 forces (seven battleships, six cruisers and two pickets at anchor and lit, against ten boats). The user turned it into a
@@ -428,6 +428,20 @@ freeboard 0.6) 4,430 t (4,080). The launch screen draws the US ensign (`"usa"`: 
 
 Balance, AI on both sides (`--play --seeds 16`): Spain 7, the US 9 (score 0.56 each); Spain loses 2.1 ships a game, the
 US 0.8. With average American crews Spain met its aim 9 of 12.
+
+**E6, Conrad's war (2026-11-09): played.** 20 October 1908, clear, a light bora: the k.u.k. Fleet (the three Erzherzog
+Karls, the three Habsburgs) with Sankt Georg and Kaiser Karl VI and six Huszars screening, down from Sebenico; the Squadra
+del Mediterraneo (Regina Elena, Vittorio Emanuele, Regina Margherita, Benedetto Brin) with the three Garibaldis and six
+Soldatos screening, out from Ancona; 33 km apart west of Lissa. Both sides trained, both destroy everyone. New designs, all
+from Borodino's (battleships), Bayan's (armoured cruisers) and Ikazuchi's (destroyers) hulls with Krupp cemented plate, the
+catalogue's 1895 forged steel shells and Borodino's fire control: habsburg 10,100 t full (the record's 8,960),
+erzherzog_karl 14,200 t (10,640: four 190 mm in wing turrets and eight in casemates), sankt_georg 8,400 t (8,000), huszar
+750 t (400), regina_margherita 13,400 t (14,000), regina_elena 16,200 t (13,900, drawn with four of her six twin 203 mm wing
+turrets: six stretch her to 180 m and 19,600 t), garibaldi 6,500 t (7,900), soldato 810 t (400).
+
+Balance, AI on both sides (`--play --seeds 12`, ~30 s a game): score 0.11 v 0.10, Austria-Hungary losing 3.0 ships
+(9,300 t) a game and Italy 3.3 (9,000 t); every game runs to the clock but one; three games sink battleships on one
+side or both. As built, no tuning.
 
 ## Open questions for the user
 

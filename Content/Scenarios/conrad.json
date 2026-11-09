@@ -1,0 +1,61 @@
+// Conrad's war, October 1908 (hypothetical). Franz Conrad von Hötzendorf, chief of the Austro-Hungarian general staff, urged
+// a preventive war on Italy, the Triple Alliance's doubtful partner, again and again: in the Bosnian annexation crisis of
+// autumn 1908, and after the Messina earthquake that winter, when Italy lay stricken. The Emperor and Aehrenthal refused him.
+// Here Franz Joseph gives way: the k.u.k. fleet comes down from Sebenico to clear the Adriatic before the Italian fleet can
+// concentrate, and meets it off Lissa, where Tegetthoff beat Persano in 1866.
+// Not history (a war that never was); the fleets are as they stood in 1908, the older ships left out. The classes:
+// erzherzog_karl for Erzherzog Karl, Erzherzog Friedrich and Erzherzog Ferdinand Max, habsburg for Habsburg, Arpad and
+// Babenberg, sankt_georg for Sankt Georg and Kaiser Karl VI (her stand-in), huszar for the destroyers; regina_elena for
+// Regina Elena and Vittorio Emanuele, regina_margherita for Regina Margherita and Benedetto Brin, garibaldi for Giuseppe
+// Garibaldi, Varese and Francesco Ferruccio, soldato for the destroyers.
+//   Austria-Hungary, the many: six battleships with quick 240 mm guns, heavy secondaries, a strong armoured cruiser.
+//   Italy, the fast and the big: four fast battleships with 305 mm guns, three armoured cruisers, the newest ships afloat.
+// The weather: a clear October day on the Adriatic, a light bora from the northeast, a slight sea [EST].
+{
+  "scenario": 1,
+  "name": "Conrad's war, 1908",
+  "brief": "20 October 1908. Conrad has his war: while Italy is still mobilising over the annexation of Bosnia, the k.u.k. fleet comes down the Dalmatian coast to destroy the Italian fleet before it can concentrate. Montecuccoli has six battleships with quick-firing 240 mm guns and a heavy secondary battery; Aubry has four fast battleships with 305 mm guns and the Garibaldi cruisers. They meet off Lissa, where Austria beat Italy forty-two years ago. Whoever wins rules the Adriatic.",
+  "place": "off Lissa, central Adriatic",
+  "about": {
+    "Austria-Hungary": { "character": "The many: six battleships with quick 240 mm guns and heavy secondaries, a strong armoured cruiser.", "commander": "Adm Montecuccoli", "ensign": "austria" },
+    "Italy": { "character": "The fast and the big: four fast battleships with 305 mm guns and three armoured cruisers.", "commander": "V-Adm Aubry", "ensign": "italy" } },
+  "start": "1908-10-20T07:00",
+  "seed": 1908,
+  "camera": [43.30, 15.20, 90],
+  "sides": ["Austria-Hungary", "Italy"],
+  "readiness": { "Austria-Hungary": "closed up", "Italy": "closed up" },
+  "damage_control": { "Austria-Hungary": "1905", "Italy": "1905" },
+  "fire_discipline": { "Austria-Hungary": "independent", "Italy": "independent" },
+  "doctrine": {
+    "Austria-Hungary": { "preset": "default" },
+    "Italy": { "preset": "default" } },
+  "crews": { "Austria-Hungary": "trained", "Italy": "trained" },
+  "player": "Austria-Hungary",
+  "until": "1908-10-20T16:00",
+  "aims": { "Austria-Hungary": "destroy everyone", "Italy": "destroy everyone" },
+  // where ships out of the fight go: the Austrians to Sebenico; the Italians to Ancona
+  "home": { "Austria-Hungary": [43.70, 15.80], "Italy": [43.65, 13.55] },
+  "weather": { "visibility_km": 18, "wind_from": 45, "wind_kn": 12, "swell_m": 0.8, "swell_s": 6, "swell_from": 50 },
+  "units": [
+    // ------------------------------------------------------------- Austria-Hungary: 14, down from Sebenico
+    { "name": "k.u.k. Fleet", "admiral": { "name": "Adm Montecuccoli", "temper": 0.3, "why": "the fleet that built Tegetthoff's tradition" }, "side": 0, "at": [43.394, 15.437], "course": 220, "kn": 12, "formation": "column", "spacing": 1200,
+      "units": [
+        { "name": "1st Battle Division", "spacing": 600, "ships": [ { "design": "erzherzog_karl", "names": ["Erzherzog Karl", "Erzherzog Friedrich", "Erzherzog Ferdinand Max"] } ] },
+        { "name": "2nd Battle Division", "spacing": 600, "ships": [ { "design": "habsburg", "names": ["Habsburg", "Arpad", "Babenberg"] } ] } ] },
+    { "name": "Cruiser Division", "admiral": "R-Adm Haus", "side": 0, "at": [43.36, 15.36], "course": 220, "kn": 14, "spacing": 600,
+      "ships": [ { "design": "sankt_georg", "names": ["Sankt Georg", "Kaiser Karl VI"] } ] },
+    { "name": "1st Destroyer Flotilla", "side": 0, "at": [43.42, 15.41], "course": 220, "kn": 14, "formation": "abreast", "spacing": 400,
+      "task": { "do": "screen", "of": "k.u.k. Fleet", "distance_km": 3 },
+      "ships": [ { "design": "huszar", "names": ["Huszar", "Ulan", "Streiter", "Wildfang", "Scharfschütze", "Uskoke"] } ] },
+    // ------------------------------------------------------------- Italy: 13, out from Ancona
+    { "name": "Squadra del Mediterraneo", "admiral": { "name": "V-Adm Aubry", "temper": 0.2 }, "side": 1, "at": [43.203, 14.963], "course": 60, "kn": 12, "formation": "column", "spacing": 1200,
+      "units": [
+        { "name": "1st Division", "spacing": 600, "ships": [ { "design": "regina_elena", "names": ["Regina Elena", "Vittorio Emanuele"] } ] },
+        { "name": "2nd Division", "spacing": 600, "ships": [ { "design": "regina_margherita", "names": ["Regina Margherita", "Benedetto Brin"] } ] } ] },
+    { "name": "Armoured Cruiser Division", "admiral": "R-Adm Thaon di Revel", "side": 1, "at": [43.24, 14.99], "course": 60, "kn": 14, "spacing": 600,
+      "ships": [ { "design": "garibaldi", "names": ["Giuseppe Garibaldi", "Varese", "Francesco Ferruccio"] } ] },
+    { "name": "Destroyer Squadriglia", "side": 1, "at": [43.17, 14.98], "course": 60, "kn": 14, "formation": "abreast", "spacing": 400,
+      "task": { "do": "screen", "of": "Squadra del Mediterraneo", "distance_km": 3 },
+      "ships": [ { "design": "soldato", "names": ["Artigliere", "Bersagliere", "Corazziere", "Garibaldino", "Lanciere", "Granatiere"] } ] }
+  ]
+}

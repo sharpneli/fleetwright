@@ -454,6 +454,6 @@ public class ScenarioTests
             if (!s.Test)
                 played.Add(name);
         }
-        Assert.Equal(["aland", "bosporus", "cape-sarych", "coronel", "dogger-bank", "dover-strait", "heligoland-bight", "jutland", "manila", "port-arthur", "prizes-war", "pungdo", "tsushima", "yalu"], played.Order());
+        Assert.Equal(["aland", "bosporus", "cape-sarych", "conrad", "coronel", "dogger-bank", "dover-strait", "heligoland-bight", "jutland", "manila", "port-arthur", "prizes-war", "pungdo", "tsushima", "yalu"], played.Order());
     }
 }
