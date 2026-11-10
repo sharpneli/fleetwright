@@ -9,9 +9,28 @@ against it, agree the step's details with the user, then build. Most steps grew 
 where it and this file differ; the step's section here says what was done and what changed. **Keep "Status" below up to
 date** when a step or a sub-plan starts or finishes, and take stock against it from time to time (the user, 2026-10-30).
 
-## Status (2026-11-02)
+## Status (2026-11-10)
 
-**Now:** the aims are built (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted, A0-A6 done
+**Now: the road to the playtest alpha** (the user's stock-take, 2026-11-10: back on track). The balance round
+(`docs/battle/balance.md`) is the road: BL0-BL2 done, BL4 done (`explosions.md` PM, 2026-11-08), so
+
+1. **BL3, the damage leftovers that move a scenario**, through the loss bench (`loss-stock-take.md`): the bench re-read
+   on today's code (one explosion, night Q13-Q16 since its findings), the slow deaths (losses with no hit in their last
+   20 minutes, destroyers lolled past the capsize line) tested by a counterfactual, then the cause it names; fire on
+   ships going home; the gunnery gap (some 3.5 times the record) stays accepted (error-sources.md).
+2. **BL5, the AI's judgement and the ends:** P11 (light forces' run-in by day), fights that run to the clock (the Yalu,
+   Port Arthur).
+3. **BL6, the scenarios rebalanced** (wave 1, Åland, the early wave E1-E6), the coarse sync, then **the user's
+   playtest alpha**.
+
+Then mines, collisions and signals. **Parked until after the alpha:** EX8 and the rest of `explosions.md`'s list, the
+shipgen stern items (`docs/shipgen/TODO.md` "Stern"), destruction D8 and the other VFX tuning by eye.
+
+Done since 2026-11-02, off that road: electrics EL0-EL7; the loss bench (11-04); one explosion EX0-EX7 and PM, the gas in
+game time (workers ET0-ET6) and drawn (destruction D0-D7, 11-08); the Dunkelgrau skin (11-08); the early wave E1-E6
+and night Q13-Q16 (11-09); the shipgen stern review (11-10).
+
+**Before (2026-11-02):** the aims are built (`docs/battle/aims.md`: reach, sink merchants, stop, scored and weighted, A0-A6 done
 2026-10-31); the user's investigation of which real scenarios get them waits, and the rest of the balance round
 (`docs/battle/balance.md`: BL3, BL4) comes next, toward a playtest alpha; then mines, collisions and signals. BL1 was
 reopened 2026-11-01 (BL1j-BL1n: the roll averaged over the hull and counted once, the own-turn kick by rate of turn,
@@ -36,14 +55,14 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 4.5 Shells, armour and damage | S, P, E0-E8b done 2026-10-20; PM (the matchup's refit) 2026-11-08 (`explosions.md` EX7) | `shells-armour-damage.md` | five E8a items for the user |
 | 4.5 Fire control | F0-F6 done 2026-10-18 | `fire-control.md` | F7 (straddle calls, the main limiter), F8, F10-F12; F9 radar out of the first cut |
 | 4.5 Electrics | EL0-EL7 done 2026-11-04 | `electrics.md` | a designer row with the UI pass; open items in EL7 |
-| How ships are lost | not started; next gameplay work, after some VFX (the user, 2026-11-04) | `loss-stock-take.md` | a post-mortem bench, then the causes |
+| How ships are lost | the bench built and first findings 2026-11-04; nothing tuned | `loss-stock-take.md` | the causes: now BL3 |
 | 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
-| 4.5 One explosion | EX0-EX7 done 2026-11-08 (the matchup refit, the whole game read); the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) | `explosions.md` | PM, the weak points (shipgen), item 10, then EX8 ("Where to pick up") |
+| 4.5 One explosion | EX0-EX7 done 2026-11-08 (the matchup refit, the whole game read); the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) | `explosions.md` | the weak points (shipgen), item 10, then EX8 ("Where to pick up"): after the alpha |
 | 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |
 | 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
 | 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |
-| 4.5 Night | Q0-Q12f done 2026-10-30 | `night.md` | night hit rates left in fine |
+| 4.5 Night | Q0-Q12f done 2026-10-30; Q13-Q16 (lights shown, aimed at lights, running dark) 2026-11-09 | `night.md` | night hit rates left in fine |
 | 4.5 Striking, abandoning, scuttling | SK0-SK7 done 2026-10-31 | `striking.md` | beaching, a consort's torpedo, the admiral's strike, prize crews ("Not in this cut") |
 | 4.7 Mines | not started | here | |
 | 4.8-4.9 The coarse tier's fighting | J0-J8 done 2026-10-27 | `coarse.md` | one coarse pass: night leftovers, day gunnery drift since J7 |
@@ -51,10 +70,11 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 5.0, 5.1a-d, 5.1g The AI | done 2026-10-14, 10-15 | `command.md` | |
 | 5.1e Signals | not started | `command.md` | |
 | 5.1f The whole | a piece done 2026-10-20 | `command.md` | the AI's bugs in `bugs.md` |
-| 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
-| The sim's workers | W0-W4, W6 built 2026-10-24; the AI on workers W9-W14 built 2026-11-02, W15's curve measured | `workers.md` | the worker cap (4 proposed); the admirals' thinks serial |
-| Scenarios | wave 1 and Åland built 2026-10-25 | `docs/missions/scenarios.md` | open questions 1-5 for the user; wave 2's aims built (`aims.md`), which scenarios get them the user's |
+| 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26; the Dunkelgrau skin 2026-11-08 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
+| The sim's workers | W0-W4, W6 built 2026-10-24; the AI on workers W9-W14 built 2026-11-02, W15's curve measured; explosions in time ET0-ET6 2026-11-08 | `workers.md` | the worker cap (4 proposed); the admirals' thinks serial |
+| Scenarios | wave 1 and Åland built 2026-10-25; the early wave E1-E6 (1894-1908) 2026-11-09 | `docs/missions/scenarios.md` | rebalanced in BL6; open questions 1-5 for the user |
 | 6.1 Aims: reach, sink merchants, stop | A0-A6 done 2026-10-31 (benches set for balance) | `aims.md` | the user's scenario investigation |
+| The balance round | BL0-BL2 done 2026-10-30 to 11-03; BL4 (PM) 2026-11-08 | `balance.md` | **BL3 now**, BL5, BL6, then the playtest alpha |
 | 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
 
 Beside the steps: the designer's tabs (speed, hull, fire control, crew left: `docs/designer-ui/`), the VFX plans
