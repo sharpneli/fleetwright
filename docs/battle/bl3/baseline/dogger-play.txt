@@ -1,0 +1,154 @@
+Dogger Bank: 59 ships, 2 sides, from 1915-01-24 07:50:00.000 until 1915-01-24 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  indefatigable at 26 kn, past her 25.8 kn: spawned at 25.8
+  invincible at 26 kn, past her 25.5 kn: spawned at 25.5
+
+the timeline:
+  07:51 (+0:01)  the sides meet (the first encounter opens)
+  07:51 (+0:01)  Britain sights Seydlitz
+  07:51 (+0:01)  Germany sights Lion
+  07:51 (+0:01)  Germany's commander: no contact
+  07:51 (+0:01)  Britain's commander: Harwich Force to attack (battle)
+  07:51 (+0:01)  Germany opens fire: Moltke at Undaunted
+  07:52 (+0:02)  Britain's commander: battle
+  07:52 (+0:02)  Germany's commander: battle
+  08:00 (+0:10)  Britain opens fire: Lion at Moltke
+  08:01 (+0:11)  Germany's first hit: Moltke on Morris
+  08:05 (+0:15)  Britain's first hit: Lion on Moltke
+  08:10 (+0:20)  Britain's first torpedoes: Minos, 2 at Blücher
+  08:12 (+0:22)  Britain's commander: 1st Light Cruiser Squadron to scout Battlecruiser Fleet (idle)
+  08:13 (+0:23)  Germany's commander: V. Flotilla to screen I. Scouting Group (idle)
+  08:17 (+0:27)  Germany's commander: II. Flotilla to intercept Lowestoft (contact)
+  08:18 (+0:28)  Britain's Harwich Force: attack done (lostcontact)
+  08:18 (+0:28)  Britain's commander: Harwich Force to screen Battlecruiser Fleet (idle)
+  08:20 (+0:30)  Britain's 1st Light Cruiser Squadron: scout in contact
+  08:27 (+0:37)  Germany's commander: II. Flotilla to scout I. Scouting Group (idle)
+  08:28 (+0:38)  Germany's II. Flotilla: scout in contact
+  08:29 (+0:39)  Britain's Indomitable falls out: her main guns out
+  08:29 (+0:39)  Britain's Minos falls out: her steering gone
+  08:32 (+0:42)  Britain's New Zealand falls out: her main guns out
+  08:41 (+0:51)  Britain's New Zealand: ABANDONED
+  08:47 (+0:57)  LOST: Britain's New Zealand, foundered (last hit by Rostock)
+  08:55 (+1:05)  Britain's Milne falls out: her main guns out
+  08:57 (+1:07)  Britain's Meteor falls out: her main guns out
+  09:08 (+1:18)  Britain's commander: Harwich Force to attack (battle)
+  09:17 (+1:27)  Germany's Graudenz falls out: her main guns out
+  09:23 (+1:33)  Germany's first torpedoes: Rostock, 1 at Mentor
+  09:27 (+1:37)  Britain's Miranda falls out: her main guns out
+  09:27 (+1:37)  Britain's Mentor falls out: too slow
+  09:28 (+1:38)  Britain's Attack falls out: too slow
+  09:29 (+1:39)  LOST: Britain's Attack, broke in two (last hit by Derfflinger)
+  09:33 (+1:43)  LOST: Britain's Miranda, capsized (last hit by Kolberg)
+  09:38 (+1:48)  Britain's Hydra falls out: her steering gone
+  09:43 (+1:53)  Germany's S16 falls out: her steering gone
+  09:52 (+2:02)  Germany's S13 falls out: her main guns out
+  09:57 (+2:07)  Germany's S15 falls out: her main guns out
+  10:01 (+2:11)  Britain's Acheron falls out: her main guns out
+  10:06 (+2:16)  Britain's Mentor: ABANDONED
+  10:07 (+2:17)  LOST: Britain's Mentor, capsized (last hit by Stralsund)
+  10:15 (+2:25)  Germany's S14 falls out: her main guns out
+  10:19 (+2:29)  Germany's Blücher falls out: listing
+  10:19 (+2:29)  Germany's S16: ABANDONED
+  10:19 (+2:29)  LOST: Germany's S16, capsized (last hit by Phoenix)
+  10:21 (+2:31)  Britain's Undaunted falls out: her main guns out
+  10:21 (+2:31)  LOST: Germany's S14, capsized (last hit by Tigress)
+  10:25 (+2:35)  LOST: Germany's Graudenz, capsized (last hit by Mastiff)
+  10:30 (+2:40)  Britain's Ariel falls out: her main guns out
+  10:30 (+2:40)  Britain's Meteor: ABANDONED
+  10:31 (+2:41)  Britain's commander: Meteor to scout Battlecruiser Fleet (idle)
+  10:31 (+2:41)  Germany's commander: V. Flotilla to attack (battle)
+  10:33 (+2:43)  Britain's Aurora falls out: her main guns out
+  10:34 (+2:44)  LOST: Britain's Meteor, capsized (last hit by Stralsund)
+  10:35 (+2:45)  Germany's commander: II. Scouting Group to intercept Acheron (contact)
+  10:36 (+2:46)  Britain's Arethusa falls out: her main guns out
+  10:36 (+2:46)  Germany's commander: II. Scouting Group to intercept Hydra (contact)
+  10:38 (+2:48)  Germany's commander: II. Scouting Group to intercept Mastiff (contact)
+  10:42 (+2:52)  Germany's commander: II. Scouting Group to intercept Ferret (contact)
+  10:46 (+2:56)  Germany's commander: II. Scouting Group to intercept Undaunted (contact)
+  10:48 (+2:58)  Germany's commander: II. Scouting Group to intercept Ferret (contact)
+  10:49 (+2:59)  Germany's Blücher: ABANDONED
+  10:50 (+3:00)  LOST: Germany's Blücher, capsized (last hit by Jackal)
+  11:11 (+3:21)  Britain's Forester falls out: too slow
+  11:12 (+3:22)  Germany's G10 falls out: her main guns out
+  11:14 (+3:24)  Germany's G11 falls out: too slow
+  11:22 (+3:32)  Britain's Battlecruiser Fleet deploys into line of battle
+  11:26 (+3:36)  Britain's Mastiff falls out: her main guns out
+  11:26 (+3:36)  Britain's commander: Harwich Force to screen Battlecruiser Fleet (rejoin)
+  11:33 (+3:43)  Britain's Forester: ABANDONED
+  11:38 (+3:48)  LOST: Britain's Forester, capsized (last hit by Derfflinger)
+  11:46 (+3:56)  Germany's G8 falls out: her main guns out
+  11:49 (+3:59)  Britain's Princess Royal falls out: her steering gone
+  11:49 (+3:59)  Germany's V. Flotilla: attack done (fired)
+  11:49 (+3:59)  Germany's commander: V. Flotilla to screen I. Scouting Group (rejoin)
+  11:52 (+4:02)  Britain's Druid falls out: her main guns out
+  11:53 (+4:03)  Britain's Phoenix falls out: too slow
+  11:54 (+4:04)  Britain's Defender falls out: her main guns out
+  11:56 (+4:06)  Germany's G9 falls out: her main guns out
+  11:58 (+4:08)  LOST: Britain's Defender, capsized (last hit by Derfflinger)
+  12:04 (+4:14)  Germany's G7 falls out: her main guns out
+  12:05 (+4:15)  Britain's Princess Royal: SCUTTLED, her men ordered off
+  12:06 (+4:16)  Britain's commander: Harwich Force to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: 1st Light Cruiser Squadron to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: Battlecruiser Fleet to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: Princess Royal to withdraw (broken off)
+  12:07 (+4:17)  Britain's commander: retiring (broken off)
+  12:16 (+4:26)  Germany's G11: SCUTTLED, her men ordered off
+  12:22 (+4:32)  LOST: Britain's Princess Royal, foundered (last hit by G7)
+  12:23 (+4:33)  Germany's Rostock falls out: listing
+  12:23 (+4:33)  Germany's commander: G11 to screen I. Scouting Group (idle)
+  12:25 (+4:35)  Germany's G10: ABANDONED
+  12:26 (+4:36)  Germany's commander: G10 to screen I. Scouting Group (idle)
+  12:28 (+4:38)  Britain's Hornet falls out: her main guns out
+  12:30 (+4:40)  Britain's Goshawk falls out: her main guns out
+  12:30 (+4:40)  LOST: Germany's G11, capsized (last hit by Tiger)
+  12:39 (+4:49)  LOST: Germany's G9, capsized (last hit by Princess Royal)
+  12:45 (+4:55)  Germany's II. Scouting Group: intercept done
+  12:58 (+5:08)  Britain's Jackal falls out: her main guns out
+  12:59 (+5:09)  Britain's Sandfly falls out: her main guns out
+  13:09 (+5:19)  Britain's Ferret falls out: her main guns out
+  13:31 (+5:41)  Britain's Tigress falls out: her main guns out
+  14:00 (+6:10)  LOST: Britain's Phoenix, capsized (last hit by Kolberg)
+  14:30 (+6:40)  Germany's commander: II. Scouting Group to intercept Morris (contact)
+  14:54 (+7:04)  Germany's commander: II. Scouting Group to intercept Morris (contact)
+  15:00 (+7:10)  the end: time
+
+the result (time at 15:00 (+7:10), played in 49.7 s):
+  Britain        33 ships    247968 t   lost   9 (  85881 t)   damaged afloat  20   afloat  24   hits made  518   torpedoes  54   aims not met, score 0.17   of the lost: taken 0, struck 0, scuttled 1, abandoned 4   men lost 3314, saved 419
+  Germany        26 ships    180748 t   lost   7 (  30977 t)   damaged afloat  10   afloat  19   hits made 1085   torpedoes  36   aims not met, score 0.35   of the lost: taken 0, struck 0, scuttled 1, abandoned 3   men lost 2071, saved 190
+  Britain      at the end: 3 units on a task, 0 home, 0 on their first orders, 0 idle; 17 fallen out
+  Germany      at the end: 1 units on a task, 0 home, 1 on their first orders, 1 idle; 5 fallen out
+  Britain      done? retiring (broken off); 0 of 24 afloat home, 24 not (24 in an encounter, 1 stopped, 1 dead in the water, the farthest 342 km)
+  Germany      done? battle; 0 of 19 afloat home, 19 not (19 in an encounter, 0 stopped, 0 dead in the water, the farthest 368 km)
+  at the end 0 units held by the player, 0 out of their lines on tasks; 0 notices raised
+where the time went (14.1 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
+  Commands                    0.01 %      0.000     6461.9 µs   (6.46 ms)
+  Smoke looks                 0.82 %      7.177        2.2 µs   (1.19 ms)
+  Ships: step                12.29 %     19.953       11.9 µs   (0.73 ms)
+  Ships: step, all threads   12.22 %     19.953       11.8 µs   (0.73 ms)
+  Ships: contacts             0.01 %      0.200        0.5 µs   (0.64 ms)
+  Ships: rails check          0.28 %      0.200       26.6 µs   (1.91 ms)
+  Encounters                  0.14 %      0.200       13.7 µs   (3.79 ms)
+  Sighting                   13.12 %      0.998      253.5 µs   (32.54 ms)
+  Ships: coarse               0.08 %      0.002      642.4 µs   (39.82 ms)
+  ShipSystem                 25.95 %     19.956       25.1 µs   (39.82 ms)
+  ShellSystem                 1.16 %      1.418       15.8 µs   (11.49 ms)
+  GunnerySystem              17.43 %      1.796      187.1 µs   (12.97 ms)
+  DamageSystem                7.14 %      7.924       17.4 µs   (13.04 ms)
+  TorpedoSystem               0.04 %      0.984        0.8 µs   (1.26 ms)
+  Smoke index                 3.31 %      0.400      159.6 µs   (9.13 ms)
+  Smoke merge                 1.65 %      0.998       31.9 µs   (13.05 ms)
+  Smoke queries               8.74 %      6.852       24.6 µs   (2.93 ms)
+  SmokeSystem                 6.72 %      0.998      129.8 µs   (41.53 ms)
+  AI: CommanderLayer          1.09 %     20.000        1.1 µs   (17.11 ms)
+  AI: TaskLayer               0.18 %     19.953        0.2 µs   (0.33 ms)
+  AI: AdmiralLayer           16.36 %     19.954       15.8 µs   (10.92 ms)
+  AI: CaptainLayer           22.91 %     19.953       22.1 µs   (32.73 ms)
+  AiSystem                   41.21 %     79.860        9.9 µs   (32.86 ms)
+  AI: captains, prepared      2.18 %     19.953        2.1 µs   (6.40 ms)
+  AI: captains, the job      20.15 %     19.953       19.5 µs   (16.81 ms)
+  the speed hour by hour: 318x 388x 437x 557x 651x 769x 1010x
+  main guns: 27 fell out for them, main mounts out 69 of 88 (75 of 96 guns): guns out 31, gunhouse out of action 13, magazine flooded by the sea 11, gunhouse destroyed 10, magazine spent (its race) 2, magazine flooded by order 1, barbette out 1
+             at the end, 44 ships afloat: main mounts out 32 of 160 (38 of 186 guns): magazine flooded by the sea 13, gunhouse out of action 6, magazine flooded by order 5, gunhouse destroyed 5, guns out 3
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 18274 fired, 40 at ships seen done for
+  the state at the end: 22ea840cd67de329

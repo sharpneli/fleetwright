@@ -46,7 +46,7 @@ spreads 66-79 lost and the Dogger Bank's 13-29, so read direction and big steps 
 
 **Next rungs, in order** (the user's call):
 
-1. **Why so many fall out,** the root under cripples. `FallOutGunsShare` off for one run: do ships out for guns do better staying in line? A doctrine override, no code. Half of the fall-outs are this.
+1. **Done 2026-11-10 (`balance.md` "BL3 started"): no root.** With no ship falling out for her guns, losses rise (Jutland 72 → 91); falling out marks a ship already badly hurt. **Why so many fall out,** the root under cripples. `FallOutGunsShare` off for one run: do ships out for guns do better staying in line? A doctrine override, no code. Half of the fall-outs are this.
 2. **The slow deaths:** a counterfactual where water stops rising 20 minutes after the last hit, then one flooded destroyer traced room by room (Badger: pumps at 100%, about 1.5 t/min for 6 hours). Is that seepage real, and should anyone come alongside or tow?
 3. **What's left of the gunnery gap.** At Jutland, capital against capital: 6-10 km 18.6%, 10-15 km 6.1%; `error-sources.md` accepted about 3.5x. These are the numbers to hold beside it.
 

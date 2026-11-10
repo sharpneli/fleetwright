@@ -123,7 +123,7 @@ Each step measures against BL0's panel and records before and after here.
 | **BL0** | **The panel. Done 2026-10-30.** `shipgen balance [--seeds 8] [--only ...] [--fc-runs 12] [--out FILE.json]`: the scenarios played to their end in the fine tier (the parity bench's plays, `CoarseParity.PlayMany`), each side's losses beside the record's with a 2x verdict (a ship either way for small numbers), the seeds where the record's loser loses more, how ships went; fc-history judged (`FcHistory.Measure`), the cases and orderings out of band listed. About 6.5 min on 32 threads, the Jutland most of it. The log's row is written by hand; the numbers kept in `docs/battle/balance/` (`bl0.json`). The other yardsticks (`damage-history`, `fire-history`, `dc-history`, `crew-history`, `night-history`) run when a step touches their system. | Reproduces the hand-run baseline: yes, every scenario's numbers identical (the plays inline give the same worlds as on workers); `coarse-parity` and `fc-history` byte-identical after the refactors. |
 | **BL1** | **Gunnery to the record.** F7 (spotting by the navy's rules, the straddle calls); then the missing degraders the first cut's battles had, each a physical system with its source: splash confusion (several batteries on one target), the gun platform's motion in a sea, the small fast target (light guns' laying on a turning boat). Systems, approximated where tracing each splash isn't needed (decision 1); point blank stays deadly (decision 2). | `fc-history` mostly in its bands, the rest named; the orderings in; the night cases and close-range duels still brutal. |
 | **BL2** | **Cripples and escapes.** F10's judgement on a ship still afloat (worth falling as she's seen done for, a doctrine field for finishing her); falling-out ships turning away and making smoke; striking and abandoning (crew.md's "after"). | The Heligoland Bight and the Dogger Bank's light losses within about twice the record. |
-| **BL3** | **The damage leftovers that move a scenario.** Triage of the table above by what BL0-BL2's runs show: the cell-side ruptures, settling past 8-9°, Tiger's magazines, the `yamato` TDS, the user's E8a and crew decisions. The rest stays open with its reason. | Each item done or kept open with a reason. |
+| **BL3** | **The damage leftovers that move a scenario.** Started 2026-11-10 ("BL3 started"): the losses come from the volume of fire, not damage per hit. Triage of the table above by what BL0-BL2's runs show: the cell-side ruptures, settling past 8-9°, Tiger's magazines, the `yamato` TDS, the user's E8a and crew decisions. The rest stays open with its reason. | Each item done or kept open with a reason. |
 | **BL4** | **The matchup refit (PM)** with `OutExponent`, the missing terms, and the widened bands set again. **Done 2026-11-08** (`explosions.md` EX7, "PM"). | MatchupTests' even band back to 2, or kept with the user's reason. |
 | **BL5** | **The AI's judgement and the ends.** Most of `bugs.md`'s AI items (decision 4), and why fights run to the clock. | Most panel runs end by their own rules. |
 | **BL6** | **The scenarios rebalanced** with their knobs, then the coarse sync (bugs.md's drift, `coarse-parity` standard), then the user's playtest. | Each scenario's intended balance stated and met; the coarse panel in its bands. |
@@ -693,6 +693,43 @@ cost first; measured before it's planned.
 
 Next: proposals 1-3 built, then striking colours and abandoning ship (built 2026-10-31: `striking.md`; the ends didn't move, the clock ends are the commanders'), then BL3 and BL4.
 
+### BL3 started: what the losses come from (2026-11-10)
+
+The stock-take of 2026-11-10 (plan.md "Status") put BL3 next, through the loss bench (`loss-stock-take.md`). Everything
+from this pass is in `docs/battle/bl3/`: `baseline/` (`balance --seeds 8 --fc-runs 0`, `losses dogger-bank jutland --seeds 4`,
+one Dogger Bank `scenario --play`), and one directory a counterfactual. `losses` takes `--doctrine FIELD=VALUE,...` now,
+fields over every side's preset, so judgement counterfactuals need no scenario edits.
+
+**The baseline** (HEAD `46ca8131`, after EX7, PM, the dispersion's sourced series and night Q13-Q16), lost a seed against the
+record: Dover 0.4 / 0.8 (0 / 2), Coronel 1.0 / 0.3 (2 / 0), Cape Sarych 3.8 / 0.6 (0 / 0), Heligoland 4.4 / 19.8 (0 / 4),
+Dogger Bank 6.6 / 10.8 (0 / 1), Tsushima 3.3 / 7.3 (7 / 0), Jutland 26.3 / 45.5 (14 / 11); the prizes' war 1.1 / 1.4, Åland
+7.3 / 2.8. 5 of 14 sides within about twice the record; the record's loser lost more in 24 of 44 seeds (EX7: 30). **Tsushima
+has turned over**: Japan loses more in 7 of 8 seeds (EX7 2.9 / 4.9); for BL6, and worth a look at what moved it (the
+dispersion's two commits of 2026-11-08 came after EX7's readouts).
+
+**Rung 1, falling out for guns** (`--doctrine FallOutGunsShare=0`, `bl3/no-guns-fallout/`): no ship falls out for her guns.
+Losses go **up**: Jutland 72 → 91 a seed (65-114), the Dogger Bank 15 → 19. The ships kept in line take more hits and fall
+out later for speed (Jutland 35 → 66 a seed), 77% of them lost. So falling out isn't a cause: it marks a ship already
+badly hurt (why "never fell out" loses almost none). Closed; the 0.34 stays.
+
+**Where the losses come from: the volume of fire, three times the record's, times the hit rate's three.** Capital ships'
+main guns (`baseline/losses/fire.txt`), a seed:
+
+| | Shells | Hits | Hit % | The record's shells | hits |
+|---|---:|---:|---:|---:|---:|
+| Jutland | 26,200 | 2,140 | 8.2 | about 8,200 | about 220 |
+| Dogger Bank | 5,600 | 340 | 6.0 | about 2,100 | about 47 |
+
+The hit rate is error-sources.md's accepted gap (by range, capital at capital: Jutland 15+ km 2.5%, 10-15 km 7.3%, 6-10 km
+24%). The volume is new: the Dogger Bank fires about 70 rounds a heavy gun against the record's 26, because **the fight runs
+the whole day**. In the one seed played (`baseline/dogger-play.txt`) both sides choose battle at +0:02; New Zealand and
+Indomitable are out of guns by +0:42; Britain's commander breaks off at +4:16 after a third of his tonnage, and Germany is
+still fighting at the clock's end (+7:10), its light cruisers hunting destroyers. The record's was a three-hour stern chase
+with Hipper running from the start. Damage per hit is about the record's (a capital ship lost takes some 240 t of water a
+heavy hit, `loss-stock-take.md`), so **the damage leftovers BL3 was to triage don't decide the losses**; how long and how
+willingly the sides fight does. That's BL5's ("fights that end"), and the commanders' judgement of when an action is
+worth going on with: the next step, for the user to agree.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -800,3 +837,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL5: a gun laid by its own layer fires only while he sees her from his sight; the Dreyer Mk I split; the Dreyer's and C12's first guess the Dumaresq's, the panel as `balance/fl5.json` | 7 of 14 sides within 2x (5); the record's loser lost more in 33 of 44 (23); Heligoland 2.4 v 13.6 (1.4 v 14.5), Dogger 7.0 v 10.6 (8.1 v 10.4), Jutland 23.0 v 47.8 (22.5 v 45.3), Tsushima 5.0 v 2.5 (4.5 v 6.0; the record 7 v 0); fc-history 6 of 23 (6), orderings 3 of 7 (4: practice's fall with the range 2.51, just over 2.5) |
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL6: the AFCT family's first guess the Dumaresq's, the panel as `balance/fl6.json` | the scenarios as FL5 (none has an AFCT): 7 of 14, 33 of 44; fc-history 6 of 23 (6), Bismarck's end 52.0% (52.7), Denmark Strait 19.3 (20.7), orderings 3 of 7 (3) |
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL7: the stable vertical's own tilt in her turns; the Mk 8's first guess the Dumaresq's, the panel as `balance/fl7.json` | the scenarios as FL6: 7 of 14, 33 of 44; fc-history 6 of 23 (6), the USN 1944 study 68.6% (68.6), a steady target over a salvo chaser 2.41 (2.22, want 3-10), orderings 3 of 7 (3) |
+| 2026-11-10 | `46ca8131` | BL3's baseline after EX7, PM, the dispersion series and night Q13-Q16 (`bl3/baseline/`) | 5 of 14 sides within 2x; the record's loser lost more in 24 of 44 (Tsushima turned over: 1 of 8); Heligoland 4.4 v 19.8, Dogger 6.6 v 10.8, Tsushima 3.3 v 7.3, Jutland 26.3 v 45.5; capsized 46%, foundered 28%, broke in two 26%, magazine 0% |
