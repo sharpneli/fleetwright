@@ -770,6 +770,32 @@ declines whether or not he can outrun the enemy (escape-always, as measured), hi
 their captains; the reaching sides keep going by their aims (Tsushima's reach in BL6). The first-sight 0.68 at the Dogger
 Bank (Hipper ran from it on a raid's orders) stays a scenario knob for BL6.
 
+**Decided (the user, 2026-11-10): "Outmatched runs, but commander personality should affect this a great deal. History is
+full of various actions which happened simply because someone was brave that day. Also with running perhaps a captain or
+two should salute, thank for the opportunity to serve and serve as a rearguard, allowing the rest of the formation to move
+away while giving the ultimate sacrifice themselves."**
+
+**Built (`bl5/outmatched-runs/`):** "no escape" is gone at both levels: the commander declines under his bar whatever his
+speed (`CommanderLayer.Balance`, `CanGetAway` gone), and a unit's head turns it away under doctrine's bar whether or not it
+can refuse the fight (`MatchupJudge.Call`). Personality comes in as it already did: the side's Aggression (the C-in-C) and
+the admirals' and captains' tempers scale `OutgunnedRatio` (`AggressionShift` 0.5: the decline line from about 0.27 for the
+boldest to 0.8 for the most timid). The panel, lost a seed:
+
+| | Baseline | Outmatched runs | Record |
+|---|---|---|---|
+| Heligoland, Britain / Germany | 4.4 / 19.8 | 1.0 / 7.1 | 0 / 4 |
+| Dogger Bank | 6.6 / 10.8 | 0.6 / 0.8 | 0 / 1 |
+| Tsushima, Russia / Japan | 3.3 / 7.3 | 2.8 / 2.1 | 7 / 0 |
+| Cape Sarych, Russia / Ottomans | 3.8 / 0.6 | 2.5 / 0.5 | 0 / 0 |
+| Jutland | 26.3 / 45.5 | 20.0 / 38.3 | 14 / 11 |
+| Sides within 2x, of 14 | 5 | 8 | |
+
+The Dogger Bank and Heligoland are in their bands; the Jutland is left, a cause of its own. Tests: the commander's and the
+fall-back's "no escape" tests turned round (an outmatched side runs as fast as its enemy is); `AimsTests`' convoy test
+skipped until the rearguard: the escort, outmatched, now runs from her convoy instead of standing between.
+
+**Next: the rearguard and how much personality moves it** (the user's two points), designed with the user before it's built.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -878,3 +904,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL6: the AFCT family's first guess the Dumaresq's, the panel as `balance/fl6.json` | the scenarios as FL5 (none has an AFCT): 7 of 14, 33 of 44; fc-history 6 of 23 (6), Bismarck's end 52.0% (52.7), Denmark Strait 19.3 (20.7), orderings 3 of 7 (3) |
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL7: the stable vertical's own tilt in her turns; the Mk 8's first guess the Dumaresq's, the panel as `balance/fl7.json` | the scenarios as FL6: 7 of 14, 33 of 44; fc-history 6 of 23 (6), the USN 1944 study 68.6% (68.6), a steady target over a salvo chaser 2.41 (2.22, want 3-10), orderings 3 of 7 (3) |
 | 2026-11-10 | `46ca8131` | BL3's baseline after EX7, PM, the dispersion series and night Q13-Q16 (`bl3/baseline/`) | 5 of 14 sides within 2x; the record's loser lost more in 24 of 44 (Tsushima turned over: 1 of 8); Heligoland 4.4 v 19.8, Dogger 6.6 v 10.8, Tsushima 3.3 v 7.3, Jutland 26.3 v 45.5; capsized 46%, foundered 28%, broke in two 26%, magazine 0% |
+| 2026-11-10 | (this commit) | BL5: outmatched runs, "no escape" gone at the commander's and the unit's level (`bl5/outmatched-runs/`) | 8 of 14 sides within 2x (5); the record's loser lost more in 21 of 44 (24); Heligoland 1.0 v 7.1, Dogger 0.6 v 0.8, Tsushima 2.8 v 2.1, Jutland 20.0 v 38.3 |

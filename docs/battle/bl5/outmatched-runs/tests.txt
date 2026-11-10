@@ -1,0 +1,40 @@
+  150 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  180 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  210 min Hunter task (Intercept, Engaged, None), (Battle, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  240 min Hunter task (Intercept, Engaged, None), (Battle, None), on 2, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  270 min Hunter task (Withdraw, Cant, Nowhere), (Home, AimsDecided), on 0, convoy AimReading { State = Lost, Done = 0, Of = 2, Score = 0 }
+     1 min  Phase 0
+     0 min  Ordered 2305
+   192 min  Phase 0
+   191 min  Ordered 770
+   202 min  Phase 0
+   248 min  Phase 5
+   247 min  Ordered 1293
+ main battery minutes on the tramps 34, on the escort 0; convoy AimReading { State = Lost, Done = 0, Of = 2, Score = 0 }, stop AimReading { State = Met, Done = 1, Of = 1, Score = 1 }
+ by the minute: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+   215 min  Fired Hunter One 4
+   218 min  Hit Hunter One 0
+   235 min  Fired Two Hunter 1
+   236 min  Hit Two Hunter 0
+   246 min  GaveUp Two  2
+   250 min  Lost Two Hunter 2
+   268 min  GaveUp One  2
+
+
+[xUnit.net 00:01:07.93]     Fleetwright.Sim.Tests.CommanderTests.An_outmatched_side_that_cant_get_away_fights [FAIL]
+  Failed Fleetwright.Sim.Tests.CommanderTests.An_outmatched_side_that_cant_get_away_fights [412 ms]
+  Error Message:
+   Assert.NotEqual() Failure: Values are equal
+Expected: Not Retiring
+Actual:       Retiring
+  Stack Trace:
+     at Fleetwright.Sim.Tests.CommanderTests.An_outmatched_side_that_cant_get_away_fights() in C:\git\fleetwright\tests\Fleetwright.Sim.Tests\CommanderTests.cs:line 333
+   at System.RuntimeMethodHandle.InvokeMethod(ObjectHandleOnStack target, Void** arguments, ObjectHandleOnStack sig, BOOL isConstructor, ObjectHandleOnStack result)
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+  Standard Output Messages:
+ phase (Retiring, Outmatched), given (Withdraw, 0, Outmatched, 2095768860050)
+
+
+
+Failed!  - Failed:     4, Passed:  1101, Skipped:     2, Total:  1107, Duration: 3 m 3 s - Fleetwright.Sim.Tests.dll (net10.0)

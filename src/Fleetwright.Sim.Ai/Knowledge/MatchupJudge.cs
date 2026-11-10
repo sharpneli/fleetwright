@@ -117,8 +117,8 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// with, from its guide, or a ship's captain alone, once a think. Its judgement against the enemy in sight within
     /// <see cref="SimSettings.FightCompareM"/> of the guide (docs/battle/command.md 5.1g); away under doctrine's bar
     /// (1 / OutgunnedRatio), back once well over it (<see cref="SimSettings.FightRallyShare"/>); and away, the nearest own
-    /// force a match for the enemy (<see cref="FallBackShip"/>). One that can't get away (the enemy as fast) and has no
-    /// force to fall back on fights. The rest of the chain hear it as he last told it (<see cref="Told"/>). Only a unit
+    /// force a match for the enemy (<see cref="FallBackShip"/>). Away whether or not it can outrun the enemy (balance.md
+    /// BL5, the user 2026-11-10: "outmatched runs"; a ship overhauled is her captain's). The rest of the chain hear it as he last told it (<see cref="Told"/>). Only a unit
     /// whose guide fights (<paramref name="fights"/>) is turned away; the rest have the judgement alone (an attack's, a
     /// scout's), the fall-back search being the cost.</summary>
     public UnitCall Call(in AiContext ctx, ShipState guide, bool fights = true)
@@ -129,8 +129,6 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
             double accept = Bars(guide.Entity, guide.Side).Accept, conf = c.Any ? c.Result.Confidence : double.PositiveInfinity;
             bool away = fights && (c.Away ? conf < accept / ctx.Settings.FightRallyShare : conf < accept);
             int fallBack = away ? FallBackShip(ctx, guide, accept) : 0;
-            if (away && fallBack == 0 && !c.Result.ACanRefuse(ctx.Settings))
-                away = false;   // no escape: it fights
             (c.Away, c.FallBack, c.CallMs) = (away, fallBack, ctx.NowMs);
             L.Written.Add(UnitKey(guide.Entity));
         }

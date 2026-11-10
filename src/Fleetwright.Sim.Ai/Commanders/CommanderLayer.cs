@@ -532,11 +532,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>How the balance stands (docs/battle/command.md 5.1g): his losses against doctrine's break off (for good once
     /// past it); and his side's matchup against all he holds: under doctrine's bar by
-    /// <see cref="SimSettings.CommanderMarginShare"/> and able to get away (his units in touch faster than the enemy about
-    /// them, <see cref="CanGetAway"/>), he declines; over it by
-    /// as much against what he holds and against what he declined (the gravest he's held since: a fleet seen in part later
-    /// is still the fleet he declined), he accepts again; caught by what he can't beat, he fights. Holding nobody, he keeps
-    /// what he decided: a decline lasts out of sight (he goes on home, and doesn't search back into the enemy he declined).</summary>
+    /// <see cref="SimSettings.CommanderMarginShare"/> he declines, whether or not his ships can outrun the enemy (balance.md
+    /// BL5, the user 2026-11-10: "outmatched runs"; a stern chase brings fewer guns to bear on both and closes only at the
+    /// speed gap, and a ship overhauled is her captain's: Blücher at the Dogger Bank); over it by as much against what he
+    /// holds and against what he declined (the gravest he's held since: a fleet seen in part later is still the fleet he
+    /// declined), he accepts again. His temper is the side's Aggression, which moves the bar (<see cref="DoctrineField.OutgunnedRatio"/>).
+    /// Holding nobody, he keeps what he decided: a decline lasts out of sight (he goes on home, and doesn't search back into
+    /// the enemy he declined).</summary>
     void Balance(in AiContext ctx, SideState s, byte side, ReadOnlySpan<HeldGroup> held, Vec3d at)
     {
         double afloat = 0;
@@ -563,47 +565,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
         if (!s.Declined)
         {
-            if (r.Confidence < low && CanGetAway(ctx, side, held))
+            if (r.Confidence < low)
                 Decline(s, r.Confidence);
             return;
         }
         if (r.Confidence < s.DeclinedC)
             Decline(s, r.Confidence);   // graver than what he declined: it's what he remembers now
-        if (r.Confidence < high && !CanGetAway(ctx, side, held))
-            s.Declined = false;   // caught by what he can't beat and can't get away from: he fights
         else if (r.Confidence > high && Judge.Judge(ctx, 0, side, at, mine, s.DeclinedFrom).Confidence > high)
             s.Declined = false;   // the balance has turned against what he held and what he declined alike: he accepts
     }
-
-    /// <summary>Whether his side can get away (balance.md BL5, proposal 2): his top units in touch (an enemy group he holds,
-    /// in sight or not, within <see cref="SimSettings.FightCompareM"/>: Åland's haze hid the Swedes from the Finnish guide
-    /// for a moment, and touch judged by sight let 15-kn ships "get away" from a 22-kn line), outrunning those groups'
-    /// ships (<see cref="MatchupJudge.Outruns"/>). Out of touch, a unit is free to go home anyway: a slow ship far from the
-    /// fight doesn't pin the side.</summary>
-    bool CanGetAway(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held)
-    {
-        touchMine.Clear();
-        touchEnemy.Clear();
-        double reach = ctx.Settings.FightCompareM;
-        foreach (var t in tops)
-        {
-            if (t.Side != side || t.Role is UnitRole.None or UnitRole.Auxiliary)
-                continue;
-            var at = store[t.Slot].Position;
-            bool touch = false;
-            foreach (ref readonly var g in held)
-                if ((g.Centre - at).Length <= reach)
-                {
-                    touch = true;
-                    AddGroup(ctx, side, g, touchEnemy);
-                }
-            if (touch)
-                AddTop(ctx, t, touchMine);
-        }
-        return MatchupJudge.Outruns(touchMine, touchEnemy, ctx.Settings);
-    }
-
-    readonly MatchupSide touchMine = new(), touchEnemy = new();
 
     /// <summary>He declines (or goes on declining) the enemy now in <see cref="enemy"/>, and remembers it: a decline is
     /// judged again against it, not against the part of it he holds later.</summary>

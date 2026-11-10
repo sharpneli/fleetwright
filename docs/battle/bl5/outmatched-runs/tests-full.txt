@@ -1,0 +1,67 @@
+Test run for C:\git\fleetwright\tests\Fleetwright.Sim.Tests\bin\DevRelease\net10.0\Fleetwright.Sim.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:15.53]     Fleetwright.Sim.Tests.ShellTestTests.No_design_leaks [SKIP]
+  Skipped Fleetwright.Sim.Tests.ShellTestTests.No_design_leaks [1 ms]
+[xUnit.net 00:00:22.22]     Fleetwright.Sim.Tests.FlotillaAttackTests.The_boats_gain_run_in_fire_together_and_turn_away [SKIP]
+  Skipped Fleetwright.Sim.Tests.FlotillaAttackTests.The_boats_gain_run_in_fire_together_and_turn_away [1 ms]
+  Failed Fleetwright.Sim.Tests.AimsTests.A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first [8 s]
+  Error Message:
+   the escort first, while it's between them
+  Stack Trace:
+     at Fleetwright.Sim.Tests.AimsTests.A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first() in C:\git\fleetwright\tests\Fleetwright.Sim.Tests\AimsTests.cs:line 403
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Standard Output Messages:
+   30 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+   60 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+   90 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  120 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  150 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  180 min Hunter task (Search, OnTask, None), (NoContact, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  210 min Hunter task (Intercept, Engaged, None), (Battle, None), on 0, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  240 min Hunter task (Intercept, Engaged, None), (Battle, None), on 2, convoy AimReading { State = Open, Done = 0, Of = 2, Score = 0 }
+  270 min Hunter task (Withdraw, Cant, Nowhere), (Home, AimsDecided), on 0, convoy AimReading { State = Lost, Done = 0, Of = 2, Score = 0 }
+     1 min  Phase 0
+     0 min  Ordered 2305
+   192 min  Phase 0
+   191 min  Ordered 770
+   202 min  Phase 0
+   248 min  Phase 5
+   247 min  Ordered 1293
+ main battery minutes on the tramps 34, on the escort 0; convoy AimReading { State = Lost, Done = 0, Of = 2, Score = 0 }, stop AimReading { State = Met, Done = 1, Of = 1, Score = 1 }
+ by the minute: TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+   215 min  Fired Hunter One 4
+   218 min  Hit Hunter One 0
+   235 min  Fired Two Hunter 1
+   236 min  Hit Two Hunter 0
+   246 min  GaveUp Two  2
+   250 min  Lost Two Hunter 2
+   268 min  GaveUp One  2
+
+
+  Failed Fleetwright.Sim.Tests.FallBackTests.Outmatched_it_runs_for_its_main_body_or_fights_if_it_cant_get_away [2 s]
+  Error Message:
+   46°
+  Stack Trace:
+     at Fleetwright.Sim.Tests.FallBackTests.Outmatched_it_runs_for_its_main_body_or_fights_if_it_cant_get_away() in C:\git\fleetwright\tests\Fleetwright.Sim.Tests\FallBackTests.cs:line 74
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Standard Output Messages:
+ running with its fleet to the north it steers 360°; alone 46°; two battlecruisers alone 47°
+
+
+  Failed Fleetwright.Sim.Tests.CommanderTests.An_outmatched_side_that_cant_get_away_fights [424 ms]
+  Error Message:
+   Assert.NotEqual() Failure: Values are equal
+Expected: Not Retiring
+Actual:       Retiring
+  Stack Trace:
+     at Fleetwright.Sim.Tests.CommanderTests.An_outmatched_side_that_cant_get_away_fights() in C:\git\fleetwright\tests\Fleetwright.Sim.Tests\CommanderTests.cs:line 333
+   at System.Reflection.MethodBaseInvoker.InterpretedInvoke_Method(Object obj, IntPtr* args)
+   at System.Reflection.RuntimeMethodInfo.Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
+  Standard Output Messages:
+ phase (Retiring, Outmatched), given (Withdraw, 0, Outmatched, 2095768860050)
+
+
+
+Failed!  - Failed:     3, Passed:  1102, Skipped:     2, Total:  1107, Duration: 2 m 58 s - Fleetwright.Sim.Tests.dll (net10.0)

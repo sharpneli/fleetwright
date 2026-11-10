@@ -317,9 +317,10 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void An_outmatched_side_that_cant_get_away_fights()
+    public void An_outmatched_side_runs_even_when_it_cant_outrun_the_enemy()
     {
-        // two dreadnoughts against eight of their sisters: as fast as he is, so there's no escape (docs/battle/command.md 5.1g)
+        // two dreadnoughts against eight of their sisters, as fast as he is: he runs all the same (balance.md BL5, the user
+        // 2026-11-10: "outmatched runs"; command.md 5.1g's "no escape" superseded)
         var (w, ai) = Make();
         int bb = Class(w, "dreadnought");
         var mine = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 2, side: 1);
@@ -330,8 +331,8 @@ public class CommanderTests(ITestOutputHelper output)
         Run(w, 3 * 60);
         var phase = ai.Commanders.PhaseOf(1);
         output.WriteLine($"phase {phase}, given {ai.Commanders.GivenOf(mine)}");
-        Assert.NotEqual(CommanderPhase.Retiring, phase.Phase);
-        Assert.NotEqual(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
+        Assert.Equal((CommanderPhase.Retiring, CommanderReason.Outmatched), phase);
+        Assert.Equal(TaskKind.Withdraw, ai.Commanders.GivenOf(mine).Given);
     }
 
     /// <summary>A fast cruiser lost: at the default bar (<see cref="SimSettings.LostSearchMinChance"/>) she's gone too fast

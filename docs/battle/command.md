@@ -915,7 +915,8 @@ B's ships A sinks for each of its own lost). One pure function, read by everythi
 - **What's known:** own ships exactly; the enemy as the picture takes him (the class he's taken for, a type's profile
   until it's made out, replacing `FightTypeGuns`), so a mistaken class misleads, as it should.
 - **Speed** is its own output, not folded into the ratio: who can force a fight and who can refuse it. Declining only
-  works for the faster side; a slow unit that can't get away fights.
+  works for the faster side; a slow unit that can't get away fights. **Superseded 2026-11-10** (the user, balance.md BL5: "outmatched runs"): an
+  outmatched unit or side declines whether or not it can outrun the enemy; speed decides who's overhauled, not who runs.
 - **Confidence** is the ratio against doctrine's `OutgunnedRatio` (scaled by aggression, as now).
 
 *v0 is analytic.* The coarse tier (fighting.md 4.8 and 4.9) is to build exactly this kind of table by class pair (hits to
@@ -928,7 +929,7 @@ inputs are the ones the coarse tables will fill, so they can replace it later wi
 - A scout's "too strong for it" (Scout shadows instead of fighting).
 - The commander: his target (the enemy group his side can best take on, or the gravest threat); who closes it (every
   unit confident against it, not "heavy" units: `HeavyGunMm` and the heavy role go, the main body stays as the
-  strongest, for support); declining (his side against what he holds, and only if he can get away); sending a flotilla
+  strongest, for support); declining (his side against what he holds; "only if he can get away" dropped 2026-11-10, BL5); sending a flotilla
   in (when its matchup against the enemy line says so: `CommanderAttackStrength` goes).
 - The torpedo craft's exception in Fight: the matchup says when a pack presses in.
 - Left as they are for now: the tactical picture's capital ships (the deployment's "main body") and the turn-away from
@@ -1001,7 +1002,10 @@ odds, not a forecast of the battle.
   confident against it until together they clear the bar; a unit confident against none stays with the main body (a
   scout shadows). Light cruisers go for the destroyers while the battle fleet goes for the battle fleet. The main body is
   still the top unit with the most capital ships; "a match for him" (falling back) and "the gravest threat" are matchups.
-- **No escape:** an outmatched unit or side that can't get away doesn't decline. Fight runs only where running gains
+- **No escape** (**superseded 2026-11-10**, the user: "outmatched runs, but commander personality should affect this a great
+  deal"; balance.md "BL5 again: why the Dogger Bank fights all day": the rule kept Hipper fighting Beatty all day for
+  Blücher's speed. An outmatched unit or side now runs whatever its speed, its temper moving the bar; a ship overhauled is
+  her captain's, and a rearguard is next): an outmatched unit or side that can't get away doesn't decline. Fight runs only where running gains
   (opens the range, or buys time: night coming, supports near, as the fall-back already looks for), else holds
   doctrine's band and fights.
 - **Ammunition counts** (the user, after the questions): a battery's rate on the enemy is capped by the rounds its
@@ -1096,8 +1100,8 @@ moment a unit; or any two sides a layer builds), and the enemy held in groups in
 - **The flotilla's attack** taken up by doctrine (not ordered) is begun only if its matchup has it attacking at the bar;
   once begun it's seen through.
 - **The commander:** roles by capital ships (`Sightings.TypeOf`), the main body the most capital tonnage. Each think:
-  his side against all he holds (declined under the bar by his margin, and only if he can get away; accepted again over
-  it, or caught); the held groups gravest first, each given those closing it and then the nearest free units not
+  his side against all he holds (declined under the bar by his margin, since 2026-11-10 whatever his speed (BL5); accepted again over
+  it); the held groups gravest first, each given those closing it and then the nearest free units not
   hopeless against it alone, until together they reach doctrine's `SeekRatio` (1: expected to win), else nobody
   closes it and those closing it are freed; his target (phases, the lost search) the biggest ship of the gravest group.
   Flotillas are sent in where their attack's matchup is at the bar (by day on a group his heavy units engage; by night

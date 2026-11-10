@@ -7,8 +7,9 @@ namespace Fleetwright.Sim.Tests;
 
 /// <summary>Falling back on the main body (docs/battle/command.md 5.1c): a squadron of two dreadnoughts told to fight six
 /// turns away, as Fight does when outmatched; with its own battle fleet of eight 60 km to the north it runs for it (the
-/// enemy to the south-west, straight away would be north-east). Alone it can't get away from ships as fast as itself,
-/// so it fights (5.1g: no escape); two battlecruisers alone, faster, run straight away. Guns held.</summary>
+/// enemy to the south-west, straight away would be north-east). Alone it runs straight away from ships as fast as itself,
+/// as two faster battlecruisers do (balance.md BL5, the user 2026-11-10: "outmatched runs"; 5.1g's "no escape"
+/// superseded). Guns held.</summary>
 public class FallBackTests(ITestOutputHelper output)
 {
     static readonly WorldTime Start = WorldTime.FromUtc(1916, 5, 31, 12);
@@ -66,12 +67,12 @@ public class FallBackTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Outmatched_it_runs_for_its_main_body_or_fights_if_it_cant_get_away()
+    public void Outmatched_it_runs_for_its_main_body_or_straight_away_whatever_its_speed()
     {
         double toSupport = RunCourse(support: true), alone = RunCourse(support: false), faster = RunCourse(support: false, own: "lion");
         output.WriteLine($"running with its fleet to the north it steers {toSupport:F0}°; alone {alone:F0}°; two battlecruisers alone {faster:F0}°");
         Assert.True(Off(toSupport, 0) < 25, $"{toSupport:F0}°");   // north, for the fleet
-        Assert.True(Off(alone, 45) > 60, $"{alone:F0}°");          // no escape: it fights
+        Assert.True(Off(alone, 45) < 30, $"{alone:F0}°");          // straight away from the south-west, though as slow as they are
         Assert.True(Off(faster, 45) < 30, $"{faster:F0}°");        // straight away from the south-west
     }
 }
