@@ -38,7 +38,7 @@ dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new]
 dotnet run --project src/Fleetwright -- -screenshot=30 [-output=ship.png]   # save frame 30 (default screenshot.png), exit
 dotnet run --project src/Fleetwright -c DevRelease -- -scenario=jutland -nopause -speed=240 -follow=1 -map=56.8,5.5,60 -ui -screenshot=@16:15   # a capture by the world's clock (once it passes 16:15; @HH:MM:SS too): side-by-side comparisons of the same moment (docs/map-ui/fire-marks.md)
 dotnet run --project src/Fleetwright -- -screenshot=30 -ui [-size=1920x1080] # the window as seen, ImGui included
-dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern] [-show=all|outside|internal|rooms|armour] [-clip=AFT,FORE[,port][,cut]] [-hitray]   # -clip: the clip box at start (the view framed to it); -hitray: a right click fires a ray through the tracer
+dotnet run --project src/Fleetwright -- -view=hitbox [-camera=bow|quarter|side|internal|plan|ahead|astern|BEARING:ELEVATION] [-show=all|outside|internal|rooms|armour] [-clip=AFT,FORE[,port][,cut]] [-hitray]   # -clip: the clip box at start (the view framed to it); -hitray: a right click fires a ray through the tracer
 dotnet run --project src/Fleetwright -- -view=hitbox -camera=internal -show=internal -clip=-40,40,port "-hitshot=10,0,0,25,90,0,ap,at=6"   # a shell fired at start through ship point X,Y,Z from RANGE_KM and ASPECT (° off the bow)[,battery index[,ap|common|he]][,at=S: playback held at S s] (HitboxScene.Shot.cs)
 dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view

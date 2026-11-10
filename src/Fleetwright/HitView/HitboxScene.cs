@@ -84,6 +84,10 @@ public sealed unsafe partial class HitboxScene : IScene
         ApplyPreset(Presets.FirstOrDefault(p => p.Name == show, Presets[1]).Shows);
         var v = Views.FirstOrDefault(v => v.Name == view, Views[0]);
         (cam.Bearing, cam.Elevation) = (v.Bearing, v.Elevation);
+        if (view?.Split(':') is { Length: 2 } be   // a view by its numbers, for captures: -camera=BEARING:ELEVATION (degrees; below the keel with a negative elevation)
+            && float.TryParse(be[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float bearing)
+            && float.TryParse(be[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float elevation))
+            (cam.Bearing, cam.Elevation) = (bearing, elevation);
     }
 
     void ApplyPreset(Func<string, bool> shows)
