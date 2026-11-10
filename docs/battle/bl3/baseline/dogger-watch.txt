@@ -1,0 +1,498 @@
+Dogger Bank: 59 ships, 2 sides, from 1915-01-24 07:50:00.000 until 1915-01-24 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  indefatigable at 26 kn, past her 25.8 kn: spawned at 25.8
+  invincible at 26 kn, past her 25.5 kn: spawned at 25.5
+  07:55 at 1x asked
+    Britain: Battle None; confidence 1.674; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.683; DestroyEveryone Open 0/247968
+    #1 Lion: 54.9570, 3.4882, heading 117.7, 22.4 kn, helm Course 113° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:00 at 1x asked
+    Britain: Battle None; confidence 1.674; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.695; DestroyEveryone Open 0/247968
+    #1 Lion: 54.9329, 3.5140, heading 178.8, 23.0 kn, helm Course 181° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:05 at 1x asked
+    Britain: Battle None; confidence 1.652; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.801; DestroyEveryone Open 0/247968
+    #1 Lion: 54.9005, 3.5129, heading 182.0, 23.5 kn, helm Course 182° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:10 at 1x asked
+    Britain: Battle None; confidence 1.686; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.642; DestroyEveryone Open 0/247968
+    #1 Lion: 54.8683, 3.5093, heading 207.0, 22.1 kn, helm Course 221° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:15 at 1x asked
+    Britain: Battle None; confidence 1.868; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.554; DestroyEveryone Open 0/247968
+    #1 Lion: 54.8408, 3.4881, heading 178.1, 22.9 kn, helm Course 175° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:20 at 1x asked
+    Britain: Battle None; confidence 1.868; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.492; DestroyEveryone Open 0/247968
+    #1 Lion: 54.8120, 3.4900, heading 151.8, 22.2 kn, helm Course 155° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:25 at 1x asked
+    Britain: Battle None; confidence 1.664; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.492; DestroyEveryone Open 0/247968
+    #1 Lion: 54.7859, 3.5214, heading 133.2, 23.4 kn, helm Course 130° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:30 at 1x asked
+    Britain: Battle None; confidence 1.495; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.533; DestroyEveryone Open 0/247968
+    #1 Lion: 54.7781, 3.5727, heading 93.3, 23.2 kn, helm Course 98° 23.5 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:35 at 1x asked
+    Britain: Battle None; confidence 1.417; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.5; DestroyEveryone Open 0/247968
+    #1 Lion: 54.7857, 3.6252, heading 59.1, 25.5 kn, helm Course 62° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:40 at 1x asked
+    Britain: Battle None; confidence 1.394; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.545; DestroyEveryone Open 0/247968
+    #1 Lion: 54.8049, 3.6691, heading 355.2, 22.9 kn, helm Course 344° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:45 at 1x asked
+    Britain: Battle None; confidence 1.498; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.56; DestroyEveryone Open 29740/247968
+    #1 Lion: 54.8388, 3.6544, heading 343.3, 25.8 kn, helm Course 307° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:50 at 1x asked
+    Britain: Battle None; confidence 1.336; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.629; DestroyEveryone Open 29740/247968
+    #1 Lion: 54.8715, 3.6349, heading 349.8, 25.9 kn, helm Course 350° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  08:55 at 1x asked
+    Britain: Battle None; confidence 1.266; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.627; DestroyEveryone Open 29740/247968
+    #1 Lion: 54.9071, 3.6252, heading 352.8, 26.0 kn, helm Course 354° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:00 at 1x asked
+    Britain: Battle None; confidence 1.198; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.61; DestroyEveryone Open 29740/247968
+    #1 Lion: 54.9431, 3.6192, heading 356.4, 25.9 kn, helm Course 357° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:05 at 1x asked
+    Britain: Battle None; confidence 1.188; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.6; DestroyEveryone Open 29740/247968
+    #1 Lion: 54.9782, 3.6171, heading 359.7, 25.1 kn, helm Course 360° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:10 at 1x asked
+    Britain: Battle None; confidence 1.275; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.558; DestroyEveryone Open 29740/247968
+    #1 Lion: 55.0126, 3.6185, heading 2.8, 23.8 kn, helm Course 3° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:15 at 1x asked
+    Britain: Battle None; confidence 1.177; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.563; DestroyEveryone Open 29740/247968
+    #1 Lion: 55.0440, 3.6207, heading 349.2, 21.6 kn, helm Course 5° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:20 at 1x asked
+    Britain: Battle None; confidence 1.237; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.523; DestroyEveryone Open 29740/247968
+    #1 Lion: 55.0741, 3.6229, heading 5.1, 21.6 kn, helm Course 5° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:25 at 1x asked
+    Britain: Battle None; confidence 1.315; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.495; DestroyEveryone Open 29740/247968
+    #1 Lion: 55.1035, 3.6251, heading 351.7, 20.5 kn, helm Course 327° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:30 at 1x asked
+    Britain: Battle None; confidence 1.295; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.195; DestroyEveryone Open 30955/247968
+    #1 Lion: 55.1290, 3.6037, heading 358.1, 19.7 kn, helm Course 16° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:35 at 1x asked
+    Britain: Battle None; confidence 1.204; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.161; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.1567, 3.6159, heading 15.7, 21.2 kn, helm Course 7° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:40 at 1x asked
+    Britain: Battle None; confidence 1.451; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.248; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.1857, 3.6247, heading 7.9, 21.3 kn, helm Course 8° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:45 at 1x asked
+    Britain: Battle None; confidence 0.993; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.22; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.2131, 3.6173, heading 7.8, 20.1 kn, helm Course 15° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:50 at 1x asked
+    Britain: Battle None; confidence 1.065; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.216; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.2373, 3.6405, heading 43.9, 20.1 kn, helm Course 28° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  09:55 at 1x asked
+    Britain: Battle None; confidence 0.919; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.112; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.2633, 3.6606, heading 11.3, 21.1 kn, helm Course 333° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:00 at 1x asked
+    Britain: Battle None; confidence 0.918; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.123; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.2902, 3.6456, heading 348.9, 20.5 kn, helm Course 21° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:05 at 1x asked
+    Britain: Battle None; confidence 0.832; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.109; DestroyEveryone Open 32955/247968
+    #1 Lion: 55.3176, 3.6586, heading 20.2, 21.2 kn, helm Course 20° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:10 at 1x asked
+    Britain: Battle None; confidence 0.82; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.126; DestroyEveryone Open 34955/247968
+    #1 Lion: 55.3453, 3.6764, heading 20.8, 21.3 kn, helm Course 21° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:15 at 1x asked
+    Britain: Battle None; confidence 0.392; DestroyEveryone Open 0/180748
+    Germany: Battle None; confidence 0.092; DestroyEveryone Open 34955/247968
+    #1 Lion: 55.3626, 3.7151, heading 62.6, 21.1 kn, helm Course 63° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:20 at 1x asked
+    Britain: Battle None; confidence 0.367; DestroyEveryone Open 1572/180748
+    Germany: Battle None; confidence 0.047; DestroyEveryone Open 34955/247968
+    #1 Lion: 55.3834, 3.7466, heading 21.6, 21.0 kn, helm Course 22° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:25 at 1x asked
+    Britain: Battle None; confidence 0.941; DestroyEveryone Open 3144/180748
+    Germany: Battle None; confidence 0.046; DestroyEveryone Open 34955/247968
+    #1 Lion: 55.4104, 3.7666, heading 11.2, 20.5 kn, helm Course 350° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:30 at 1x asked
+    Britain: Battle None; confidence 0.717; DestroyEveryone Open 11033/180748
+    Germany: Battle None; confidence 0.071; DestroyEveryone Open 34955/247968
+    #1 Lion: 55.4390, 3.7603, heading 347.5, 21.2 kn, helm Course 346° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:35 at 1x asked
+    Britain: Battle None; confidence 0.81; DestroyEveryone Open 11033/180748
+    Germany: Battle None; confidence 0.079; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.4671, 3.7566, heading 20.0, 20.7 kn, helm Course 22° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:40 at 1x asked
+    Britain: Battle None; confidence 0.551; DestroyEveryone Open 11033/180748
+    Germany: Battle None; confidence 0.566; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.4944, 3.7752, heading 20.8, 21.3 kn, helm Course 20° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:45 at 1x asked
+    Britain: Battle None; confidence 0.551; DestroyEveryone Open 11033/180748
+    Germany: Battle None; confidence 0.629; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.5221, 3.7757, heading 341.1, 21.0 kn, helm Course 342° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:50 at 1x asked
+    Britain: Battle None; confidence 0.568; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.629; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.5504, 3.7619, heading 349.6, 21.3 kn, helm Course 352° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  10:55 at 1x asked
+    Britain: Battle None; confidence 0.436; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.628; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.5798, 3.7576, heading 357.9, 21.3 kn, helm Course 358° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  11:00 at 1x asked
+    Britain: Battle None; confidence 0.436; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.628; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.6094, 3.7556, heading 358.0, 21.3 kn, helm Course 359° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  11:05 at 1x asked
+    Britain: Battle None; confidence 0.722; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.624; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.6384, 3.7623, heading 19.2, 21.2 kn, helm Course 23° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  11:10 at 1x asked
+    Britain: Battle None; confidence 0.483; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.498; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.6636, 3.7885, heading 43.9, 21.2 kn, helm Course 50° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  11:15 at 1x asked
+    Britain: Battle None; confidence 0.504; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.519; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.6842, 3.8230, heading 16.0, 20.4 kn, helm Course 11° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:20 at 1x asked
+    Britain: Battle None; confidence 0.504; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.522; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.7128, 3.8335, heading 11.0, 21.3 kn, helm Course 11° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:25 at 1x asked
+    Britain: Battle None; confidence 0.563; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.501; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.7370, 3.8580, heading 56.5, 20.9 kn, helm Course 173° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:30 at 1x asked
+    Britain: Battle None; confidence 0.438; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.501; DestroyEveryone Open 36955/247968
+    #1 Lion: 55.7218, 3.8859, heading 172.4, 21.7 kn, helm Course 173° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:35 at 1x asked
+    Britain: Battle None; confidence 0.571; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.469; DestroyEveryone Open 38170/247968
+    #1 Lion: 55.6909, 3.8923, heading 173.5, 22.7 kn, helm Course 173° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:40 at 1x asked
+    Britain: Battle None; confidence 0.549; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.539; DestroyEveryone Open 38170/247968
+    #1 Lion: 55.6659, 3.9224, heading 137.5, 22.6 kn, helm Course 137° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:45 at 1x asked
+    Britain: Battle None; confidence 0.549; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.514; DestroyEveryone Open 38170/247968
+    #1 Lion: 55.6434, 3.9610, heading 135.4, 22.5 kn, helm Course 137° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:50 at 1x asked
+    Britain: Battle None; confidence 0.521; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.504; DestroyEveryone Open 38170/247968
+    #1 Lion: 55.6204, 3.9988, heading 137.5, 22.7 kn, helm Course 137° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  11:55 at 1x asked
+    Britain: Battle None; confidence 0.405; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.529; DestroyEveryone Open 38170/247968
+    #1 Lion: 55.5929, 4.0190, heading 176.6, 22.4 kn, helm Course 180° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  12:00 at 1x asked
+    Britain: Battle None; confidence 0.405; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.592; DestroyEveryone Open 39385/247968
+    #1 Lion: 55.5640, 4.0283, heading 195.1, 20.9 kn, helm Course 230° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Fight
+  12:05 at 1x asked
+    Britain: Battle None; confidence 0.358; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.583; DestroyEveryone Open 39385/247968
+    #1 Lion: 55.5360, 4.0193, heading 175.9, 22.4 kn, helm Course 176° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  12:10 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.4, broken off; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.582; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.5102, 4.0413, heading 152.5, 21.8 kn, helm Course 164° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  12:15 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.386, broken off; DestroyEveryone Open 26261/180748
+    Germany: Battle None; confidence 0.574; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4803, 4.0541, heading 185.4, 22.0 kn, helm Route 174° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:20 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.43, broken off; DestroyEveryone Open 27833/180748
+    Germany: Battle None; confidence 0.513; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4543, 4.0446, heading 165.6, 20.8 kn, helm Course 282° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  12:25 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.568, broken off; DestroyEveryone Open 27833/180748
+    Germany: Battle None; confidence 0.784; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4371, 4.0149, heading 203.1, 19.0 kn, helm Course 148° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  12:30 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.683, broken off; DestroyEveryone Open 29405/180748
+    Germany: Battle None; confidence 0.775; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4141, 4.0068, heading 257.9, 18.7 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:35 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.53, broken off; DestroyEveryone Open 29405/180748
+    Germany: Battle None; confidence 0.787; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4189, 3.9556, heading 282.9, 22.5 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:40 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.53, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.603; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4259, 3.9016, heading 282.9, 22.7 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:45 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.545, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.603; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4329, 3.8475, heading 282.9, 22.7 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:50 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.555, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.606; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4399, 3.7934, heading 282.8, 22.7 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  12:55 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.523, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.607; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4469, 3.7392, heading 282.8, 22.7 kn, helm Route 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Route
+  13:00 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.523, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.759; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4539, 3.6850, heading 282.7, 22.7 kn, helm Course 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:05 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.563, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.76; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4608, 3.6308, heading 282.7, 22.7 kn, helm Course 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:10 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.563, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.76; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4677, 3.5766, heading 282.7, 22.7 kn, helm Course 283° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:15 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.563, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.76; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.4829, 3.5415, heading 21.7, 19.0 kn, helm Course 41° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:20 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.551, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.763; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.5063, 3.5739, heading 40.8, 22.6 kn, helm Course 41° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:25 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.551, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.762; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.5327, 3.6038, heading 30.5, 22.7 kn, helm Course 31° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:30 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.551, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.762; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.5604, 3.6269, heading 0.2, 21.3 kn, helm Course 33° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:35 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.583, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.805; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.5870, 3.6514, heading 33.2, 22.6 kn, helm Course 33° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:40 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.583, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.806; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.6090, 3.6454, heading 285.5, 20.5 kn, helm Course 280° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:45 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.349, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.808; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.6213, 3.6036, heading 1.7, 19.0 kn, helm Course 25° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:50 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.415, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.811; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.6488, 3.6230, heading 22.7, 22.5 kn, helm Course 13° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  13:55 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.324, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.783; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.6678, 3.5975, heading 286.9, 21.9 kn, helm Course 286° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:00 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.415, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.705; DestroyEveryone Open 84666/247968
+    #1 Lion: 55.6793, 3.5463, heading 296.2, 22.7 kn, helm Course 296° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:05 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.415, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.927; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.6919, 3.4954, heading 286.7, 22.6 kn, helm Course 286° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:10 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.871; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.6996, 3.4413, heading 278.6, 22.7 kn, helm Course 278° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:15 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.872; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.7041, 3.3860, heading 278.2, 22.7 kn, helm Course 278° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:20 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.809; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.7162, 3.3424, heading 336.0, 20.5 kn, helm Course 284° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:25 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.624, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.809; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.7345, 3.3095, heading 2.6, 19.8 kn, helm Course 15° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:30 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.624, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.809; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.7641, 3.3217, heading 14.7, 22.6 kn, helm Course 15° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:35 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.81; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.7945, 3.3358, heading 14.7, 22.7 kn, helm Course 15° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:40 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.81; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.8238, 3.3413, heading 318.0, 19.8 kn, helm Course 21° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:45 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.557, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.81; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.8498, 3.3277, heading 346.9, 20.5 kn, helm Course 22° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:50 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.624, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.81; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.8757, 3.3247, heading 295.6, 19.0 kn, helm Course 275° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  14:55 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.324, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.737; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.8899, 3.2901, heading 10.0, 19.7 kn, helm Course 21° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+  15:00 at 1x asked
+    Britain: Retiring BrokenOff; confidence 0.324, broken off; DestroyEveryone Open 30977/180748
+    Germany: Battle None; confidence 0.737; DestroyEveryone Open 85881/247968
+    #1 Lion: 55.9175, 3.2993, heading 319.2, 19.1 kn, helm Course 274° 26.0 kn, fine, 1st Battlecruiser Squadron; captain Course
+
+the timeline:
+  07:51 (+0:01)  the sides meet (the first encounter opens)
+  07:51 (+0:01)  Britain sights Seydlitz
+  07:51 (+0:01)  Germany sights Lion
+  07:51 (+0:01)  Germany's commander: no contact
+  07:51 (+0:01)  Britain's commander: Harwich Force to attack (battle)
+  07:51 (+0:01)  Germany opens fire: Moltke at Undaunted
+  07:52 (+0:02)  Britain's commander: battle
+  07:52 (+0:02)  Germany's commander: battle
+  08:00 (+0:10)  Britain opens fire: Lion at Moltke
+  08:01 (+0:11)  Germany's first hit: Moltke on Morris
+  08:05 (+0:15)  Britain's first hit: Lion on Moltke
+  08:10 (+0:20)  Britain's first torpedoes: Minos, 2 at Blücher
+  08:12 (+0:22)  Britain's commander: 1st Light Cruiser Squadron to scout Battlecruiser Fleet (idle)
+  08:13 (+0:23)  Germany's commander: V. Flotilla to screen I. Scouting Group (idle)
+  08:17 (+0:27)  Germany's commander: II. Flotilla to intercept Lowestoft (contact)
+  08:18 (+0:28)  Britain's Harwich Force: attack done (lostcontact)
+  08:18 (+0:28)  Britain's commander: Harwich Force to screen Battlecruiser Fleet (idle)
+  08:20 (+0:30)  Britain's 1st Light Cruiser Squadron: scout in contact
+  08:27 (+0:37)  Germany's commander: II. Flotilla to scout I. Scouting Group (idle)
+  08:28 (+0:38)  Germany's II. Flotilla: scout in contact
+  08:29 (+0:39)  Britain's Indomitable falls out: her main guns out
+  08:29 (+0:39)  Britain's Minos falls out: her steering gone
+  08:32 (+0:42)  Britain's New Zealand falls out: her main guns out
+  08:41 (+0:51)  Britain's New Zealand: ABANDONED
+  08:47 (+0:57)  LOST: Britain's New Zealand, foundered (last hit by Rostock)
+  08:55 (+1:05)  Britain's Milne falls out: her main guns out
+  08:57 (+1:07)  Britain's Meteor falls out: her main guns out
+  09:08 (+1:18)  Britain's commander: Harwich Force to attack (battle)
+  09:17 (+1:27)  Germany's Graudenz falls out: her main guns out
+  09:23 (+1:33)  Germany's first torpedoes: Rostock, 1 at Mentor
+  09:27 (+1:37)  Britain's Miranda falls out: her main guns out
+  09:27 (+1:37)  Britain's Mentor falls out: too slow
+  09:28 (+1:38)  Britain's Attack falls out: too slow
+  09:29 (+1:39)  LOST: Britain's Attack, broke in two (last hit by Derfflinger)
+  09:33 (+1:43)  LOST: Britain's Miranda, capsized (last hit by Kolberg)
+  09:38 (+1:48)  Britain's Hydra falls out: her steering gone
+  09:43 (+1:53)  Germany's S16 falls out: her steering gone
+  09:52 (+2:02)  Germany's S13 falls out: her main guns out
+  09:57 (+2:07)  Germany's S15 falls out: her main guns out
+  10:01 (+2:11)  Britain's Acheron falls out: her main guns out
+  10:06 (+2:16)  Britain's Mentor: ABANDONED
+  10:07 (+2:17)  LOST: Britain's Mentor, capsized (last hit by Stralsund)
+  10:15 (+2:25)  Germany's S14 falls out: her main guns out
+  10:19 (+2:29)  Germany's Blücher falls out: listing
+  10:19 (+2:29)  Germany's S16: ABANDONED
+  10:19 (+2:29)  LOST: Germany's S16, capsized (last hit by Phoenix)
+  10:21 (+2:31)  Britain's Undaunted falls out: her main guns out
+  10:21 (+2:31)  LOST: Germany's S14, capsized (last hit by Tigress)
+  10:25 (+2:35)  LOST: Germany's Graudenz, capsized (last hit by Mastiff)
+  10:30 (+2:40)  Britain's Ariel falls out: her main guns out
+  10:30 (+2:40)  Britain's Meteor: ABANDONED
+  10:31 (+2:41)  Britain's commander: Meteor to scout Battlecruiser Fleet (idle)
+  10:31 (+2:41)  Germany's commander: V. Flotilla to attack (battle)
+  10:33 (+2:43)  Britain's Aurora falls out: her main guns out
+  10:34 (+2:44)  LOST: Britain's Meteor, capsized (last hit by Stralsund)
+  10:35 (+2:45)  Germany's commander: II. Scouting Group to intercept Acheron (contact)
+  10:36 (+2:46)  Britain's Arethusa falls out: her main guns out
+  10:36 (+2:46)  Germany's commander: II. Scouting Group to intercept Hydra (contact)
+  10:38 (+2:48)  Germany's commander: II. Scouting Group to intercept Mastiff (contact)
+  10:42 (+2:52)  Germany's commander: II. Scouting Group to intercept Ferret (contact)
+  10:46 (+2:56)  Germany's commander: II. Scouting Group to intercept Undaunted (contact)
+  10:48 (+2:58)  Germany's commander: II. Scouting Group to intercept Ferret (contact)
+  10:49 (+2:59)  Germany's Blücher: ABANDONED
+  10:50 (+3:00)  LOST: Germany's Blücher, capsized (last hit by Jackal)
+  11:11 (+3:21)  Britain's Forester falls out: too slow
+  11:12 (+3:22)  Germany's G10 falls out: her main guns out
+  11:14 (+3:24)  Germany's G11 falls out: too slow
+  11:22 (+3:32)  Britain's Battlecruiser Fleet deploys into line of battle
+  11:26 (+3:36)  Britain's Mastiff falls out: her main guns out
+  11:26 (+3:36)  Britain's commander: Harwich Force to screen Battlecruiser Fleet (rejoin)
+  11:33 (+3:43)  Britain's Forester: ABANDONED
+  11:38 (+3:48)  LOST: Britain's Forester, capsized (last hit by Derfflinger)
+  11:46 (+3:56)  Germany's G8 falls out: her main guns out
+  11:49 (+3:59)  Britain's Princess Royal falls out: her steering gone
+  11:49 (+3:59)  Germany's V. Flotilla: attack done (fired)
+  11:49 (+3:59)  Germany's commander: V. Flotilla to screen I. Scouting Group (rejoin)
+  11:52 (+4:02)  Britain's Druid falls out: her main guns out
+  11:53 (+4:03)  Britain's Phoenix falls out: too slow
+  11:54 (+4:04)  Britain's Defender falls out: her main guns out
+  11:56 (+4:06)  Germany's G9 falls out: her main guns out
+  11:58 (+4:08)  LOST: Britain's Defender, capsized (last hit by Derfflinger)
+  12:04 (+4:14)  Germany's G7 falls out: her main guns out
+  12:05 (+4:15)  Britain's Princess Royal: SCUTTLED, her men ordered off
+  12:06 (+4:16)  Britain's commander: Harwich Force to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: 1st Light Cruiser Squadron to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: Battlecruiser Fleet to withdraw (broken off)
+  12:06 (+4:16)  Britain's commander: Princess Royal to withdraw (broken off)
+  12:07 (+4:17)  Britain's commander: retiring (broken off)
+  12:16 (+4:26)  Germany's G11: SCUTTLED, her men ordered off
+  12:22 (+4:32)  LOST: Britain's Princess Royal, foundered (last hit by G7)
+  12:23 (+4:33)  Germany's Rostock falls out: listing
+  12:23 (+4:33)  Germany's commander: G11 to screen I. Scouting Group (idle)
+  12:25 (+4:35)  Germany's G10: ABANDONED
+  12:26 (+4:36)  Germany's commander: G10 to screen I. Scouting Group (idle)
+  12:28 (+4:38)  Britain's Hornet falls out: her main guns out
+  12:30 (+4:40)  Britain's Goshawk falls out: her main guns out
+  12:30 (+4:40)  LOST: Germany's G11, capsized (last hit by Tiger)
+  12:39 (+4:49)  LOST: Germany's G9, capsized (last hit by Princess Royal)
+  12:45 (+4:55)  Germany's II. Scouting Group: intercept done
+  12:58 (+5:08)  Britain's Jackal falls out: her main guns out
+  12:59 (+5:09)  Britain's Sandfly falls out: her main guns out
+  13:09 (+5:19)  Britain's Ferret falls out: her main guns out
+  13:31 (+5:41)  Britain's Tigress falls out: her main guns out
+  14:00 (+6:10)  LOST: Britain's Phoenix, capsized (last hit by Kolberg)
+  14:30 (+6:40)  Germany's commander: II. Scouting Group to intercept Morris (contact)
+  14:54 (+7:04)  Germany's commander: II. Scouting Group to intercept Morris (contact)
+  15:00 (+7:10)  the end: time
+
+the result (time at 15:00 (+7:10), played in 50.0 s):
+  Britain        33 ships    247968 t   lost   9 (  85881 t)   damaged afloat  20   afloat  24   hits made  518   torpedoes  54   aims not met, score 0.17   of the lost: taken 0, struck 0, scuttled 1, abandoned 4   men lost 3314, saved 419
+  Germany        26 ships    180748 t   lost   7 (  30977 t)   damaged afloat  10   afloat  19   hits made 1085   torpedoes  36   aims not met, score 0.35   of the lost: taken 0, struck 0, scuttled 1, abandoned 3   men lost 2071, saved 190
+  Britain      at the end: 3 units on a task, 0 home, 0 on their first orders, 0 idle; 17 fallen out
+  Germany      at the end: 1 units on a task, 0 home, 1 on their first orders, 1 idle; 5 fallen out
+  Britain      done? retiring (broken off); 0 of 24 afloat home, 24 not (24 in an encounter, 1 stopped, 1 dead in the water, the farthest 342 km)
+  Germany      done? battle; 0 of 19 afloat home, 19 not (19 in an encounter, 0 stopped, 0 dead in the water, the farthest 368 km)
+  at the end 0 units held by the player, 0 out of their lines on tasks; 0 notices raised
+where the time went (14.2 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
+  Commands                    0.02 %      0.000    10751.8 µs   (10.75 ms)
+  Smoke looks                 0.82 %      7.177        2.2 µs   (2.10 ms)
+  Ships: step                12.24 %     19.953       11.9 µs   (1.11 ms)
+  Ships: step, all threads   12.18 %     19.953       11.8 µs   (1.11 ms)
+  Ships: contacts             0.01 %      0.200        0.7 µs   (1.05 ms)
+  Ships: rails check          0.28 %      0.200       26.9 µs   (3.27 ms)
+  Encounters                  0.15 %      0.200       14.4 µs   (6.27 ms)
+  Sighting                   12.98 %      0.998      251.9 µs   (60.25 ms)
+  Ships: coarse               0.15 %      0.002     1165.6 µs   (72.42 ms)
+  ShipSystem                 25.75 %     19.956       25.0 µs   (72.42 ms)
+  ShellSystem                 1.16 %      1.418       15.9 µs   (11.24 ms)
+  GunnerySystem              17.29 %      1.796      186.3 µs   (15.02 ms)
+  DamageSystem                7.13 %      7.924       17.4 µs   (12.99 ms)
+  TorpedoSystem               0.04 %      0.984        0.8 µs   (1.19 ms)
+  Smoke index                 2.77 %      0.400      134.0 µs   (13.35 ms)
+  Smoke merge                 1.67 %      0.998       32.3 µs   (23.69 ms)
+  Smoke queries               8.94 %      6.852       25.3 µs   (4.72 ms)
+  SmokeSystem                 6.16 %      0.998      119.4 µs   (74.27 ms)
+  AI: CommanderLayer          1.17 %     20.000        1.1 µs   (27.50 ms)
+  AI: TaskLayer               0.18 %     19.953        0.2 µs   (0.29 ms)
+  AI: AdmiralLayer           16.75 %     19.954       16.3 µs   (18.13 ms)
+  AI: CaptainLayer           23.27 %     19.953       22.6 µs   (52.71 ms)
+  AiSystem                   42.06 %     79.860       10.2 µs   (52.84 ms)
+  AI: captains, prepared      2.20 %     19.953        2.1 µs   (10.55 ms)
+  AI: captains, the job      20.48 %     19.953       19.9 µs   (28.06 ms)
+  the speed hour by hour: 302x 390x 446x 568x 657x 765x 1012x
+  main guns: 27 fell out for them, main mounts out 69 of 88 (75 of 96 guns): guns out 31, gunhouse out of action 13, magazine flooded by the sea 11, gunhouse destroyed 10, magazine spent (its race) 2, magazine flooded by order 1, barbette out 1
+             at the end, 44 ships afloat: main mounts out 32 of 160 (38 of 186 guns): magazine flooded by the sea 13, gunhouse out of action 6, magazine flooded by order 5, gunhouse destroyed 5, guns out 3
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 18274 fired, 40 at ships seen done for
+  the state at the end: 22ea840cd67de329

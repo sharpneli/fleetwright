@@ -730,6 +730,46 @@ heavy hit, `loss-stock-take.md`), so **the damage leftovers BL3 was to triage do
 willingly the sides fight does. That's BL5's ("fights that end"), and the commanders' judgement of when an action is
 worth going on with: the next step, for the user to agree.
 
+### BL5 again: why the Dogger Bank fights all day (2026-11-10)
+
+`scenario --play --watch` now prints each commander's balance (his confidence against all he holds, declined and at what,
+broken off; `CommanderLayer.BalanceOf`). One Dogger Bank seed every 5 min (`bl3/baseline/dogger-watch.txt`): **Germany's
+commander opens at 0.68**, over the bar he declines under (doctrine's 1 / `OutgunnedRatio` = 0.5, less the 25% margin: 0.4),
+so he accepts; by 09:30 he's at 0.2, 10:00-10:35 at 0.05-0.1, and **never declines**: `CanGetAway` asks his units in touch to
+outrun the enemy's by `MatchupSpeedMarginKn`, Blücher (about 23 kn) can't outrun Beatty's 25+, and the rule (command.md
+5.1g, "No escape": an outmatched side that can't get away fights) keeps him in. Britain's commander, from 1.7 down to 0.4,
+breaks off only by losses (+4:16).
+
+**Two measurements** (the panel, 8 seeds, Jutland 4; `bl5/`):
+
+| Lost a seed | Baseline | `escape-always` | `chase` | Record |
+|---|---|---|---|---|
+| Heligoland, Britain / Germany | 4.4 / 19.8 | **1.0 / 7.5** | 4.3 / 18.3 | 0 / 4 |
+| Dogger Bank | 6.6 / 10.8 | **4.6 / 5.3** | 6.6 / 10.6 | 0 / 1 |
+| Tsushima, Russia / Japan | 3.3 / 7.3 | 2.3 / 1.9 | 2.9 / 5.1 | 7 / 0 |
+| Jutland | 26.3 / 45.5 | 23.5 / 42.0 | 27.0 / 43.8 | 14 / 11 |
+| Sides within 2x, of 14 | 5 | 6 | 4 | |
+
+- **`escape-always`** (a measurement build, not kept): an outmatched commander declines whether he can get away or not.
+  Heligoland's Germans come into the record's band, the Dogger Bank's halve, and the shells fired fall with them (Heligoland's
+  British hits 1,570 → 366): the fight that ran all day was the "caught, he fights" rule. The Jutland hardly moves: a
+  different cause, the next to find. Tsushima's Russians now turn for home, where history's went on for Vladivostok: their
+  aim (the file still has "destroy everyone"; reach exists since aims.md) is BL6's.
+- **`chase`** (built, measured, taken back out): the design's own "running buys time" (5.1g: "Fight runs only where running
+  gains (opens the range, or buys time)"): he can get away if the enemy, chasing at the speed gap, takes longer than the
+  matchup's fight (`MatchupFightMin`) to close to his band. **It moves nothing**, because the commander declines only once
+  he's already inside the enemy's band (0.68 at first sight is over the bar), where there's no time left to buy.
+
+**Why running pays inside the band:** in a stern chase only the end-on turrets bear on either side and the range closes at the
+speed gap, not at the pursuer's speed, so both sides lose less (Heligoland's British too, 4.4 → 1.0), and the slow ship that
+is overhauled is left to her captain (his own Fight or fall-out), as Blücher was. The matchup has no arcs, so it can't see
+this; the sim's gunnery does.
+
+**For the user:** "No escape" is an agreed rule, so changing it is the user's call. Proposed: an outmatched commander
+declines whether or not he can outrun the enemy (escape-always, as measured), his slowest ships overhauled being left to
+their captains; the reaching sides keep going by their aims (Tsushima's reach in BL6). The first-sight 0.68 at the Dogger
+Bank (Hipper ran from it on a raid's orders) stays a scenario knob for BL6.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can

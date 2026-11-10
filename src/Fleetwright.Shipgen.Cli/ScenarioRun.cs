@@ -164,7 +164,9 @@ static class ScenarioRun
             var (phase, why) = ai.Commanders.PhaseOf(side);
             var aims = Enumerable.Range(0, ai.Aims.Count(side)).Select(i => ai.Aims.Read(w, side, i))
                 .Select((r, i) => $"{ai.Aims[side, i].Kind} {r.State} {r.Done:0.#}/{r.Of:0.#}");
-            Console.WriteLine($"    {s.Sides[side]}: {phase} {why}; {string.Join(", ", aims)}");
+            var b = ai.Commanders.BalanceOf(side);
+            Console.WriteLine($"    {s.Sides[side]}: {phase} {why}; confidence {b.Confidence:0.###}" + (b.Declined ? $", declined at {b.DeclinedC:0.###}" : "") +
+                              (b.BrokenOff ? ", broken off" : "") + $"; {string.Join(", ", aims)}");
         }
     }
 

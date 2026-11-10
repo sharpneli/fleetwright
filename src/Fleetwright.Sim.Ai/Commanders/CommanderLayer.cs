@@ -229,6 +229,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         sides[side & 255] is { } s ? (s.Phase, s.Reason) : (CommanderPhase.None, CommanderReason.None);
 
     /// <summary>What he last gave a unit, why and when; None if nothing.</summary>
+    /// <summary>How his balance stands, for readouts: his side's matchup against all he holds, whether he's declined (and
+    /// the matchup he declined at), broken off by his losses, and the tonnage he came with.</summary>
+    public (double Confidence, bool Declined, double DeclinedC, bool BrokenOff, double CameT) BalanceOf(int side) =>
+        sides[side & 255] is { } s ? (s.Confidence, s.Declined, s.DeclinedC, s.BrokenOff, s.CameT) : default;
+
     public (TaskKind Given, int Target, CommanderWhy Why, long Ms) GivenOf(Unit u) =>
         Find(u.Id) is int i and >= 0 ? (recs[i].Given, recs[i].Target, recs[i].Why, recs[i].Ms) : (TaskKind.None, 0, CommanderWhy.None, 0);
 
