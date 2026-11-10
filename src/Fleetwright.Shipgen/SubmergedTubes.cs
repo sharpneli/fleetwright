@@ -58,6 +58,7 @@ public static class SubmergedTubes
         double L = lay.Hull.L, D = res.Depth, T = res.Draught;
         var gear = Propulsion.Gear(lay, design, res);
         var form = ShipDesign.FormOf(lay, design, res, gear);
+        gear = Propulsion.Hang(gear, form);
         var zs = Levels(plan);
         double axis = Axis(zs, T);
         if (T - axis < MinDepth)

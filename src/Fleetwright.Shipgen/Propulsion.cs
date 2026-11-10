@@ -7,6 +7,7 @@ public static class Propulsion
     public static readonly (double X0, double X1, double Hw) Steering = (0.03, 0.08, 0.25);
     const double ShaftY = 0.28, Stagger = 0.05, DpK = 1.2, DpKPlaning = 0.7, DpT = 0.75, DpMin = 0.3;
     const double RudderK = 0.017, RudderH = 0.7, RudderBalance = 0.25, RudderThick = 0.15, StockAt = 0.2;
+    const double PropGap = 0.1, RudderOut = 0.5;
     public const double AlleyW = 2.4, AlleyH = 2.6;
     const double ShaftAboveIb = 1.2;
 
@@ -82,42 +83,92 @@ public static class Propulsion
         double hR = RudderH * T;
         double chord = area / hR;
         var shaftYs = Spread(n, ShaftY * B);
-        double inner = shaftYs.Select(s => Math.Abs(s.Y)).Where(a => a > 1e-6).DefaultIfEmpty(0.1 * B).Min();
-        var rYs = Spread(nR, inner).Select(s => s.Y).ToList();
         double rTop = (planing ? 0.15 : 0.85) * T;
-        var rudders = rYs.Select((y, k) => new Rudder(nR == 1 ? "Rudder" : $"Rudder {k + 1}", xR, y, chord, xR - (1 - RudderBalance) * chord,
-            xR + RudderBalance * chord, Math.Max(0.1, RudderThick * chord), rTop - hR - (planing ? 0.3 * T : 0.0), rTop, area)).ToList();
 
         double xP0 = xR + RudderBalance * chord + 0.25 * dp + 0.3;
         double zP = planing ? -0.55 * dp : Math.Min(0.05 * T + 0.5 * dp, T - 0.6 * dp);
         var rooms = EngineRooms(lay);
         long pairs = n / 2;
         long groups = pairs + n % 2;
+        var mach = lay.Geo.Machinery;
+        (double X0, double X1, string? Id)? RoomOf(long rank) => rooms.Count > 0
+            ? rooms[(int)Math.Min(rooms.Count - 1, (pairs - rank) * rooms.Count / groups)] : null;
+        double StartX(long rank) => RoomOf(rank) is { } rm ? (rm.X0 + rm.X1) / 2 : (mach is { } mm ? mm.X0 : -0.2 * L);
+
+        // Each pair's screws stand under the ship: the disc inside the deck's outline at its own station, clear of the
+        // pair inside it (their shafts run past its discs) and of the centreline. A stern too fine for that where the
+        // rule puts the screws has them further forward, where it is wide enough.
+        var fit = new (double Y, double Xp)[pairs + 1];
+        double within = 0.0;
+        for (long rank = 1; rank <= pairs; rank++)
+        {
+            double xMax = StartX(rank) - 1.0;
+            double xp = Math.Min(xP0 + Stagger * L * (rank - (n % 2 == 0 ? 1 : 0)), xMax);
+            double lo = rank == 1 ? (0.5 + PropGap) * dp : within + 0.5 * dp + shaftR + 0.2;
+            while (lay.Hull.HalfWidth(xp) - 0.5 * dp < lo && xp + 0.01 * L <= xMax)
+                xp += 0.01 * L;
+            double y = Math.Max(lo, Math.Min(ShaftY * B * rank / pairs, lay.Hull.HalfWidth(xp) - 0.5 * dp));
+            fit[rank] = (y, xp);
+            within = y;
+        }
+
         var shafts = new List<Shaft>();
         var props = new List<Propeller>();
-        var mach = lay.Geo.Machinery;
         for (int k = 0; k < shaftYs.Count; k++)
         {
-            var (y, rank) = shaftYs[k];
+            var (y0, rank) = shaftYs[k];
             string sid = $"Shaft {k + 1}", pid = $"Propeller {k + 1}";
-            long g = pairs - rank;
-            (double X0, double X1, string? Id)? room = rooms.Count > 0
-                ? rooms[(int)Math.Min(rooms.Count - 1, g * rooms.Count / groups)] : null;
-            double xs = room is { } rm ? (rm.X0 + rm.X1) / 2 : (mach is { } mm ? mm.X0 : -0.2 * L);
+            var room = RoomOf(rank);
+            double xs = StartX(rank);
             double zs = ib + ShaftAboveIb;
-            double xp = Math.Min(xP0 + Stagger * L * (rank - (n % 2 == 0 ? 1 : 0)), xs - 1.0);
+            double y = rank == 0 ? y0 : Math.Sign(y0) * fit[rank].Y;
+            double xp = rank == 0 ? Math.Min(xP0, xs - 1.0) : fit[rank].Xp;
             string pos = Math.Abs(y) < 1e-6 ? "centre" : pairs == 1 ? "wing" : rank == pairs ? "outer" : "inner";
             shafts.Add(new Shaft(sid, y, pos, room?.Id, pid, (xs, y, zs), (xp, y, zP)) { R = shaftR });
             props.Add(new Propeller(pid, xp, y, zP, dp, sid, pos));
         }
+
+        // The rudders behind the innermost screws, and under the ship too: no further out than halfway to the deck's
+        // edge at their stock (three shafts' wing screws stand wider than the stern is there).
+        double inner = pairs > 0 ? fit[1].Y : 0.1 * B;
+        var rYs = Spread(nR, Math.Min(inner, RudderOut * lay.Hull.HalfWidth(xR))).Select(s => s.Y).ToList();
+        var rudders = rYs.Select((y, k) => new Rudder(nR == 1 ? "Rudder" : $"Rudder {k + 1}", xR, y, chord, xR - (1 - RudderBalance) * chord,
+            xR + RudderBalance * chord, Math.Max(0.1, RudderThick * chord), rTop - hR - (planing ? 0.3 * T : 0.0), rTop, area)).ToList();
         return new Gear(n, planing, ib, shafts, props, rudders, mw);
+    }
+
+    /// <summary>The gear with its rudders hung from the hull as built: each blade's top at the hull's bottom over its
+    /// stock, its height kept down to the keel (a planing boat's blade keeps its foot under the keel). The area stays the
+    /// rule's, the steering's figure; where the hull over the stock is deep the blade drawn is shorter than it. A single
+    /// screw's rudder is left as the rule has it: the hull's lines have no aperture yet, and its post stands in the
+    /// deadwood.</summary>
+    public static Gear Hang(Gear gr, HullForm form)
+    {
+        if (!gr.Planing && gr.Screws == 1)
+            return gr;
+        var rudders = gr.Rudders.Select(rd =>
+        {
+            double reach = Math.Abs(rd.Y) + rd.Thick / 2;
+            double lo = form.Keel(rd.X), hi = form.T;
+            if (form.HalfWidth(rd.X, hi) <= reach)   // outside the waterline: under the counter, at the waterline
+                lo = hi;
+            for (int i = 0; i < 40 && hi - lo > 1e-4; i++)
+            {
+                double z = (lo + hi) / 2;
+                (lo, hi) = form.HalfWidth(rd.X, z) > reach ? (lo, z) : (z, hi);
+            }
+            double top = hi;
+            double foot = gr.Planing ? Math.Min(rd.Base, top - 0.1) : Math.Max(0.0, top - (rd.Top - rd.Base));
+            return rd with { Top = top, Base = Math.Min(foot, top - 0.1) };
+        }).ToList();
+        return gr with { Rudders = rudders };
     }
 
     /// <summary>The propulsion train: the gear's shafts (now with where each leaves the hull), the shaft alleys, and the
     /// steering gear's room id.</summary>
     public static Train Build(Layout lay, Design design, Navarch.Result res, HullForm form, Gear? gr = null)
     {
-        gr ??= Gear(lay, design, res);
+        gr = Hang(gr ?? Gear(lay, design, res), form);
         var mach = lay.Geo.Machinery;
         var shafts = new List<Shaft>();
         var alleys = new List<Alley>();

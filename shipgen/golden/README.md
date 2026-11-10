@@ -209,6 +209,12 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
 - 2026-11-05, ammunition passages (docs/battle/magazines.md "Ammunition passages"), on purpose: a gun far from its magazine
   gets a `passage` room, sharing the cells it runs through. 228 cases' rooms change; no weight, SVG or sprite.json moves.
   ShipDesign.Version 57.
+- 2026-11-10, the stern gear under the ship (`Propulsion.Gear`, `Propulsion.Hang`), on purpose: a pair's screws stand
+  inside the deck's outline at their own station (clear of the centreline and the pair inside; further forward where the
+  stern is too fine, which moves the keel's cut with them), rudders no further out than halfway to the deck's edge, and
+  every rudder's top at the hull's bottom over its stock (a single screw's left as it was). 302 cases' shafts, alleys,
+  propellers and rudders move, about 30 of them their waterplane figures with the cut; no weight, SVG or sprite.json moves.
+  ShipDesign.Version 62.
 
 ## Layout
 

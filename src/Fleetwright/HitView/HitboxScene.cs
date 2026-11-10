@@ -120,6 +120,16 @@ public sealed unsafe partial class HitboxScene : IScene
             (state.Clip, state.ClipCut, state.ClipMin.X, state.ClipMax.X) = (true, dc.Contains("cut"), Math.Min(c0, c1), Math.Max(c0, c1));
             if (dc.Contains("port"))
                 state.ClipMax.Y = 0;
+            foreach (var part in dc)   // y=LO:HI and z=LO:HI, m (z over the main deck): a slab across or a deck's slice, for captures
+                if (part.Length > 2 && part[1] == '=' && part[2..].Split(':') is { Length: 2 } lh
+                    && float.TryParse(lh[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float lo)
+                    && float.TryParse(lh[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float hi))
+                {
+                    if (part[0] == 'y')
+                        (state.ClipMin.Y, state.ClipMax.Y) = (lo, hi);
+                    else if (part[0] == 'z')
+                        (state.ClipMin.Z, state.ClipMax.Z) = (lo, hi);
+                }
         }
         status = $"{ship.Design.Name}\n{mesh.Prisms.Length} prisms, {mesh.Vertices.Length} vertices, {mesh.Indices.Length / 3} triangles\n" +
                  $"{session.Status}, upload {sw.Elapsed.TotalSeconds * 1000:F0} ms";
