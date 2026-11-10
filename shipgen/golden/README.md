@@ -227,6 +227,12 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   shipped designs `kongo` grows 249 -> 256 m (her after beam-tube rooms no longer stand in the finer stern at their
   depth), `daring` and `impetuoso` shorten 1.6-1.9 m, `battleship`, `battleship_layered` and `yamato` move 0.1-0.4 m of
   beam; the rest keep their size. mono-check 28 reversals, 21 lumps (30, 21). ShipDesign.Version 63.
+- 2026-11-10, the screws back at their spread, on purpose: `Propulsion.Hang` no longer seats the pairs under the hull
+  (the entry above), only hangs the rudders. Seated under the V of the after body the pairs stood within a torpedo's
+  reach of each other: `shipgen torpedo --at 0.06` and `0.1` took both of mikasa's shafts every time (speed 11% for
+  85%) and put lion out of the fight 89% of the time for 26%; a seat at one diameter did no better. 215 cases' shafts,
+  alleys, propellers and rudders; no size, SVG or sprite.json moves. 57 of 111 screws stand more than a diameter under
+  the hull again: the spread is what a hit meets, the struts aren't modelled. ShipDesign.Version 64.
 
 ## Layout
 
