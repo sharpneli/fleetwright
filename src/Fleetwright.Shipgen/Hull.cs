@@ -207,7 +207,9 @@ public sealed class HullForm
         else if (!planing && props.Count > 0)
         {
             double rise = Math.Min(0.95 * T, props.Max(p => p.Z + p.Diameter * (0.5 + CutClear)));
-            double xC = props.Max(p => p.X + 0.5 * p.Diameter);
+            // the keel comes up to the screws' clearance at the aftmost of them, the pair nearest the centreline; a pair
+            // further forward stands further out, beside the deadwood and under the bilge (Propulsion.Hang seats it)
+            double xC = props.Min(p => p.X + 0.5 * p.Diameter);
             double end = Math.Max(rise, T * (1.0 - TransomDeep * Math.Min(1.0, hull.HalfWidth(-L / 2) / (B / 2))));
             cut = (xC, xC + CutRun * rise, rise, end);
         }

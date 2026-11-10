@@ -539,12 +539,13 @@ public static class Armour
         {
             var (b0, b1) = geo.SteeringSpan(L);
             double? wbox = geo.SteeringBeam;
-            double rz;
+            double rz, floor;
             using (Scratch<double>.Rent(out var zs))
             {
                 foreach (var s in stack)
                     zs.Add(s.Z);
-                rz = Ordnance.Span(zs, Geometry.DoubleBottom(D), roof?.Z ?? D).Top + D;
+                var span = Ordnance.SteeringSpan(zs, Geometry.DoubleBottom(D), roof?.Z ?? D, T);
+                (floor, rz) = (span.Floor + D, span.Top + D);
             }
             // the deck nearest rz (MinBy: the first of equals)
             long n = stack[0].N;
@@ -555,7 +556,6 @@ public static class Armour
             if (sbDeck > 0)
                 decks.Add(new ArmourDeck { Deck = n, Mm = sbDeck, Extent = Extent.Steering, Z = rz, Asked = n, X0 = b0, X1 = b1, W = wbox,
                     Material = ArmourMaterial(design, "decks", sb.DeckMaterial) });
-            double floor = Math.Min(Geometry.DoubleBottom(D), rz);
             if (sbMm > 0)
                 strakes.Add(new Strake("Steering gear box", "box", Extent.Aft, sbMm, sbMm, b0, b1, floor, rz,
                     ArmourMaterial(design, "end_belts", sb.Material)));

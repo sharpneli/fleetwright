@@ -215,6 +215,18 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   every rudder's top at the hull's bottom over its stock (a single screw's left as it was). 302 cases' shafts, alleys,
   propellers and rudders move, about 30 of them their waterplane figures with the cut; no weight, SVG or sprite.json moves.
   ShipDesign.Version 62.
+- 2026-11-10, the stern's lines and rooms (the review's keel cut), on purpose: the keel comes up to the screws' clearance at
+  the aftmost pair, not the foremost (`HullForm`: the cut-up starts a stagger further aft, 5% of the length on four
+  shafts, and the after magazines keep their depth: 15 wedge magazines of the shipped designs' to 2); `Propulsion.Hang`
+  seats each pair under the hull as built (in toward the deadwood until the hull over its discs is within half a
+  diameter, the rudders following the inner pair: 55 of 111 screws more than a diameter under the hull to 25); the
+  steering gear's flat reaches up to the first deck at or over the waterline (`Ordnance.SteeringSpan`: the rudders' heads
+  are under it, its armour box the two deck spaces under that deck); a stern torpedo room stands in the flat's stretch
+  (the flat no obstacle to it) and any torpedo room needs the hull's bottom under its floor; beam tubes short of room ask
+  the sizer for one pair's length, not the whole battery's. 304 cases' design records, 47 SVGs, 12 sprite.json. Of the
+  shipped designs `kongo` grows 249 -> 256 m (her after beam-tube rooms no longer stand in the finer stern at their
+  depth), `daring` and `impetuoso` shorten 1.6-1.9 m, `battleship`, `battleship_layered` and `yamato` move 0.1-0.4 m of
+  beam; the rest keep their size. mono-check 28 reversals, 21 lumps (30, 21). ShipDesign.Version 63.
 
 ## Layout
 

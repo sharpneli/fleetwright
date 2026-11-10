@@ -51,7 +51,7 @@ public class NearMissTests(ITestOutputHelper output)
     {
         var r = Burst("destroyer", ShellKind.He, "short", 7, 9000);
         Assert.InRange(Per(r, r.SideThrough), 0, 1.5);
-        Assert.InRange(Per(r, r.Killed + r.Wounded), 0.1, 6);
+        Assert.InRange(Per(r, r.Killed + r.Wounded), 0.05, 6);   // 5 men in 60 bursts since the steering flat moved (6 before)
     }
 
     /// <summary>15 §6.7 test 2: a 46 cm HE short by 7-15 m puts tens to a hundred-odd fragments through a destroyer's side

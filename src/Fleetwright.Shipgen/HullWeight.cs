@@ -295,6 +295,33 @@ public static class Ordnance
         return (ib - D, top - D);
     }
 
+    /// <summary>(base, top, floor) above the main deck of the steering gear's flat: where the rudders' stocks come up
+    /// through the hull, which at the stern is anywhere from half the draught to the waterline. Its top is the lowest
+    /// deck of the stack at or over the waterline (T above the keel; never above the roof), so the stocks' heads are
+    /// always under it; it reaches down to the inner bottom's height as the other low rooms do, though the stern is cut
+    /// away under it and only what the hull holds is the room. Floor: two deck spaces under the top, as far down as the
+    /// gear's armour box goes (the gear stands at the stocks' heads).</summary>
+    public static (double Base, double Top, double Floor) SteeringSpan(IReadOnlyList<double> decks, double innerBottom, double roof, double T)
+    {
+        double D = decks[0];
+        using var _ = Scratch<double>.Rent(out var ups);
+        ups.Add(innerBottom);
+        for (int i = 0; i < decks.Count; i++)
+            if (innerBottom + 1e-6 < decks[i] && decks[i] <= roof + 1e-6)
+                ups.Add(decks[i]);
+        ups.Sort();
+        int top = ups.Count - 1;
+        for (int i = 1; i < ups.Count; i++)
+            if (ups[i] >= T - 1e-6)
+            {
+                top = i;
+                break;
+            }
+        if (top == 0)
+            return (innerBottom - D, roof - D, innerBottom - D);
+        return (innerBottom - D, ups[top] - D, ups[Math.Max(0, top - Tiers)] - D);
+    }
+
     /// <summary>A room's span in the plant's deck stack; low: a stowed room (magazines, avgas), under the plan's crown.</summary>
     public static (double Base, double Top) Span(PlantPlan plan, double? needH = null, int tiers = Tiers, bool low = false) =>
         Span(plan.Decks, plan.InnerBottom, plan.Top, needH, tiers, low ? plan.Crown : double.PositiveInfinity);

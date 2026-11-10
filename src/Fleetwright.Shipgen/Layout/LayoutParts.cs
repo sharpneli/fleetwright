@@ -717,7 +717,8 @@ public sealed partial class Layout
         double L = lay.Hull.L, B = lay.Hull.B;
         double a = x0 ?? -L / 2 + Propulsion.Steering.X0 * L;
         double b = x1 ?? -L / 2 + Propulsion.Steering.X1 * L;
-        var (bse, top) = Ordnance.Span(lay.Geo.Plant!);
+        var plan = lay.Geo.Plant!;
+        var (bse, top, _) = Ordnance.SteeringSpan(plan.Decks, plan.InnerBottom, plan.Top, plan.Crown + Ordnance.CrownMarginM);
         var room = new Compartment
         {
             Id = name, Kind = RoomKind.Steering, X0 = a, X1 = b, Base = bse, Top = top, HalfWidth = halfWidth ?? Propulsion.Steering.Hw * B,

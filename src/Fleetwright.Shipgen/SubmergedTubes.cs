@@ -45,6 +45,8 @@ public static class SubmergedTubes
     /// space's floor when one is near (else the room spans two); a stern tube passes beside a centreline rudder's stock
     /// and rises while gear hangs aft of where it leaves the hull. Widths come from the hull's form. Books the weights;
     /// asks for length when a room has no place.</summary>
+    const double FloorSlack = 0.5;
+
     public static void Plan(Layout lay, Design design, Navarch.Result res)
     {
         int nSide = PerSide(design), nBow = Bow(design), nStern = Stern(design);
@@ -106,6 +108,9 @@ public static class SubmergedTubes
                 if (best is double bx && Math.Abs(x0 + len / 2 - pref) >= Math.Abs(bx + len / 2 - pref))
                     continue;
                 if (busy.Any(b => b.X0 < x1 && x0 < b.X1) || !fits(x0, x1))
+                    continue;
+                // a room has a floor: the hull's bottom is under it at both ends (the stern and the forefoot are cut away)
+                if (Math.Max(form.Keel(x0 + 1.0), form.Keel(x1 - 1.0)) > bse + FloorSlack)
                     continue;
                 best = x0;
             }
@@ -201,7 +206,8 @@ public static class SubmergedTubes
                 foreach (var c in axes)
                 {
                     double end = ExitX(c);
-                    room = TryRoom("Stern torpedo room", AxialL(nStern), c, -L / 2,
+                    // in the tiller flat's stretch where it can be (the tube runs out over the rudders' heads), else as near it
+                    room = TryRoom("Stern torpedo room", AxialL(nStern), c, lay.Geo.Steering is var (s0, s1) ? (s0 + s1) / 2 : -L / 2,
                         (x0, _) => form.HalfWidth(x0 + 1.0, c) > reach + 0.1 && x0 - end <= MaxRun);
                     if (room != null)
                     {
@@ -258,7 +264,7 @@ public static class SubmergedTubes
                             lay.Compartments.Remove(room);
                 }
                 if (rooms is null)
-                    Short(BeamL(nSide), "the beam tubes");
+                    Short(BeamL(1), "the beam tubes");   // room for one pair more: the sizer comes back until they all stand
                 else
                 {
                     rooms.Sort((p, q) => q.Room.X0.CompareTo(p.Room.X0));
@@ -320,8 +326,9 @@ public static class SubmergedTubes
         var busy = new List<(double, double)>();
         foreach (var c in lay.Compartments)
         {
-            if (c.Kind is RoomKind.Hangar or RoomKind.Handling or RoomKind.Passage)
-                continue;   // a handling room is the deck over its magazine, shared (Ordnance.TPerM3): a torpedo room may stand in it
+            if (c.Kind is RoomKind.Hangar or RoomKind.Handling or RoomKind.Passage or RoomKind.Steering)
+                continue;   // a handling room is the deck over its magazine, shared (Ordnance.TPerM3): a torpedo room may stand in it;
+                            // a stern tube runs out through the tiller flat, over the rudders' heads
             double cb = c.Base ?? ib, ct = c.Top ?? roof;
             if (cb < top - 0.05 && bse + 0.05 < ct)
                 busy.Add((c.X0, c.X1));

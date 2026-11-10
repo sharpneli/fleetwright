@@ -7,7 +7,7 @@ public static class Propulsion
     public static readonly (double X0, double X1, double Hw) Steering = (0.03, 0.08, 0.25);
     const double ShaftY = 0.28, Stagger = 0.05, DpK = 1.2, DpKPlaning = 0.7, DpT = 0.75, DpMin = 0.3;
     const double RudderK = 0.017, RudderH = 0.7, RudderBalance = 0.25, RudderThick = 0.15, StockAt = 0.2;
-    const double PropGap = 0.1, RudderOut = 0.5;
+    const double PropGap = 0.1, RudderOut = 0.5, SeatClear = 0.5, SeatLeast = 0.1;
     public const double AlleyW = 2.4, AlleyH = 2.6;
     const double ShaftAboveIb = 1.2;
 
@@ -137,31 +137,91 @@ public static class Propulsion
         return new Gear(n, planing, ib, shafts, props, rudders, mw);
     }
 
-    /// <summary>The gear with its rudders hung from the hull as built: each blade's top at the hull's bottom over its
-    /// stock, its height kept down to the keel (a planing boat's blade keeps its foot under the keel). The area stays the
-    /// rule's, the steering's figure; where the hull over the stock is deep the blade drawn is shorter than it. A single
-    /// screw's rudder is left as the rule has it: the hull's lines have no aperture yet, and its post stands in the
-    /// deadwood.</summary>
+    /// <summary>The hull's bottom over (x, y), above the keel: the lowest height its half-breadth reaches out to y; the
+    /// waterline where it never does (under the counter).</summary>
+    static double Bottom(HullForm form, double x, double y)
+    {
+        y = Math.Abs(y);
+        double lo = form.Keel(x), hi = form.T;
+        if (form.HalfWidth(x, hi) <= y)
+            return hi;
+        for (int i = 0; i < 24 && hi - lo > 1e-3; i++)
+        {
+            double z = (lo + hi) / 2;
+            (lo, hi) = form.HalfWidth(x, z) > y ? (lo, z) : (z, hi);
+        }
+        return hi;
+    }
+
+    /// <summary>The least gap between a screw's disc and the hull over it, m (five points across the disc).</summary>
+    static double Clearance(HullForm form, Propeller p, double y)
+    {
+        double least = double.PositiveInfinity, r = p.Diameter / 2;
+        for (int k = -2; k <= 2; k++)
+        {
+            double t = k / 2.0;
+            least = Math.Min(least, Bottom(form, p.X, y + t * r) - (p.Z + Math.Sqrt(1 - t * t) * r));
+        }
+        return least;
+    }
+
+    /// <summary>The gear hung from the hull as built. A pair of screws standing well under the hull's bottom (the stern
+    /// is a V there, and the bilge rises fast toward the side) comes in toward the deadwood until the hull over its discs
+    /// is within SeatClear of a diameter, no nearer the centreline or the pair inside it than Gear allows, and never
+    /// into the hull. The rudders follow the innermost pair in, and each blade's top is at the hull's bottom over its
+    /// stock, its height kept down to the keel (a planing boat's blade keeps its foot under the keel). A rudder's area
+    /// stays the rule's, the steering's figure; where the hull over the stock is deep the blade drawn is shorter than it.
+    /// A planing boat's screws stay where they are, under its flat bottom. A single screw's gear is left as the rule
+    /// has it: the hull's lines have no aperture yet, and its post stands in the deadwood.</summary>
     public static Gear Hang(Gear gr, HullForm form)
     {
         if (!gr.Planing && gr.Screws == 1)
             return gr;
-        var rudders = gr.Rudders.Select(rd =>
+        var shafts = gr.Shafts;
+        var props = gr.Propellers;
+        double turn = 1.0;   // how far in the rudders come with the innermost pair
+        if (!gr.Planing)
         {
-            double reach = Math.Abs(rd.Y) + rd.Thick / 2;
-            double lo = form.Keel(rd.X), hi = form.T;
-            if (form.HalfWidth(rd.X, hi) <= reach)   // outside the waterline: under the counter, at the waterline
-                lo = hi;
-            for (int i = 0; i < 40 && hi - lo > 1e-4; i++)
+            shafts = [.. gr.Shafts];
+            props = [.. gr.Propellers];
+            double within = 0.0, innerWas = 0.0, innerNow = 0.0;
+            foreach (var pair in props.Select((p, k) => (P: p, K: k)).Where(e => Math.Abs(e.P.Y) > 1e-6)
+                         .GroupBy(e => Math.Round(Math.Abs(e.P.Y), 6)).OrderBy(g => g.Key))
             {
-                double z = (lo + hi) / 2;
-                (lo, hi) = form.HalfWidth(rd.X, z) > reach ? (lo, z) : (z, hi);
+                var p = pair.First().P;
+                double d = p.Diameter, r = shafts[pair.First().K].R;
+                double y0 = pair.Key;
+                double lo = Math.Min(y0, within == 0.0 ? (0.5 + PropGap) * d : within + 0.5 * d + r + 0.2);
+                double step = Math.Max(0.05, (y0 - lo) / 48), y = y0;
+                // in from where the outline left it, to the first place the hull is near enough over it
+                while (y - step >= lo - 1e-9 && Clearance(form, p, y) > SeatClear * d)
+                    y -= step;
+                // and never touching: back out until the disc is clear of the hull
+                while (y + step <= y0 + 1e-9 && Clearance(form, p, y) < SeatLeast * d)
+                    y += step;
+                if (innerWas == 0.0)
+                    (innerWas, innerNow) = (y0, y);
+                within = y;
+                foreach (var (q, k) in pair)
+                {
+                    double ys = Math.Sign(q.Y) * y;
+                    var sh = shafts[k];
+                    props[k] = q with { Y = ys };
+                    shafts[k] = sh with { Y = ys, P0 = (sh.P0.X, ys, sh.P0.Z), P1 = (sh.P1.X, ys, sh.P1.Z) };
+                }
             }
-            double top = hi;
+            double out0 = gr.Rudders.Count > 0 ? gr.Rudders.Max(rd => Math.Abs(rd.Y)) : 0.0;
+            if (out0 > innerNow && innerNow > 0 && innerNow < innerWas)
+                turn = innerNow / out0;
+        }
+        var rudders = gr.Rudders.Select(rd0 =>
+        {
+            var rd = rd0 with { Y = rd0.Y * turn };
+            double top = Bottom(form, rd.X, Math.Abs(rd.Y) + rd.Thick / 2);
             double foot = gr.Planing ? Math.Min(rd.Base, top - 0.1) : Math.Max(0.0, top - (rd.Top - rd.Base));
             return rd with { Top = top, Base = Math.Min(foot, top - 0.1) };
         }).ToList();
-        return gr with { Rudders = rudders };
+        return gr with { Shafts = shafts, Propellers = props, Rudders = rudders };
     }
 
     /// <summary>The propulsion train: the gear's shafts (now with where each leaves the hull), the shaft alleys, and the

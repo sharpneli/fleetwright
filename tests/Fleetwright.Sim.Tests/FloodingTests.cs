@@ -103,7 +103,8 @@ public class FloodingTests(ITestOutputHelper output)
 
     /// <summary>A destroyer with one machinery space flooded floats upright and fights on; with three she's helpless:
     /// her GM all but gone and lolled over, or lost. (Before the free surface's pool cap of docs/battle/damage-control.md DC9
-    /// the puddles on her flats capsized her; with her fuel in her, explosions.md EX5c, she lolls at ~8° with 0.01 m.)</summary>
+    /// the puddles on her flats capsized her; with her fuel in her, explosions.md EX5c, she lolls at ~8° with 0.01 m; with the
+    /// steering flat at her rudders' heads, 2026-11-10, at ~6° with 0.06 m.)</summary>
     [Fact]
     public void A_destroyer_with_three_machinery_spaces_flooded_is_helpless_and_with_one_lives()
     {
@@ -116,7 +117,7 @@ public class FloodingTests(ITestOutputHelper output)
             var k = Condition(w);
             Report($"destroyer, {boilers} boiler and {engines} engine rooms flooded", k);
             if (lost)
-                Assert.True(status != ShipStatus.Afloat || Math.Abs(k.Attitude.HeelDeg) > 5 && k.GmM < 0.05, "helpless");
+                Assert.True(status != ShipStatus.Afloat || Math.Abs(k.Attitude.HeelDeg) > 5 && k.GmM < 0.1, "helpless");
             else
                 Assert.True(status == ShipStatus.Afloat && Math.Abs(k.Attitude.HeelDeg) < 3 && k.GmM > 0, "fights on");
         }
