@@ -1221,8 +1221,17 @@ public sealed record SimSettings
     public double CommanderAttackM { get; init; } = 25_000;
 
     /// <summary>He declines battle once his side's matchup against all he holds is under doctrine's bar by this share
-    /// (and he can get away), and accepts it again once it's over the bar by this share: his margin either way.</summary>
+    /// (whatever his speed, balance.md BL5), and accepts it again once it's over the bar by this share: his margin either way.</summary>
     public double CommanderMarginShare { get; init; } = 0.25;
+
+    /// <summary>The rearguard (docs/battle/balance.md BL5, the user 2026-11-10): a force running from pursuers that close on
+    /// it, its boldest escort's captain stays to fight them with this chance at a temper of 0 (his side's Aggression, his
+    /// admiral's temper and his own), times e^(<see cref="RearguardTemperGain"/> x temper), drawn once a run [EST].</summary>
+    public double RearguardChance { get; init; } = 0.3;
+
+    /// <summary>How much a captain's temper moves his chance of staying as a rearguard: e^(gain x temper) [EST: 1.2 makes
+    /// the boldest about three times as likely, the most timid a third].</summary>
+    public double RearguardTemperGain { get; init; } = 1.2;
 
     /// <summary>The enemy lost, his main body searches where he was last held on legs this long (m), and gives up after (or once it's no longer worth it: <see cref="LostSearchMinChance"/>).</summary>
     public double LostSearchLegM { get; init; } = 20_000;

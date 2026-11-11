@@ -796,6 +796,45 @@ skipped until the rearguard: the escort, outmatched, now runs from her convoy in
 
 **Next: the rearguard and how much personality moves it** (the user's two points), designed with the user before it's built.
 
+### BL5: the rearguard and the swing (2026-11-10/11)
+
+**Decided (the user):** escorts first; each volunteer by temper and a seeded chance; the aggression swing widened
+(`AggressionShift.OutgunnedRatio` 0.5 → 0.8: the decline line from about 0.22 for the boldest to 2.0 for the most timid).
+After the first build's measurements: **the rearguard stays only when it buys time**, and **0.8 kept, the scenarios' tempers
+retuned against it in BL6** (they were chosen under 0.5).
+
+**The first build** (`bl5/rearguard/`, `bl5/rearguard-only/`, `bl5/swing-only/`): each escort drew at the moment its force
+turned to run, up to two a force. At the Dogger Bank 2.3 stayed a seed and **17 of 18 were lost for nothing**: the rest of
+the German force lost the same 0.8 a seed it lost without them, because the runners were already getting away. Taken out.
+
+**As built** (`CaptainLayer.Rearguard.cs`; the panel `bl5/rearguard-final/`): judged at each think of the running force's
+head (the commander while his side declines, his units in touch as one force; an admiral while his unit is turned away).
+An escort stays only while a pursuer faster than the slowest ship covered is inside the enemy's band of one of them. One draw
+a run, keyed to the force and the moment it turned (`RearguardChance` 0.3 [EST] times e^(1.2 x the boldest escort's temper)),
+the boldest escort, torpedo carriers first at equal temper. **Duty** (my call, for the user to veto): a force with charges
+(merchants, or ships its side's reach is about) covers them with every warship, and covering the aim's own ships isn't
+chance, it's her task (Jervis Bay, Rawalpindi): she stays. A rearguard leaves her line, fights the nearest pursuer, presses
+a torpedo attack while she has torpedoes, makes smoke under fire, doesn't fall out, and goes home once the ship she covers is
+clear of the enemy. The map labels her "rearguard: covering the retreat"; the timeline and the panel count them.
+
+| Lost a seed | Outmatched runs (0.5) | Swing 0.8 | + the rearguard as built | Record |
+|---|---|---|---|---|
+| Heligoland, Britain / Germany | 1.0 / 7.1 | 1.0 / 7.1 | 1.0 / 7.1 (0.8 rearguards a seed, 0 of 6 lost) | 0 / 4 |
+| Dogger Bank | 0.6 / 0.8 | 1.4 / 3.4 | 1.4 / 3.4 (none: the pursuit never closes) | 0 / 1 |
+| Tsushima, Russia / Japan | 2.8 / 2.1 | 2.3 / 1.1 | 2.4 / 1.1 (0.4, 1 of 3 lost) | 7 / 0 |
+| Jutland | 20.0 / 38.3 | 25.8 / 45.8 | 18.0 / 45.3 (0.5, 1 of 2 lost) | 14 / 11 |
+| Sides within 2x, of 14 | 8 | 6 | 6 | |
+
+The swing costs the Dogger Bank (Beatty +0.4 presses harder, Hipper −0.3 runs sooner): BL6's tempers. Jutland's moves are
+within its four seeds' spread.
+
+**Tests:** `DoctrineTests` read the shift from the settings; `AimsTests`' escort test now expects a dreadnought escort to
+stay as the convoy's rearguard and the battlecruiser's guns to stay on her (before, she went round a passive escort for the
+tramps). **Open, for the user:** the convoy test stays skipped. Outmatched, the convoy's commander turns **the convoy
+itself** for home and its reach is lost; the escort stays by duty once the hunter closes, but the geometry the test reads
+never forms. Whether a side reaching for its aim declines at all (or its charges go on, scattering, while the warships
+cover them) is the same question as Tsushima's Russians making for Vladivostok.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -905,3 +944,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-02 | (this commit) | fc-ladder-check.md FL7: the stable vertical's own tilt in her turns; the Mk 8's first guess the Dumaresq's, the panel as `balance/fl7.json` | the scenarios as FL6: 7 of 14, 33 of 44; fc-history 6 of 23 (6), the USN 1944 study 68.6% (68.6), a steady target over a salvo chaser 2.41 (2.22, want 3-10), orderings 3 of 7 (3) |
 | 2026-11-10 | `46ca8131` | BL3's baseline after EX7, PM, the dispersion series and night Q13-Q16 (`bl3/baseline/`) | 5 of 14 sides within 2x; the record's loser lost more in 24 of 44 (Tsushima turned over: 1 of 8); Heligoland 4.4 v 19.8, Dogger 6.6 v 10.8, Tsushima 3.3 v 7.3, Jutland 26.3 v 45.5; capsized 46%, foundered 28%, broke in two 26%, magazine 0% |
 | 2026-11-10 | (this commit) | BL5: outmatched runs, "no escape" gone at the commander's and the unit's level (`bl5/outmatched-runs/`) | 8 of 14 sides within 2x (5); the record's loser lost more in 21 of 44 (24); Heligoland 1.0 v 7.1, Dogger 0.6 v 0.8, Tsushima 2.8 v 2.1, Jutland 20.0 v 38.3 |
+| 2026-11-11 | (this commit) | BL5: the rearguard (stays when it buys time; duty for the aim's charges) and the aggression swing 0.8 (`bl5/rearguard-final/`) | 6 of 14 sides within 2x (8); the record's loser lost more in 25 of 44 (21); Heligoland 1.0 v 7.1, Dogger 1.4 v 3.4, Tsushima 2.4 v 1.1, Jutland 18.0 v 45.3; rearguards 0.4-0.8 a seed where they stay |

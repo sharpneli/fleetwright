@@ -74,7 +74,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | The sim's workers | W0-W4, W6 built 2026-10-24; the AI on workers W9-W14 built 2026-11-02, W15's curve measured; explosions in time ET0-ET6 2026-11-08 | `workers.md` | the worker cap (4 proposed); the admirals' thinks serial |
 | Scenarios | wave 1 and Åland built 2026-10-25; the early wave E1-E6 (1894-1908) 2026-11-09 | `docs/missions/scenarios.md` | rebalanced in BL6; open questions 1-5 for the user |
 | 6.1 Aims: reach, sink merchants, stop | A0-A6 done 2026-10-31 (benches set for balance) | `aims.md` | the user's scenario investigation |
-| The balance round | BL0-BL2 done 2026-10-30 to 11-03; BL4 (PM) 2026-11-08 | `balance.md` | BL3 started 2026-11-10 (the losses are the volume of fire: fights run all day); BL5 under way: outmatched runs (8 of 14 sides in band), the rearguard next; BL6, then the playtest alpha |
+| The balance round | BL0-BL2 done 2026-10-30 to 11-03; BL4 (PM) 2026-11-08 | `balance.md` | BL3 started 2026-11-10 (the losses are the volume of fire: fights run all day); BL5 under way: outmatched runs, the rearguard and the swing built 2026-11-11 (6 of 14 in band; the tempers for BL6); open: a reaching side's decline (the user's), the Jutland's own cause; BL6, then the playtest alpha |
 | 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
 
 Beside the steps: the designer's tabs (speed, hull, fire control, crew left: `docs/designer-ui/`), the VFX plans

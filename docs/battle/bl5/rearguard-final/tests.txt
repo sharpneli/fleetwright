@@ -1,0 +1,10 @@
+Test run for c:\git\fleetwright\tests\Fleetwright.Sim.Tests\bin\DevRelease\net10.0\Fleetwright.Sim.Tests.dll (.NETCoreApp,Version=v10.0)
+A total of 1 test files matched the specified pattern.
+[xUnit.net 00:00:00.50]     Fleetwright.Sim.Tests.ShellTestTests.No_design_leaks [SKIP]
+[xUnit.net 00:00:00.51]     Fleetwright.Sim.Tests.FlotillaAttackTests.The_boats_gain_run_in_fire_together_and_turn_away [SKIP]
+  Skipped Fleetwright.Sim.Tests.ShellTestTests.No_design_leaks [1 ms]
+  Skipped Fleetwright.Sim.Tests.FlotillaAttackTests.The_boats_gain_run_in_fire_together_and_turn_away [1 ms]
+[xUnit.net 00:01:07.57]     Fleetwright.Sim.Tests.AimsTests.A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first [SKIP]
+  Skipped Fleetwright.Sim.Tests.AimsTests.A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first [1 ms]
+
+Passed!  - Failed:     0, Passed:  1104, Skipped:     3, Total:  1107, Duration: 2 m 53 s - Fleetwright.Sim.Tests.dll (net10.0)

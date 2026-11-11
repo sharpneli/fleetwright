@@ -72,6 +72,10 @@ public enum PlayEvent : byte
     /// <summary>A ship's people gave her up (docs/battle/striking.md SK5; Entity the ship, Count her
     /// <see cref="GivenUp"/>): her colours down, her men ordered off, her charges set.</summary>
     GaveUp,
+
+    /// <summary>A ship's captain stays behind as her running force's rearguard (docs/battle/balance.md BL5; Entity the
+    /// ship).</summary>
+    Rearguard,
 }
 
 /// <summary>A line of the timeline: when, what, whose side, and the ships it's about.</summary>
@@ -108,6 +112,7 @@ public sealed class ScenarioEnd
     readonly World world;
     readonly AiSystem? ai;
     readonly HashSet<int> fellOut = [];   // ships whose falling out is told
+    readonly HashSet<int> stayed = [];    // ships whose staying as a rearguard is told
     readonly HashSet<int> deployed = [];  // groups whose deployment is told
     readonly Dictionary<int, byte> taskStates = [];   // the state each unit's task was last told in
     readonly Dictionary<int, long> ordersTold = [];   // when each unit's last commander's order was given, as told
@@ -179,8 +184,11 @@ public sealed class ScenarioEnd
             if (Aims.Afloat(store, slot) && x.Side < afloat.Length)
             {
                 afloat[x.Side]++;
-                if (ai?.Captains.ReasonOf(x.Entity) is { } why && why is >= CaptainReason.OutSpeed and <= CaptainReason.OutAmmunition && fellOut.Add(x.Entity))
+                var why = ai?.Captains.ReasonOf(x.Entity) ?? CaptainReason.None;
+                if (why is >= CaptainReason.OutSpeed and <= CaptainReason.OutAmmunition && fellOut.Add(x.Entity))
                     lines.Add(new PlayLine(now, PlayEvent.FellOut, x.Side, x.Entity, Count: (int)why));
+                else if (why == CaptainReason.Rearguard && stayed.Add(x.Entity))
+                    lines.Add(new PlayLine(now, PlayEvent.Rearguard, x.Side, x.Entity));
             }
         }
         ReadLog();

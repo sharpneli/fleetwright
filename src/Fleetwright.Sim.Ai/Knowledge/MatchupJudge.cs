@@ -99,11 +99,12 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
         public int AttackerCount;
         public bool Away;          // turned away under doctrine's bar (back over it by FightRallyShare)
         public int FallBack;       // the guide ship of the own force it falls back on (0: none)
+        public long TurnedMs = long.MinValue;   // when it last turned away (its rearguard chosen then, balance.md BL5)
 
         public void CopyTo(Judged to)
         {
-            (to.Ms, to.BandMs, to.CallMs, to.Result, to.Any, to.AttackerCount, to.Away, to.FallBack) =
-                (Ms, BandMs, CallMs, Result, Any, AttackerCount, Away, FallBack);
+            (to.Ms, to.BandMs, to.CallMs, to.Result, to.Any, to.AttackerCount, to.Away, to.FallBack, to.TurnedMs) =
+                (Ms, BandMs, CallMs, Result, Any, AttackerCount, Away, FallBack, TurnedMs);
             Array.Copy(Attackers, to.Attackers, AttackerCount);
         }
     }
@@ -111,7 +112,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// <summary>A unit's call (docs/battle/workers.md W11): its head's judgement of it against the enemy in sight round it
     /// (none: <see cref="Any"/> false), whether he turns it away under doctrine's bar, and the own force he falls back on
     /// (its guide ship, 0 none).</summary>
-    public readonly record struct UnitCall(bool Any, MatchupResult Result, bool Away, int FallBack);
+    public readonly record struct UnitCall(bool Any, MatchupResult Result, bool Away, int FallBack, long TurnedMs = 0);
 
     /// <summary>The unit's head makes its call (docs/battle/workers.md W11): the admiral of the outermost group a ship moves
     /// with, from its guide, or a ship's captain alone, once a think. Its judgement against the enemy in sight within
@@ -129,10 +130,12 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
             double accept = Bars(guide.Entity, guide.Side).Accept, conf = c.Any ? c.Result.Confidence : double.PositiveInfinity;
             bool away = fights && (c.Away ? conf < accept / ctx.Settings.FightRallyShare : conf < accept);
             int fallBack = away ? FallBackShip(ctx, guide, accept) : 0;
+            if (away && !c.Away)
+                c.TurnedMs = ctx.NowMs;   // turned away this think: its run's start (its rearguard's draw, the admiral's)
             (c.Away, c.FallBack, c.CallMs) = (away, fallBack, ctx.NowMs);
             L.Written.Add(UnitKey(guide.Entity));
         }
-        return new UnitCall(c.Any, c.Result, c.Away, c.FallBack);
+        return new UnitCall(c.Any, c.Result, c.Away, c.FallBack, c.Away ? c.TurnedMs : 0);
     }
 
     /// <summary>The head has no call to make for his unit now (nobody fights or scouts in it): what he last told is taken

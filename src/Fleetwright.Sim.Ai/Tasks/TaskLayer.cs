@@ -399,9 +399,9 @@ public sealed class TaskLayer(GroupSystem groups, SeenContacts seen, Homes homes
 
         // a fight doctrine took up (or the captain's own: falling out) interrupts it
         var order = u.IsGroup ? Admirals!.Of(u.GroupId).Order : Captains!.Of(u.Entity).Order;
-        if (order == CaptainOrder.Home)
+        if (order == CaptainOrder.Home || !u.IsGroup && Captains!.OwnCall(u.Entity))
         {
-            (t.Status, t.Reason) = (TaskState.Cant, TaskReason.None);   // fallen out: the captain's now
+            (t.Status, t.Reason) = (TaskState.Cant, TaskReason.None);   // fallen out (or a rearguard): the captain's now
             return;
         }
         // a ship fleeing an enemy warship (docs/battle/aims.md A4) is as one in a fight: the task waits for her

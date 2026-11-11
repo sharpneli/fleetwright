@@ -1190,8 +1190,9 @@ public sealed partial class CaptainLayer
     /// <summary>His Fight, each second (docs/battle/command.md 5.1g): the enemy (the one ordered, else the main battery's
     /// target, else the nearest in sight), and his unit's call (<see cref="MatchupJudge.Call"/>, docs/battle/workers.md W11):
     /// his own alone, else as his unit's admiral last told it. Under doctrine's bar (1 / OutgunnedRatio) it turns away, and
-    /// comes back once it's well over it; but one that can't get away (the enemy as fast) runs only to a stronger force of
-    /// its own, else it fights. A torpedo craft attacks when
+    /// comes back once it's well over it, toward a stronger force of its own if there is one, whatever its speed (balance.md
+    /// BL5: "outmatched runs"). A rearguard never turns away: she fights until the ship she covers is clear, making smoke
+    /// under fire (<see cref="RearguardDone"/>). A torpedo craft attacks when
     /// the judgement has its side attacking, or when it's ordered to (whoever ordered it judged): in to its torpedoes'
     /// range, fire, away, and in again. One that can hardly be
     /// hurt (<see cref="SimSettings.FightFinishConfidence"/>) closes in to finish the enemy. Nothing while there's nobody
@@ -1203,6 +1204,9 @@ public sealed partial class CaptainLayer
         int main = ChiefBattery(cls);
         double reach = main >= 0 ? ctx.World.Gunnery.ReachM(ctx.Ships.Combat.Loadout(slot), main) : s.ShadowMinM;
         (cap.Attacking, cap.Finishing) = (false, false);
+        bool rearguard = cap.Reason == CaptainReason.Rearguard;
+        if (rearguard && RearguardDone(ctx, ref cap, own))
+            return;
         double band = cap.DistanceM > 0 ? cap.DistanceM : doctrine.Of(own.Entity, own.Side, DoctrineField.RangeShare) * reach;
 
         int enemy = new Unit(cap.Target).ShipOf(groups);
@@ -1224,8 +1228,10 @@ public sealed partial class CaptainLayer
             band = m.BandA;   // where his unit does best against them (Matchup.Judge), doctrine's where it hardly matters
         cap.FightBandM = band;
         double c = call.Any ? m.Confidence : double.PositiveInfinity;
-        bool away = call.Away;
-        double fallBack = call.FallBack != 0 && ctx.Ships.SlotOf(call.FallBack) is int fs and >= 0 ? Earth.Bearing(own.Position, ctx.Ships[fs].Position) : double.NaN;
+        bool away = call.Away && !rearguard;
+        double fallBack = !away ? double.NaN : call.FallBack != 0 && ctx.Ships.SlotOf(call.FallBack) is int fs and >= 0 ? Earth.Bearing(own.Position, ctx.Ships[fs].Position) : double.NaN;
+        if (rearguard)
+            CoverRetreat(ctx, ref cap, own, slot, near: true);   // her smoke between them, once she's under fire
 
         // ordered to attack, or in his flotilla's attack (his torpedoes held for its signal): whoever ordered it judged;
         // else his own unit's attack, if his torpedoes are his better weapon here (O7c)
@@ -1279,7 +1285,7 @@ public sealed partial class CaptainLayer
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
+        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.Reason == CaptainReason.Rearguard || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
             || Admirals?.LineConned(own.Entity) == true)   // her line's conn: she stays in it
             return;
         cap.FitVersion = k.Version;

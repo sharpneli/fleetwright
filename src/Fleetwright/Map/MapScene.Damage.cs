@@ -303,6 +303,7 @@ public sealed partial class MapScene
         CaptainReason.Combing => "combing a torpedo's track",
         CaptainReason.Lit => "lit: turned away",   // her lights out with it, unless the player keeps her beams on (the rail's spark says which)
         CaptainReason.LostTouch => "lost touch with the next ahead",
+        CaptainReason.Rearguard => "rearguard: covering the retreat",
         _ => "",
     };
 }

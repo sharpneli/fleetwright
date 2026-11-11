@@ -857,6 +857,7 @@ static class ScenarioPlay
                     Fleetwright.Sim.Ai.Captains.CaptainReason.OutAmmunition => "her magazines empty",
                     _ => "her steering gone",
                 },
+                PlayEvent.Rearguard => $"{SideName(l.Side)}'s {Name(l.Entity)} stays behind as the rearguard",
                 PlayEvent.Deployed => $"{SideName(l.Side)}'s {end.GroupName(l.Entity)} deploys into line of battle",
                 PlayEvent.Task => $"{SideName(l.Side)}'s {(l.Entity < 0 ? end.GroupName(-l.Entity) : Name(l.Entity))}: " +
                                   $"{((Fleetwright.Sim.Ai.Tasks.TaskKind)(l.Other / 256)).ToString().ToLowerInvariant()} " +

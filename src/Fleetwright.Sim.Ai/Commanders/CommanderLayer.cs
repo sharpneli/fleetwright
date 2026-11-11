@@ -153,6 +153,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public bool Met, Declined, BrokenOff, Searched, GaveUp;
         public readonly MatchupSide DeclinedFrom = new();   // the gravest enemy he's held since he declined
         public double DeclinedC;    // his side's matchup against it, when he held it
+        public long DeclinedMs;     // when he last turned for home (his run's start: its rearguard's draw, balance.md BL5)
     }
 
     /// <summary>A unit he's given something, or whose switch is set.</summary>
@@ -269,7 +270,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         {
             if (!store.IsAlive(slot) || store[slot].Side != side || groups.Of(store[slot].Entity) != null || !Aims.Afloat(store, slot))
                 continue;
-            if (Captains!.Of(store[slot].Entity).Order == CaptainOrder.Home)
+            if (Captains!.OwnCall(store[slot].Entity))
                 fallen++;
             else
                 Count(Unit.Ship(store[slot].Entity));
@@ -367,7 +368,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 continue;
             var cls = store[slot].Handling.Class;
             bool capital = Sightings.TypeOf(cls) == ShipType.Capital;
-            var role = Captains!.Of(store[slot].Entity).Order == CaptainOrder.Home ? UnitRole.None   // fallen out: the captain's
+            var role = Captains!.OwnCall(store[slot].Entity) ? UnitRole.None   // fallen out or a rearguard: the captain's
                 : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,
                 CapitalT = capital ? cls.Motion.FullDisplacementT : 0, Role = role, Group = -1,
@@ -565,15 +566,48 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
         if (!s.Declined)
         {
-            if (r.Confidence < low)
-                Decline(s, r.Confidence);
-            return;
+            if (r.Confidence >= low)
+                return;
+            s.DeclinedMs = ctx.NowMs;
+            Decline(s, r.Confidence);
         }
-        if (r.Confidence < s.DeclinedC)
+        else if (r.Confidence < s.DeclinedC)
             Decline(s, r.Confidence);   // graver than what he declined: it's what he remembers now
         else if (r.Confidence > high && Judge.Judge(ctx, 0, side, at, mine, s.DeclinedFrom).Confidence > high)
+        {
             s.Declined = false;   // the balance has turned against what he held and what he declined alike: he accepts
+            return;
+        }
+        Rearguards(ctx, side, held, r.SpeedB, r.BandB, s.DeclinedMs);
     }
+
+    /// <summary>His side running for home, at each think: his top units in touch with the enemy (a group he holds within
+    /// <see cref="SimSettings.FightCompareM"/>) run as one force, its escorts (his flotillas and light cruisers in touch)
+    /// covering its heavy ships, and once the pursuit closes on them one may stay as its rearguard
+    /// (<see cref="CaptainLayer.JudgeRearguard(in AiContext, List{int}, double, double, long)"/>, balance.md BL5).</summary>
+    void Rearguards(in AiContext ctx, byte side, ReadOnlySpan<HeldGroup> held, double chaseKn, double bandM, long runMs)
+    {
+        double reach = ctx.Settings.FightCompareM;
+        rearForce.Clear();
+        foreach (var t in tops)
+        {
+            if (t.Side != side || t.Role == UnitRole.None)
+                continue;   // his auxiliaries too: a convoy's tramps are what its escort covers
+            var at = store[t.Slot].Position;
+            foreach (ref readonly var h in held)
+                if ((h.Centre - at).Length <= reach)
+                {
+                    if (!t.Unit.IsGroup)
+                        rearForce.Add(t.Unit.Entity);
+                    else if (groups.Get(t.Unit.GroupId) is { } g)
+                        Captains!.LineShips(g, rearForce);
+                    break;
+                }
+        }
+        Captains!.JudgeRearguard(ctx, rearForce, chaseKn, bandM, runMs);
+    }
+
+    readonly List<int> rearForce = new(64);
 
     /// <summary>He declines (or goes on declining) the enemy now in <see cref="enemy"/>, and remembers it: a decline is
     /// judged again against it, not against the part of it he holds later.</summary>
@@ -1096,6 +1130,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 h.Add(s.Met);
                 h.Add(s.Declined);
                 h.Add(s.DeclinedC);
+                if (s.DeclinedMs != 0)
+                    h.Add(s.DeclinedMs);   // only then: worlds where nobody declines hash as before
                 h.Add(s.DeclinedFrom.Count);
                 h.Add(s.BrokenOff);
                 h.Add(s.Searched);

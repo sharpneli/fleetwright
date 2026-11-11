@@ -111,7 +111,8 @@ static class BalancePanel
             for (int k = 0; k < 4; k++)
                 givenAll[k] += given[k];
             if (by.Sum() > 0 || given.Sum() > 0)
-                Console.WriteLine($"  how they went: {Kinds(by)}{Given(given)}");
+                Console.WriteLine($"  how they went: {Kinds(by)}{Given(given)}" +
+                                  (p.Sum(x => x.Rearguards) is int rg and > 0 ? $"; rearguards {(double)rg / p.Length:0.0} a seed, {p.Sum(x => x.RearguardsLost)} of {rg} lost" : ""));
             Fire(c, s, p, fire);
         }
 

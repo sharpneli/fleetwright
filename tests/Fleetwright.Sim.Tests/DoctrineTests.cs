@@ -145,14 +145,15 @@ public class DoctrineTests
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.OutgunnedRatio, 2));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.RangeShare, 0.6));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Aggression, 1));   // the side bold
-        Assert.Equal(3, d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // 2 x (1 + 0.5)
+        double k = w.Settings.AggressionShift["OutgunnedRatio"];   // 0.8 since balance.md BL5 (the user: personality a great deal)
+        Assert.Equal(2 * (1 + k), d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);
         Assert.Equal(0.42, d.Of(2, 0, DoctrineField.RangeShare), 9);    // nearer: 0.6 x (1 - 0.3)
         Assert.Equal(30, d.Of(2, 0, DoctrineField.EvadeDeg), 9);        // not listed: as written
         Assert.Equal(2, d.Of(2, 0, DoctrineField.BreakOffShare) / 1.5, 9);   // neutral "never" stays past any loss
 
         w.Apply(ai.Orders.Doctrine(Unit.Group(w.Groups.Of(1)!.GroupId), DoctrineField.Temper, -2));   // a timid squadron's admiral
-        Assert.Equal(1, d.Of(1, 0, DoctrineField.OutgunnedRatio), 9);   // its ship: the side's + his, -1: 2 x (1 - 0.5)
-        Assert.Equal(3, d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // a ship of no squadron: the side's
+        Assert.Equal(2 * (1 - k), d.Of(1, 0, DoctrineField.OutgunnedRatio), 9);   // its ship: the side's + his, -1
+        Assert.Equal(2 * (1 + k), d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);   // a ship of no squadron: the side's
         Assert.Equal(1, d.OfGroup(null, 0, DoctrineField.Aggression), 9);
         Assert.Equal(1, d.SideValue(0, DoctrineField.Aggression), 9);
 
@@ -184,7 +185,7 @@ public class DoctrineTests
         Assert.Equal(-0.4, d.Of(1, 0, DoctrineField.Aggression), 9);   // 0.3 - 0.2 - 0.5
         Assert.Equal(0.6, d.Of(2, 0, DoctrineField.Aggression), 9);
         Assert.Equal(0.3, d.Of(3, 0, DoctrineField.Aggression), 9);   // a ship of no group: the side's
-        Assert.Equal(2 * (1 + 0.5 * 0.6), d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);
+        Assert.Equal(2 * (1 + w.Settings.AggressionShift["OutgunnedRatio"] * 0.6), d.Of(2, 0, DoctrineField.OutgunnedRatio), 9);
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Aggression, 0.9));
         Assert.Equal(1, d.Of(2, 0, DoctrineField.Aggression), 9);   // clamped
     }

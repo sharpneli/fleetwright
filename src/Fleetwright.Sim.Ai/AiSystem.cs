@@ -169,7 +169,7 @@ public sealed class AiSystem : IWorldSystem
 
     public void Apply(World world, in Command c)
     {
-        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Release)
+        if ((AiCommand)c.Code is < AiCommand.Course or > AiCommand.Rearguard)
             throw new ArgumentException($"unknown AI command {c.Code}");
         var u = new Unit(c.Entity);
         var code = (AiCommand)c.Code;
@@ -216,6 +216,10 @@ public sealed class AiSystem : IWorldSystem
                     Captains.Release(Context(world), u.Entity);
                 else
                     Admirals.Release(Context(world), u.GroupId);
+                WakeAll(world);
+                return;
+            case AiCommand.Rearguard:
+                Captains.Rearguard(Context(world), u.Entity, (int)c.X);
                 WakeAll(world);
                 return;
             case AiCommand.Commander:

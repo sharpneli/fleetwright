@@ -230,6 +230,10 @@ public enum AiCommand : ushort
     /// <summary>A unit no longer its superior's (out of his line): it holds what it's doing now, his limits gone. Between
     /// layers only.</summary>
     Release,
+
+    /// <summary>A ship's captain stays behind as her running force's rearguard (docs/battle/balance.md BL5): out of her
+    /// line, she fights the pursuers until X (the ship she covers, an entity) is clear of them. Between layers only.</summary>
+    Rearguard,
 }
 
 /// <summary>The night's orders on a ship as the snapshot shows them (<c>ShipsView.Night</c>; docs/battle/night.md Q9).</summary>
@@ -465,6 +469,9 @@ public readonly struct UnitOrders(byte system, bool hand = false)
 
     /// <summary>A unit out of its superior's line is his no longer.</summary>
     public Command Release(Unit u) => Make(AiCommand.Release, u, OrderSource.Superior);
+
+    /// <summary>A ship's captain volunteered as her force's rearguard, covering <paramref name="cover"/> (between layers).</summary>
+    public Command Rearguard(int ship, int cover) => Make(AiCommand.Rearguard, Unit.Ship(ship), OrderSource.Superior, x: cover);
 
     Command Make(AiCommand code, Unit u, OrderSource source, long a = 0, double x = 0, double y = 0) =>
         new(system, (ushort)code, u.Id, A: a, X: x, B: (int)source | (hand && source == OrderSource.Player ? Hand : 0), Y: y);

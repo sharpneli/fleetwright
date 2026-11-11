@@ -255,6 +255,8 @@ static class CoarseParity
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public EndReason Reason;
         public double Hours;
+        /// <summary>Ships that stayed behind as a rearguard (balance.md BL5), and of them lost.</summary>
+        public int Rearguards, RearguardsLost;
         /// <summary>Shells fired at, and shell hits on, each target class.</summary>
         public readonly Dictionary<string, (double Shells, double Hits)> At = [];
         public required double[] Shells, ShellHits, TorpedoHits, Launchers;
@@ -496,9 +498,18 @@ static class CoarseParity
             Note();
         });
         p.Result = end.Result();
+        var stayed = new HashSet<int>();
+        foreach (var l in end.Timeline)
+            if (l.Kind == PlayEvent.Rearguard)
+                stayed.Add(l.Entity);
         foreach (var l in end.Timeline)
             if (l.Kind == PlayEvent.Lost)
+            {
                 p.LostBy[l.Count]++;
+                if (stayed.Contains(l.Entity))
+                    p.RearguardsLost++;
+            }
+        p.Rearguards = stayed.Count;
         p.Reason = end.Reason;
         p.Hours = (end.EndMs - s.Start.Ms) / 3_600_000.0;
         return p;

@@ -373,7 +373,11 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 // he fights, or it scouts (its task reads it); a unit on other orders has nobody to tell
                 bool fights = captains.Of(ships[lead].Entity).Order == CaptainOrder.Fight;
                 if (fights || a.Order == CaptainOrder.Fight || Tasks?.Of(Unit.Group(g.GroupId)).Kind == Ai.Tasks.TaskKind.Scout)
-                    Judge.Call(ctx, ships[lead], fights);
+                {
+                    var call = Judge.Call(ctx, ships[lead], fights);
+                    if (call.Away)
+                        captains.JudgeRearguard(ctx, g, call.Result.SpeedB, call.Result.BandB, call.TurnedMs);   // running: does anyone stay behind (balance.md BL5)
+                }
                 else
                     Judge.Quiet(ships[lead]);
             }

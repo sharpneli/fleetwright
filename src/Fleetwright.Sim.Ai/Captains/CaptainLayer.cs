@@ -79,6 +79,10 @@ public enum CaptainReason : byte
     /// <summary>In line ahead in the dark, her next ahead lost from sight: she holds the course and speed she had until she
     /// sees her again (docs/battle/night.md Q7).</summary>
     LostTouch,
+
+    /// <summary>Stayed behind as her running force's rearguard (docs/battle/balance.md BL5): fighting the pursuers, her
+    /// own call, until the ship she covers is clear of them.</summary>
+    Rearguard,
 }
 
 /// <summary>The captains (docs/battle/plan.md steps 2.3b and 2.6): one per ship that has been given an order, kept in
@@ -157,6 +161,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool SpeedHeld;          // going home with an enemy near: she runs, whatever damage control asks (docs/battle/loss-stock-take.md)
         public long FleeMs;             // fleeing an enemy warship (docs/battle/aims.md A4): when one was last near (0: not fleeing)
         public double FleeBackDeg, FleeBackKn;   // and the course and speed she had before, for after
+        public int Cover;               // a rearguard: the ship she covers (docs/battle/balance.md BL5; 0: none)
     }
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
@@ -499,7 +504,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
     {
         if (!IsActive(cap) || ctx.Ships.Combat.Condition(slot) is not { Status: ShipStatus.Afloat, IsGivenUp: false })
             return;   // nothing to do, his ship going down, or given up (docs/battle/striking.md)
-        if (cap.SmokeMade && cap.Order != CaptainOrder.Home)
+        if (cap.SmokeMade && cap.Order != CaptainOrder.Home && cap.Reason != CaptainReason.Rearguard)
             CoverRetreat(ctx, ref cap, own, slot, near: false);   // another order: the smoke he made for his retreat stops
         if (cap.Watch)
         {
@@ -774,6 +779,11 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
                 h.Add(c.FleeMs);
                 h.Add(c.FleeBackDeg);
                 h.Add(c.FleeBackKn);
+            }
+            if (c.Cover != 0)
+            {
+                h.Add(0x4EA4u);   // only then: worlds without rearguards hash as before
+                h.Add(c.Cover);
             }
             if (c.EndLookMs != 0 || c.FightsOn)
             {
