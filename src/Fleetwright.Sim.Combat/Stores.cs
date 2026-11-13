@@ -45,29 +45,6 @@ public static class Stores
         return lit;
     }
 
-    /// <summary>A burst against her from outside in the water (a torpedo's): the stores in the spaces its near field walked into
-    /// (or on the deck over one), its own case's pieces through her plating and that deck, and contact.</summary>
-    public static int Outside(ShipClass c, ShipCondition k, GasNetwork net, P3 at, P3 dir, FragmentBurst? frag, double w, SimSettings s, ref RandomStream r)
-    {
-        int lit = 0;
-        var launchers = c.Launchers;
-        for (int l = 0; l < launchers.Length; l++)
-        {
-            ref readonly var row = ref launchers[l];
-            if (!Live(c, k, l))
-                continue;
-            double mild = c.Plating.ShellMm;
-            if (row.StoreCell >= 0 ? !net.NearReached(row.StoreCell) : row.StoreDeck < 0 || !net.NearReached(row.StoreDeck))
-                continue;
-            if (row.StoreCell < 0)
-                mild += c.Plating.StrengthDeckMm;
-            double d = Effects.BoxDistance(row.StoreBox, at);
-            if (d <= FarM)
-                lit += Try(c, k, l, at, dir, 0, frag, 1, w, d, mild, s, ref r);
-        }
-        return lit;
-    }
-
     /// <summary>Whether a launcher's warheads are aboard, not yet set off, and of a filler something from outside can set off.</summary>
     internal static bool Live(ShipClass c, ShipCondition k, int l) =>
         k.Warheads[l] > 0 && !k.StoreLit[l] && c.Torpedoes[c.Launchers[l].Torpedo].HeldK > 0;

@@ -400,9 +400,9 @@ src/
                               #   mounts as analytic train/elevation anchors, loading clocks, rounds), FireControl (the
                               #   chain's pure models: reading errors, dispersion, laying a gun with its ship's motion, the
                               #   spotting ladder), Condition (Hit, each ship's ShipCondition), Terminal (penetration:
-                              #   Thompson's limit and its inverse; the fuze, the outcome), Effects (what a hit wrecks, holes, fire, crew), GasNetwork (any explosion's gas through her cells and what it tears: docs/battle/explosions.md), HullGirder (her section from those same boundaries, the moments on it; broken, or an end off, after every explosion and as she floods), NearMiss (a missed
-                              #   shell's burst in the water: splinters and shock on a ship close by), Underwater (a torpedo's
-                              #   explosion at the hull: holes, the TDS, shock, a broken back), TorpedoAim (the intercept,
+                              #   Thompson's limit and its inverse; the fuze, the outcome), Effects (what a hit wrecks, holes, fire, crew; every burst's one path, `Effects.Site`: within her, or outside her, Effects.Outside.cs, docs/battle/explosions.md "One outside"), GasNetwork (any explosion's gas through her cells and what it tears: docs/battle/explosions.md), HullGirder (her section from those same boundaries, the moments on it; broken, or an end off, after every explosion and as she floods), NearMiss (a missed
+                              #   shell's burst in the water: its fuze, who's near, the water's shock; the rest the one outside path), Underwater (a torpedo's
+                              #   warhead at the hull on the one outside path: a dud, whether a protection held), TorpedoAim (the intercept,
                               #   the setting), Functions (what the
                               #   ship can still do, from the class's function table), Flooding (FloodModel: the cells as
                               #   water sees them; the sea in, across the cell graph, pumps, settling, founder and

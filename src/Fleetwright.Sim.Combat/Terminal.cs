@@ -358,7 +358,7 @@ public static class Terminal
                     Start(ref res, ref r, shell, s, x.T, 0, i, 0, ref burstT, ref force);
                     trace?.Fuzed(x.T, i, Cause(x));
                     if (res.Outcome != Outcome.Dud)
-                        (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force);
+                        (res.Burst, res.BurstT, res.Force) = (BurstKind.Outside, Math.Max(x.T - 0.3, 0), force);
                 }
                 res.Outcome = Outcome.Defeated;
                 return res;
@@ -444,7 +444,7 @@ public static class Terminal
             return false;
         res.Plate = i;
         if (here)
-            Burst(ref res, Math.Max(x.T - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside, v);
+            Burst(ref res, Math.Max(x.T - 0.3, 0), force, Outcome.BurstOutside, BurstKind.Outside, v);
         else
             Burst(ref res, Math.Max(x.T - 0.3, 0), force, res.Outcome, BurstKind.Inside, 0);
         return true;
@@ -471,7 +471,7 @@ public static class Terminal
         }
         return punches
             ? Burst(ref res, t + 0.5, force, o, BurstKind.Inside, v)
-            : Burst(ref res, Math.Max(t - 0.3, 0), s.BurstOutsideK * force, Outcome.BurstOutside, BurstKind.Outside, v);
+            : Burst(ref res, Math.Max(t - 0.3, 0), force, Outcome.BurstOutside, BurstKind.Outside, v);
     }
 
     /// <summary>A base fuze started at T with velocity v (spentS of its delay already run, on the water): blind (its

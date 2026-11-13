@@ -1613,7 +1613,8 @@ squadrons, and changes `Matchup.cs` with it.
     - **Not built:** the posture (16 §4.9: closed up or under cover; fighting.md 4.5's crew session), steam scalds in a
       boiler room, the nose slug's and base plug's lanes, debris from the parts a shell strikes, the torpedo's and the
       fire's casualties by men, crew as stations' strength (damage control's). The matchup has no crew term.
-- **E7 Near misses** (15).
+- **E7 Near misses** (15). Since 2026-11-13 a near miss is a burst outside her on the one path (docs/battle/explosions.md "One
+  outside"): its near field, pieces, shock and bubble are any outside burst's; what's below is how it was first built.
   - **A new `Hit` source,** `NearMiss`: a burst point outside the hull, no terminal walk. On a miss, a broadphase of
     R_near = max(15·W^⅓, 7.5·√W) m against the ships' waterplanes; most misses cost that one test.
   - **Nose fuze:** fires with `water_fires`, at z_b = v·`water_ms`·sin(fall) under the surface. Splinters by E1's field,

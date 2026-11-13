@@ -337,6 +337,10 @@ public sealed partial class GasNetwork
     int partNode;
     // the cells', and the part's as the last
     int[] stamp = [], region = [], nearStamp = [];
+    /// <summary>Each space an explosion's near field walked into: the share of its reach the plates it came through let past them
+    /// (<see cref="NearField.Share"/>; 1 in its own space and what's open to it), and the share the walk carries as it goes.</summary>
+    double[] nearShare = [];
+    double walkShare = 1;
     double[] v = [], m = [], u = [], p = [], rt = [], pStart = [], vent = [], lagged = [], felt = [], hottest = [], hyd = [], dose = [];
     /// <summary>The liquid spaces whose liquid has run out this run (<see cref="Transmit"/>).</summary>
     bool[] spilled = [];
@@ -377,6 +381,8 @@ public sealed partial class GasNetwork
     /// <summary>Whether the near field's holes in her hull open into the charge's own bubble (a contact burst from the sea): the gas that
     /// came in leaves by them as the bubble grows, where a hole under the sea otherwise lets in water, not gas out.</summary>
     bool intoBubble;
+    /// <summary>The outside faces one explosion's near field has had (its walk's id): each once, from outside or from within.</summary>
+    int[] faceNear = [];
     int[] trainStamp = [];
     GasResult res;
     // what a step reads of each boundary and isn't moved by the run (Run fills or stamps them, after the near field's holes): each
@@ -578,7 +584,7 @@ public sealed partial class GasNetwork
         {
             // stamps start at 0, under every id to come: nothing carries over
             int size = nc + 1;
-            (stamp, region, nearStamp) = (new int[size], new int[size], new int[size]);
+            (stamp, region, nearStamp, nearShare) = (new int[size], new int[size], new int[size], new double[size]);
             (v, m, u, p, rt, pStart) = (new double[size], new double[size], new double[size], new double[size], new double[size], new double[size]);
             (vent, lagged, felt, hottest, hyd, spilled) = (new double[size], new double[size], new double[size], new double[size], new double[size], new bool[size]);
             (dose, liq) = (new double[size], new double[size]);
@@ -590,7 +596,7 @@ public sealed partial class GasNetwork
             int size = nc + 1;
             (touchStamp, touched, walk, walkStamp, feltLanded, hotLanded) = (new int[size], new int[size], new int[size], new int[size], new double[size], new bool[size]);
             rose = new int[size];
-            faceDrawn = new int[size * Faces];
+            (faceDrawn, faceNear) = (new int[size * Faces], new int[size * Faces]);
         }
         if (edgeDrawn.Length < ne)
             edgeDrawn = new int[ne];
@@ -661,36 +667,90 @@ public sealed partial class GasNetwork
         return AtOnce(was, open);
     }
 
-    /// <summary>A charge going off against her from outside, in the water, in still air and run to its end at once (a bench's, a
-    /// test's: the game's is <see cref="AddContact"/>).</summary>
-    public GasResult Strike(ShipCondition cond, int cell, P3 at, in NearCharge near, SimSettings settings, ref RandomStream r, double w = 0, in ShellTypeRow f = default)
-    {
-        Begin(cond, settings);
-        AddContact(cell, at, near, w, f);
-        return RunOut(ref r);
-    }
-
-    /// <summary>A charge going off against her from outside, in the water, into the run at its moment: its near field
-    /// (<see cref="Near"/>) from the space behind the plate, and w kg of its products in that space through what the near field
-    /// opened (none: its gas is all the bubble's in the sea; docs/battle/explosions.md EX5).</summary>
-    public GasResult AddContact(int cell, P3 at, in NearCharge near, double w = 0, in ShellTypeRow f = default)
+    /// <summary>A charge going off outside her, wherever (docs/battle/explosions.md "One outside"): in the air over her deck or beside
+    /// her, against a plate it didn't get through, in the sea off her or at her plate under it; into the run at its moment. Its near
+    /// field (<see cref="Near"/>) first meets her outside faces that face it, each as far as the rule takes it (its plate, its standoff,
+    /// how far water backs the charge); it walks into a space only through what it opened there, or what was open to it already, and on
+    /// from there as from a burst within. w kg of its products face her (the hemisphere toward her: <see cref="SimSettings.ContactGasShare"/>), and
+    /// as much of them comes in as what it opened subtends of that hemisphere from it (all from a charge against her plate), into the
+    /// space it lies against (the nearest it opened; none opened: they're all the sea's or the air's; docs/battle/explosions.md EX5). wet: it's under the sea, so the holes it makes open
+    /// into its own bubble.</summary>
+    public GasResult AddOutside(P3 at, in NearCharge near, bool wet, double w = 0, in ShellTypeRow f = default)
     {
         var was = res;
         Source(at);
-        Walk(cell, out double gas, out double vents);
-        intoBubble = true;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
-        Near(at, near);
-        intoBubble = false;
-        bool open = !(w > 0) || Blast.Open(gas, vents, s);
+        (nearId, nWalk) = (nearId + 1, 0);
+        int into = -1;
+        double subtends = 0;
+        double nearest = 0, gas = 0, vents = 0;
+        if (near.ReachM > 0)
+        {
+            intoBubble = wet;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
+            var cells = c.Cells;
+            for (int i = 0; i < cells.Length; i++)
+            {
+                if (Effects.BoxDistance(cells[i].Box, at) > near.ReachM)
+                    continue;
+                // its products go into the space it lies against: the nearest it opened
+                double opened = FacesFromOutside(i, at, near, out double g, out double vn, ref subtends), d = Effects.BoxDistance(cells[i].Box, at);
+                if (opened > 0 && (into < 0 || d < nearest))
+                    (into, nearest, gas, vents) = (i, d, g, vn);
+            }
+            Near(at, near);
+            intoBubble = false;
+        }
+        // its products that come in: the share of the hemisphere facing her that the holes it opened subtend from it (all of it from a
+        // charge against her plate; next to none from one a few metres off)
+        w *= Math.Min(1, subtends);
+        bool open = !(w > 0) || into < 0 || Blast.Open(gas, vents, s);
         if (open)
             res.Open = true;
         else
         {
-            Charge(cell, w, f, gas);
-            Kick(cell, 2e-4);
+            Charge(into, w, f, gas);
+            Kick(into, 2e-4);
         }
         CommitOpened();
         return AtOnce(was, open);
+    }
+
+    /// <summary>A space's outside faces that face a charge outside her (it lies beyond their plane): each holed as the near field's rule
+    /// takes it; the space joins the walk where the near field gets to it, holed now or open there already. What it opened in them, m² (and
+    /// the share of the hemisphere facing her each hole subtends from the charge, added to subtends),
+    /// and the gas and vents open to the space before it did (the open-space shortcut counts only those: what the charge opens, its gas
+    /// goes out by in the run).</summary>
+    double FacesFromOutside(int i, P3 at, in NearCharge near, out double gas, out double vents, ref double subtends)
+    {
+        double opened = 0;
+        (gas, vents) = (v[i], vent[i]);
+        bool joined = walkStamp[i] == nearId;
+        for (int f = 0; f < Faces; f++)
+        {
+            int x = i * Faces + f;
+            if (!(hull.Area[x] > 0))
+                continue;
+            if (!Facing(i, f, at))
+                continue;
+            faceNear[x] = nearId;
+            double r = FaceHole(i, f, at, near, out var on, out double disc);
+            if (!(disc > 0))
+                continue;
+            if (!joined)
+            {
+                // in the run before it's holed: a space joins with what it had open, and that's what the shortcut reads; its reach in
+                // there, what the face lets past it (all through what was open there)
+                int g0 = nWalk;
+                walkShare = faces[x].Torn > 0 && faceStamp[x] == id || k.FaceTornM2[x] > 0 ? 1 : NearField.Share(hull.Mm[x] + Blast.InclinedMm(c, at, on), near.Tamp);
+                WalkFrom(i);
+                (gas, vents, joined) = (0, 0, true);
+                for (int a = g0; a < nWalk; a++)
+                    (gas, vents) = (gas + v[walk[a]], vents + vent[walk[a]]);
+            }
+            double hole = HoleFace(i, f, x, r, disc, on), dx = at.X - on.X, dy = at.Y - on.Y, dz = at.Z - on.Z;
+            opened += hole;
+            subtends += hole / (2 * Math.PI * Math.Max(dx * dx + dy * dy + dz * dz, 1e-6));   // its share of the hemisphere facing her
+        }
+        return opened;
     }
 
     /// <summary>What an explosion did the moment it came: the holes its near field made, the plate it opened between spaces, whether
@@ -809,7 +869,7 @@ public sealed partial class GasNetwork
     void Walk(int cell, out double gas, out double vents)
     {
         nearId++;
-        (nWalk, sourceCell) = (0, cell);
+        (nWalk, sourceCell, walkShare) = (0, cell, 1);
         WalkFrom(cell);
         (gas, vents) = (0, 0);
         for (int a = 0; a < nWalk; a++)
@@ -833,6 +893,7 @@ public sealed partial class GasNetwork
             return;
         walkStamp[x] = nearId;
         walk[nWalk++] = x;
+        nearShare[x] = walkShare;
         if (stamp[x] != id)
             Join(x);
     }
@@ -947,11 +1008,13 @@ public sealed partial class GasNetwork
                 continue;
             EdgeOpen(j);
             int q = canon[j];
+            double through = 1;   // the share of its reach this boundary lets past: all through what was open
             if (e.Join != JoinKind.Open && edges[q].Fate != Blast.Fate.Holed)
             {
                 double standoff = Blast.Shared(box, there, e.Join, at, out double u, out double w, out double u0, out double u1, out double w0, out double w1, out var on);
                 double plate = mm[j] + Blast.InclinedMm(c, at, on);   // a slope between it and the charge is its armour too
                 double hole = Math.Min(NearField.Disc(NearField.HoleM(near, plate, standoff, s), u, w, u0, u1, w0, w1), area[j] - open[q]);
+                through = open[q] > k.JoinSeamM2[q] ? 1 : NearField.Share(plate, near.Tamp);
                 if (hole > 0)
                 {
                     (open[q], opened[q], edges[q].Fate) = (open[q] + hole, opened[q] + hole, Blast.Fate.Holed);
@@ -962,7 +1025,10 @@ public sealed partial class GasNetwork
                 }
             }
             if (open[q] > k.JoinSeamM2[q] && walkStamp[e.Cell] != nearId)   // a sprung seam lets water through, not this
+            {
+                walkShare = nearShare[i] * through;
                 WalkFrom(e.Cell);
+            }
         }
     }
 
@@ -970,34 +1036,70 @@ public sealed partial class GasNetwork
     /// above the sea a vent.</summary>
     void NearFaces(int i, P3 at, in NearCharge near)
     {
-        var box = c.Cells[i].Box;
         for (int f = 0; f < Faces; f++)
         {
             int x = i * Faces + f;
-            double fa = hull.Area[x];
-            if (!(fa > 0))
-                continue;
-            var pt = hull.Point[x];
-            var on = f < 2 ? new P3(Math.Clamp(at.X, box.X0, box.X1), pt.Y, Math.Clamp(at.Z, box.Base, box.Top))
-                : new P3(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Y, box.Y0, box.Y1), pt.Z);
-            double r = NearField.HoleM(near, hull.Mm[x] + Blast.InclinedMm(c, at, on), f < 2 ? Math.Abs(at.Y - pt.Y) : Math.Abs(at.Z - pt.Z), s);
-            if (!(r > 0))
-                continue;
-            if (faceStamp[x] != id)
-                FirstOnFace(x, i, f);
-            ref var b = ref faces[x];
-            double hole = Math.Min(f < 2 ? NearField.Disc(r, at.X, at.Z, box.X0, box.X1, box.Base, box.Top) : NearField.Disc(r, at.X, at.Y, box.X0, box.X1, box.Y0, box.Y1), fa - b.Torn);
-            if (!(hole > 0))
-                continue;
-            (b.Torn, b.Fate) = (b.Torn + hole, Blast.Fate.Holed);
-            Spill(i);
-            k.Hole(i, hole, on);
-            k.FaceTornM2[x] = b.Torn;
-            k.Torn(x, NowMs);
-            res.HoleM2 += hole;
-            res.Holed++;
-            vent[i] += hole * (intoBubble || f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
+            if (!(hull.Area[x] > 0) || faceNear[x] == nearId)
+                continue;   // none, or met from outside already
+            faceNear[x] = nearId;
+            double r = FaceHole(i, f, at, near, out var on, out double disc);
+            if (disc > 0)
+                HoleFace(i, f, x, r, disc, on);
         }
+    }
+
+    /// <summary>Whether a point outside her faces a space's outside face: beyond her side's breadth at its own height there (a side), over
+    /// the space (the weather deck), under it (the bottom); within <see cref="FacingM"/>, as a hit's point on her plating lies.</summary>
+    bool Facing(int i, int f, P3 at)
+    {
+        var box = c.Cells[i].Box;
+        return f switch
+        {
+            < 2 => (f == 0 ? -at.Y : at.Y) >= c.Hull.HalfWidth(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Z, box.Base, box.Top)) - FacingM,
+            2 => at.Z >= box.Top - FacingM,
+            _ => at.Z <= box.Base + FacingM,
+        };
+    }
+
+    /// <summary>How far inside a face's plane a point on her plating may read, m: the hull's breadths and the hitbox's surface part by about
+    /// this.</summary>
+    const double FacingM = 0.25;
+
+    /// <summary>The near field's hole in a space's outside face: its radius, m, where on the face it's centred (the foot of the charge's
+    /// square to its plane, within the face), and the disc's area within the face (none: out of the plate's share of the reach). Every
+    /// space's piece of one plane takes the same circle, so a plate split between spaces is holed once.</summary>
+    double FaceHole(int i, int f, P3 at, in NearCharge near, out P3 on, out double disc)
+    {
+        var box = c.Cells[i].Box;
+        int x = i * Faces + f;
+        var pt = hull.Point[x];
+        on = f < 2 ? new P3(Math.Clamp(at.X, box.X0, box.X1), pt.Y, Math.Clamp(at.Z, box.Base, box.Top))
+            : new P3(Math.Clamp(at.X, box.X0, box.X1), Math.Clamp(at.Y, box.Y0, box.Y1), pt.Z);
+        double r = NearField.HoleM(near, hull.Mm[x] + Blast.InclinedMm(c, at, on), f < 2 ? Math.Abs(at.Y - pt.Y) : Math.Abs(at.Z - pt.Z), s);
+        disc = r > 0 ? f < 2 ? NearField.Disc(r, at.X, at.Z, box.X0, box.X1, box.Base, box.Top) : NearField.Disc(r, at.X, at.Y, box.X0, box.X1, box.Y0, box.Y1) : 0;
+        return r;
+    }
+
+    /// <summary>A hole of a disc's area in a space's outside face, as much as is left of it: on the ship at once, the sea's way in, and
+    /// what's of it above the sea a vent (all of it into a charge's own bubble). The plate it took, m².</summary>
+    double HoleFace(int i, int f, int x, double r, double disc, P3 on)
+    {
+        if (faceStamp[x] != id)
+            FirstOnFace(x, i, f);
+        ref var b = ref faces[x];
+        double hole = Math.Min(disc, hull.Area[x] - b.Torn);
+        if (!(hole > 0))
+            return 0;
+        (b.Torn, b.Fate) = (b.Torn + hole, Blast.Fate.Holed);
+        Spill(i);
+        k.Hole(i, hole, on);
+        k.FaceTornM2[x] = b.Torn;
+        k.Torn(x, NowMs);
+        res.HoleM2 += hole;
+        res.Holed++;
+        double vented = hole * (intoBubble || f == 2 ? 1 : f == 3 ? 0 : Math.Clamp((on.Z + r - water.At(on.X, on.Y)) / (2 * r), 0, 1));
+        vent[i] += vented;
+        return hole;
     }
 
     /// <summary>The ship's own magazine lit: its stow, and the links of the mounts it feeds. Its largest cell, or -1.</summary>
@@ -1844,6 +1946,10 @@ public sealed partial class GasNetwork
 
     /// <summary>Whether the last run's near field walked into a cell: what its wreck and debris reached.</summary>
     public bool NearReached(int cell) => nearStamp[cell] == nearId;
+
+    /// <summary>The share of the newest explosion's near-field reach that got into a space it reached (<see cref="NearField.Share"/>
+    /// of the plates on the way; 0 where it didn't get).</summary>
+    public double NearShareIn(int cell) => nearStamp[cell] == nearId ? nearShare[cell] : 0;
 
     /// <summary>Whether the last run got into a cell: its near field or its gas.</summary>
     public bool InRun(int cell) => stamp[cell] == id;

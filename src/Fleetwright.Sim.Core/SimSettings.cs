@@ -1441,9 +1441,9 @@ public sealed record SimSettings
     public double[] PartBlastMPa { get; init; } = [0.10, 0.10, 0.25, 0.10, 0.25, 0.03, 0.10, 0.25, 0.25, 0.25, 0.10, 0.25, 0.6, 0.6, 0.6, 0.6, 0.25, 0.03, 0.03, 0.03, 0.10];
     public double BlastDamagedShare { get; init; } = 0.5;
 
-    /// <summary>A burst's force as a share of one inside: in the plate, outside on it, and low-order.</summary>
+    /// <summary>A burst's force as a share of one inside: in the plate, and low-order. One outside on a plate goes off whole: what it
+    /// does there is its place's (docs/battle/explosions.md "One outside").</summary>
     public double BurstInPlateK { get; init; } = 0.4;
-    public double BurstOutsideK { get; init; } = 0.15;
     public double LowOrderK { get; init; } = 0.3;
 
     /// <summary>A part within this share of the wreck radius is destroyed, within it disabled.</summary>
@@ -2591,10 +2591,6 @@ public sealed record SimSettings
     /// turning swings her tubes through it, so each torpedo's course errs by her rate of turn times it.</summary>
     public double TorpedoFireTimingS { get; init; } = 0.5;
 
-    /// <summary>The explosion at the hull (damage-model-research.md §3.4, A6; docs/battle/explosions.md EX5), its reach and hole the
-    /// near field's (<see cref="TampedReachK"/>), its shock a near miss's: this share of the battle crew in the spaces it got into is
-    /// lost, falling to none at the reach.</summary>
-    public double TorpedoCasualtyShare { get; init; } = 0.5;
     /// <summary>The share of a contact charge's products at her plate that comes into her through what it opened, the rest the
     /// bubble's in the sea, or the air's on a deck (docs/battle/explosions.md EX5, EX6c): the hemisphere facing her [INFERRED: research
     /// 13 §4.3 gives a contact burst "the near field and the gas"; the user's choice, 2026-11-07].</summary>

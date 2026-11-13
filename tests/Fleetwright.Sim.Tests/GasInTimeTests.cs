@@ -174,7 +174,7 @@ public class GasInTimeTests(ITestOutputHelper output)
             "pStart", "lag", "plainLag", "soonest", "water", "liq", "heavyJ", "heavyStamp", "faceHeavy", "faceHeavyStamp", "ruptureJ", "run",
             "ruptureClass", "ruptureSettings", "flash", "period", "chokeK",
             // a run's ids and its explosions' walks, compared never carried; a burst's own moment
-            "id", "nearId", "nearStamp", "walk", "walkStamp", "nWalk", "intoBubble", "commits", "edgeDrawn", "faceDrawn",
+            "id", "nearId", "nearStamp", "walk", "walkStamp", "nWalk", "intoBubble", "faceNear", "nearShare", "walkShare", "commits", "edgeDrawn", "faceDrawn",
             // a part's burst, run at once on a thread's network, never a live one
             "partM2", "partMm", "partWalls",
             // a landing's scratch

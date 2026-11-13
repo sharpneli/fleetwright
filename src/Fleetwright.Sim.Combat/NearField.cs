@@ -103,5 +103,9 @@ public static class NearField
     /// double, double, SimSettings)"/>'s): all of it through thin plating, √(6/mm) through armour.</summary>
     public static double PlateShare(double mm) => Math.Min(PlateK(mm, 0), 1);
 
+    /// <summary>The share of a near field's reach a plate of mm lets past it, as tamped as the charge is: what it wrecks behind a plate
+    /// it holed lies within that share of its reach (all of it through thin plating, and from a charge the sea backs whole).</summary>
+    public static double Share(double mm, double tamp) => Math.Min(PlateK(mm, tamp), 1);
+
     static double Lerp(double air, double water, double tamp) => air + (water - air) * tamp;
 }

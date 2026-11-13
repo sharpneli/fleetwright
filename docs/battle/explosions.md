@@ -1,6 +1,6 @@
 # Plan: one explosion (a 4.5 deepening)
 
-Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX7 are done** (EX7 2026-11-08: the matchup refit and the whole game read; PM the same day); **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **What next is the user's pick:** "Where to pick up".
+Status: **decided 2026-11-05** ("Decided" at the end). **EX0-EX7 are done**, and "One outside" (2026-11-13) (EX7 2026-11-08: the matchup refit and the whole game read; PM the same day); **EX0-EX6 are built** (EX0-EX3 2026-11-05/06, reviewed and unified the same day; EX4-EX6 2026-11-07), the gas runs in game time (workers.md "Explosions in time", 2026-11-08) and is drawn (`docs/visuals/destruction.md` D0-D7, 2026-11-08). **What next is the user's pick:** "Where to pick up".
 
 The user, 2026-11-05: "Explosion is an explosion. The code should basically not have a special case for magazine
 explosion in on itself and just run all the explosions through the same path. We avoid special cases and try to build an
@@ -39,6 +39,10 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 - **PM** (2026-11-08, "PM: the matchup reads the burst's depth and damage adding up"): hits under the water, the burst's depth,
   a nose burst by the near field, damage adding up; rms 0.089 → 0.071 over 1,688 lines; a flotilla's day attack judged for the
   force (the user's call).
+
+- **One outside** (2026-11-13, "One outside"): every burst outside her on the one path, by where it is: shells on plates they
+  didn't get through (`BurstOutsideK` gone), near misses (the D 5 gate gone), torpedoes (their own room, crew and magazine
+  rules gone), deck stores. Three calls open with the user there.
 
 **Next, for the user to pick:** the weak points in shipgen (Lion's steering), item 10 (the step's convergence, not yet run), the
 pre-dreadnought sinking in 25 min to two torpedoes, the light forces' run-in (BL5), PM's three groups still off (common shells on
@@ -1138,6 +1142,108 @@ lost more in 30 of 44 seeds (30); capsized 49%, foundered 28%, broke in two 22%,
 (light shells fired at 6.6 km against 7.8, hits 6.6% against 3.3%; lost 0.8 / 1.4 against 1.5 / 0.9); Cape Sarych's Russians 3.1 →
 4.5, Heligoland's British 1.5 → 3.3, Åland's Swedes 1.1 → 3.0, Jutland 25.3 / 51.5 → 23.0 / 54.0; Tsushima still the wrong way round
 (Japan 6.5 lost, Russia 2.6; 1 of 8 seeds both). Within the seeds' spread mostly; nothing tuned.
+
+## One outside (2026-11-13)
+
+**Why.** The user, playing with a 2000 mm HE (8.6 t of TNT): a hit blows a ship up, a near miss an inch off "barely does
+anything; shouldn't the explosion have some sort of pressure wave effect to the hull itself?" It should. The unification
+had missed a whole place: **outside her.** A charge going off outside her plates took three paths, each by its source:
+
+- **A shell bursting on a plate it didn't get through** (`BurstKind.Outside`) was cut to `BurstOutsideK` 0.15 of a
+  burst, had no near field on her plating (the contact hole skipped it) and no gas, and judged the parts over her as if
+  her hull hid nothing. One that burst inside her against a barbette or an armoured deck was "outside" too: no gas.
+- **A near miss** holed one face, and only past D 5 of the water's shock factor scaled by the plate (EX5 kept it): a surface
+  burst's shock is cut off by the sea, so 8.6 t at 0.1 m from Iron Duke's belt holed her 147 cm². Its parts took only
+  pieces, never the near field that wrecks them when the same charge bursts on her deck.
+- **A torpedo** walked its near field from inside the nearest space, as if her plate had gone already, put its products
+  in whether or not anything opened, and had rules of its own for the rooms, parts and men it reached
+  (`TorpedoCasualtyShare`, `Struck` by kind, a magazine's 2·(1 − d/reach)).
+
+**What there is: one path, `Effects.Site`.** Where the burst is decides, never what set it off. In one of her spaces or
+in a part that confines it (a gunhouse; not an open mount, a funnel, a mast: `Blast.Open` on its vents), it's a burst
+within, as before. Anywhere else it's outside her (`Effects.OutsideSite`; `Effects.Outside` for a charge with no path: a
+near miss, a torpedo, a mine's and a bomb's to come):
+
+- **The near field from outside in** (`GasNetwork.AddOutside`): her outside faces that face the charge (beyond her side's
+  breadth at its height, over the weather deck, under the bottom) holed by the one rule, its plate, its standoff and how
+  far water backs it; every space's piece of one plane takes the same circle. It walks into a space only through what it
+  opened there or what was open already, and on from there as from a burst within.
+- **Its products** (`ContactGasShare`, the hemisphere facing her) come in as much as the holes it opened subtend of that
+  hemisphere from it: all of it from a charge against her plate, next to none from one a few metres off. Into the space it
+  lies against, the nearest it opened; none opened, they're the sea's or the air's.
+- **The reach carries its plates' share** (`NearField.Share`, the walk's `nearShare`): behind a plate it holed, the near
+  field reaches the share of its reach that plate lets past (√(6/t) in air; whole from a charge the sea backs). The rooms
+  in the spaces it got into, past the burst's own, by the share of their floor its sphere takes there (`NearRooms`; a burst
+  within takes this too, past its own space; what its pieces do in there is theirs, not counted twice); parts in them
+  within that reach wrecked by distance.
+- **Its pieces** (`HullPieces`, the near miss's patches made general): on the side toward it and on the weather deck under
+  a burst over it, patch by patch through each plate; what gets through strikes the space behind (`Behind`: vitals, parts
+  and men, each through the plate where the straight way to it crosses her side, belt or not). The waterline band's
+  splinter holes only where the near field didn't take that plate already. The parts it sees over her hull (`Seen`: over
+  the deck edge from beside her; nothing under the deck from over it; nothing inboard from against her side under her deck)
+  by pieces and, within the reach, the near field, as any burst's. Men in the open by pieces and its blast, as much as the
+  sea doesn't back the charge (W·(1 − tamp)). A store by the straight way to it: seen, in the open; else through what the
+  near field opened and her plating.
+- **The water** where it's in the sea: the shock factor's bands (`NearMiss.Shock`) and the bubble's whip. In the air the
+  sea's surface takes both to nothing (`Nsf`'s image), so a shell bursting on a plate above the water skips them.
+- Fire, a magazine (the near field among its charges) and the stores it reaches, as any burst's.
+
+**What went:** `BurstOutsideK`, `TorpedoCasualtyShare`, `GasNetwork.AddContact` and `Strike`, `Stores.Outside`,
+`Underwater.Reach` and its `Products` row (a torpedo's gas is its warhead's own filler), the near miss's D 5 gate, the
+burst site's `Deck`, `CrewSight.Behind`. Men take 16 §4.2's flux scale S wherever they are, as it was fitted; E7's free field
+for men in the open (1/S) went with the one path.
+
+**Found on the way, each measured before it was fixed:** products into the space it opened most (a torpedo on a destroyer
+lost her 29% against 39%; into the one it lies against, 44%); the reach behind a belt the whole reach and a room's vitals
+chance besides (Iron Duke under HE slowed 33%); men behind a belt seeing the burst through the plating at their space's
+middle height; a deck store set off twice over by two ways; a burst against her side under her deck "seeing" all over
+her; a hole re-centred on each stacked space's own edge (one hole counted twice).
+
+**The 2000 mm HE on Iron Duke (`nearmiss iron_duke --shooter stabu --kind he`, 20 each, 30 min on):**
+
+| Burst | Before: holes, killed, lost | Now |
+|---|---|---|
+| 0.1 m short | 0.01 m², 1.4, 0% | 175 m², 264, 100% (her magazine) |
+| 1 m short | 1.0 m², 1.7, 0% | 228 m², 302, 100% (magazine) |
+| 5 m short | 0.2 m², 3.0, 0% | 45 m², 99, 25% (9,000 t in her) |
+| 15 m short | 0.004 m², 13, 0% | 0.004 m², 92, 0% |
+| 2 m under the bilge, 11 m down | 556 m², 0, 0% | 515 m², 161, 100% (magazine) |
+
+**Ordinary shells and torpedoes** (old against new, the same seeds):
+
+- **Near misses on a destroyer** (Yamato's 46 cm HE, 60 each, 30 min on): 1 m short 8.9 m² (1.5), 452 t (293), lost 3%
+  (0); **3 m short lost 43% (0)**: the near miss opens 2.6 m², and in about 4 in 10 its pieces set off a launcher's
+  warheads on her deck (they did before too, by the same rule), whose 1.2 t now goes off as an outside burst on her deck
+  (108 m²) and breaks her, where the old deck contact started inside the one space under it. 7 m and beyond as before but
+  for the men: killed at 15 m 10 (2.6), the open crews taking S (above).
+- **Torpedoes:** a destroyer lost 45% to one (39%), broken in two 45% (39); the 1913 super-dreadnought 5,339 t of water in
+  the hour (4,304), out of the fight 50% (41). The warhead's own pieces now reach into what it opened.
+- **HE on armour** (`hits`, 10 hits a ship, 30 min on): Iron Duke under Lion's HE slowed 2% (1%), water 128 t (33). The
+  C-class light cruiser under 6″ lyddite slowed 53% (20%), power 62% (71), out of the fight 24% (44: her guns' crews hurt
+  less). **The cause, isolated rung by rung:** not the gas, the holes or the shock (each off, the same), but the burst's side
+  spray through the thin plating beside her 76 mm belt into her boiler and engine rooms (`Behind`'s vitals). Before, a
+  burst on her belt was 15% of a burst reaching only the men behind the belt; now it's the near miss's pieces at 0.3 m.
+- **Inside bursts:** Lion's AP on Iron Duke within a few %; Yamato's HE at 1 km on a destroyer lost 63% after 5 hits (58),
+  steering lost 56% (31).
+- **`damage-history`:** killed a hit within a few % of before; lost moved in five cases: Bismarck 50 → 100% and Kirishima 20
+  → 25% (both sunk in the record), Tiger 10 → 20%, Warspite 0 → 5%, the Yalu ironclad 0 → 25% (Dingyuan lived). **`dc-history`:**
+  Oslyabya 5 → 25% and North Carolina 25 → 5% (toward the record), Seydlitz 5 → 15%; the rest as before.
+
+**The panel (`balance`, 8 seeds, Jutland 4; old and new run side by side):** 7 of 14 sides within about twice the record
+(6); the record's loser lost more in 19 of 44 seeds (25); capsized 52%, broke in two 24%, foundered 23%, magazine 1% (53,
+24, 23, 0). Jutland: Britain 28.5 lost a seed (20.8; record 14), Germany 40.5 (39.5; 11). Dogger Bank: Britain 0.4 (1.1),
+Germany 1.8 (3.5), both now within twice the record. Heligoland Bight: Britain 2.5 (3.9). Most other sides within the seeds'
+spread. fc-history unchanged (gunnery isn't touched).
+
+**Open with the user (nothing tuned):**
+
+1. **The near field's hole off the plate.** EX4's rule (11 §3.1's contact hole cut by the sphere at its standoff) gives a
+   46 cm HE 8 m² at 1 m off a destroyer and 2.6 m² at 3 m; research 15 had 0.2-1.5 m² there from its splinters alone, and 11
+   calls the contact rule 1.4× big on thick plate. The test's band is now the near field's (`Close_heavy_HE_holes...`).
+2. **A burst on a belt sprays the thin plating beside it** into the machinery behind (the light cruiser slowed 53%, 20%
+   before; a battleship's spaces below take more of medium HE, the test's upper-works ratio 1.5 from 2.5).
+3. **Men in the open:** 16 §4.2's S is fitted to whole ships' casualties and taken everywhere, so near misses hurt open
+   crews about four times as much as E7's free field did (Lion's HE 15 m short of Iron Duke kills 16, 2.5 before).
 
 ## What stays out
 
