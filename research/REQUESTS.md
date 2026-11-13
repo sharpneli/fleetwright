@@ -12,21 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-13 - Shells skipping off the water: what a ricochet kept, where it went, and whether it hit
-- Question: (1) A pointed shell (12"-15", also 4"-6") falling flatter than the ricochet limit: how much of its speed it
-  kept, and the angle it left at against the angle it fell at (USNI 1921 says about the same, for one calculated 6" case).
-  (2) How erratic the skip was: the spread of its new line up and across, whether it yawed or tumbled after, and the range
-  a ricochet flew on (the splash research's 300-800 m, "arcing high into the sky"). (3) The fuze: did a base fuze start on
-  the graze (and burst in the air beyond), and how often a nose fuze failed to fire on a graze. (4) How often ricochets
-  hit ships, from action reports or practice (close-range actions, destroyer attacks, night fights; any count of
-  "ricochet" hits beside direct ones), and what a yawed shell did to plate it struck.
-- Context / relevant files: `docs/battle/shells-armour-damage.md` E7's ricochet (2026-11-13: `ShellSystem.Skip`); the
-  settings `WaterRicochetLossK` (1: exp(-2θ·k) of its speed, a planing body's drag over lift [EST]),
-  `WaterRicochetScatterDeg` (3° each way [EST]), `WaterRicochetSkips` (4); damage/15 §1.1 (Johnson and Reid's 18°/√SG).
-  A shell aimed 300 m short of a destroyer at 4 km hits her about half the time after skipping; with no scatter a third.
-- Wanted output: ranges with tags for the speed kept, the exit angle and its spread, the fuze on a graze, and the record's
-  ricochet hits; whether a skipped shell should strike yawed (the terminal has no yaw today).
-
 ### 2026-11-09 - What a darkened ship showed: light discipline and its leaks, 1890-1925 first
 - Question: (1) Darkening ship in each navy and period: what the regulations shut and covered (scuttles and deadlights,
   doors and screens to lit flats, galley and engine-room skylights, navigation lights), and how well it was kept; what
@@ -302,6 +287,25 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-13 - Shells skipping off the water: what a ricochet kept, where it went, and whether it hit
+- Done 2026-11-13 (draft): [simulation/damage-research/16-water-ricochet.md](simulation/damage-research/16-water-ricochet.md) with
+  [water_ricochet_ref.py](simulation/damage-research/water_ricochet_ref.py). No navy's trial of big shells off the sea was found;
+  the ladder is the physics, .50 and 20 mm firings into water, the period's glimpses and the record's hits. **USNI 1921's "same
+  angle" is a calculated bounce off a tank's floor**, and its author says the real one is lower. **A pointed shell leaves steeper
+  than it fell** (it pitches nose up while planing; size-free by similarity): forensic and BRL data, L/D 5 bodies ~15°, the 1911
+  5"/50's ricochets "curving upward", Albert W. Grant's "slightly upward"; proposed exit median 5° + ½ fall, lognormal 0.6 [EST].
+  **Speed kept** 0.95 at 2°, 0.66-0.79 at 5°, ~0.5 at 6-7° (.50 M2 Weibull, BRL 0.72 at 5°); the code's 0.84 at 5° is high; proposed
+  exp(-(θ/8.5°)^2.3) or k 1.5. **Mostly to the right** (~10° for the .50, the twist's side), wild in a seaway; proposed 5° right ± 4°.
+  **Kilometres on**, not 300-800 m (a 12 in at 4 km leaving at 2-5° grazes again 2.6-5.6 km on; SA 1911 "miles beyond").
+  **The limit** is likely higher than 6.4°: shells' bulk SG 5-7 gives 6.9-8.4° by the sphere and cylinder laws; bullets skip to
+  15-30°, von Chrismar's shells to 25°, Canopus's practice 12 in skipped into Gneisenau falling ~14°; proposed 9° or a band
+  centred on 11° [EST]. **Fuzes:** RN 1921 nose-fuze minima on water 1°49'-5°20' (a normal ~15-45 m/s); sensitive base fuzes
+  started on a graze (Tsesarevich 1904: burst beyond, the head to the conning tower), robust WWII AP mostly not (Grant's two
+  ricochets both duds); graze deceleration ~½ a steep entry, ∝ v²/(SG·D). **Record:** 7-15% of hits in two counted close
+  actions; the sim's 21-30% on destroyers is the flat exit's (W4: 100 m short of a destroyer, 57% against 13%). **Yes, strike
+  yawed:** +½ψ under 10°, limit velocity +0.6%/deg beyond (NPG 1944), tumbling over ~25° [EST].
+  Not reached: BRL AD0479824 in full, Campbell's per-hit notes, period base-fuze graze thresholds.
 
 ### 2026-11-08 - sigma_D's n: the pattern's own salvo, not the guns firing (a fix to fire_control_ref.py)
 - Done 2026-11-08: [simulation/fire-control-research/dispersion-and-hits.md](simulation/fire-control-research/dispersion-and-hits.md)
