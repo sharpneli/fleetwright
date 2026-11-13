@@ -73,6 +73,14 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## Damage
 
+- [ ] **A base fuze's scatter is drawn twice under the water** (2026-11-13, the near-miss review). The shell system follows
+  a run toward the hull only as far as the fuze's unscattered run (`WaterRun.FuzeRunM`); past that it's a miss, and
+  `NearMiss.Burst` then draws a scattered delay plus `FuzeWaterMs`, which can carry the burst past the hull's plate. The
+  near miss then bursts inside or beyond her as if in the water beside her (the shock's nearest point a few tenths of a metre
+  off, a contact hole). Measured in `nearmiss v25 --shooter derfflinger --kind ap --salvos 3000` at 9 km: 12 of about 210
+  would-be underwater hits; 2 at 18 km. The underwater hit's own `Terminal.Start` draws the scatter a third time. Fix: one
+  draw a shell, carried from launch, read by the reach, the near miss's burst and the terminal's start.
+
 - [x] A ship far down by the head kept her full speed (the Åland card, 2026-10-26: Lemminkäinen at 13.4 kn, trimmed
   9.3°, draught aft -0.2 m). The only link from flooding to speed was the water's weight on the power. Fixed 2026-10-26
   by `Ploughing` (Sim.Combat):

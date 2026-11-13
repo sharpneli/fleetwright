@@ -427,9 +427,13 @@ public static class GivenHits
         public readonly int[] Bands = new int[5];
         public int Shocks, Blackouts;
         public double Nsf, ShockM2, SprungM2;
-        /// <summary>Settled after each (<see cref="NearBurst"/>'s settleS): the ships lost, the water they took (t).</summary>
+        /// <summary>The bubbles' whip on her girder, design moments amidships, summed (<see cref="HullGirder.Bubble"/>).</summary>
+        public double Whip;
+        /// <summary>Settled after each (<see cref="NearBurst"/>'s settleS): the ships lost, the water they took (t), and how
+        /// they were lost (by <see cref="LossKind"/>).</summary>
         public int Lost;
         public double WaterT;
+        public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
 
         public void Add(in EffectsResult fx, SimSettings s)
         {
@@ -437,7 +441,7 @@ public static class GivenHits
                 Killed + fx.Killed, Wounded + fx.Wounded);
             Parts += fx.Destroyed + fx.Disabled + fx.Damaged;
             (Nsf, ShockM2, SprungM2) = (Nsf + fx.Nsf, ShockM2 + fx.ShockM2, SprungM2 + fx.Blast.LeakM2);
-            (Shocks, Blackouts) = (Shocks + (fx.Shock ? 1 : 0), Blackouts + (fx.Blackout ? 1 : 0));
+            (Shocks, Blackouts, Whip) = (Shocks + (fx.Shock ? 1 : 0), Blackouts + (fx.Blackout ? 1 : 0), Whip + fx.BubbleWhip);
             for (int i = s.NearShockBands.Length - 1; i >= 0; i--)
                 if (fx.Nsf >= s.NearShockBands[i])
                 {
@@ -506,6 +510,13 @@ public static class GivenHits
                 });
                 rep.Add(w.Damage.LastEffects, settings);
             }
+            // lost to the salvo's near misses alone, at once (a broken back; no settling here)
+            var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity));
+            if (k.Status != ShipStatus.Afloat)
+            {
+                rep.Lost++;
+                rep.LostBy[(int)k.Loss]++;
+            }
         }
         return rep;
     }
@@ -555,9 +566,10 @@ public static class GivenHits
                 WaterRunM = run, Source = HitSource.NearMiss, Shell = shell, ShellType = -1, Force = 1,
             };
             rep.Near++;
-            if (intoParts != null)
+            if (intoParts != null && !(settleS > 0))
             {
-                // the near miss's own effects, the splinters into each part tallied (a tool's look; nothing else steps)
+                // the near miss's own effects, the splinters into each part tallied (a tool's look; nothing else steps, so
+                // never with a settle: that goes through the damage system, which wakes her flooding)
                 var rng = RandomStream.Named(seed, "near burst").Derive((ulong)i);
                 rep.Add(NearMiss.Apply(target, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity)), hit, settings, ref rng, intoParts), settings);
                 continue;
@@ -569,6 +581,8 @@ public static class GivenHits
                 var k = w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(entity));
                 w.Damage.Settle(w, entity, settleS);
                 (rep.Lost, rep.WaterT) = (rep.Lost + (k.Status != ShipStatus.Afloat ? 1 : 0), rep.WaterT + k.WaterT);
+                if (k.Status != ShipStatus.Afloat)
+                    rep.LostBy[(int)k.Loss]++;
             }
         }
         return rep;

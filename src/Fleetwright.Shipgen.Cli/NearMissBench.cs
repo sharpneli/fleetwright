@@ -53,10 +53,12 @@ static class NearMissBench
                         r.FallDeg, r.StrikeMs, 100 * r.DepthM, r.SideThrough / n, r.UpperThrough / n, 1e4 * r.HoleM2 / n, r.Killed / n, r.Wounded / n,
                         r.Parts / n));
                     Console.WriteLine(string.Format(Inv, "           shock {0:0.000} (bands {1}); gear out {2:0.00}, blackouts {3:0.00}; to the sea {4:0.0} cm², " +
-                        "between spaces {5:0.0} cm²", r.Nsf / n, string.Join("/", r.Bands.Select(x => (x / n).ToString("0.00", Inv))), r.Shocks / n,
-                        r.Blackouts / n, 1e4 * r.ShockM2 / n, 1e4 * r.SprungM2 / n));
+                        "between spaces {5:0.0} cm²; the bubble's whip {6:0.00} design moments", r.Nsf / n, string.Join("/", r.Bands.Select(x => (x / n).ToString("0.00", Inv))),
+                        r.Shocks / n, r.Blackouts / n, 1e4 * r.ShockM2 / n, 1e4 * r.SprungM2 / n, r.Whip / n));
                     if (o.SettleMin > 0)
-                        Console.WriteLine(string.Format(Inv, "           after {0:0} min: water {1:0} t, lost {2:0.0%}", o.SettleMin, r.WaterT / n, r.Lost / n));
+                        Console.WriteLine(string.Format(Inv, "           after {0:0} min: water {1:0} t, lost {2:0.0%}{3}", o.SettleMin, r.WaterT / n, r.Lost / n,
+                            r.Lost > 0 ? " (" + string.Join(", ", Enum.GetValues<LossKind>().Where(l => r.LostBy[(int)l] > 0)
+                                .Select(l => string.Format(Inv, "{0} {1:0.0%}", l.ToString().ToLowerInvariant(), r.LostBy[(int)l] / n))) + ")" : ""));
                     // the parts above by kind (plated or not: an open one's are its hits)
                     var kinds = new SortedDictionary<string, double>(StringComparer.Ordinal);
                     for (int i = 0; i < into.Length; i++)
@@ -92,6 +94,9 @@ static class NearMissBench
             Console.WriteLine(string.Format(Inv, "  their shock: a salvo's near misses by band from 0.03/0.08/0.2/0.45/1.0 {0}; gear out {1:0.00}, blackouts {2:0.00}; " +
                 "to the sea {3:0} cm², between spaces {4:0} cm²", string.Join("/", r.Bands.Select(x => (x / n).ToString("0.00", Inv))), r.Shocks / n,
                 r.Blackouts / n, 1e4 * r.ShockM2 / n, 1e4 * r.SprungM2 / n));
+            Console.WriteLine(string.Format(Inv, "  the bubbles' whip {0:0.000} design moments a salvo; lost to the near misses alone {1:0.00%}{2}", r.Whip / n, r.Lost / n,
+                r.Lost > 0 ? " (" + string.Join(", ", Enum.GetValues<LossKind>().Where(l => r.LostBy[(int)l] > 0)
+                    .Select(l => string.Format(Inv, "{0} {1:0.00%}", l.ToString().ToLowerInvariant(), r.LostBy[(int)l] / n))) + ")" : ""));
             if (r.Hits > 0)
                 Console.WriteLine(string.Format(Inv, "  a hit: through the side {0:0.0}, men hit {1:0.00}, waterline holes {2:0} cm²", r.SideThrough / r.Hits,
                     (r.Killed + r.Wounded) / r.Hits, 1e4 * r.HoleM2 / r.Hits));
