@@ -722,6 +722,7 @@
   "FloodRamK": 0.5,
   "FloodRamReach": 0.25,
   "FloodRamLoad": 0.5,
+  "FloodSeaK": 1,
   "PloughLiftShare": 0.5,
   "UpperWorksCd": 1,
   // closures by kind (damage/17 §4's fittings): door dogs, hatch dogs, stuffing tubes, vent closures, reach rods, shaft glands, pipe flanges

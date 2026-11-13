@@ -19,6 +19,17 @@ public static class SeaAboard
 
     public const double Gravity = 9.81;
 
+    /// <summary>The step a ship's sea is worked out at (her sea moves a step when one of these does): the world's sea, her heading
+    /// (10°), speed (0.5 m/s, ahead) and GM (5% of her own); the key, and the step's own heading, speed and GM share, as the
+    /// sea's motion against her is worked out at them (the same whenever it's asked: any compression).</summary>
+    public static long Key(int seaId, double headingDeg, double speedMs, double gmShare, out double heading, out double speed, out double gm)
+    {
+        int h = (int)(((headingDeg % 360 + 360) % 360) / 10) % 36, v = (int)Math.Clamp(speedMs / 0.5, 0, 4095);
+        int g = (int)Math.Clamp(Math.Round(20 * gmShare), 1, 4095);
+        (heading, speed, gm) = (h * 10 + 5, (v + 0.5) * 0.5, g / 20.0);
+        return ((long)seaId << 40) | ((long)h << 24) | ((long)v << 12) | (uint)g;
+    }
+
     public static int Points(ShipClass cls) => 1 + cls.Mounts.Length + cls.Eyes.Length;
     public static int MountPoint(int mount) => 1 + mount;
     public static int EyePoint(ShipClass cls, int eye) => 1 + cls.Mounts.Length + eye;

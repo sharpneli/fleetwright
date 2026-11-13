@@ -2075,6 +2075,12 @@ public sealed record SimSettings
     public double FloodRamReach { get; init; } = 0.25;
     public double FloodRamLoad { get; init; } = 0.5;
 
+    /// <summary>The sea's motion over a hole (docs/battle/damage-control.md DC10; Sim.Combat's <c>RollSea.Relative</c>): the
+    /// sea's height against her there is a Gaussian about the still level (her heave, pitch and roll, and the wave standing
+    /// against her side), and the water through the hole the mean of its flow over it. A gain on its spread: 1 the sea as it
+    /// is, 0 still water.</summary>
+    public double FloodSeaK { get; init; } = 1;
+
     /// <summary>Her weather deck under the sea under way (<c>Ploughing</c>, the Åland card 2026-10-26): the share of a deep
     /// plate's normal force it makes this near the free surface (a lifting surface near it loses about half) [EST], and
     /// the drag coefficient of her upper works' faces under the sea (Hoerner: a block face on ~1) [EST].</summary>

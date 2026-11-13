@@ -228,15 +228,15 @@ public static class Flooding
             {
                 // each class of its holes at its own height (a cell's holes differ by up to its deck's height: one mean
                 // height would lift a hole at the waterline over the sea with one higher up)
-                double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s);
+                // the sea's height there moves about its level (DC10): the mean of the flow over its motion
+                double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s), sd = SeaSd(k, i, s);
                 for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
                 {
                     double a = k.HoleM2(h);
                     if (!(a > 0))
                         continue;
-                    double head = sea - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), inside);   // the sea comes in over the hole's lower edge
-                    if (head > 0)
-                        q += cd * a * Math.Sqrt(2 * G * head);
+                    // the sea comes in over the hole's lower edge
+                    q += cd * a * Math.Sqrt(2 * G) * MeanRoot(sea - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), inside), sd, double.PositiveInfinity);
                 }
             }
             if (f.Weather[i])
@@ -261,16 +261,18 @@ public static class Flooding
         {
             if (w[i] <= 0 || k.BreachM2[i] <= 0)
                 continue;
-            double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s), level = f.Level(c, k, i);
+            double sea = water.At(f.Cx[i], k.BreachY[i]) + Ram(c, f.Cx[i], speedMs, s), level = f.Level(c, k, i), sd = SeaSd(k, i, s);
             for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses && w[i] > 0; h++)
             {
                 double a = k.HoleM2(h);
                 if (!(a > 0))
                     continue;
-                double head = level - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), sea);
-                if (head <= 0)
+                // out over the higher of its lower edge and the sea, as the sea moves (the troughs draw it out)
+                double edge = level - (k.HoleZ[h] - Math.Sqrt(a / Math.PI)), root = MeanRoot(level - sea, sd, edge);
+                if (!(root > 0))
                     continue;
-                double v = Math.Min(Math.Min(cd * a * Math.Sqrt(2 * G * head) * dt, head * f.Area[i]), w[i]);
+                double head = Math.Min(edge, level - sea + 3 * sd);
+                double v = Math.Min(Math.Min(cd * a * Math.Sqrt(2 * G) * root * dt, Math.Max(head, 0) * f.Area[i]), w[i]);
                 w[i] -= v;
                 res.OutM3 += v;
             }
@@ -352,7 +354,7 @@ public static class Flooding
             {
                 if (w[i] <= 0 || (k.BreachM2[i] > 0) != (pass == 1) || k.Counterflooded[i])
                     continue;
-                if (pass == 1 && FullInflow(c, f, k, water, i, cd) * dt >= pump)
+                if (pass == 1 && FullInflow(c, f, k, water, i, cd, s) * dt >= pump)
                     continue;
                 double v = Math.Min(w[i], pump);
                 w[i] -= v;
@@ -415,19 +417,56 @@ public static class Flooding
     const double Kn = 0.514444;
 
     /// <summary>What a cell's holes let in at their full head (the cell empty), m³/s: what a pump must beat to keep it dry.</summary>
-    public static double FullInflow(ShipClass c, FloodModel f, ShipCondition k, in Waterplane water, int i, double cd)
+    public static double FullInflow(ShipClass c, FloodModel f, ShipCondition k, in Waterplane water, int i, double cd, SimSettings s)
     {
         if (k.BreachM2[i] <= 0)
             return 0;
-        double sea = water.At(f.Cx[i], k.BreachY[i]), q = 0;
+        double sea = water.At(f.Cx[i], k.BreachY[i]), q = 0, sd = SeaSd(k, i, s);
         for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
         {
-            double a = k.HoleM2(h), head = sea - Math.Max(k.HoleZ[h] - Math.Sqrt(Math.Max(a, 0) / Math.PI), c.Cells[i].Box.Base);
-            if (a > 0 && head > 0)
-                q += cd * a * Math.Sqrt(2 * G * head);
+            double a = k.HoleM2(h);
+            if (a > 0)
+                q += cd * a * Math.Sqrt(2 * G) * MeanRoot(sea - Math.Max(k.HoleZ[h] - Math.Sqrt(a / Math.PI), c.Cells[i].Box.Base), sd, double.PositiveInfinity);
         }
         return q;
     }
+
+    /// <summary>The spread of the sea's height against her over a cell's holes, m (DC10): the damage system's
+    /// (<see cref="ShipCondition.SeaSd"/>) times <see cref="SimSettings.FloodSeaK"/>; 0 in
+    /// still water or not worked out.</summary>
+    public static double SeaSd(ShipCondition k, int cell, SimSettings s)
+    {
+        double sd = cell < k.SeaSd.Length ? k.SeaSd[cell] : 0;
+        return double.IsNaN(sd) || !(sd > 0) ? 0 : sd * s.FloodSeaK;
+    }
+
+    /// <summary>The mean of √max(min(μ + σZ, cap), 0) over Z standard normal (DC10): a hole's root head as the sea's height over
+    /// it moves about its level, μ the head at the still level, σ its spread, cap the most it can be (the water inside over
+    /// the hole's edge for the outflow; infinite in). At σ 0, √ of μ held between 0 and cap. By the substitution z = z₀ + u²
+    /// from where the head is nought (its root's kink made smooth), midpoints over ±<see cref="Tail"/> sigmas.</summary>
+    public static double MeanRoot(double mu, double sd, double cap)
+    {
+        if (!(cap > 0))
+            return 0;
+        if (!(sd > 1e-6))
+            return mu > 0 ? Math.Sqrt(Math.Min(mu, cap)) : 0;
+        double z0 = -mu / sd;
+        if (z0 >= Tail)
+            return 0;
+        z0 = Math.Max(z0, -Tail);
+        double top = Math.Sqrt(Tail - z0), du = top / RootSteps, sum = 0;
+        for (int j = 0; j < RootSteps; j++)
+        {
+            double u = (j + 0.5) * du, z = z0 + u * u, head = Math.Min(mu + sd * z, cap);
+            if (head > 0)
+                sum += Math.Sqrt(head) * Math.Exp(-0.5 * z * z) * 2 * u;
+        }
+        return sum * du / Math.Sqrt(2 * Math.PI);
+    }
+
+    /// <summary>How far out the sea's motion is followed, sigmas, and the steps of <see cref="MeanRoot"/>'s sum.</summary>
+    const double Tail = 6;
+    const int RootSteps = 24;
 
     /// <summary>The ram head at x along the ship under way ahead, m (09 §2.2): k·v²/2g, k <see cref="SimSettings.FloodRamK"/>
     /// at the stem, falling to 0 at <see cref="SimSettings.FloodRamReach"/> of her length aft of it; none astern.</summary>

@@ -434,6 +434,8 @@ public static class GivenHits
         public int Lost;
         public double WaterT;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
+        /// <summary>Settled, the sea's spread over her holes (docs/battle/damage-control.md DC10), m, by their area, summed.</summary>
+        public double SeaSdM;
 
         public void Add(in EffectsResult fx, SimSettings s)
         {
@@ -583,6 +585,11 @@ public static class GivenHits
                 (rep.Lost, rep.WaterT) = (rep.Lost + (k.Status != ShipStatus.Afloat ? 1 : 0), rep.WaterT + k.WaterT);
                 if (k.Status != ShipStatus.Afloat)
                     rep.LostBy[(int)k.Loss]++;
+                double area = 0, sd = 0;
+                for (int c = 0; c < k.BreachM2.Length; c++)
+                    if (k.BreachM2[c] > 0)
+                        (area, sd) = (area + k.BreachM2[c], sd + k.BreachM2[c] * Flooding.SeaSd(k, c, settings));
+                rep.SeaSdM += area > 0 ? sd / area : 0;
             }
         }
         return rep;

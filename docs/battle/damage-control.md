@@ -1,5 +1,5 @@
 # Plan: damage control (a 4.5 deepening)
-Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC9 done 2026-10-20: the plan is complete (open items in DC9).    Updated: 2026-10-20
+Status: **agreed with the user 2026-10-20** ("Decided" below); DC0-DC9 done 2026-10-20: the plan is complete (open items in DC9); DC10, the sea over a hole, 2026-11-13.    Updated: 2026-11-13
 
 **2026-10-20, after the plan (shells plan E8b):** the doctrines are one a period, not a navy: `1890`, `1905`, `1916`,
 `1942`, `1944` (rn-1916 and german-1916 merged into `1916`, russian-1905 and prepared-1894 into `1905`, the US rows
@@ -988,6 +988,45 @@ on the yardstick bench.
     counterflood. A designer row (which spaces are counterflood tanks, with their valves) is the UI pass's.
   - **No rows in the designer and no orders for the player yet** (the UI pass): hold speed, flood-first, counterflood or
     save capacity, the doom clock.
+
+### DC10 The sea over a hole (2026-11-13)
+- **Found** in the near-miss review (`shells-armour-damage.md` E7; damage/15 §2.4, §5): a near miss's splinter holes land in
+  the band a metre over her waterline, and a hit's often do. The flooding read every hole against the still waterplane (and
+  the bow's ram head in her forward quarter), so in any sea a hole half a metre up stayed dry until she settled or heeled. The
+  research's own line: such holes "flood once the side is awash".
+- **The rule:** the sea's height against her at a holed cell's holes is a Gaussian about the still level, its spread from the
+  world's sea (`RollSea.Relative`, the one the green water on her guns reads, docs/battle/error-sources.md ES4: her heave,
+  pitch and roll, the wave standing against her weather side and sheltered on her lee), the whole of a wave at a hole (no
+  patch). The flow through a hole is its mean over that motion: `cd·a·√(2g)·E[√max(head, 0)]` (`Flooding.MeanRoot`), in and out
+  alike (the crests drive it in, the troughs draw it out), and so what the pumps must beat (`FullInflow`) and what a patch
+  holds back (`Repairs.Held`). A hole within three sigmas of the sea keeps her water stepping. In still water, or with
+  `FloodSeaK` 0, it is the old rule exactly.
+- **The cache:** each cell's spread (`ShipCondition.SeaSd`) is worked out at her sea's step (`SeaAboard.Key`, the gunnery's: the
+  world's sea, heading 10°, speed 0.5 m/s, GM 5%) before her water's step, for the holed cells only, again when the step moves:
+  a few µs a cell, no garbage, the same at any compression.
+- **Done 2026-11-13.** What it came to (before: the same build with `FloodSeaK` 0, which is the old rule exactly):
+  - **The sea at a hole:** a destroyer stopped beam-on to a 20 kn wind has σ 0.92 m over a hole amidships on her weather side,
+    0.22 m on her lee; 0.1 m² 0.4 m over her waterline takes 11.5 t in five minutes on her weather side, before her party plugs
+    it, and nothing on her lee or in still water (`FloodSeaTests`). V25 under Iron Duke's HE bursting 3 m short, in the bench's
+    15 kn breeze: 18 t in 30 min with the holes on her lee (σ 0.16 m), 125 t on her weather side (σ 0.61 m); 8 t before.
+  - **`hits destroyer --shooter arethusa --kind he --per-ship 6 --settle 180`:** water 212 → 395 t a ship, capsized 3 → 6%
+    (2 and 4 ships), out of the fight 85 → 87%.
+  - **`dc-history`, 40 runs:** the destroyer's 6 HE hits 107/130/69 t → 157/198/185 t at ½, 1, 2 h, her speed at 3 h
+    22.4 → 5.0 kn (her damage control asks it of holes the sea now reaches); lost 3% both. The deep-holed cases hardly move:
+    Seydlitz 8,970 → 9,396 t at 8 h slowing (lost 10 → 13% holding 24 kn, 4 → 5 runs), Lützow, Audacious, Marlborough, the
+    torpedo cases and North Carolina within a few percent. Oslyabya's waterline holes: 711 → 562 t at 2 h, list at 3 h
+    6.1 → 0.4°, capsized 3 → 5 runs; the battleship's 15 heavy hits 92 → 36 t at 1 h (neither chased: the troughs drawing out
+    water that came in high would do it). None of the case verdicts changes.
+  - **Played** (`scenario --play --seeds 4`, noisy: the battles part ways): Heligoland Bight, Germany lost 8.2 → 12.0 of 24
+    (foundered and capsized 25 → 40 over the seeds), Britain 1.0 both; the flotilla's boats 4.8 → 4.5 of 6.
+  - **Cost:** squadrons, 120 min: the damage system 80 → 98 µs a call (3.3 → 3.6 s of the run, more ships flooding with it),
+    the run 5% longer.
+  - **Tests:** `FloodSeaTests` (the mean root against the integral within 0.5%, still water exact, the hole over the
+    waterline); the sim suite 1,115 of 1,115.
+  - **Not done:** her own wave system along her side at speed (the bow's ram head stays the only one: the stern wave and the
+    trough amidships at high Froude numbers), a hole's height (its lower edge stands for all of it), and green water over a
+    weather deck in a sea (still the still level's). The safe speed (`Repairs.Ease`) and a hole's reach for the parties read
+    the still level as before.
 
 ## What stays out
 

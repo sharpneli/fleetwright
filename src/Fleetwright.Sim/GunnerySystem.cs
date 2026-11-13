@@ -253,12 +253,11 @@ public sealed class GunnerySystem : IWorldSystem
             var ship = store[slot];
             var cls = ship.Handling.Class;
             var cond = store.Combat.Condition(slot);
-            double gm0 = Math.Max(cls.Hydrostatics.GmT, 1e-6);
-            int h = (int)(Mod(ship.HeadingDeg) / 10) % 36, v = (int)Math.Clamp(ship.Speed / 0.5, 0, 4095), g = (int)Math.Clamp(Math.Round(20 * cond.GmM / gm0), 1, 4095);
-            long key = ((long)world.Sea.Id << 40) | ((long)h << 24) | ((long)v << 12) | (uint)g;
+            long key = SeaAboard.Key(world.Sea.Id, ship.HeadingDeg, ship.Speed, cond.GmM / Math.Max(cls.Hydrostatics.GmT, 1e-6), out double hd, out double sp,
+                out double gm);
             if (key == sm.Key)
                 continue;
-            (sm.Key, sm.HeadingDeg, sm.SpeedMs, sm.Gm) = (key, h * 10 + 5, (v + 0.5) * 0.5, g / 20.0);
+            (sm.Key, sm.HeadingDeg, sm.SpeedMs, sm.Gm) = (key, hd, sp, gm);
             if (n == seaDue.Length)
                 Array.Resize(ref seaDue, 2 * n);
             seaDue[n++] = slot;

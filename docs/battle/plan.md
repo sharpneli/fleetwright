@@ -56,7 +56,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 4.5 Fire control | F0-F6 done 2026-10-18 | `fire-control.md` | F7 (straddle calls, the main limiter), F8, F10-F12; F9 radar out of the first cut |
 | 4.5 Electrics | EL0-EL7 done 2026-11-04 | `electrics.md` | a designer row with the UI pass; open items in EL7 |
 | How ships are lost | the bench built and first findings 2026-11-04; nothing tuned | `loss-stock-take.md` | the causes: now BL3 |
-| 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
+| 4.5 Fire; damage control | done 2026-10-19, 10-20; DC10 (the sea over a hole) 2026-11-13 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
 | 4.5 One explosion | EX0-EX7 done 2026-11-08 (the matchup refit, the whole game read); the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) | `explosions.md` | the weak points (shipgen), item 10, then EX8 ("Where to pick up"): after the alpha |
 | 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22; T5 (gun smoke rises on its heat) 2026-11-13 | `smoke.md` | its tuning pass |

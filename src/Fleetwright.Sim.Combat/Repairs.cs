@@ -312,7 +312,7 @@ public static class Repairs
     }
 
     /// <summary>What the work on her hull's holes holds back, m³/s: their area worked on × the share stopped, at each cell's
-    /// full head (what would come in if it all worked loose).</summary>
+    /// full head (what would come in if it all worked loose), as the sea moves over them (DC10).</summary>
     static double Held(ShipClass c, FloodModel f, ShipCondition k, SimSettings s)
     {
         var water = HitQuery.WaterOf(c, k.Attitude);
@@ -320,12 +320,12 @@ public static class Repairs
         int cells = k.HoleDoneM2.Length / ShipCondition.HoleClasses;
         for (int i = 0; i < cells; i++)
         {
-            double sea = water.At(f.Cx[i], k.BreachY[i]);
+            double sea = water.At(f.Cx[i], k.BreachY[i]), sd = Flooding.SeaSd(k, i, s);
             for (int h = i * ShipCondition.HoleClasses; h < (i + 1) * ShipCondition.HoleClasses; h++)
             {
-                double stopped = k.HoleDoneM2[h] * (1 - k.HoleLeft[h]), head = sea - Math.Max(k.HoleZ[h], c.Cells[i].Box.Base);
-                if (stopped > 0 && head > 0)
-                    held += s.FloodCd * stopped * Math.Sqrt(2 * 9.81 * head);
+                double stopped = k.HoleDoneM2[h] * (1 - k.HoleLeft[h]);
+                if (stopped > 0)
+                    held += s.FloodCd * stopped * Math.Sqrt(2 * 9.81) * Flooding.MeanRoot(sea - Math.Max(k.HoleZ[h], c.Cells[i].Box.Base), sd, double.PositiveInfinity);
             }
         }
         return held;
@@ -847,7 +847,7 @@ public static class Repairs
                 continue;
             double flowH = k.CellInflow[i] * 3600 * matM2 / Math.Max(k.BreachM2[i], 1e-9);
             // a mat means stopping the ship: only for holes whose water the pumps can't keep up with
-            if (flowH > 0 && Flooding.FullInflow(c, f, k, HitQuery.WaterOf(c, k.Attitude), i, s.FloodCd) > Pumps(c, k))
+            if (flowH > 0 && Flooding.FullInflow(c, f, k, HitQuery.WaterOf(c, k.Attitude), i, s.FloodCd, s) > Pumps(c, k))
                 Offer(new Candidate(RepairJob.Mat, i, cells[i].Section, Score(Tier.Water, floodFirst, flowH * Value(c, i))), ref best);
         }
 
@@ -876,7 +876,7 @@ public static class Repairs
             for (int i = 0; i < cells.Length; i++)
             {
                 if (k.WaterM3[i] < s.RepairPumpMinM3 || k.PumpsIn[i] > 0 || k.CellFire[i] || Taken(k, RepairJob.RigPump, i) ||
-                    Flooding.FullInflow(c, f, k, water, i, s.FloodCd) >= rate)
+                    Flooding.FullInflow(c, f, k, water, i, s.FloodCd, s) >= rate)
                     continue;
                 Offer(new Candidate(RepairJob.RigPump, i, cells[i].Section, Score(Tier.Pump, floodFirst, k.WaterM3[i] * Value(c, i))), ref best);
             }

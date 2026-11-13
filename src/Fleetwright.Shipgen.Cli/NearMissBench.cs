@@ -56,9 +56,9 @@ static class NearMissBench
                         "between spaces {5:0.0} cm²; the bubble's whip {6:0.00} design moments", r.Nsf / n, string.Join("/", r.Bands.Select(x => (x / n).ToString("0.00", Inv))),
                         r.Shocks / n, r.Blackouts / n, 1e4 * r.ShockM2 / n, 1e4 * r.SprungM2 / n, r.Whip / n));
                     if (o.SettleMin > 0)
-                        Console.WriteLine(string.Format(Inv, "           after {0:0} min: water {1:0} t, lost {2:0.0%}{3}", o.SettleMin, r.WaterT / n, r.Lost / n,
+                        Console.WriteLine(string.Format(Inv, "           after {0:0} min: water {1:0} t (the sea over her holes σ {4:0.00} m), lost {2:0.0%}{3}", o.SettleMin, r.WaterT / n, r.Lost / n,
                             r.Lost > 0 ? " (" + string.Join(", ", Enum.GetValues<LossKind>().Where(l => r.LostBy[(int)l] > 0)
-                                .Select(l => string.Format(Inv, "{0} {1:0.0%}", l.ToString().ToLowerInvariant(), r.LostBy[(int)l] / n))) + ")" : ""));
+                                .Select(l => string.Format(Inv, "{0} {1:0.0%}", l.ToString().ToLowerInvariant(), r.LostBy[(int)l] / n))) + ")" : "", r.SeaSdM / n));
                     // the parts above by kind (plated or not: an open one's are its hits)
                     var kinds = new SortedDictionary<string, double>(StringComparer.Ordinal);
                     for (int i = 0; i < into.Length; i++)

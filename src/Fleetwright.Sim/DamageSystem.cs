@@ -1154,7 +1154,10 @@ public sealed partial class DamageSystem : IWorldSystem
         var fl = default(FloodStep);
         var how = LossKind.None;
         if (flooding)
+        {
+            SeaOverHoles(world, slot, k);
             how = WaterStep(slot, k, f, now, was, out repaired, out fl);
+        }
         var rng = stream.Derive(0xF100Du).Derive((ulong)ships.Store[slot].Entity).Derive((ulong)now);
         var fs = k.Fires > 0 || Fires.Hot(k) ? Fires.Step(cls, f, k, dt, settings, ref rng, now) : default;
         k.FireWaterM3 += fs.WaterM3;
@@ -1263,16 +1266,63 @@ public sealed partial class DamageSystem : IWorldSystem
         return settings.FloodMs;
     }
 
-    /// <summary>Whether any hole is under the sea now.</summary>
-    static bool Holed(ShipClass c, ShipCondition k)
+    /// <summary>Whether any hole is under the sea now, or within the reach of its motion over it (three of its sigmas, DC10).</summary>
+    bool Holed(ShipClass c, ShipCondition k)
     {
         var water = HitQuery.WaterOf(c, k.Attitude);
         var cells = c.Cells;
         for (int i = 0; i < cells.Length; i++)
-            if (k.BreachM2[i] > 0 && k.HoledUnder(i, water.At((cells[i].Box.X0 + cells[i].Box.X1) / 2, k.BreachY[i])))
+            if (k.BreachM2[i] > 0 && k.HoledUnder(i, water.At((cells[i].Box.X0 + cells[i].Box.X1) / 2, k.BreachY[i]) + 3 * Flooding.SeaSd(k, i, settings)))
                 return true;
         return false;
     }
+
+    /// <summary>The sea's motion against her over her holes (docs/battle/damage-control.md DC10): the spread of its height at each
+    /// holed cell's holes (<see cref="ShipCondition.SeaSd"/>), from the world's sea (<see cref="RollSea.Relative"/>: her heave,
+    /// pitch and roll, the wave standing against her side) at her sea's step (<see cref="SeaAboard.Key"/>), the whole of a wave at
+    /// the hole (no patch: a hole is small). Worked out again for every holed cell when the step moves, else only for cells newly
+    /// holed; a few µs a cell, no garbage.</summary>
+    void SeaOverHoles(World world, int slot, ShipCondition k)
+    {
+        var cls = k.Class;
+        var sea = world.Sea;
+        if (!(settings.FloodSeaK > 0) || !(sea.HsM > 0))
+        {
+            if (k.SeaKey != 0)
+            {
+                k.SeaSd.AsSpan().Clear();   // still water: no spread anywhere
+                k.SeaKey = 0;
+            }
+            return;
+        }
+        var ship = ships.Store[slot];
+        long key = SeaAboard.Key(sea.Id, ship.HeadingDeg, ship.Speed, k.GmM / Math.Max(cls.Hydrostatics.GmT, 1e-6), out double heading, out double speed,
+            out double gm);
+        if (key != k.SeaKey)
+        {
+            k.SeaSd.AsSpan().Fill(double.NaN);
+            k.SeaKey = key;
+        }
+        var f = Flood(cls);
+        Span<double> x = stackalloc double[SeaBatch], y = stackalloc double[SeaBatch], m0 = stackalloc double[SeaBatch], m2 = stackalloc double[SeaBatch];
+        Span<int> at = stackalloc int[SeaBatch];
+        var hull = SeaAboard.Hull(settings, cls, gm) with { PatchM = 0 };
+        int n = 0;
+        for (int i = 0; i <= k.SeaSd.Length; i++)
+        {
+            if (i < k.SeaSd.Length && k.BreachM2[i] > 0 && double.IsNaN(k.SeaSd[i]))
+                (x[n], y[n], at[n], n) = (f.Cx[i], k.BreachY[i], i, n + 1);
+            if (n == 0 || n < SeaBatch && i < k.SeaSd.Length)
+                continue;
+            sea.Relative(heading, speed, hull, x[..n], y[..n], m0, m2);
+            for (int j = 0; j < n; j++)
+                k.SeaSd[at[j]] = Math.Sqrt(Math.Max(m0[j], 0));
+            n = 0;
+        }
+    }
+
+    /// <summary>The holed cells whose sea is worked out in one call.</summary>
+    const int SeaBatch = 32;
 
     /// <summary>A tool's (the hits bench's, the tests'): a ship's flooding and fire run on for a while from now, in steps
     /// as the world would take them, without the world's clock moving, and the timed outages ending by then over. The

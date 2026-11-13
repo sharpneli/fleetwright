@@ -1694,7 +1694,8 @@ squadrons, and changes `Matchup.cs` with it.
       boats take near misses (9 holed of 13); hash D281CE4154DD6907 → 7043FE9497A8AB03. Tsushima --play 2 seeds:
       Russia lost 4.0 → 5.0, Japan 3.5 → 4.0. Goldens gain `fuze_water_ms` and `fuze_water_fires` (ShipDesign.Version
       29), 372 of 372.
-    - **Not built:** a ricocheting shell carried on (v0 stops it); water on deck, the splash on the rangefinders; radar,
+    - **Not built:** a ricocheting shell carried on (v0 stops it; the user, 2026-11-13: the skip stays a hard cutoff, as the
+      phenomenon is one, but a skipped shell must fly on and can hit a ship beyond it, its path changed by the skip); water on deck, the splash on the rangefinders; radar,
       sonar and the gyrocompass (the sim doesn't carry them); the seams' fittings (17's session); bombs (§3 is ready for
       them). The matchup has no near-miss term (the balance pass).
   - **Fix (found and done 2026-10-20):** near misses black out too many ships, and the captains fall out on it.

@@ -200,6 +200,11 @@ public sealed class ShipCondition
     public double[] HoleOpenM2 = [], HoleZ = [], HoleDoneM2 = [], HoleLeft = [];
     public int[] HoleOpenN = [];
     public const int HoleClasses = 5;
+    /// <summary>The sea's motion against her over each cell's holes (<see cref="Flooding.SeaSd"/>): the spread of its height
+    /// there, m (NaN: not worked out under <see cref="SeaKey"/>), and the sea, heading, speed and GM it was worked out at
+    /// (-1: none yet). A cache: the world's damage system fills it before her water's step, nothing else reads it.</summary>
+    public double[] SeaSd = [];
+    public long SeaKey = -1;
     /// <summary>What each room stows stands to this height in the ship's frame (NaN: nothing; docs/battle/shell-contents.md
     /// C2-C3): her oil, coal and feed water, made from her side's fuel share (<see cref="LevelsFuel"/>, NaN before) when she
     /// first needs them. Nothing is burnt in a battle (hours, a few percent).</summary>
@@ -582,6 +587,7 @@ public sealed class ShipCondition
     internal void Reset(ShipClass c)
     {
         OwnDamageControl = -1;
+        SeaKey = -1;
         if (Class != c)
         {
             Class = c;
@@ -592,6 +598,7 @@ public sealed class ShipCondition
             BreachM2 = new double[c.Cells.Length];
             BreachY = new double[c.Cells.Length];
             BreachZ = new double[c.Cells.Length];
+            SeaSd = new double[c.Cells.Length];
             (HoleOpenM2, HoleZ, HoleDoneM2) = (new double[c.Cells.Length * HoleClasses], new double[c.Cells.Length * HoleClasses], new double[c.Cells.Length * HoleClasses]);
             (HoleLeft, HoleOpenN) = (new double[c.Cells.Length * HoleClasses], new int[c.Cells.Length * HoleClasses]);
             CellFire = new bool[c.Cells.Length];
