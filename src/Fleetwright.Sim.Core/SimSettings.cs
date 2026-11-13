@@ -1950,14 +1950,22 @@ public sealed record SimSettings
     /// <summary>Near misses (docs/battle/shells-armour-damage.md E7; damage/15): a shell that misses bursts in the water,
     /// and the ships whose waterplane lies within max(<see cref="NearMissSplinterK"/>·W^⅓, <see cref="NearMissShockK"/>·√W)
     /// m of it (W the filler's TNT kg) take a near miss: 15·W^⅓ is where its splinters stop hitting exposed men (15 §6.1),
-    /// 7.5·√W where its shock falls under 0.03. A shell falling flatter than <see cref="WaterRicochetDeg"/> may skip off
-    /// the water (18°/√SG for a steel sphere [SRC], shells alike [EST]): a base fuze then doesn't burst (v0), a nose fuze
-    /// bursts on the graze. Fragments in water slow 1/e every <see cref="WaterDragL1"/>·m^⅓ m (13 §2.3). Splinters through
+    /// 7.5·√W where its shock falls under 0.03. A shell falling flatter than <see cref="WaterRicochetDeg"/> skips off
+    /// the water (18°/√SG for a steel sphere [SRC], shells alike [EST]): a nose fuze bursts on the graze, unless it fails, and
+    /// a base fuze isn't started by it [EST]; the shell flies on (E7's ricochet, <c>ShellSystem.Skip</c>), leaving at the
+    /// angle it fell at (USNI 1921: a 6" shell grazing at 3°40' rebounds at about the same angle) with exp(−2θ·k) of its
+    /// speed, k <see cref="WaterRicochetLossK"/> (a body planing through its turn of 2θ, its drag over its lift [EST]), at most
+    /// <see cref="WaterRicochetSkips"/> times (0: it stops at the water, v0's), its new line scattered about the mirror of the
+    /// old by <see cref="WaterRicochetScatterDeg"/> (1σ, up and across: an elongated shell's skip is erratic, it yaws in the
+    /// turn [EST]; research asked). Fragments in water slow 1/e every <see cref="WaterDragL1"/>·m^⅓ m (13 §2.3). Splinters through
     /// the side within <see cref="NearMissBandM"/> of the waterline hole it, each <see cref="SplinterHoleK"/> times the
     /// fragment's presented area (15 §6.3 [EST]).</summary>
     public double NearMissSplinterK { get; init; } = 15;
     public double NearMissShockK { get; init; } = 7.5;
     public double WaterRicochetDeg { get; init; } = 6.4;
+    public double WaterRicochetLossK { get; init; } = 1;
+    public int WaterRicochetSkips { get; init; } = 4;
+    public double WaterRicochetScatterDeg { get; init; } = 3;
     public double WaterDragL1 { get; init; } = 0.3;
     public double NearMissBandM { get; init; } = 1;
     public double SplinterHoleK { get; init; } = 1.3;

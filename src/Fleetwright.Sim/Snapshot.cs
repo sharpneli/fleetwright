@@ -455,11 +455,31 @@ public sealed class CombatLogView
 public sealed class ShellsView
 {
     public int Count;
-    public int[] Table = [], Hit = [], Shooter = [];
+    /// <summary>Skips: how many times each has skipped off the water (E7's ricochet): its flight from <see cref="Muzzle"/>
+    /// is then from where it skipped, not a gun (no flash).</summary>
+    public int[] Table = [], Hit = [], Shooter = [], Skips = [];
     public long[] FiredMs = [];
     public Vec3d[] Muzzle = [], Forward = [], Water = [], End = [];
     public double[] ElevationDeg = [], Speed = [], WaterS = [], EndS = [];
     public Combat.BallisticsRegistry? Ballistics;
+    /// <summary>A skipped shell's flight (<see cref="Combat.SkipFlight"/>): where its samples start in <see cref="Flights"/>
+    /// and how many; the samples of every skipped shell, packed.</summary>
+    public int[] FlightAt = [], FlightN = [];
+    public double[] Flights = [];
+
+    /// <summary>Where shell i is t seconds after it was fired (or skipped), Earth-centred, and its velocity: its table's
+    /// flight, or its skip's (as the shell system flies it).</summary>
+    public Vec3d Position(int i, double t, out Vec3d velocity) =>
+        Skips[i] > 0
+            ? Combat.SkipFlight.Position(Muzzle[i], Forward[i], Flights.AsSpan(FlightAt[i], FlightN[i] * Combat.SkipFlight.Fields), FlightN[i], t, out velocity)
+            : Ballistics![Table[i]].Position(Muzzle[i], Forward[i], ElevationDeg[i], Speed[i], t, out velocity);
+
+    /// <summary>Room for n doubles of skip flights (grown, never shrunk).</summary>
+    public void EnsureFlights(int n)
+    {
+        if (n > Flights.Length)
+            Array.Resize(ref Flights, Math.Max(n, Math.Max(Combat.SkipFlight.Length * 4, Flights.Length * 2)));
+    }
 
     public void EnsureCapacity(int n)
     {
@@ -469,6 +489,9 @@ public sealed class ShellsView
         Array.Resize(ref Table, n);
         Array.Resize(ref Hit, n);
         Array.Resize(ref Shooter, n);
+        Array.Resize(ref Skips, n);
+        Array.Resize(ref FlightAt, n);
+        Array.Resize(ref FlightN, n);
         Array.Resize(ref FiredMs, n);
         Array.Resize(ref Muzzle, n);
         Array.Resize(ref Forward, n);

@@ -57,6 +57,10 @@ public sealed class ShellSystem : IWorldSystem
         /// the hull, in the air), m/s, and how far it ran under the water to the hull, m.</summary>
         public P3 HitPoint, HitDirection;
         public double HitSpeed, WaterRunM;
+        /// <summary>How many times it has skipped off the water (E7's ricochet, <see cref="Skip"/>): a skipped shell flies on
+        /// from where it skipped (its muzzle there, <see cref="FiredMs"/> then, <see cref="Speed"/> its speed off the water, m/s)
+        /// on its own flight (<see cref="SkipFlight"/>), not its table's.</summary>
+        public int Skips;
     }
 
     /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre; for the
@@ -101,6 +105,9 @@ public sealed class ShellSystem : IWorldSystem
     public int Misses { get; private set; }
     /// <summary>The near misses struck: a ship within a missed shell's burst's reach (E7; a tool's count, not state).</summary>
     public int NearMissCount { get; private set; }
+    /// <summary>The skips off the water, and the shells that skipped at least once (E7's ricochet; a tool's count, not state).</summary>
+    public int SkipCount { get; private set; }
+    public int SkippedShells { get; private set; }
 
     /// <summary>Told of each shell of a gunnery salvo as it comes down (set by the world).</summary>
     internal GunnerySystem? Gunnery { get; set; }
@@ -113,6 +120,7 @@ public sealed class ShellSystem : IWorldSystem
         (this.settings, this.ships, this.index, this.log) = (settings, ships, index, log);
         shells = new Shell[Math.Max(settings.ShellCapacity, 16)];
         free = new int[shells.Length];
+        (flights, flightN) = (new double[shells.Length * SkipFlight.Length], new int[shells.Length]);
         splashes = new Splash[Math.Max(settings.SplashCapacity, 16)];
         shots = new Shot[Math.Max(settings.ShotCapacity, 16)];
     }
@@ -167,6 +175,76 @@ public sealed class ShellSystem : IWorldSystem
             foreach (var l in lo.Loads(b))
                 Ballistics.Ensure(KeyOf(lo, b, l.ShellType));
     }
+
+    // ------------------------------------------------------------------ skipping off the water (E7's ricochet)
+
+    /// <summary>Each slot's skip flight (<see cref="SkipFlight"/>: <see cref="SkipFlight.Length"/> doubles a slot) and its
+    /// samples, sized with the records: a skipped shell flies on these, not its table.</summary>
+    double[] flights;
+    int[] flightN;
+
+    /// <summary>Where a shell is t seconds after it was fired (or skipped), Earth-centred, and its velocity: its table's flight,
+    /// or its skip's.</summary>
+    Vec3d Fly(in Shell s, int slot, double t, out Vec3d velocity) =>
+        s.Skips > 0
+            ? SkipFlight.Position(s.Muzzle, s.Forward, flights.AsSpan(slot * SkipFlight.Length, SkipFlight.Length), flightN[slot], t, out velocity)
+            : Ballistics[s.Table].Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, t, out velocity);
+
+    /// <summary>Whether a shell can still skip: its skips not used up, its shell known.</summary>
+    bool CanSkip(in Shell s) => s.Skips < settings.WaterRicochetSkips && s.Loadout != null && s.ShellType >= 0;
+
+    /// <summary>A shell's near-miss draws (the stream "near misses", by salvo and shell): its fuze on the water, its filler.</summary>
+    static RandomStream NearDraws(World world, in Shell s, int slot) => world.Stream("near misses").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot);
+
+    /// <summary>A shell that missed, met the water flatter than <see cref="SimSettings.WaterRicochetDeg"/> and didn't burst on it
+    /// skips off it (docs/battle/shells-armour-damage.md E7; damage/15 §1.1): a nose fuze bursts on the graze unless it fails
+    /// (its near miss's draws, <see cref="NearMiss.Burst"/>), a base fuze isn't started [EST]. It leaves at the angle it fell at
+    /// (USNI 1921) with exp(-2θ·<see cref="SimSettings.WaterRicochetLossK"/>) of its speed, on its own heading over the sea,
+    /// both scattered by <see cref="SimSettings.WaterRicochetScatterDeg"/> (the stream "skips", by salvo, shell and skip),
+    /// flown on from there (<see cref="SkipFlight"/>): its window, its hits, its end and its skips as any shell's. False when
+    /// it goes in: steeper, skipped out, or burst on the graze.</summary>
+    bool Skip(World world, ref Shell s, int slot)
+    {
+        if (!CanSkip(s))
+            return false;
+        Fly(s, slot, s.WaterS, out var vel);
+        double v = vel.Length;
+        var up = s.WaterPoint.Normalized();
+        double vu = Vec3d.Dot(vel, up), fall = double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / Math.Max(v, 1e-9), -1, 1)));
+        if (!(v > 1) || !(fall < settings.WaterRicochetDeg))
+            return false;
+        var shell = s.Loadout!.ShellTypes[s.ShellType];
+        if (shell.Fuze == Fuze.Nose && shell.FillerKg > 0)
+        {
+            var rng = NearDraws(world, s, slot);
+            if (NearMiss.Burst(shell, v, fall, settings, ref rng).Force > 0)
+                return false;   // it bursts on the graze: a near miss's (the same draws)
+        }
+        double v1 = v * Math.Exp(-2 * double.DegreesToRadians(Math.Max(fall, 0)) * settings.WaterRicochetLossK);
+        var dir = (vel - up * vu).Normalized();
+        var scatter = world.Stream("skips").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot).Derive((ulong)s.Skips);
+        double across = double.DegreesToRadians(settings.WaterRicochetScatterDeg * scatter.NextGaussian());
+        double exit = Math.Max(fall + settings.WaterRicochetScatterDeg * scatter.NextGaussian(), MinExitDeg);
+        dir = (dir * Math.Cos(across) + Vec3d.Cross(up, dir) * Math.Sin(across)).Normalized();
+        var f = flights.AsSpan(slot * SkipFlight.Length, SkipFlight.Length);
+        int n = SkipFlight.Fly(Combat.Ballistics.DragK(Ballistics[s.Table].Key), exit, v1, f);
+        double end = SkipFlight.Descends(f, n, 0);
+        if (double.IsNaN(end) || !(end > 0))
+            return false;
+        double top = SkipFlight.Descends(f, n, settings.ShellWindowTopM);
+        if (double.IsNaN(top) || top > end || top < 0)
+            top = 0;   // it never rises over the window's top: all its flight is in the window
+        flightN[slot] = n;
+        (s.FiredMs, s.Muzzle, s.Forward, s.ElevationDeg, s.Speed) = (world.Time.Ms, s.WaterPoint, dir, exit, v1);
+        (s.WindowS, s.WaterS, s.EndS, s.Hit, s.Skips, s.Generation) = (top, end, end, -1, s.Skips + 1, s.Generation + 1);
+        SkipCount++;
+        SkippedShells += s.Skips == 1 ? 1 : 0;
+        world.Schedule(new WorldTime(s.FiredMs + (long)Math.Floor(top * 1000)), EventTier.Fine, slot, Id, WindowEvent, s.Generation);
+        return true;
+    }
+
+    /// <summary>The flattest a skip leaves at, degrees (a scatter's draw under it: as flat as a shell can rise off the sea).</summary>
+    const double MinExitDeg = 0.2;
 
     static BallisticKey KeyOf(Loadout lo, int battery, int shellType) =>
         BallisticKey.Of(lo.ShellTypes[shellType], lo.Class.Mounts[lo.Class.Links(lo.Class.Batteries[battery].Mounts)[0]].MaxElevationDeg);
@@ -293,6 +371,8 @@ public sealed class ShellSystem : IWorldSystem
         {
             Array.Resize(ref shells, shells.Length * 2);
             Array.Resize(ref free, shells.Length);
+            Array.Resize(ref flights, shells.Length * SkipFlight.Length);
+            Array.Resize(ref flightN, shells.Length);
         }
         return high++;
     }
@@ -307,10 +387,10 @@ public sealed class ShellSystem : IWorldSystem
         if (e.Code == WindowEvent)
             Window(world, ref s, e.Entity);
         else if (e.Code == WaterEvent)
-            AddSplash(SplashOf(ref s, s.WaterPoint, world.Time.Ms, -1));   // a hit under the water: its splash, as it met it
+            AddSplash(SplashOf(ref s, e.Entity, s.WaterPoint, world.Time.Ms, -1));   // a hit under the water: its splash, as it met it
         else if (e.Code == EndEvent)
         {
-            var splash = SplashOf(ref s, s.End, world.Time.Ms, s.Hit);
+            var splash = SplashOf(ref s, e.Entity, s.End, world.Time.Ms, s.Hit);
             AddSplash(splash);
             if (s.Hit >= 0)
             {
@@ -327,6 +407,14 @@ public sealed class ShellSystem : IWorldSystem
             }
             else
             {
+                if (Skip(world, ref s, e.Entity))
+                {
+                    // off the water and on (E7's ricochet): its splash is where it skipped, and so the spotter's
+                    if (s.Record >= 0)
+                        Gunnery?.Landed(world, s.Record, splash.Point, -1, splash.FallDeg);
+                    s.Record = -1;
+                    return;
+                }
                 Misses++;
                 NearMisses(world, ref s, e.Entity);
             }
@@ -350,7 +438,7 @@ public sealed class ShellSystem : IWorldSystem
         double reach = NearMiss.ReachM(shell, settings);
         if (!(reach > 0))
             return;
-        Ballistics[s.Table].Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.WaterS, out var vel);
+        Fly(s, slot, s.WaterS, out var vel);
         double v = Math.Max(vel.Length, 1e-9), decay = WaterRun.DecayM(shell, settings);
         var up = s.WaterPoint.Normalized();
         double fall = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, up) / v, -1, 1)));
@@ -364,7 +452,7 @@ public sealed class ShellSystem : IWorldSystem
         near.CopyTo(candidates);
         int n = near.Length;
 
-        var rng = world.Stream("near misses").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot);
+        var rng = NearDraws(world, s, slot);
         var (run, force) = NearMiss.Burst(shell, v, fall, settings, ref rng);
         if (!(force > 0))
             return;
@@ -397,10 +485,10 @@ public sealed class ShellSystem : IWorldSystem
 
     /// <summary>A shell's splash (or a hit's mark) at a point and moment: the angle it fell at and the way it flew where it
     /// came down to the water (or the hull, in the air).</summary>
-    Splash SplashOf(ref Shell s, Vec3d at, long ms, int ship)
+    Splash SplashOf(ref Shell s, int slot, Vec3d at, long ms, int ship)
     {
         var table = Ballistics[s.Table];
-        table.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, Math.Min(s.EndS, s.WaterS), out var vel);
+        Fly(s, slot, Math.Min(s.EndS, s.WaterS), out var vel);
         var up = at.Normalized();
         double vu = Vec3d.Dot(vel, up), vl = Math.Max(vel.Length, 1e-9);
         float fall = (float)double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / vl, -1, 1)));
@@ -425,12 +513,15 @@ public sealed class ShellSystem : IWorldSystem
         for (int j = 0; j <= Chords; j++)
         {
             chordTime[j] = s.WindowS + (s.EndS - s.WindowS) * j / Chords;
-            chordPoint[j] = t.Position(s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, chordTime[j], out vel);
+            chordPoint[j] = Fly(s, slot, chordTime[j], out vel);
         }
         double speed = vel.Length;
         // on under the water, straight along its flight, as far as it gets (a nose fuze fires on the water: a near miss)
         var shell = s.Loadout != null && s.ShellType >= 0 ? s.Loadout.ShellTypes[s.ShellType] : new ShellTypeRow { CalibreMm = t.Key.CalibreMm };
-        double reach = WaterRun.ReachM(shell, speed, settings);
+        // a shell that will skip off the water (E7's ricochet) doesn't run on under it
+        var upEnd = chordPoint[Chords].Normalized();
+        double fallEnd = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, upEnd) / Math.Max(speed, 1e-9), -1, 1)));
+        double reach = CanSkip(s) && fallEnd < settings.WaterRicochetDeg ? 0 : WaterRun.ReachM(shell, speed, settings);
         chordPoint[Chords + 1] = chordPoint[Chords] + vel * (reach / speed);
         chordTime[Chords + 1] = s.EndS + WaterRun.TimeS(speed, reach, WaterRun.DecayM(shell, settings));
         (s.End, s.Hit, s.WaterRunM, s.WaterS, s.WaterPoint) = (chordPoint[Chords], -1, 0, s.EndS, chordPoint[Chords]);
@@ -519,6 +610,7 @@ public sealed class ShellSystem : IWorldSystem
                 h.Add(s.Speed);
                 h.Add(s.EndS);
                 h.Add(s.Hit);
+                h.Add(s.Skips);
             }
         h.Add(Hits);
         h.Add(Misses);
@@ -528,14 +620,21 @@ public sealed class ShellSystem : IWorldSystem
     {
         var v = snap.Shells;
         v.EnsureCapacity(alive);
-        int n = 0;
+        int n = 0, packed = 0;
         for (int i = 0; i < high; i++)
             if (shells[i].Alive)
             {
                 ref readonly var s = ref shells[i];
                 (v.Table[n], v.FiredMs[n], v.Muzzle[n], v.Forward[n], v.ElevationDeg[n], v.Speed[n], v.EndS[n], v.Hit[n], v.Shooter[n]) =
                     (s.Table, s.FiredMs, s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.EndS, s.Hit, s.Shooter);
-                (v.WaterS[n], v.Water[n], v.End[n]) = (s.WaterS, s.WaterPoint, s.End);
+                (v.WaterS[n], v.Water[n], v.End[n], v.Skips[n]) = (s.WaterS, s.WaterPoint, s.End, s.Skips);
+                if (s.Skips > 0)
+                {
+                    int len = flightN[i] * SkipFlight.Fields;
+                    v.EnsureFlights(packed + len);
+                    flights.AsSpan(i * SkipFlight.Length, len).CopyTo(v.Flights.AsSpan(packed));
+                    (v.FlightAt[n], v.FlightN[n], packed) = (packed, flightN[i], packed + len);
+                }
                 n++;
             }
         v.Count = n;

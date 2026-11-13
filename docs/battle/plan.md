@@ -52,7 +52,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 2.8 Coarse motion | done 2026-10-13 | here | "Carried on" under 2.8 |
 | 3 Seeing and knowing | done 2026-10-13 | here | the open questions after 3.2 |
 | 4.0-4.4, 4.6 Fighting, first pass; torpedoes | done 2026-10-14 | `fighting.md` | |
-| 4.5 Shells, armour and damage | S, P, E0-E8b done 2026-10-20; PM (the matchup's refit) 2026-11-08 (`explosions.md` EX7) | `shells-armour-damage.md` | five E8a items for the user |
+| 4.5 Shells, armour and damage | S, P, E0-E8b done 2026-10-20; PM (the matchup's refit) 2026-11-08 (`explosions.md` EX7); E7's ricochet 2026-11-13 | `shells-armour-damage.md` | five E8a items for the user |
 | 4.5 Fire control | F0-F6 done 2026-10-18 | `fire-control.md` | F7 (straddle calls, the main limiter), F8, F10-F12; F9 radar out of the first cut |
 | 4.5 Electrics | EL0-EL7 done 2026-11-04 | `electrics.md` | a designer row with the UI pass; open items in EL7 |
 | How ships are lost | the bench built and first findings 2026-11-04; nothing tuned | `loss-stock-take.md` | the causes: now BL3 |

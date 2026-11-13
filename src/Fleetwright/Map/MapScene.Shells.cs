@@ -95,14 +95,14 @@ public sealed partial class MapScene
                 var table = tables[v.Table[i]];
                 double f = CalibreScale(table.Key.CalibreMm);
                 float dim = selected < 0 || v.Shooter[i] == selected ? 1f : 0.45f;
-                if (t < flashS && view.Project(v.Muzzle[i], out double mx, out double my))
+                if (t < flashS && v.Skips[i] == 0 && view.Project(v.Muzzle[i], out double mx, out double my))
                     overlay.Disc(mx, my, FlashPx * Math.Sqrt(f) * (1 - 0.5 * t / flashS), GunFlash with { W = GunFlash.W * dim * tableFlash * (float)(1 - t / flashS) });
                 if (t > v.WaterS[i])
                 {
                     Underwater(view, v, i, t, f, dim);
                     continue;
                 }
-                var p = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t, out _);
+                var p = v.Position(i, t, out _);
                 if (!view.Project(p, out double x, out double y) || x < -TailMaxPx || y < -TailMaxPx || x > view.Width + TailMaxPx || y > view.Height + TailMaxPx)
                     continue;
                 // the head swells toward the apex: a parabola's top is g T^2 / 8 over its ends
@@ -154,7 +154,7 @@ public sealed partial class MapScene
         double lx = x, ly = y;
         for (int k = 1; k < Max && t - k * step > 0; k++)
         {
-            var q = table.Position(v.Muzzle[i], v.Forward[i], v.ElevationDeg[i], v.Speed[i], t - k * step, out _);
+            var q = v.Position(i, t - k * step, out _);
             if (!view.Project(q, out double qx, out double qy))
                 break;
             double d = Math.Sqrt((qx - lx) * (qx - lx) + (qy - ly) * (qy - ly));

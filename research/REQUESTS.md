@@ -12,6 +12,21 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-13 - Shells skipping off the water: what a ricochet kept, where it went, and whether it hit
+- Question: (1) A pointed shell (12"-15", also 4"-6") falling flatter than the ricochet limit: how much of its speed it
+  kept, and the angle it left at against the angle it fell at (USNI 1921 says about the same, for one calculated 6" case).
+  (2) How erratic the skip was: the spread of its new line up and across, whether it yawed or tumbled after, and the range
+  a ricochet flew on (the splash research's 300-800 m, "arcing high into the sky"). (3) The fuze: did a base fuze start on
+  the graze (and burst in the air beyond), and how often a nose fuze failed to fire on a graze. (4) How often ricochets
+  hit ships, from action reports or practice (close-range actions, destroyer attacks, night fights; any count of
+  "ricochet" hits beside direct ones), and what a yawed shell did to plate it struck.
+- Context / relevant files: `docs/battle/shells-armour-damage.md` E7's ricochet (2026-11-13: `ShellSystem.Skip`); the
+  settings `WaterRicochetLossK` (1: exp(-2θ·k) of its speed, a planing body's drag over lift [EST]),
+  `WaterRicochetScatterDeg` (3° each way [EST]), `WaterRicochetSkips` (4); damage/15 §1.1 (Johnson and Reid's 18°/√SG).
+  A shell aimed 300 m short of a destroyer at 4 km hits her about half the time after skipping; with no scatter a third.
+- Wanted output: ranges with tags for the speed kept, the exit angle and its spread, the fuze on a graze, and the record's
+  ricochet hits; whether a skipped shell should strike yawed (the terminal has no yaw today).
+
 ### 2026-11-09 - What a darkened ship showed: light discipline and its leaks, 1890-1925 first
 - Question: (1) Darkening ship in each navy and period: what the regulations shut and covered (scuttles and deadlights,
   doors and screens to lit flats, galley and engine-room skylights, navigation lights), and how well it was kept; what

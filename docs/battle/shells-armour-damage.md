@@ -1694,10 +1694,48 @@ squadrons, and changes `Matchup.cs` with it.
       boats take near misses (9 holed of 13); hash D281CE4154DD6907 → 7043FE9497A8AB03. Tsushima --play 2 seeds:
       Russia lost 4.0 → 5.0, Japan 3.5 → 4.0. Goldens gain `fuze_water_ms` and `fuze_water_fires` (ShipDesign.Version
       29), 372 of 372.
-    - **Not built:** a ricocheting shell carried on (v0 stops it; the user, 2026-11-13: the skip stays a hard cutoff, as the
-      phenomenon is one, but a skipped shell must fly on and can hit a ship beyond it, its path changed by the skip); water on deck, the splash on the rangefinders; radar,
+    - **Not built:** a ricocheting shell carried on (built 2026-11-13: "The ricochet" below); water on deck, the splash on the rangefinders; radar,
       sonar and the gyrocompass (the sim doesn't carry them); the seams' fittings (17's session); bombs (§3 is ready for
       them). The matchup has no near-miss term (the balance pass).
+  - **The ricochet (2026-11-13; the user: the skip may stay a hard cutoff, as the phenomenon is one, so long as a skipped
+    shell flies on and can hit a ship beyond it, its path changed by the skip).** Found in the near-miss review: below 6.4° of fall every base-fuzed miss vanished
+    (no burst, no flight on), every APC and common miss of a 13.5" inside about 8 km.
+    - **The skip** (`ShellSystem.Skip`): a miss falling flatter than `WaterRicochetDeg` that doesn't burst on the water skips:
+      a nose fuze bursts on the graze unless it fails (the near miss's own draws), a base fuze isn't started by it [EST]. It
+      leaves at the angle it fell at (USNI 1921: a 6" shell grazing at 3°40' rebounds at about the same angle) with
+      exp(-2θ·`WaterRicochetLossK`) of its speed (a body planing through its turn of 2θ, k its drag over its lift, 1 [EST]:
+      84% at 5°), its new line scattered `WaterRicochetScatterDeg` 3° each way [EST] (an elongated shell's skip is erratic),
+      up to `WaterRicochetSkips` 4 times; a shell that will skip doesn't run on under the water. 0 skips is v0 exactly.
+    - **Its flight** (`SkipFlight`): flown once at the skip by the ballistics' own step from the sea, kept as 96 samples a
+      half second apart in the shell's slot, read like a table's flight (Hermite), by the shell system (`Fly`) and the map
+      (`ShellsView.Position`) alike. Skip tables were tried first: a table a speed bucket for every shell took the Jutland
+      from 48 tables and 32 MB to 432 and 158 MB, and the sim tests from 3 to 12 minutes.
+    - **The spotter** sees its first splash, where it skipped (a short); a hit after a skip goes to the damage system as any
+      hit. The map draws no gun flash at a skip. `duel` reports the shells that skipped and the hits after a skip.
+    - **What it does** (`duel`, 20 runs of 10 min, rn-1914; hits after a skip as a share of the shells fired, beside the
+      direct hits, which don't move):
+
+      | Shooter on target | Range | Direct hits | Skipped | Hits after a skip |
+      |---|---|---|---|---|
+      | Super-dreadnought on destroyer | 4 km | 55% | 43% | +14.6% |
+      | | 8 km | 28% | 70% | +7.6% |
+      | Super-dreadnought on super-dreadnought | 4 km | 79% | 20% | +7.5% |
+      | | 8 km | 44% | 53% | +8.3% |
+      | | 12 km | 21% | 0 | 0 |
+      | Mikasa on destroyer | 3 km | 53% | 46% | +22.5% |
+      | | 5 km | 29% | 70% | +17.6% |
+
+      A dreadnought's AP aimed 300 m short of a destroyer at 4 km hits her with half its shells after skipping, a third with
+      no scatter (the straight rebound climbs over her low hull; the flatter exits strike it). Research asked
+      (research/REQUESTS.md 2026-11-13): the speed kept, the exit angle and its spread, the fuze on a graze, the record's
+      ricochet hits, and whether a skipped shell should strike yawed (the terminal has no yaw: it strikes nose first).
+    - **Played** (`scenario --play --seeds 4`, skips off against on; noisy, the battles part ways): Heligoland Bight, Germany
+      lost 12.0 → 16.0 of 24 and Britain 0.8 → 2.5 of 44, Germany's hits 172 → 327; the flotilla's boats 4.5 → 3.5 of 6; the 4th
+      Flotilla's night 1.5 and 0.2 → 1.5 and 0.5. With skips off the build plays as before (the flotilla's seeds identical; the
+      state hash reads a shell's skips, so a seed ending with shells in flight hashes anew).
+    - **Tests:** `RicochetTests` (a skip flies on and hits what's beyond, stopped at the water none do; a nose fuze bursts on the
+      graze but for its failures; skips replay exactly); three `ShellSystemTests` about a table's flight run without skips.
+      The sim suite 1,118 of 1,118. Squadrons (long range) costs the same.
   - **Fix (found and done 2026-10-20):** near misses black out too many ships, and the captains fall out on it.
     - **Found** with the play bench's new main-guns tally (`scenario --play`: each chief mount out, by its first cause,
       when a ship falls out for her guns and at the end; temporary outages tagged by `ShipCondition.DownWhy`). The user

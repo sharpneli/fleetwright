@@ -143,6 +143,8 @@ sealed class FcRun
     /// never), checked each second.</summary>
     public long DownMs = -1, OutMs = -1;
     public double GunneryMs;
+    /// <summary>The shell system's hits (direct and after a skip off the water), and the shells that skipped (E7's ricochet).</summary>
+    public int ShellHits, Skipped;
 }
 
 /// <summary>The fire-control benches' engine (fire-control.md F1): a case run on a fresh world a second at a time, the
@@ -291,6 +293,7 @@ static class FcBench
             }
         }
         run.Tally = w.Gunnery.TallyOf(Shooter, c.Battery) ?? default;
+        (run.ShellHits, run.Skipped) = (w.Shells.Hits, w.Shells.SkippedShells);
         (run.OwnKn, run.TargetKn) = (ownSum / Math.Max(n, 1) / Handling.MsPerKnot, tgtSum / Math.Max(n, 1) / Handling.MsPerKnot);
         if (circleN > 0)
             run.CircleDegS = circleSum / circleN;
@@ -367,6 +370,9 @@ sealed record FcStats
     /// <summary>The spotter's calls against the truth: the share of seen spots he called straddles, and of those the share
     /// that were; of the salvos that truly straddled, the share he called so.</summary>
     public double CalledStraddlePct, CalledTruePct, TrueCalledPct;
+    /// <summary>E7's ricochet: the shells that skipped off the water, and the hits after a skip (the shell system's less the
+    /// gunnery's, which counts a shell where it first came down).</summary>
+    public int Skipped, SkipHits;
 
     static readonly double[] SettleEdges = [120, 240, 480, double.PositiveInfinity], RecoveryEdges = [0, 60, 120, 240];
 
@@ -391,6 +397,7 @@ sealed record FcStats
         {
             var t = r.Tally;
             (st.Shells, st.Hits, st.Salvos, st.Straddles) = (st.Shells + t.Shells, st.Hits + t.Hits, st.Salvos + t.Salvos, st.Straddles + t.Straddles);
+            (st.Skipped, st.SkipHits) = (st.Skipped + r.Skipped, st.SkipHits + Math.Max(r.ShellHits - t.Hits, 0));
             if (t.FirstHitMs >= 0)
             {
                 st.RunsHit++;
@@ -498,6 +505,8 @@ sealed record FcStats
         var bands = Enumerable.Range(0, BandShells.Length).Where(k => BandShells[k] > 0).Select(k => string.Format(inv, "{0}-{1} km {2:0.0}% ({3})",
             RangeBandsKm[k], double.IsInfinity(RangeBandsKm[k + 1]) ? "" : RangeBandsKm[k + 1].ToString(inv), 100.0 * BandHits[k] / BandShells[k], BandShells[k]));
         yield return "  hits by her true range when fired: " + string.Join(", ", bands);
+        yield return string.Format(inv, "  skipped off the water {0} of {1} shells; hits after a skip {2} ({3:0.0}% of the shells)", Skipped, Shells, SkipHits,
+            100.0 * SkipHits / Math.Max(Shells, 1));
     }
 }
 

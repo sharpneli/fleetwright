@@ -70,7 +70,8 @@ public class ShellSystemTests(ITestOutputHelper output)
     [InlineData(16000)]
     public void A_splash_knows_how_it_fell_and_whose_dye_it_carries(double range)
     {
-        var (w, shooter, _) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 } });
+        // no skips off the water (E7's ricochet, RicochetTests): the splashes are the falls the range table gives
+        var (w, shooter, _) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 }, WaterRicochetSkips = 0 });
         w.Apply(ShipSystem.Dye(shooter, Ships.Dye.Orange));
         var from = Ship(w, shooter).Position;
         var aim = Destination(from, 0, range);   // north, away from the target
@@ -175,7 +176,8 @@ public class ShellSystemTests(ITestOutputHelper output)
     [Fact]
     public void A_salvo_lands_round_its_aim_and_hits_what_is_in_its_way()
     {
-        var (w, shooter, target) = Make(Settings);
+        // no skips off the water (E7's ricochet, RicochetTests): a shell a splash, where it fell
+        var (w, shooter, target) = Make(Settings with { WaterRicochetSkips = 0 });
         Assert.True(Ship(w, target).OnRails);
         // at open water a kilometre short of the target: splashes round the aim, none on the ship
         var aim = Destination(Ship(w, shooter).Position, 90, 7000);
@@ -206,8 +208,9 @@ public class ShellSystemTests(ITestOutputHelper output)
     public void A_hit_under_the_water_splashes_where_it_met_it()
     {
         // the water's fuze off: this is the shell system's splash, and a 0.003 s fuze started on the water fires before
-        // the hull 5 m on (P3)
-        var (w, shooter, target) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 }, FuzeStartsOnWater = false });
+        // the hull 5 m on (P3); no skips (E7's ricochet): at 8 km the dreadnought's shells fall flatter than skip off the water
+        var (w, shooter, target) = Make(Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0 }, FuzeStartsOnWater = false,
+            WaterRicochetSkips = 0 });
         var cls = w.Ships.Class(Ship(w, shooter).ClassIndex);
         int guns = cls.Batteries[0].Guns;
         var from = Ship(w, shooter).Position;
