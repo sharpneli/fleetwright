@@ -31,6 +31,11 @@ public static class DesignerPlaceholders
 
     public static double RollTau(bool stableVertical) => stableVertical ? StableRollTauS : RollTauS;
 
+    /// <summary>PLACEHOLDER: every gun is rifled right-handed (+1; −1 left): the side a shell skipping off the sea turns to
+    /// (docs/battle/shells-armour-damage.md E7's ricochet; research damage-research/16-water-ricochet.md §2.3) [EST: the usual
+    /// hand]. The gun tech block should give it (`rifling`).</summary>
+    public const int RiflingHand = 1;
+
     /// <summary>PLACEHOLDER: the share of the trunnions' cross-level a laying fit's sights correct (research §4.1): a
     /// pointer's horizon telescope 0.5, a director's cross-level telescope 0.7, a stable vertical 0.98 [EST]. The fire-control
     /// tech block should give it (`cross_level`).</summary>

@@ -242,6 +242,37 @@ public class DamageTests(ITestOutputHelper output)
         Assert.Equal(WaterRun.RunInM(500, shell.FuzeDelayS, l), WaterRun.ReachM(shell, 500, Settings), 9);
     }
 
+    /// <summary>A shell striking yawed (one that skipped off the sea: E7's ricochet) gets through the belt less often the more
+    /// it's yawed, and tumbling none of it.</summary>
+    [Fact]
+    public void A_yawed_shell_gets_through_less()
+    {
+        var cls = Class("dreadnought");
+        var (shell, _) = Shell(Class("super_dreadnought"), 0);
+        int Through(double yaw)
+        {
+            var w = World("dreadnought", out int c);
+            w.Apply(ShipSystem.Spawn(c, 56, 4, 0, 0));
+            var rng = RandomStream.Named(3, "test yaw");
+            int n = 0;
+            for (int i = 0; i < 120; i++)
+            {
+                w.Damage.Strike(w, new Hit
+                {
+                    Ship = 1, Ms = w.Time.Ms, Point = new P3(rng.NextDouble(-40, 40), cls.Beam / 2 + 1, cls.Vertical.Waterline + 1),
+                    Direction = new P3(0, -0.99, -0.14), SpeedMs = 420, Shell = shell, ShellType = 0, YawDeg = yaw,
+                });
+                n += w.Damage.LastTerminal.Outcome is Outcome.Defeated or Outcome.Ricochet or Outcome.BurstOutside ? 0 : 1;
+            }
+            return n;
+        }
+        int a = Through(0), b = Through(8), c = Through(20), d = Through(30);
+        output.WriteLine($"a 15\" at 420 m/s on the dreadnought's belt, through of 120: true {a}, yawed 8° {b}, 20° {c}, tumbling 30° {d}");
+        Assert.True(a > 0 && a >= b && b >= c, "the more yawed, the less gets through");
+        Assert.True(c < a);
+        Assert.Equal(0, d);
+    }
+
     /// <summary>A hit on the dreadnought's side 2 m under its waterline, having run runM under the water first.</summary>
     static TerminalResult UnderwaterHit(World w, ShellTypeRow shell, double runM)
     {

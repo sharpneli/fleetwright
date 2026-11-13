@@ -1736,6 +1736,66 @@ squadrons, and changes `Matchup.cs` with it.
     - **Tests:** `RicochetTests` (a skip flies on and hits what's beyond, stopped at the water none do; a nose fuze bursts on the
       graze but for its failures; skips replay exactly); three `ShellSystemTests` about a table's flight run without skips.
       The sim suite 1,118 of 1,118. Squadrons (long range) costs the same.
+  - **The ricochet by the research (2026-11-13; research damage-research/16-water-ricochet.md, its R1-R5; the user: the sea
+    state decides the angle a shell actually meets the water at, so even a flat shell plunges when it meets a wave's face).**
+    The graze is `WaterSkip` (Sim.Combat, pure); the shell system flies what leaves it.
+    - **The sea's face** (16 §1.4): drawn as the shell's window opens (`ShellSystem.Facet`, the stream "skips"). The slopes of
+      the waves 5 m and longer (`RollSea.SlopeRms`: the roll grid's slope variance by cos² and sin² to the line of fire, about
+      4° rms in the default 7.9 m/s wind, 5° at 15 m/s) tilt the water along the shell's line and across it; along, weighted by
+      how much of each face a shell falling at θ meets, max(0, tan θ + slope) (the faces turned to it more, a back it can't
+      reach not at all; crests shadowing troughs left out [EST]). It meets the face at θ + its slope: a 2° fall on 5° faces
+      meets them at 7° on average, 28% at 9° or steeper. A flat sea (`WaterRicochetSeaK` 0) is the fall alone.
+    - **Skip or plunge:** under `WaterRicochetDeg` 9° to the face it skips (R1's hard cutoff [EST]: shells' bulk SG 5-7 give
+      6.9-8.4° by the sphere and cylinder laws, elongated bodies skip well past them); at it or steeper it goes in, a shell
+      that will skip running on under the water no more.
+    - **Its speed** (R2): exp(−(θ/8.5°)^2.3) [EST, the .50's Weibull scaled toward a shell's density]: 0.95 at 2°, 0.72 at 5°,
+      0.43 at 7°.
+    - **Its line** (R3): off the face at a lognormal angle about 5° + ½θ (σ 0.6, capped at 35°) over it [EST: pointed bodies
+      pitch nose up as they plane and leave steeper than they came, widely spread; USNI 1921's "same angle" was a tank floor],
+      turned about the face's normal 5° to its rifling's side ± 4°, wider once it kept under 0.6 of its speed [EST: the .50's
+      ~10° right; `DesignerPlaceholders.RiflingHand`, every gun right-handed until the gun block says]. So a skip off a face
+      turned to it leaves steep, one off a back flat, and across-slopes swing it sideways. It leaves yawed, |exit − meet| +
+      |N(0, 3°)| (R5 [EST]), the yaw dying away e-fold every 2,000 calibres, its drag × (1 + 15ψ²) meanwhile (`SkipFlight.Fly`).
+    - **Fuzes** (R4): a nose fuze fires on the graze only if the sea meets it at v·sin θ ≥ 17 m/s (the RN's 1921 minima for the
+      4": under 2° at 2,100-2,400 yd), else it skips unburst, to fire on the next graze or the ship. A base fuze is started by
+      the graze's deceleration (half the section wetted at Cd 0.3: a 12" at 500 m/s ~370 g, a 4" ~1,100 g) with a chance
+      1 − e^(−a/a_f), a_f 2,400 g for a fuze started by 0.07 calibres of plate, in proportion to its start plate [EST]: the
+      Ijuin (0.01) at 600 m/s 0.79, a robust 15" at 500 m/s 0.11, a 4" 0.38. Started, it bursts its delay on, in the air over
+      the water: a near miss there (`ShellSystem.StrikeNear`, the burst at the surface), as at Tsesarevich's conning tower in 1904.
+    - **Yaw at the strike** (R5, 16 §5): a hit after a skip carries its yaw (`Hit.YawDeg`) into the terminal. Up to 10° it adds
+      half itself to each plate's obliquity [SRC armor/05 §4c]; past that its cap does nothing and the plate's limit grows 0.6% a
+      degree (NPG 1944's yawed .50 AP [SRC]); past 25° it tumbles and gets through no plate of 0.3 calibres or more [EST]. A 15"
+      at 420 m/s on the dreadnought's belt: 114 of 120 through flying true, 103 at 8°, 85 at 20°, none tumbling. Not built:
+      a yawed base fuze's start halved, the yaw's lift curving the path up.
+    - **What it does** (`duel`, 20 runs of 10 min, the default sea; hits after a skip as a share of the shells, and of all the
+      hits; direct hits don't move):
+
+      | Shooter on target | Range | Before (mirror ± 3°, 6.4°) | Now | Now, a flat sea | Now, the 6.4° limit |
+      |---|---|---|---|---|---|
+      | Super-dreadnought on destroyer | 4 km | +14.6% | +1.1% (1.9% of hits) | +2.7% (4.6%) | +1.4% |
+      | | 8 km | +7.6% | +4.3% (13.5%) | +5.1% (15.5%) | +3.1% |
+      | Super-dreadnought on super-dreadnought | 4 km | +7.5% | +0.6% (0.8%) | +1.6% (1.9%) | +0.5% |
+      | | 8 km | +8.3% | +4.5% (9.3%) | +5.6% (11.3%) | +3.2% |
+      | | 12 km | 0 | +3.0% (12.4%) | 0 | +1.6% |
+      | Mikasa on destroyer | 3 km | +22.5% | +0.4% (0.7%) | +1.7% (3.2%) | 0 |
+      | | 5 km | +17.6% | +1.9% (6.0%) | +2.5% (7.8%) | +1.7% |
+
+      Of the super-dreadnought's misses at a destroyer 4 km off, 558 met the sea too steeply to skip, 474 skipped and 90 burst
+      on the graze (a base fuze it started); Mikasa's Ijuin-fuzed shells burst on 233 grazes at 3 km (near misses: none
+      counted as hits). At 12 km a fall of ~9-10° skips now and then off a wave's back, leaving flat and fast: a twentieth of
+      the hits there. Against 16 R6's band (ricochets 5-15% of the hits in close actions, two ships [UNCERTAIN]) the close
+      range comes under it (1-6%) and 8-12 km inside it; nothing tuned.
+    - **Played** (`scenario --play --seeds 4`, beside no skips and the first build's): Heligoland Bight, Germany lost 12.0 / 16.0 /
+      17.2 of 24 and Britain 0.8 / 2.5 / 4.8 of 44; the flotilla's boats 4.5 / 3.5 / 4.2 of 6; the 4th Flotilla's night,
+      Britain 1.5 / 1.5 / 1.8 and Germany 0.2 / 0.5 / 0.8. Noisy (Heligoland's Britain from 0 to 10). Heligoland at 8 seeds,
+      no skips against now: Germany lost 12.6 → 13.1, Britain 1.1 → 3.1 (one seed 12), Germany's hits 160 → 245; her own
+      Stettin on a Laforey (`duel`) gets 2% of her hits after a skip at 3 km and 15% at 6 km, so most of that is the battles
+      parting ways. The shell system 84 → 90 µs a call on squadrons (the skips' events).
+    - **Tests:** `RicochetTests` (the speed kept, the exit's spread, the nose fuze's minimum and the base fuzes' starts against
+      16's figures; a flat shell meets the faces turned to it; in a world, a skip flies on turned right and hits what's beyond,
+      a rough sea plunges more, a nose fuze bursts on the graze, skips replay); `DamageTests.A_yawed_shell_gets_through_less`.
+      `GunneryTests`' masking test needed 96 runs, not 32, for the columns' effect to show over the skips' noise. The sim suite
+      1,125 of 1,125.
   - **Fix (found and done 2026-10-20):** near misses black out too many ships, and the captains fall out on it.
     - **Found** with the play bench's new main-guns tally (`scenario --play`: each chief mount out, by its first cause,
       when a ship falls out for her guns and at the end; temporary outages tagged by `ShipCondition.DownWhy`). The user

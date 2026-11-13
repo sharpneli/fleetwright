@@ -19,9 +19,13 @@ public static class SkipFlight
     const double BelowM = 100;
 
     /// <summary>Flies a shell (its drag constant, <see cref="Ballistics.DragK"/>) from the sea at an elevation and speed into
-    /// its samples; how many it kept.</summary>
-    public static int Fly(double dragK, double elevationDeg, double speedMs, Span<double> into)
+    /// its samples; how many it kept. It leaves yawed (yawDeg) and its yaw dies away e-fold every yawDecayM along its way, its
+    /// drag × (1 + yawDragK·ψ²) meanwhile (ψ in radians; docs/battle/shells-armour-damage.md E7's ricochet, 16 W6: a
+    /// supersonic shell's C_Dδ²/C_D0 ~10-20).</summary>
+    public static int Fly(double dragK, double elevationDeg, double speedMs, Span<double> into, double yawDeg = 0, double yawDecayM = 1,
+        double yawDragK = 0)
     {
+        double yaw = double.DegreesToRadians(yawDeg), decay = Math.Max(yawDecayM, 1e-3);
         var st = Ballistics.Start(elevationDeg, speedMs);
         int per = (int)Math.Round(SampleS / BallisticTable.IntegrationStep), n = 0;
         for (int step = 0; n < Samples; step++)
@@ -34,7 +38,8 @@ public static class SkipFlight
                 if (h < -BelowM)
                     break;
             }
-            st = Ballistics.Step(st, dragK, BallisticTable.IntegrationStep);
+            double psi = yaw > 0 ? yaw * Math.Exp(-Math.Max(st.X, 0) / decay) : 0;
+            st = Ballistics.Step(st, dragK * (1 + yawDragK * psi * psi), BallisticTable.IntegrationStep);
         }
         return n;
     }

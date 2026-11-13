@@ -69,6 +69,27 @@ public sealed class RollSea
         }
         for (int j = 0; j < WetDirections; j++)
             (wcos[j], wsin[j]) = (cos[3 * j + 1], sin[3 * j + 1]);
+        for (int i = 0; i < Frequencies; i++)
+            for (int j = 0; j < Directions; j++)
+            {
+                double v = slope[i * Directions + j];
+                (slopeXx, slopeYy, slopeXy) = (slopeXx + v * cos[j] * cos[j], slopeYy + v * sin[j] * sin[j], slopeXy + v * cos[j] * sin[j]);
+            }
+    }
+
+    /// <summary>The slope variance's moments over the grid (x east, y north): Σ S·cos², Σ S·sin², Σ S·cos·sin.</summary>
+    readonly double slopeXx, slopeYy, slopeXy;
+
+    /// <summary>The rms slope of the sea along a way over it (degrees true) and across it, as tangents: the waves of the
+    /// grid, 5 m and longer (the faces a shell planes on: docs/battle/shells-armour-damage.md E7's ricochet, 16 §1.4), each
+    /// by its cos² and sin² to that way. A swell running along the line of fire tilts the faces a shell meets; one across it
+    /// tilts them sideways.</summary>
+    public (double Along, double Across) SlopeRms(double towardDeg)
+    {
+        double a = double.DegreesToRadians(90 - towardDeg), c = Math.Cos(a), sn = Math.Sin(a);
+        double along = slopeXx * c * c + slopeYy * sn * sn + 2 * slopeXy * c * sn;
+        double across = slopeXx * sn * sn + slopeYy * c * c - 2 * slopeXy * c * sn;
+        return (Math.Sqrt(Math.Max(along, 0)), Math.Sqrt(Math.Max(across, 0)));
     }
 
     /// <summary>The sea's motion against points on a ship (docs/battle/error-sources.md ES4; the seakeeping law the

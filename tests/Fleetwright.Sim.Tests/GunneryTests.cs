@@ -949,16 +949,16 @@ public class GunneryTests(ITestOutputHelper output)
     /// <summary>The splash columns (docs/battle/error-sources.md ES2): a WWI boat's guns laid by their own layers on a boat
     /// 4 km off. At their own size her masts show over a 4-inch short's column (some 10 m at that flat fall) and the shorts
     /// scatter tens of metres across the line, so nothing hides her (generous to the gunner); forty times the size, the
-    /// columns hide her from the layers some of the time and the guns fire less and hit less (32 runs: 1710 hits of 6284 shells
-    /// off, 1647 of 6252 at forty times; 8 runs were within the noise).</summary>
+    /// columns hide her from the layers some of the time and the guns fire less and hit less (96 runs: 5253 hits of 19016 shells
+    /// off, 5144 of 18832 at forty times; 8 runs were within the noise, and 32 once shells skipped off the sea).</summary>
     [Fact]
     public void Splash_columns_hide_her_from_the_layers_only_when_they_cover_her()
     {
         var b97 = Fleet.Scenario("b97");
         var v25 = Fleet.Scenario("v25");
-        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 32);
-        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 32);
-        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 32);
+        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 96);
+        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 96);
+        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 96);
         output.WriteLine($"masking off {off.Hits} hits of {off.Shells}, at size {real.Hits} of {real.Shells}, forty times {strong.Hits} of {strong.Shells}");
         // at their own size the run follows masking off but for the falls' chaos (a column now and then over her end on)
         Assert.InRange(real.Shells, 0.97 * off.Shells, 1.03 * off.Shells);

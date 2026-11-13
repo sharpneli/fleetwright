@@ -1319,6 +1319,18 @@ public sealed record SimSettings
     public double GlanceShare { get; init; } = 1;
     public double GlanceLiftDeg { get; init; } = 1;
 
+    /// <summary>A shell striking yawed (its axis off its line: one that skipped off the sea, docs/battle/shells-armour-damage.md
+    /// E7's ricochet; research damage-research/16-water-ricochet.md §5, armor/00 §5): up to <see cref="YawObliqueDeg"/> its yaw
+    /// adds <see cref="YawObliqueShare"/> of itself to every plate's obliquity [SRC armor/05 §4c, Okun]; past that its cap
+    /// does nothing and the plate's limit grows <see cref="YawLimitPerDeg"/> a degree (the NPG's 1944 firings of yawed .50 AP:
+    /// 0.5-0.7% a degree up to 30° [SRC]); past <see cref="YawTumbleDeg"/> it's tumbling and gets through no plate of
+    /// <see cref="YawTumbleTD"/> calibres or more [EST].</summary>
+    public double YawObliqueDeg { get; init; } = 10;
+    public double YawObliqueShare { get; init; } = 0.5;
+    public double YawLimitPerDeg { get; init; } = 0.006;
+    public double YawTumbleDeg { get; init; } = 25;
+    public double YawTumbleTD { get; init; } = 0.3;
+
     /// <summary>A plate's turn of a shell through it (Terminal.Turn) bends the hit's path from this many degrees; a
     /// smaller one only costs it speed.</summary>
     public double NormaliseMinDeg { get; init; } = 0.5;
@@ -1950,22 +1962,42 @@ public sealed record SimSettings
     /// <summary>Near misses (docs/battle/shells-armour-damage.md E7; damage/15): a shell that misses bursts in the water,
     /// and the ships whose waterplane lies within max(<see cref="NearMissSplinterK"/>·W^⅓, <see cref="NearMissShockK"/>·√W)
     /// m of it (W the filler's TNT kg) take a near miss: 15·W^⅓ is where its splinters stop hitting exposed men (15 §6.1),
-    /// 7.5·√W where its shock falls under 0.03. A shell falling flatter than <see cref="WaterRicochetDeg"/> skips off
-    /// the water (18°/√SG for a steel sphere [SRC], shells alike [EST]): a nose fuze bursts on the graze, unless it fails, and
-    /// a base fuze isn't started by it [EST]; the shell flies on (E7's ricochet, <c>ShellSystem.Skip</c>), leaving at the
-    /// angle it fell at (USNI 1921: a 6" shell grazing at 3°40' rebounds at about the same angle) with exp(−2θ·k) of its
-    /// speed, k <see cref="WaterRicochetLossK"/> (a body planing through its turn of 2θ, its drag over its lift [EST]), at most
-    /// <see cref="WaterRicochetSkips"/> times (0: it stops at the water, v0's), its new line scattered about the mirror of the
-    /// old by <see cref="WaterRicochetScatterDeg"/> (1σ, up and across: an elongated shell's skip is erratic, it yaws in the
-    /// turn [EST]; research asked). Fragments in water slow 1/e every <see cref="WaterDragL1"/>·m^⅓ m (13 §2.3). Splinters through
+    /// 7.5·√W where its shock falls under 0.03. A shell meeting the sea flatter than <see cref="WaterRicochetDeg"/> to the face
+    /// it meets skips off it (E7's ricochet, Sim.Combat's <c>WaterSkip</c>; research damage-research/16-water-ricochet.md):
+    /// the sea's faces 5 m and longer tilt the water it meets, by their slope times <see cref="WaterRicochetSeaK"/> (0 a flat
+    /// sea); it keeps exp(−(θ/<see cref="WaterRicochetKeptDeg"/>)^<see cref="WaterRicochetKeptPower"/>) of its speed; it leaves
+    /// the face at a lognormal angle (σ <see cref="WaterRicochetExitSigma"/>) about <see cref="WaterRicochetExitDeg"/> +
+    /// <see cref="WaterRicochetExitShare"/> × the angle it met it at, capped at <see cref="WaterRicochetExitMaxDeg"/>; it turns
+    /// <see cref="WaterRicochetRightDeg"/> to its rifling's side, ± <see cref="WaterRicochetAcrossDeg"/>, widened by the speed
+    /// lost past <see cref="WaterRicochetWildKept"/> kept; it leaves yawed by the pitch that turned it and |N(0,
+    /// <see cref="WaterRicochetYawDeg"/>)|, its drag × (1 + <see cref="WaterRicochetYawDragK"/>·ψ²) as the yaw dies away over
+    /// <see cref="WaterRicochetYawCalibres"/>; at most <see cref="WaterRicochetSkips"/> times (0: it stops at the water, v0's).
+    /// A nose fuze fires on the graze when the sea meets it at <see cref="WaterGrazeNoseMs"/> or more; a base fuze is started
+    /// by the graze's deceleration (half its section wetted at <see cref="WaterGrazeCd"/>) against
+    /// <see cref="WaterGrazeFuzeG"/> for a fuze started by 0.07 calibres of plate, and bursts its delay on. All [EST] from 16's
+    /// recommendations R1-R5. Fragments in water slow 1/e every <see cref="WaterDragL1"/>·m^⅓ m (13 §2.3). Splinters through
     /// the side within <see cref="NearMissBandM"/> of the waterline hole it, each <see cref="SplinterHoleK"/> times the
     /// fragment's presented area (15 §6.3 [EST]).</summary>
     public double NearMissSplinterK { get; init; } = 15;
     public double NearMissShockK { get; init; } = 7.5;
-    public double WaterRicochetDeg { get; init; } = 6.4;
-    public double WaterRicochetLossK { get; init; } = 1;
+    public double WaterRicochetDeg { get; init; } = 9;
     public int WaterRicochetSkips { get; init; } = 4;
-    public double WaterRicochetScatterDeg { get; init; } = 3;
+    public double WaterRicochetSeaK { get; init; } = 1;
+    public double WaterRicochetKeptDeg { get; init; } = 8.5;
+    public double WaterRicochetKeptPower { get; init; } = 2.3;
+    public double WaterRicochetExitDeg { get; init; } = 5;
+    public double WaterRicochetExitShare { get; init; } = 0.5;
+    public double WaterRicochetExitSigma { get; init; } = 0.6;
+    public double WaterRicochetExitMaxDeg { get; init; } = 35;
+    public double WaterRicochetRightDeg { get; init; } = 5;
+    public double WaterRicochetAcrossDeg { get; init; } = 4;
+    public double WaterRicochetWildKept { get; init; } = 0.6;
+    public double WaterRicochetYawDeg { get; init; } = 3;
+    public double WaterRicochetYawCalibres { get; init; } = 2000;
+    public double WaterRicochetYawDragK { get; init; } = 15;
+    public double WaterGrazeNoseMs { get; init; } = 17;
+    public double WaterGrazeCd { get; init; } = 0.3;
+    public double WaterGrazeFuzeG { get; init; } = 2400;
     public double WaterDragL1 { get; init; } = 0.3;
     public double NearMissBandM { get; init; } = 1;
     public double SplinterHoleK { get; init; } = 1.3;

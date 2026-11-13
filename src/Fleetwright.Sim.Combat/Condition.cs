@@ -44,6 +44,9 @@ public readonly record struct Hit
     public TorpedoRow Torpedo { get; init; }
     /// <summary>A near miss's burst (<see cref="HitSource.NearMiss"/>): its filler's force, 1 full, under 1 low-order.</summary>
     public double Force { get; init; }
+    /// <summary>The shell's yaw as it strikes, degrees: its axis off its line (one that skipped off the sea: E7's ricochet;
+    /// <c>Terminal.Resolve</c> reads it at every plate). 0 for a shell flying true.</summary>
+    public double YawDeg { get; init; }
     /// <summary>The shell's type in the shooter's class (for the log), or -1.</summary>
     public int ShellType { get; init; }
     public int Shooter { get; init; }

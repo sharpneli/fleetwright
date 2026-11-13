@@ -61,7 +61,15 @@ public sealed class ShellSystem : IWorldSystem
         /// from where it skipped (its muzzle there, <see cref="FiredMs"/> then, <see cref="Speed"/> its speed off the water, m/s)
         /// on its own flight (<see cref="SkipFlight"/>), not its table's.</summary>
         public int Skips;
+        /// <summary>The sea's face where it meets the water (<see cref="WaterSkip.Facet"/>: its slopes along and across its line,
+        /// tangents), drawn as its window opens, and the angle it meets that face at, degrees (its fall on a flat sea); and
+        /// its yaw off its last skip, degrees.</summary>
+        public double FacetAlong, FacetAcross, MeetDeg, YawDeg;
     }
+
+    /// <summary>What a shell does at the water as a miss: goes in (plunges, or bursts on it: a near miss), skips and flies
+    /// on, or bursts in the air just past the graze (a base fuze it started: its near miss already struck).</summary>
+    enum Graze : byte { In, Skipped, Burst }
 
     /// <summary>A splash, or a hit's mark (Ship: the ship hit, an entity), at a moment, and the shell's calibre; for the
     /// screens (docs/visuals/splashes.md), the angle it fell at (degrees under the horizontal), the bearing it was going
@@ -108,6 +116,10 @@ public sealed class ShellSystem : IWorldSystem
     /// <summary>The skips off the water, and the shells that skipped at least once (E7's ricochet; a tool's count, not state).</summary>
     public int SkipCount { get; private set; }
     public int SkippedShells { get; private set; }
+    /// <summary>Misses that could have skipped but met the sea's face too steeply and went in; and the grazes a fuze burst on,
+    /// a nose fuze's or a base fuze's the graze started (a tool's counts, not state).</summary>
+    public int PlungedCount { get; private set; }
+    public int GrazeBursts { get; private set; }
 
     /// <summary>Told of each shell of a gunnery salvo as it comes down (set by the world).</summary>
     internal GunnerySystem? Gunnery { get; set; }
@@ -193,54 +205,119 @@ public sealed class ShellSystem : IWorldSystem
     /// <summary>Whether a shell can still skip: its skips not used up, its shell known.</summary>
     bool CanSkip(in Shell s) => s.Skips < settings.WaterRicochetSkips && s.Loadout != null && s.ShellType >= 0;
 
+    /// <summary>A skip's draws (the stream "skips", by salvo, shell and skip): part 0 the face it meets, 1 what leaves it.</summary>
+    static RandomStream SkipDraws(World world, in Shell s, int slot, int part) =>
+        world.Stream("skips").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot).Derive((ulong)(2 * s.Skips + part));
+
+    /// <summary>The face of the sea a shell meets the water on (<see cref="WaterSkip.Facet"/>), at a point with its velocity
+    /// there falling at fallDeg: the world's sea's slopes along and across its way (<see cref="RollSea.SlopeRms"/>, times
+    /// <see cref="SimSettings.WaterRicochetSeaK"/>), and the angle it meets that face at. A flat sea: its fall.</summary>
+    void Facet(World world, ref Shell s, int slot, Vec3d at, Vec3d vel, double fallDeg)
+    {
+        (s.FacetAlong, s.FacetAcross, s.MeetDeg) = (0, 0, fallDeg);
+        double k = settings.WaterRicochetSeaK, v = vel.Length;
+        if (!(k > 0) || s.Loadout == null || !(v > 1))
+            return;
+        var up = at.Normalized();
+        var level = vel - up * Vec3d.Dot(vel, up);
+        if (!(level.Length > 1e-9))
+            return;
+        var (ra, rc) = world.Sea.SlopeRms(Earth.Heading(at, level));
+        if (!(ra > 0) && !(rc > 0))
+            return;
+        var r = SkipDraws(world, s, slot, 0);
+        var (along, across) = WaterSkip.Facet(fallDeg, k * ra, k * rc, ref r);
+        var forward = level.Normalized();
+        var n = WaterSkip.Normal(up, forward, Vec3d.Cross(forward, up), along, across);
+        double meet = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, n) / v, -1, 1)));
+        (s.FacetAlong, s.FacetAcross, s.MeetDeg) = (along, across, meet);
+    }
+
     /// <summary>A shell's near-miss draws (the stream "near misses", by salvo and shell): its fuze on the water, its filler.</summary>
     static RandomStream NearDraws(World world, in Shell s, int slot) => world.Stream("near misses").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot);
 
-    /// <summary>A shell that missed, met the water flatter than <see cref="SimSettings.WaterRicochetDeg"/> and didn't burst on it
-    /// skips off it (docs/battle/shells-armour-damage.md E7; damage/15 §1.1): a nose fuze bursts on the graze unless it fails
-    /// (its near miss's draws, <see cref="NearMiss.Burst"/>), a base fuze isn't started [EST]. It leaves at the angle it fell at
-    /// (USNI 1921) with exp(-2θ·<see cref="SimSettings.WaterRicochetLossK"/>) of its speed, on its own heading over the sea,
-    /// both scattered by <see cref="SimSettings.WaterRicochetScatterDeg"/> (the stream "skips", by salvo, shell and skip),
-    /// flown on from there (<see cref="SkipFlight"/>): its window, its hits, its end and its skips as any shell's. False when
-    /// it goes in: steeper, skipped out, or burst on the graze.</summary>
-    bool Skip(World world, ref Shell s, int slot)
+    /// <summary>A shell that missed meets the water (docs/battle/shells-armour-damage.md E7's ricochet; <see cref="WaterSkip"/>,
+    /// research damage-research/16-water-ricochet.md): meeting the sea's face (<see cref="Shell.MeetDeg"/>) at
+    /// <see cref="SimSettings.WaterRicochetDeg"/> or steeper it goes in. Flatter, a nose fuze the sea meets hard enough fires
+    /// on the graze (<see cref="WaterSkip.NoseFires"/>, then its near miss's draws: <see cref="NearMiss.Burst"/>), and it goes
+    /// in as a near miss; else it skips: <see cref="WaterSkip.Kept"/> of its speed, off the face at <see cref="WaterSkip.ExitDeg"/>
+    /// over it, turned <see cref="WaterSkip.AcrossDeg"/> about its normal, yawed (the stream "skips", by salvo, shell and
+    /// skip). A base fuze the graze started bursts its delay on, in the air (<see cref="WaterSkip.BaseOnGraze"/>: its near
+    /// miss struck here); the rest fly on from there (<see cref="SkipFlight"/>, its yaw's drag dying away): its window, its
+    /// hits, its end and its skips as any shell's.</summary>
+    Graze Skip(World world, ref Shell s, int slot)
     {
         if (!CanSkip(s))
-            return false;
+            return Graze.In;
         Fly(s, slot, s.WaterS, out var vel);
-        double v = vel.Length;
-        var up = s.WaterPoint.Normalized();
-        double vu = Vec3d.Dot(vel, up), fall = double.RadiansToDegrees(Math.Asin(Math.Clamp(-vu / Math.Max(v, 1e-9), -1, 1)));
-        if (!(v > 1) || !(fall < settings.WaterRicochetDeg))
-            return false;
+        double v = vel.Length, meet = s.MeetDeg;
+        if (!(v > 1) || !(meet < settings.WaterRicochetDeg))
+        {
+            PlungedCount++;
+            return Graze.In;
+        }
         var shell = s.Loadout!.ShellTypes[s.ShellType];
-        if (shell.Fuze == Fuze.Nose && shell.FillerKg > 0)
+        if (shell.Fuze == Fuze.Nose && shell.FillerKg > 0 && WaterSkip.NoseFires(v, meet, settings))
         {
             var rng = NearDraws(world, s, slot);
-            if (NearMiss.Burst(shell, v, fall, settings, ref rng).Force > 0)
-                return false;   // it bursts on the graze: a near miss's (the same draws)
+            if (NearMiss.Burst(shell, v, meet, settings, ref rng).Force > 0)
+            {
+                GrazeBursts++;
+                return Graze.In;   // it bursts on the graze: a near miss's (the same draws)
+            }
         }
-        double v1 = v * Math.Exp(-2 * double.DegreesToRadians(Math.Max(fall, 0)) * settings.WaterRicochetLossK);
-        var dir = (vel - up * vu).Normalized();
-        var scatter = world.Stream("skips").Derive(((ulong)(uint)s.Salvo << 32) | (uint)slot).Derive((ulong)s.Skips);
-        double across = double.DegreesToRadians(settings.WaterRicochetScatterDeg * scatter.NextGaussian());
-        double exit = Math.Max(fall + settings.WaterRicochetScatterDeg * scatter.NextGaussian(), MinExitDeg);
-        dir = (dir * Math.Cos(across) + Vec3d.Cross(up, dir) * Math.Sin(across)).Normalized();
+        var r = SkipDraws(world, s, slot, 1);
+        double kept = WaterSkip.Kept(meet, settings), v1 = v * kept;
+        double exit = WaterSkip.ExitDeg(meet, settings, ref r);
+        double turn = double.DegreesToRadians(WaterSkip.AcrossDeg(kept, DesignerPlaceholders.RiflingHand, settings, ref r));
+        double yaw = WaterSkip.YawDeg(meet, exit, settings, ref r);
+        // off the face: along it in the shell's way, raised by the exit angle over it, turned right about its normal
+        var up = s.WaterPoint.Normalized();
+        var forward = (vel - up * Vec3d.Dot(vel, up)).Normalized();
+        var n = WaterSkip.Normal(up, forward, Vec3d.Cross(forward, up), s.FacetAlong, s.FacetAcross);
+        var along = (vel - n * Vec3d.Dot(vel, n)).Normalized();
+        double e = double.DegreesToRadians(exit);
+        var line = along * Math.Cos(e) + n * Math.Sin(e);
+        line = line * Math.Cos(turn) - Vec3d.Cross(n, line) * Math.Sin(turn) + n * (Vec3d.Dot(n, line) * (1 - Math.Cos(turn)));
+        double lu = Vec3d.Dot(line, up), rise = Math.Max(double.RadiansToDegrees(Math.Asin(Math.Clamp(lu, -1, 1))), MinExitDeg);
+        var dir = (line - up * lu).Normalized();
+        var (delay, force) = WaterSkip.BaseOnGraze(shell, v, settings, ref r);
+        if (force > 0)
+        {
+            // started by the graze: it bursts its delay on, over the water
+            double rr = double.DegreesToRadians(rise);
+            var air = dir * Math.Cos(rr) + up * Math.Sin(rr);
+            StrikeNear(world, s, shell, s.WaterPoint + air * (v1 * delay), air, v1, 0, force);
+            GrazeBursts++;
+            return Graze.Burst;
+        }
         var f = flights.AsSpan(slot * SkipFlight.Length, SkipFlight.Length);
-        int n = SkipFlight.Fly(Combat.Ballistics.DragK(Ballistics[s.Table].Key), exit, v1, f);
-        double end = SkipFlight.Descends(f, n, 0);
+        int nf = SkipFlight.Fly(Combat.Ballistics.DragK(Ballistics[s.Table].Key), rise, v1, f, yaw,
+            settings.WaterRicochetYawCalibres * shell.CalibreMm / 1000, settings.WaterRicochetYawDragK);
+        double end = SkipFlight.Descends(f, nf, 0);
         if (double.IsNaN(end) || !(end > 0))
-            return false;
-        double top = SkipFlight.Descends(f, n, settings.ShellWindowTopM);
+            return Graze.In;
+        double top = SkipFlight.Descends(f, nf, settings.ShellWindowTopM);
         if (double.IsNaN(top) || top > end || top < 0)
             top = 0;   // it never rises over the window's top: all its flight is in the window
-        flightN[slot] = n;
-        (s.FiredMs, s.Muzzle, s.Forward, s.ElevationDeg, s.Speed) = (world.Time.Ms, s.WaterPoint, dir, exit, v1);
+        flightN[slot] = nf;
+        (s.FiredMs, s.Muzzle, s.Forward, s.ElevationDeg, s.Speed, s.YawDeg) = (world.Time.Ms, s.WaterPoint, dir, rise, v1, yaw);
         (s.WindowS, s.WaterS, s.EndS, s.Hit, s.Skips, s.Generation) = (top, end, end, -1, s.Skips + 1, s.Generation + 1);
         SkipCount++;
         SkippedShells += s.Skips == 1 ? 1 : 0;
         world.Schedule(new WorldTime(s.FiredMs + (long)Math.Floor(top * 1000)), EventTier.Fine, slot, Id, WindowEvent, s.Generation);
-        return true;
+        return Graze.Skipped;
+    }
+
+    /// <summary>A shell's yaw where it ends, degrees: its last skip's, died away e-fold every
+    /// <see cref="SimSettings.WaterRicochetYawCalibres"/> along its way since (0: it never skipped).</summary>
+    double YawAt(in Shell s, int slot)
+    {
+        if (s.Skips == 0 || !(s.YawDeg > 0) || s.Loadout == null || s.ShellType < 0)
+            return 0;
+        var (arc, _, _, _) = SkipFlight.At(flights.AsSpan(slot * SkipFlight.Length, SkipFlight.Length), flightN[slot], Math.Min(s.EndS, s.WaterS));
+        double decay = settings.WaterRicochetYawCalibres * s.Loadout.ShellTypes[s.ShellType].CalibreMm / 1000;
+        return s.YawDeg * Math.Exp(-Math.Max(arc, 0) / Math.Max(decay, 1e-3));
     }
 
     /// <summary>The flattest a skip leaves at, degrees (a scatter's draw under it: as flat as a shell can rise off the sea).</summary>
@@ -399,6 +476,7 @@ public sealed class ShellSystem : IWorldSystem
                     Damage.Strike(world, new Hit
                     {
                         Ship = s.Hit, Ms = world.Time.Ms, Point = s.HitPoint, Direction = s.HitDirection, SpeedMs = s.HitSpeed, WaterRunM = s.WaterRunM,
+                        YawDeg = YawAt(s, e.Entity),
                         Source = HitSource.Shell,
                         Shell = s.Loadout.ShellTypes[s.ShellType], ShellType = s.ShellType, Shooter = s.Shooter, Battery = s.Battery,
                     });
@@ -407,7 +485,8 @@ public sealed class ShellSystem : IWorldSystem
             }
             else
             {
-                if (Skip(world, ref s, e.Entity))
+                var graze = Skip(world, ref s, e.Entity);
+                if (graze == Graze.Skipped)
                 {
                     // off the water and on (E7's ricochet): its splash is where it skipped, and so the spotter's
                     if (s.Record >= 0)
@@ -416,7 +495,8 @@ public sealed class ShellSystem : IWorldSystem
                     return;
                 }
                 Misses++;
-                NearMisses(world, ref s, e.Entity);
+                if (graze == Graze.In)
+                    NearMisses(world, ref s, e.Entity);
             }
             s.Alive = false;
             alive--;
@@ -440,25 +520,31 @@ public sealed class ShellSystem : IWorldSystem
             return;
         Fly(s, slot, s.WaterS, out var vel);
         double v = Math.Max(vel.Length, 1e-9), decay = WaterRun.DecayM(shell, settings);
-        var up = s.WaterPoint.Normalized();
-        double fall = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, up) / v, -1, 1)));
+        double fall = s.MeetDeg;   // the face it met (its fall on a flat sea)
         // as far as its fuze could carry it under the water (a base fuze's delay at four of its scatters)
         double longest = WaterRun.RunInM(v, shell.FuzeWaterMs / 1000 + (shell.Fuze == Fuze.Base ? shell.FuzeDelayS * (1 + 4 * shell.FuzeScatter) : 0), decay);
-        var near = index.Near(s.WaterPoint, reach + longest + biggest);
-        if (near.Length == 0)
+        if (index.Near(s.WaterPoint, reach + longest + biggest).Length == 0)
             return;
-        if (candidates.Length < near.Length)
-            candidates = new int[Math.Max(near.Length, candidates.Length * 2)];
-        near.CopyTo(candidates);
-        int n = near.Length;
-
         var rng = NearDraws(world, s, slot);
         var (run, force) = NearMiss.Burst(shell, v, fall, settings, ref rng);
         if (!(force > 0))
             return;
         var dir = vel * (1 / v);
-        var at = s.WaterPoint + dir * run;
-        double speed = WaterRun.Speed(v, run, decay);
+        StrikeNear(world, s, shell, s.WaterPoint + dir * run, dir, WaterRun.Speed(v, run, decay), run, force);
+    }
+
+    /// <summary>A missed shell's burst at a point (in the water, or just over it), flying along dir at speed: each ship whose
+    /// waterplane lies within its reach takes a near miss (its run under the water before it, m).</summary>
+    void StrikeNear(World world, in Shell s, in ShellTypeRow shell, Vec3d at, Vec3d dir, double speed, double run, double force)
+    {
+        double reach = NearMiss.ReachM(shell, settings);
+        var near = index.Near(at, reach + biggest);
+        if (Damage == null || !settings.HitsDoDamage || near.Length == 0)
+            return;
+        if (candidates.Length < near.Length)
+            candidates = new int[Math.Max(near.Length, candidates.Length * 2)];
+        near.CopyTo(candidates);
+        int n = near.Length;
         var store = ships.Store;
         long now = world.Time.Ms;
         for (int c = 0; c < n; c++)
@@ -521,7 +607,8 @@ public sealed class ShellSystem : IWorldSystem
         // a shell that will skip off the water (E7's ricochet) doesn't run on under it
         var upEnd = chordPoint[Chords].Normalized();
         double fallEnd = double.RadiansToDegrees(Math.Asin(Math.Clamp(-Vec3d.Dot(vel, upEnd) / Math.Max(speed, 1e-9), -1, 1)));
-        double reach = CanSkip(s) && fallEnd < settings.WaterRicochetDeg ? 0 : WaterRun.ReachM(shell, speed, settings);
+        Facet(world, ref s, slot, chordPoint[Chords], vel, fallEnd);
+        double reach = CanSkip(s) && s.MeetDeg < settings.WaterRicochetDeg ? 0 : WaterRun.ReachM(shell, speed, settings);
         chordPoint[Chords + 1] = chordPoint[Chords] + vel * (reach / speed);
         chordTime[Chords + 1] = s.EndS + WaterRun.TimeS(speed, reach, WaterRun.DecayM(shell, settings));
         (s.End, s.Hit, s.WaterRunM, s.WaterS, s.WaterPoint) = (chordPoint[Chords], -1, 0, s.EndS, chordPoint[Chords]);

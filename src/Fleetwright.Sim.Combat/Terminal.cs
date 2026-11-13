@@ -170,6 +170,12 @@ public static class Terminal
         // which the nose still meets a plate as if capped
         var cap = res.Underwater && shell.Cap == Cap.BreakAway ? Cap.None : shell.Cap;
         double massKg = cap == shell.Cap ? shell.MassKg : shell.MassKg * (1 - shell.CapShare);
+        // yawed (a shell that skipped off the sea): obliquity added, then its cap doing nothing and the limit up, then tumbling
+        double yaw = Math.Max(hit.YawDeg, 0), yawOb = s.YawObliqueShare * Math.Min(yaw, s.YawObliqueDeg);
+        double yawLimit = 1 + s.YawLimitPerDeg * Math.Clamp(yaw - s.YawObliqueDeg, 0, s.YawTumbleDeg - s.YawObliqueDeg);
+        bool tumbling = yaw > s.YawTumbleDeg;
+        if (yaw > s.YawObliqueDeg)
+            cap = Cap.None;   // struck off its axis: the cap does nothing (still carried)
         double capOffT = double.NaN, capGapM = 0;
         // what the shell is among (C1c): the cell and the part it's in, where it may next meet a solid, the last one struck
         var among = new Among { Cell = -1, Part = -1, FromT = double.NegativeInfinity, SkinT = double.NaN, CoreT = double.NaN };
@@ -227,7 +233,7 @@ public static class Terminal
                 continue;
 
             double t = x.Mm > 0 ? x.Mm * c.MaterialQ(x.Material, x.Mm, calMm) : 0;
-            double ob = Obliquity(dir, x.Normal);
+            double ob = Math.Min(Obliquity(dir, x.Normal) + yawOb, 89);
             if (nose)
             {
                 bool punches = t <= NosePunchMm(calMm, ob, s);
@@ -279,7 +285,7 @@ public static class Terminal
                 shatter = p >= 1 || p > 0 && r.NextDouble() < p;
                 te = FaceHardMm(te, shell, ob, shatter, s);
             }
-            double vl = LimitMs(te, calMm, massKg, ob) * quality;
+            double vl = tumbling && td >= s.YawTumbleTD ? double.PositiveInfinity : LimitMs(te, calMm, massKg, ob) * quality * yawLimit;
             bool decapped = false;
             if (cap != Cap.None && (hard || Decaps(cap, td, ob, ref r)))
             {
