@@ -200,6 +200,13 @@ public enum DoctrineField : byte
     /// secondaries); or sink tonnage, every enemy alike, the nearest and easiest first. After
     /// <see cref="HitFloor"/>, so the fields' numbers in logged commands stand.</summary>
     Targets,
+
+    /// <summary>Whether a side's pursued Reach is an absolute order (docs/battle/balance.md BL5; the user, 2026-11-13: "giving
+    /// it up is the same as losing the whole scenario"): 1, while it's open its commander never declines or breaks off and
+    /// its warships don't turn away, they cover its charges; 0, he may give it up as any fight (a campaign's battles, where
+    /// saving the ships is worth more, later). After <see cref="Targets"/>, so the fields' numbers in logged commands
+    /// stand.</summary>
+    HoldReach,
 }
 
 /// <summary>Doctrine's Shells: each battery loads the kind its target calls for (the captain's choice, the matchup's
@@ -341,7 +348,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         return r;
     }
 
-    public const int FieldCount = (int)DoctrineField.Targets + 1;
+    public const int FieldCount = (int)DoctrineField.HoldReach + 1;
 
     /// <summary>Every field when nothing sets it: a world told nothing (a dev's, a test's) behaves as before doctrine.</summary>
     public static double Default(DoctrineField f) => f switch
@@ -386,6 +393,7 @@ public sealed class Doctrine(GroupSystem groups, IReadOnlyDictionary<string, dou
         DoctrineField.StrikeColours or DoctrineField.Scuttle => 0,   // as before: she fights on till the water decides
         DoctrineField.HitFloor => 0,
         DoctrineField.Targets => (double)Ai.Targets.Tonnage,   // as before: every enemy alike
+        DoctrineField.HoldReach => 1,   // a scenario's: giving the reach up is losing it
         _ => throw new ArgumentOutOfRangeException(nameof(f)),
     };
 

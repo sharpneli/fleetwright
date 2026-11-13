@@ -85,6 +85,11 @@
     // to the secondaries: the record's battle orders) or "tonnage" (sink tonnage: every enemy alike, the cripples nearest
     // and easiest first)
     "Targets": "fight",
+    // a side reaching for its aim (a convoy's port, a strait, a beach) holds to it while it's open (1): its commander never
+    // declines or breaks off and its warships cover its charges instead of turning away, since in a scenario giving the
+    // reach up is losing it (docs/battle/balance.md BL5, the user 2026-11-13); 0 lets him give it up as any fight (a
+    // campaign's battles, later)
+    "HoldReach": 1,
     // a ship given up (docs/battle/striking.md: she can't hurt the enemy, can't get away, and an enemy is in reach): how
     // readily she strikes her colours (0 never, 1 when hopeless; each captain's temper and her crew's state move it either
     // way), and, not struck, how readily she's scuttled rather than fought on [EST, research/simulation/striking-colours.md

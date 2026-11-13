@@ -25,6 +25,7 @@ enemy"); (3) the aims come now, before the balance round's BL3 and BL4.
 | A4 Sink merchants: the raider, the merchants, the hunters | done 2026-10-31 ("A4, as built") | |
 | A5 The UI: aims, progress, zones | done 2026-10-31 ("A5, as built") | zones on the launch screen's opening |
 | A6 Benches and balance | benches done 2026-10-31 ("A6, as built"); the scenario pass begun (Åland) | the other scenarios |
+| A2/A3 since | 2026-11-13 (balance.md "BL5: a reach held to the end"): a Reach is an absolute order by doctrine's HoldReach (no decline, no break off, escorts cover, the reaching ships run for the zone); a Stop goes past the escort for the convoy (the commander's intercept and the captain's Fight) | the reach scenarios rebalanced in BL6 |
 
 ## What's there
 

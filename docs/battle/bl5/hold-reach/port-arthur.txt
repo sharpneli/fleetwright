@@ -1,0 +1,68 @@
+Port Arthur, 1904: 12 ships, 2 sides, from 1904-03-09 22:20:00.000 until 1904-03-10 01:30:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1904: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 1.00   Russia lost 0/6 (0 t), score 0.00   660ba1bf3de1bab6   (8.8 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 1 of 24 (1 of 24 guns): magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1742 fired, 0 at ships seen done for
+           Japan        done? retiring (outmatched); 6 of 6 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Russia       done? lost (lost contact); 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 63 km)
+  seed   1905: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), aims met, score 1.00   Russia lost 1/6 (832 t), score 0.00   (foundered 1)   ca2946c2d5953fa5   (6.8 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (4 of 4 guns): guns out 3, magazine flooded by the sea 1
+                      at the end, 11 ships afloat: main mounts out 4 of 22 (4 of 22 guns): magazine flooded by the sea 2, guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2536 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 54 km)
+           Russia       done? home (aims decided); 2 of 5 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 102 km)
+  seed   1906: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 0.50   Russia lost 0/6 (0 t), score 0.50   a3a63135fa9803da   (6.3 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 0 of 24 (0 of 24 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1556 fired, 0 at ships seen done for
+           Japan        done? retiring (outmatched); 5 of 6 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 42 km)
+           Russia       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 37 km)
+  seed   1907: time    at 01:30 (+3:10)  Japan lost 5/6 (12868 t), score 1.00   Russia lost 1/6 (2548 t), score 0.00   (foundered 1, capsized 3)   a255567011b2fb4b   (7.5 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 2
+                      at the end, 8 ships afloat: main mounts out 5 of 16 (5 of 16 guns): magazine flooded by the sea 3, guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2761 fired, 0 at ships seen done for
+           Japan        done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 1 stopped, 1 dead in the water, the farthest 30 km)
+           Russia       done? contact; 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 57 km)
+  seed   1908: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 1.00   Russia lost 1/6 (2548 t), score 0.00   (capsized 1)   267d69bb8529153f   (7.1 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 2 of 22 (2 of 22 guns): magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2178 fired, 0 at ships seen done for
+           Japan        done? battle; 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 40 km)
+           Russia       done? battle; 1 of 5 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 31 km)
+  seed   1909: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 0.25   Russia lost 0/6 (0 t), score 0.75   6aefb73999814737   (6.8 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 12 ships afloat: main mounts out 3 of 24 (3 of 24 guns): magazine flooded by the sea 2, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1440 fired, 0 at ships seen done for
+           Japan        done? battle; 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 40 km)
+           Russia       done? contact; 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 36 km)
+  seed   1910: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   32475d0796911024   (5.0 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 0 of 24 (0 of 24 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1280 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 5 of 6 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 11 km)
+           Russia       done? home (aims decided); 3 of 6 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 4 km)
+  seed   1911: time    at 01:30 (+3:10)  Japan lost 0/6 (0 t), score 1.00   Russia lost 0/6 (0 t), score 0.00   64f0851eacbd0483   (7.4 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 3 of 24 (3 of 24 guns): magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1999 fired, 0 at ships seen done for
+           Japan        done? retiring (outmatched); 4 of 6 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 73 km)
+           Russia       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 67 km)
+
+over 8 seeds:
+  ended time      8 times, after 3:10 on average
+  Japan        lost 0.6 of 6 ships (from 0 to 5), 1609 t; made 74 hits, fired 0.1 torpedoes; aims met 1 times, score 0.72
+  Russia       lost 0.4 of 6 ships (from 0 to 1), 741 t; made 73 hits, fired 0.5 torpedoes; aims met 1 times, score 0.28
+over 8 seeds:
+  main guns: 4 fell out for them, main mounts out 8 of 8 (8 of 8 guns): guns out 5, gunhouse out of action 2, magazine flooded by the sea 1
+             at the end, 90 ships afloat: main mounts out 18 of 180 (18 of 180 guns): magazine flooded by the sea 10, guns out 4, gunhouse out of action 3, gunhouse destroyed 1
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 15492 fired, 0 at ships seen done for

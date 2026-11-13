@@ -152,6 +152,9 @@ public sealed class AimBook
         return reached;
     }
 
+    /// <summary>Whether a side's pursued aim (its first open one, as of the last update) is a Reach.</summary>
+    public bool ReachOpen(int side) => Pursued(side) is int p and >= 0 && sides[side & 255]![p].Aim.Kind == AimKind.Reach;
+
     /// <summary>Whether a ship of a side is reaching for its pursued aim: named in it, a Reach, and not arrived.</summary>
     public bool Reaching(int side, int ship) =>
         Pursued(side) is int p and >= 0 && sides[side & 255]![p] is { Aim.Kind: AimKind.Reach } e && e.Named.Contains(ship) && !e.Arrived.Contains(ship);

@@ -835,6 +835,42 @@ itself** for home and its reach is lost; the escort stays by duty once the hunte
 never forms. Whether a side reaching for its aim declines at all (or its charges go on, scattering, while the warships
 cover them) is the same question as Tsushima's Russians making for Vladivostok.
 
+### BL5: a reach held to the end (2026-11-13)
+
+**Decided (the user, 2026-11-13): "The warships should cover them and not run by default. We should have the reach be an
+absolute order in these scenarios because giving it up is the same as losing the whole scenario. In campaign battles
+abandoning is a more reasonable approach as it saves resources, but here it's the same as forfeiting the whole scenario."**
+
+**Built** (`bl5/hold-reach/`): doctrine's **`HoldReach`** (1 by default, a side's standing order; a campaign sets 0 later).
+While a side's pursued aim is a Reach still open:
+- **its commander never declines or breaks off** (`CommanderLayer.Balance`), so no rearguard is needed either;
+- **its warships don't turn away**: a unit's call to turn away is overruled in the captain's Fight, and the admiral's
+  rearguard check is skipped; they cover the charges (the commander's Cover tasks, as before);
+- **the reach's own ships don't take up doctrine's fight nor fall out**: once the enemy's met they run for the zone as a
+  withdrawal runs for home (`Reach`: away from what's near, bent for the zone as it falls back, all they make), firing as
+  they go.
+
+**Found on the way, fixed** (the convoy test, un-skipped and passing): with escorts now covering, the Stop side's hunter fought
+a harmless light cruiser for three hours while his commander's intercept of the convoy waited on that fight. Two fixes,
+aims.md A3's "past the escort for the convoy": the commander takes a unit off a group his aim doesn't want for one it does,
+in contact or not; and a captain's Fight (not ordered at a ship) fights the enemy his guns would choose, the wanted counting
+nearer and an escort by how much she endangers him (`WantedEnemy`, by `Want`). A slip in the same work (a comment that
+swallowed half of `FallOut`'s guard) was caught by the panel and fixed before this commit.
+
+**The panel** moves only where there's a reach (Åland: Finland 6.4, Sweden 2.9 → 3.1); the rest identical to BL5's rearguard
+row. **The reach scenarios** (8 seeds each, `bl5/hold-reach/*.txt`, against the commit before), the reaching side's aim met
+and the two scores:
+
+| Scenario | Before | Reach held |
+|---|---|---|
+| Pungdo, China reaching | 1 of 8, 0.13 / 0.88 (China never fought) | 5 of 8, 0.63 / 0.38 |
+| The Bosporus, Russia reaching | 3 of 8, 0.44 / 0.56 | 7 of 8, 0.88 / 0.13 |
+| Manila, Spain reaching | 4 of 8, 0.63 / 0.50 | 3 of 8, 0.38 / 0.63 |
+| Port Arthur, Russia reaching | 6 of 8, 0.75 / 0.25 | 1 of 8, 0.28 / 0.72 |
+
+All four were balanced (2026-11-09) on a side that gave its reach up when outmatched; BL6 rebalances them, with Tsushima's
+Russians given their reach for Vladivostok.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -945,3 +981,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-10 | `46ca8131` | BL3's baseline after EX7, PM, the dispersion series and night Q13-Q16 (`bl3/baseline/`) | 5 of 14 sides within 2x; the record's loser lost more in 24 of 44 (Tsushima turned over: 1 of 8); Heligoland 4.4 v 19.8, Dogger 6.6 v 10.8, Tsushima 3.3 v 7.3, Jutland 26.3 v 45.5; capsized 46%, foundered 28%, broke in two 26%, magazine 0% |
 | 2026-11-10 | (this commit) | BL5: outmatched runs, "no escape" gone at the commander's and the unit's level (`bl5/outmatched-runs/`) | 8 of 14 sides within 2x (5); the record's loser lost more in 21 of 44 (24); Heligoland 1.0 v 7.1, Dogger 0.6 v 0.8, Tsushima 2.8 v 2.1, Jutland 20.0 v 38.3 |
 | 2026-11-11 | (this commit) | BL5: the rearguard (stays when it buys time; duty for the aim's charges) and the aggression swing 0.8 (`bl5/rearguard-final/`) | 6 of 14 sides within 2x (8); the record's loser lost more in 25 of 44 (21); Heligoland 1.0 v 7.1, Dogger 1.4 v 3.4, Tsushima 2.4 v 1.1, Jutland 18.0 v 45.3; rearguards 0.4-0.8 a seed where they stay |
+| 2026-11-13 | (this commit) | BL5: a reach held to the end (doctrine's HoldReach), past the escort for the convoy (`bl5/hold-reach/`) | as the rearguard row but Åland 6.4 v 3.1; the reach scenarios moved (Pungdo 5 of 8 reach, Bosporus 7, Manila 3, Port Arthur 1): BL6's |

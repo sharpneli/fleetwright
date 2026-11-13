@@ -454,7 +454,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 // sent after an enemy group: close its biggest ship, unless it's in a fight already (doctrine's) or closing
                 // one of the group's ships already (its biggest as it was: the picture's shifts don't turn it)
                 int target = WantedIn(ctx, side, held[t.Group]) is int w and not 0 ? w : held[t.Group].Biggest;
-                if (!InContact(ctx, t) && closingGroup[i] != t.Group && FreeToClose(t.Unit, target))
+                bool past = wantedGroup[t.Group] && (closingGroup[i] < 0 || !wantedGroup[closingGroup[i]]);   // past an escort for the convoy, in a fight or not (aims.md A3)
+                if ((!InContact(ctx, t) || past) && closingGroup[i] != t.Group && FreeToClose(t.Unit, target))
                     Give(ctx, t, ctx.Orders.Intercept(t.Unit, target, 0, OrderSource.Commander), CommanderWhy.Contact);
                 continue;
             }
@@ -480,11 +481,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     {
         var (kind, state, _) = Tasks!.Of(t.Unit);
         var guide = store[t.Slot];
-        if (zone.Holds(guide.Position) || s.Declined || s.BrokenOff)
+        // held to the end (doctrine's HoldReach, balance.md BL5), once the enemy's met it runs for its zone as a withdrawal
+        // would for home (its zone is its home): away from what's near, bent for the zone as they fall back, all it makes
+        bool run = s.Met && doctrine.OfGroup(null, t.Side, DoctrineField.HoldReach) >= 0.5;
+        if (zone.Holds(guide.Position) || s.Declined || s.BrokenOff || run)
         {
             if (kind != TaskKind.Withdraw)
                 Give(ctx, t, ctx.Orders.WithdrawHome(t.Unit, OrderSource.Commander),
-                    zone.Holds(guide.Position) ? CommanderWhy.Reach : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched);
+                    zone.Holds(guide.Position) || run ? CommanderWhy.Reach : s.BrokenOff ? CommanderWhy.BrokenOff : CommanderWhy.Outmatched);
             return;
         }
         if (kind is TaskKind.GoTo or TaskKind.Attack && state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact)
@@ -548,7 +552,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 afloat += store[slot].Handling.Class.Hydrostatics.DisplacementT;
         if (s.CameT == 0)
             s.CameT = afloat;
-        s.BrokenOff |= afloat < s.CameT * (1 - doctrine.OfGroup(null, side, DoctrineField.BreakOffShare));
+        // a Reach held to the end (doctrine's HoldReach): no breaking off nor declining while it's open
+        bool bound = Book.ReachOpen(side) && doctrine.OfGroup(null, side, DoctrineField.HoldReach) >= 0.5;
+        s.BrokenOff |= !bound && afloat < s.CameT * (1 - doctrine.OfGroup(null, side, DoctrineField.BreakOffShare));
         mine.Clear();
         foreach (var t in tops)
             if (t.Side == side && t.Role is not (UnitRole.None or UnitRole.Auxiliary))
@@ -563,6 +569,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
         var r = Judge.Judge(ctx, 0, side, at, mine, enemy);
         s.Confidence = r.Confidence;
+        if (bound)
+        {
+            s.Declined = false;   // his reach is an absolute order: he goes on whatever the odds
+            return;
+        }
         double bar = Judge.Bars(0, side).Accept, margin = ctx.Settings.CommanderMarginShare, low = bar / (1 + margin), high = bar * (1 + margin);
         if (!s.Declined)
         {
@@ -635,12 +646,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         // the groups, gravest first
         order.Clear();
         graveness.Clear();
+        wantedGroup.Clear();
         JudgeGroups(ctx, side, held, default, byCentre: true);
         for (int k = 0; k < held.Length; k++)
         {
             double c = groupCount[k] == 0 || mine.Count == 0 ? double.MaxValue : groupConf[k];
-            order.Add((k, c, WantedIn(ctx, side, held[k]) != 0));
+            bool w = WantedIn(ctx, side, held[k]) != 0;
+            order.Add((k, c, w));
             graveness.Add(c);
+            wantedGroup.Add(w);
         }
         // those holding what his aim wants sunk first (docs/battle/aims.md A3: the convoy before its escort's other groups)
         order.Sort((x, y) => x.W != y.W ? y.W.CompareTo(x.W) : x.C != y.C ? x.C.CompareTo(y.C) : x.K.CompareTo(y.K));
@@ -657,7 +671,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                         on = k;
             closingGroup.Add(on);
         }
-        foreach (var (k, kc, _) in order)
+        foreach (var (k, kc, kw) in order)
         {
             var g = held[k];
             enemy.Clear();
@@ -680,6 +694,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     sent.Add(i);
                     AddTop(ctx, t, set);
                 }
+                else if (kw && on >= 0 && !wantedGroup[on] && FreeToClose(t.Unit, 0))
+                    near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));   // off a group his aim doesn't want for one it does, in contact or not (aims.md A3: past the escort for the convoy)
                 else if ((on < 0 || kc < graveness[on] / ctx.Settings.CommanderRetargetShare) && FreeToClose(t.Unit, 0) && !InContact(ctx, t))
                     near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));
             }
@@ -717,6 +733,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     readonly List<(int K, double C, bool W)> order = new(16);
     readonly List<double> graveness = new(16);
+    readonly List<bool> wantedGroup = new(16);   // by held group: whether it holds what his aim wants sunk first
     readonly List<int> closingGroup = new(32);
     readonly List<(int I, double D)> near = new(32);
     readonly List<int> sent = new(16);

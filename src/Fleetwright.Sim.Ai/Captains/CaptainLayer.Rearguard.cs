@@ -31,6 +31,11 @@ public sealed partial class CaptainLayer
 {
     readonly List<int> rgShips = new(32);
 
+    /// <summary>Whether a ship's side holds to its Reach (doctrine's <see cref="DoctrineField.HoldReach"/>, its pursued aim a
+    /// Reach still open): her force doesn't turn away from an enemy, it covers its charges (balance.md BL5).</summary>
+    public bool HoldsReach(int entity, byte side) =>
+        Book?.ReachOpen(side) == true && doctrine.Of(entity, side, DoctrineField.HoldReach) >= 0.5;
+
     /// <summary>Whether his ship is her captain's own call now, not her superiors': fallen out and home, or a rearguard.</summary>
     public bool OwnCall(int entity) => Find(entity) is int i and >= 0 &&
                                        (captains[i].Order == CaptainOrder.Home || captains[i].Reason == CaptainReason.Rearguard);

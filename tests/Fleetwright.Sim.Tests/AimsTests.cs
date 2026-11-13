@@ -206,7 +206,8 @@ public class AimsTests(ITestOutputHelper output)
     }
 
     /// <summary>A light cruiser (29 kn) for a zone 60 km west, a slower, stronger German dreadnought 12 km off her beam:
-    /// her commander declines it, and she still makes for her zone (it's her home now), running for it at her best speed.
+    /// her reach is held to the end (doctrine's HoldReach, balance.md BL5, the user 2026-11-13: her commander doesn't decline
+    /// it), and she makes for her zone at her best speed. (Before it her commander declined and she made for it as her home.)
     /// Whether she gets there under the dreadnoughts' fire is the guns' to say, not her commander's: with the laying right
     /// (docs/battle/balance.md BL1l) a 12" hit in her first two minutes slowed her in this seed and she was finished, where
     /// the old laying missed her all the way; and her captains don't chase salvos yet (BL1n). Since the salvo error's parts
@@ -236,7 +237,7 @@ public class AimsTests(ITestOutputHelper output)
         });
         foreach (var l in end.Timeline.Where(l => l.Kind is PlayEvent.Ordered or PlayEvent.Phase && l.Side == 0).Take(12))
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {l.Other}");
-        Assert.Contains(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
+        Assert.DoesNotContain(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
         Assert.Contains(task, new[] { TaskKind.Withdraw, TaskKind.GoTo });   // home is her zone now, or she's for it caught
         Assert.True(lon < 4.0 - 12 / KmPerLonDeg, $"12 km west in her first 20 minutes: at {lon:0.000}°");
     }
@@ -333,13 +334,11 @@ public class AimsTests(ITestOutputHelper output)
     /// <summary>The captains' choice (docs/battle/aims.md A3; the user: reasonable about it, round the escort if he can): a
     /// battlecruiser out to stop a convoy, its tramps 12 km east and its escort 8 km north. With a light cruiser escort,
     /// which can hardly hurt her, her main guns go on the tramps; with a dreadnought, which can put her out, on the
-    /// dreadnought. Since the rearguard (balance.md BL5, 2026-11-11) the convoy, outmatched, turns away and the dreadnought
-    /// stays behind to cover it by duty, turning on her: her guns stay on the dreadnought (before it, she went round the
-    /// dreadnought for the tramps, her guns on them once they were the nearer).</summary>
+    /// dreadnought, and she goes round it for the tramps (the dreadnought's range opening as the tramps' closes), her guns
+    /// going on the tramps once they're the nearer.</summary>
     [Fact]
     public void A_captain_shoots_the_transports_over_an_escort_unless_it_endangers_him()
     {
-        bool rearguard = false;
         List<(int On, double EscortKm, double TrampKm)> Run(string escort)
         {
             var json = Convoy(escort, $"[{56.3 + 8 / 111.2:R}, {4.0 - 12 / KmPerLonDeg:R}]", raider: $"[56.3, {4.0 - 12 / KmPerLonDeg:R}]");
@@ -351,7 +350,6 @@ public class AimsTests(ITestOutputHelper output)
                 var h = store[store.SlotOf(Named(start, "Hunter"))];
                 double Km(string n) => Earth.Distance(h.Position, store[store.SlotOf(Named(start, n))].Position) / 1000;
                 by.Add((Chief(w, h.Entity), Km("Guard"), Km("One")));
-                rearguard |= escort == "dreadnought" && ai.Captains.ReasonOf(Named(start, "Guard")) == Fleetwright.Sim.Ai.Captains.CaptainReason.Rearguard;
                 output.WriteLine($"{escort} {by.Count} min: on {by[^1].Item1}, {ai.Commanders.PhaseOf(1)}, heading {h.HeadingDeg:0}, escort {Km("Guard"):0.0} km, tramp {Km("One"):0.0} km");
             });
             return by;
@@ -364,8 +362,8 @@ public class AimsTests(ITestOutputHelper output)
         Assert.NotEqual(guard, light[2].On);
         Assert.NotEqual(0, light[2].On);
         Assert.Equal(guard, heavy[2].On);
-        Assert.True(rearguard, "the dreadnought stays behind to cover the convoy");
-        Assert.Equal(guard, heavy[^1].On);
+        Assert.True(heavy[^1].EscortKm > heavy[2].EscortKm && heavy[^1].TrampKm < heavy[2].TrampKm, "round the dreadnought for the tramps");
+        Assert.NotEqual(guard, heavy[^1].On);
     }
 
     /// <summary>A3's commander: his battlecruiser, with no orders, searches the zone the convoy makes for (he's never held
@@ -373,11 +371,10 @@ public class AimsTests(ITestOutputHelper output)
     /// blank and the tramps are out of reach, then goes for the tramps, and the convoy is stopped. (The escort, a light
     /// cruiser under a battlecruiser's guns at point blank, may be sunk first: with the laying right, docs/battle/balance.md
     /// BL1l, she went down in 25 minutes where she had lasted the fight.) Seed 4: 11 of 12 seeds go so (2026-11-04); seed 3, its
-    /// battlecruiser holding 20 km off the escort for an hour, is in docs/battle/bugs.md. Skipped since "outmatched runs"
-    /// (balance.md BL5, 2026-11-10): the convoy's commander, outmatched, now turns the convoy itself for home, giving up its
-    /// reach; the escort stays as its rearguard (by duty) once the hunter closes, but the geometry this test reads never
-    /// forms. Whether a side reaching for its aim declines at all is the user's (balance.md BL5).</summary>
-    [Fact(Skip = "a reaching side's decline: balance.md BL5, for the user (2026-11-11)")]
+    /// battlecruiser holding 20 km off the escort for an hour, is in docs/battle/bugs.md. A reach is held to the end
+    /// (doctrine's HoldReach, balance.md BL5, the user 2026-11-13): the convoy's commander, outmatched, goes on and its
+    /// escort stands between rather than run.</summary>
+    [Fact]
     public void A_stop_side_finds_the_convoy_on_its_way_and_shoots_the_transports_first()
     {
         int onTramps = 0, onGuard = 0;

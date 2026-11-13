@@ -298,6 +298,8 @@ public sealed partial class CaptainLayer
         if (cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.FleeMs != 0 || Tasks?.Avoids(Unit.Ship(own.Entity)) == true ||
             (Engage)doctrine.Of(own.Entity, own.Side, DoctrineField.Engage) != Engage.Fight)
             return;
+        if (Book?.Reaching(own.Side, own.Entity) == true && HoldsReach(own.Entity, own.Side))
+            return;   // one of her side's held reach's ships: she makes for its zone, firing as she goes; her escorts fight (balance.md BL5)
         if (encounters.Of(slot, own.Entity) == 0)
         {
             cap.Met = false;
@@ -958,6 +960,26 @@ public sealed partial class CaptainLayer
         return (candWanted & 1 << (int)c.Type) != 0 ? w : 1 + (w - 1) * Threat(ctx, own, slot, c, rangeM);
     }
 
+    /// <summary>The contact within <see cref="SimSettings.FightCompareM"/> his side's aim makes the best enemy to fight: the
+    /// least range over <see cref="Want"/> (0: none).</summary>
+    int WantedEnemy(in AiContext ctx, ShipState own, int slot)
+    {
+        var pic = ctx.World.Sightings.Of(own.Side);
+        if (pic == null)
+            return 0;
+        int best = 0;
+        double bestR = double.MaxValue;
+        foreach (int i in seen.Near(ctx.World, own.Side, own.Position, ctx.Settings.FightCompareM))
+        {
+            if (pic.Out(pic[i].Entity))
+                continue;
+            double r = Math.Max((seen.Position(own.Side, i) - own.Position).Length, 100), eff = r / Want(ctx, own, slot, pic[i], r);
+            if (eff < bestR || eff == bestR && pic[i].Entity < best)
+                (best, bestR) = (pic[i].Entity, eff);
+        }
+        return best;
+    }
+
     /// <summary>How much a contact endangers his ship at a range, 0 to 1: what she's expected to put out of him
     /// (<see cref="Matchup.Threat"/>: her guns on him over an action of <see cref="SimSettings.WantedThreatMin"/>, and a
     /// salvo of her torpedoes in their reach, over the classes his navy may take her for) against
@@ -1216,6 +1238,13 @@ public sealed partial class CaptainLayer
             if (enemy == 0 || !ctx.Picture.TryGet(own.Side, enemy, out t))
                 enemy = Nearest(ctx, own, s.FightCompareM, out t);
         }
+        // his side's aim wanting something sunk first (a convoy's transports): the enemy he fights is the one his guns would
+        // choose, the wanted counting nearer and an escort by how much she endangers him (aims.md A3; balance.md BL5: with
+        // escorts covering now, a hunter fought a harmless light cruiser for three hours, his convoy's intercept waiting)
+        candWanted = Book?.Wanted(own.Side) ?? 0;
+        if (cap.Target == 0 && !rearguard && candWanted != 0 && WantedEnemy(ctx, own, slot) is int we and not 0 && we != enemy &&
+            ctx.Picture.TryGet(own.Side, we, out var wt))
+            (enemy, t) = (we, wt);
         if (enemy == 0)
             return;
         if (enemy != cap.FightEnemy)
@@ -1228,7 +1257,7 @@ public sealed partial class CaptainLayer
             band = m.BandA;   // where his unit does best against them (Matchup.Judge), doctrine's where it hardly matters
         cap.FightBandM = band;
         double c = call.Any ? m.Confidence : double.PositiveInfinity;
-        bool away = call.Away && !rearguard;
+        bool away = call.Away && !rearguard && !HoldsReach(own.Entity, own.Side);   // her side's reach held: she covers, she doesn't run
         double fallBack = !away ? double.NaN : call.FallBack != 0 && ctx.Ships.SlotOf(call.FallBack) is int fs and >= 0 ? Earth.Bearing(own.Position, ctx.Ships[fs].Position) : double.NaN;
         if (rearguard)
             CoverRetreat(ctx, ref cap, own, slot, near: true);   // her smoke between them, once she's under fire
@@ -1285,7 +1314,9 @@ public sealed partial class CaptainLayer
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
-        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.Reason == CaptainReason.Rearguard || !k.Damaged || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
+        if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.Reason == CaptainReason.Rearguard || !k.Damaged
+            || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
+            || Book?.Reaching(own.Side, own.Entity) == true && HoldsReach(own.Entity, own.Side)   // a held reach's ship presses on for its zone at what she can make (balance.md BL5)
             || Admirals?.LineConned(own.Entity) == true)   // her line's conn: she stays in it
             return;
         cap.FitVersion = k.Version;
