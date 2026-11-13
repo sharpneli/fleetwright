@@ -59,7 +59,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 4.5 Fire; damage control | done 2026-10-19, 10-20 | `fire.md`, `damage-control.md` | open items in B5, DC9 for the balance round |
 | 4.5 Shell contents; magazines | done 2026-10-19, 10-20 | `shell-contents.md`, `magazines.md` | |
 | 4.5 One explosion | EX0-EX7 done 2026-11-08 (the matchup refit, the whole game read); the gas in game time (workers.md ET) and drawn (destruction.md D0-D7) | `explosions.md` | the weak points (shipgen), item 10, then EX8 ("Where to pick up"): after the alpha |
-| 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22 | `smoke.md` | its tuning pass |
+| 4.5 Smoke | Z0-Z6, T1-T4 done 2026-10-22; T5 (gun smoke rises on its heat) 2026-11-13 | `smoke.md` | its tuning pass |
 | 4.5 Shell choice | A0-A6 done 2026-10-25 | `shell-choice.md` | two restated matchup anchors for the user |
 | 4.5 Crew | N0-N6 done 2026-10-29 | `crew.md` | decision 11 for the user |
 | 4.5 Night | Q0-Q12f done 2026-10-30; Q13-Q16 (lights shown, aimed at lights, running dark) 2026-11-09 | `night.md` | night hit rates left in fine |
