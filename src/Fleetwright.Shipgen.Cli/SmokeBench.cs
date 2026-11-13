@@ -281,6 +281,7 @@ static class SmokeBench
         if (sample.Count == 0)
             yield break;
         var by = new double[5];
+        var byKind = new double[4];
         double nowS = now / 1000.0;
         Span<double> one = stackalloc double[1];
         foreach (var (o, t) in sample)
@@ -302,11 +303,14 @@ static class SmokeBench
                 one[0] = 0;
                 SmokeModel.TauGrid(line, st, [from], [to], one);
                 by[k] += one[0];
+                byKind[(int)w.Smoke.KindOf(i)] += one[0];
             }
         }
         double sum = Math.Max(by.Sum(), 1e-12);
         yield return string.Format(Inv, "           whose smoke, on {0} smoky lines (mean τ {1:0.00} at the middle band): her own {2:0}%, the target's {3:0}%, her side's {4:0}%, the target's side's {5:0}%, ships gone {6:0}%",
             sample.Count, sum / sample.Count, 100 * by[0] / sum, 100 * by[1] / sum, 100 * by[2] / sum, 100 * by[3] / sum, 100 * by[4] / sum);
+        yield return string.Format(Inv, "           by source: funnels {0:0}%, guns {1:0}%, fires {2:0}%, bursts {3:0}%",
+            100 * byKind[0] / sum, 100 * byKind[1] / sum, 100 * byKind[2] / sum, 100 * byKind[3] / sum);
     }
 
     /// <summary>`shipgen smoke screen`: the USNI case (docs/battle/smoke.md Z4): a battle line of three steaming north at
