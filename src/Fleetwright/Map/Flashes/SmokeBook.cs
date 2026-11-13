@@ -1,4 +1,5 @@
 using System.Numerics;
+using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 
 namespace Fleetwright.Map.Flashes;
@@ -12,7 +13,8 @@ namespace Fleetwright.Map.Flashes;
 /// <list type="bullet">
 /// <item>carried along the bore by the gas jet, 2.5 λ_f over τ_m = 0.04 λ_f + 0.05 s, past the Mach disk;</item>
 /// <item>drifting with the wind;</item>
-/// <item>rising 0.6 λ_f as it cools, over 3 + 0.05 λ_f s;</item>
+/// <item>rising as the thermal its heat makes (the field's own rise, <see cref="SmokeSources.GunRise"/>, docs/battle/smoke.md
+/// T5); a puff given no rise (the other effects') 0.6 λ_f over 3 + 0.05 λ_f s;</item>
 /// <item>spreading as σ_h² = (0.35 λ_f)² + ((0.07 U + 0.2) t)² + 0.5 t, σ_z = 0.8 σ_h;</item>
 /// <item>its extinction area A ramping in after the flash (full A at once haloes the young flash), the water fog
 /// evaporating over τ_w.</item>
@@ -34,8 +36,11 @@ public sealed class SmokeBook
         public float Jet0, Jet, JetS;
         /// <summary>Its height at the start and the jet's share of it, m; the height its drawing is anchored at.</summary>
         public float Z0, JetZ, Anchor;
-        /// <summary>The fireball's length λ_f (its core's size and its rise), m.</summary>
+        /// <summary>The fireball's length λ_f (its core's size, and its rise without <see cref="RiseS"/>), m.</summary>
         public float Lambda;
+        /// <summary>A gun puff's thermal rise, m, and its time, s (<see cref="SmokeModel.RiseShare"/>; 0: the 0.6 λ_f
+        /// rise).</summary>
+        public float Rise, RiseS;
         /// <summary>The particles' extinction area and the water fog's at birth, m² (the sea's strength in), the fog's
         /// evaporation and the ramp's time, s (0: full).</summary>
         public float Ap, Aw0, FogS, RampS;
@@ -70,6 +75,7 @@ public sealed class SmokeBook
     public ref readonly Puff this[int i] => ref puffs[i];
 
     double seaNow, worldNow;
+    SmokeAir air;
 
     /// <summary>A puff's clock now: the world's or the sea's.</summary>
     double Now(in Puff p) => p.World ? worldNow : seaNow;
@@ -82,9 +88,10 @@ public sealed class SmokeBook
 
     /// <summary>A frame: the shots the book just added become puffs; the merged, the gone and (over capacity) the
     /// oldest let go. <paramref name="now"/> is the sea's clock, <paramref name="worldNow"/> the world's, s.</summary>
-    public void Update(ShotBook shots, double now, double worldNow, double windFromDeg, double windMs)
+    public void Update(ShotBook shots, double now, double worldNow, double windFromDeg, double windMs, SmokeAir air = default)
     {
         (WindToDeg, WindMs) = ((windFromDeg + 180) % 360, Math.Max(windMs, 0));
+        this.air = air;
         (seaNow, this.worldNow) = (now, worldNow);
         for (int k = shots.Count - shots.Added; k < shots.Count; k++)
             Spawn(shots[k]);
@@ -125,12 +132,13 @@ public sealed class SmokeBook
         }
         double lf = e.FlashLengthM, el = e.ElevationDeg * Math.PI / 180, ce = Math.Cos(el), se = Math.Sin(el);
         double ramp = 0.5 * Math.Max(e.SecondaryS, e.EmptyS) + 0.004;
+        var (rise, riseS) = e.HeatJ > 0 ? SmokeSources.GunRise(e.HeatJ, air) : (0, 0);
         puffs[count++] = new Puff
         {
             Born = e.SeaT0, Origin = e.Tip, Bore = e.Forward,
             Jet0 = (float)(e.MachDiskM * ce), Jet = (float)(2.5 * lf * ce), JetS = (float)(0.04 * lf + 0.05),
             Z0 = (float)(e.HeightM + e.MachDiskM * se), JetZ = (float)(2.5 * lf * se), Anchor = e.HeightM,
-            Lambda = (float)lf, Ap = e.SmokeM2 * e.SeaStrength, Aw0 = e.FogM2 * e.SeaStrength, FogS = Math.Max(e.FogS, 0.1f),
+            Lambda = (float)lf, Rise = (float)rise, RiseS = (float)riseS, Ap = e.SmokeM2 * e.SeaStrength, Aw0 = e.FogM2 * e.SeaStrength, FogS = Math.Max(e.FogS, 0.1f),
             RampS = (float)ramp, Tint = e.Tint, Seed = e.Seed, Shooter = e.Shooter,
         };
     }
@@ -147,7 +155,7 @@ public sealed class SmokeBook
         double jet = p.JetS > 0 ? 1 - Math.Exp(-age / p.JetS) : 1;
         var wind = Earth.Forward(p.Origin, WindToDeg) * (WindMs * age);
         centre = p.Origin + p.Bore * (p.Jet0 + p.Jet * jet) + wind;
-        z = p.Z0 + p.JetZ * jet + 0.6 * p.Lambda * (1 - Math.Exp(-age / (3 + 0.05 * p.Lambda)));
+        z = p.Z0 + p.JetZ * jet + Lift(p, age);
         double g = Growth, core = 0.35 * p.Lambda;
         sigma = Math.Sqrt(core * core + g * g * age * age + 0.5 * age);
         double ramp = p.RampS > 0 ? 1 - Math.Exp(-age / p.RampS) : 1;
@@ -188,6 +196,8 @@ public sealed class SmokeBook
             // the second moment per axis: each σ² and half its centre's offset squared (two axes, isotropic)
             double s2 = wj * (sj * sj + 0.5 * (cj - c).LengthSquared) + wi * (si * si + 0.5 * (ci - c).LengthSquared);
             double z = zj * wj + zi * wi, lambda = Math.Max(q.Lambda, p.Lambda);
+            // a thermal's rise carried on over the merged puff's age (the rise's time the larger's)
+            float rise = (float)(wj * q.Rise + wi * p.Rise), riseS = Math.Max(q.RiseS, p.RiseS);
             double g = Growth, core = 0.35 * lambda, rest = Math.Max(s2 - core * core, 0);
             double ageEff = (-0.5 + Math.Sqrt(0.25 + 4 * g * g * rest)) / (2 * g * g);
             double fogNow = WaterNow(q, now) + WaterNow(p, now), fogS = Math.Max(q.FogS, p.FogS);
@@ -201,14 +211,20 @@ public sealed class SmokeBook
                 Born = now - ageEff,
                 Origin = c - Earth.Forward(c, WindToDeg) * (WindMs * ageEff),
                 Bore = default, Jet0 = 0, Jet = 0, JetS = jetZ > 0 ? (float)jetS : 0,
-                Z0 = (float)(z - jetZ * jetNow - 0.6 * lambda * (1 - Math.Exp(-ageEff / (3 + 0.05 * lambda)))), JetZ = (float)jetZ,
-                Anchor = (float)(q.Anchor * wj + p.Anchor * wi), Lambda = (float)lambda,
+                Z0 = (float)(z - jetZ * jetNow - Lift(lambda, rise, riseS, ageEff)), JetZ = (float)jetZ,
+                Anchor = (float)(q.Anchor * wj + p.Anchor * wi), Lambda = (float)lambda, Rise = rise, RiseS = riseS,
                 Ap = (float)particles, Aw0 = (float)(fogNow * Math.Exp(ageEff / fogS)), FogS = (float)fogS, RampS = 0,
                 Tint = q.Tint * (float)wj + p.Tint * (float)wi, Seed = q.Seed, Shooter = q.Shooter, Keep = q.Keep, World = q.World,
             };
             p.Ap = p.Aw0 = 0;   // merged away: swept below
         }
     }
+
+    /// <summary>A puff's buoyant rise at an age, m: its thermal's (a gun's), else 0.6 λ_f over 3 + 0.05 λ_f s.</summary>
+    static double Lift(in Puff p, double age) => Lift(p.Lambda, p.Rise, p.RiseS, age);
+
+    static double Lift(double lambda, double rise, double riseS, double age) =>
+        riseS > 0 ? rise * SmokeModel.RiseShare(age / riseS) : 0.6 * lambda * (1 - Math.Exp(-age / (3 + 0.05 * lambda)));
 
     /// <summary>The height a puff has still to rise by its jet, m.</summary>
     static double RiseLeft(in Puff p, double now) =>

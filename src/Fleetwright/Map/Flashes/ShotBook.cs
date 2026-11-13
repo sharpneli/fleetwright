@@ -38,6 +38,8 @@ public sealed class ShotBook
         /// <summary>The smoke (F6): its particles' and water fog's extinction areas, m², the fog's evaporation, s, and its
         /// tint near the muzzle, linear.</summary>
         public float SmokeM2, FogM2, FogS;
+        /// <summary>The salvo's heat into its cloud, J (<see cref="SmokeSources.GunHeatJ"/>): its rise.</summary>
+        public double HeatJ;
         public System.Numerics.Vector3 Tint;
         /// <summary>The shot's moment on the sea's clock, s (the blast's frost and scour), and their strength (fainter
         /// above the sea's cap, where more lie on the water at once).</summary>
@@ -134,7 +136,7 @@ public sealed class ShotBook
                 Shows = Hash((uint)v.Salvo[i] ^ 0x5bd1e995u) / 4294967296.0 < keep || v.Shooter[i] == selected,
                 BlastLengthM = (float)gun.BlastLengthM, HeightM = (float)(v.Muzzle[i].Length - Earth.Radius),
                 SeaT0 = SeaClock - ageS * seaRatio, SeaStrength = (float)seaStrength,
-                SmokeM2 = (float)gun.SmokeM2, FogM2 = (float)gun.FogM2, FogS = (float)gun.FogS,
+                SmokeM2 = (float)gun.SmokeM2, FogM2 = (float)gun.FogM2, FogS = (float)gun.FogS, HeatJ = SmokeSources.GunHeatJ(gun),
                 Tint = new System.Numerics.Vector3((float)gun.TintR, (float)gun.TintG, (float)gun.TintB),
             };
             Added = Math.Min(Added + 1, ring.Length);

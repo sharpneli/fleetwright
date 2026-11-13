@@ -557,7 +557,7 @@ public sealed partial class SmokeSystem : IWorldSystem
         if (!settings.Smoke || barrels <= 0)
             return;
         var flash = MuzzleFlash.Of(cls, mount);
-        var g = SmokeSources.Gun(flash, barrels, elevationDeg);
+        var g = SmokeSources.Gun(flash, barrels, elevationDeg, air);
         if (!(g.AreaM2 > 0))
             return;
         long now = world.Time.Ms;

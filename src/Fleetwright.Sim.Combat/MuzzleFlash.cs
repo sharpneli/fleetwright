@@ -98,10 +98,12 @@ public readonly record struct MuzzleFlash
         double logit = p.Flash0 + 0.6 * Math.Log10(Math.Max(d, 1e-6) / 0.02) - Math.Log10(Math.Max(calibreLength, 1e-6) / 50) - charge.Salt / 0.006
             + charge.Device switch { MuzzleDevice.Hider => -1.5, MuzzleDevice.Brake => 0.3, _ => 0 };
         double chance = 1 / (1 + Math.Exp(-2 * logit));
-        // the smoke: the particles take up water; the water fog condenses in damp, cold air
+        // the smoke: the particles take up water; the water fog condenses in damp, cold air. The black-powder igniter's
+        // residue (0.56 of it) at black powder's own extinction, the coarser salts (muzzle-flash research §5.1), the rest
+        // (the propellant's solids, the salt, the liner's) at the propellant's
         double rh = Math.Clamp(humidity, 0, 1);
-        double solids = p.Solids + charge.Salt + 0.56 * charge.Igniter + 0.8 * charge.Liner;
-        double smoke = m * 1000 * solids * p.ExtinctionM2g * (1 + 2 * Math.Pow(rh, 4));
+        double solids = (p.Solids + charge.Salt + 0.8 * charge.Liner) * p.ExtinctionM2g + 0.56 * charge.Igniter * Propellants.BlackPowder.ExtinctionM2g;
+        double smoke = m * 1000 * solids * (1 + 2 * Math.Pow(rh, 4));
         double damp = Math.Clamp((rh - 0.5) / 0.5, 0, 1);
         double condensed = Math.Min(0.15 * damp * damp * (1 + Math.Max(0, (10 - airC) / 20)), 0.4);
         return new MuzzleFlash

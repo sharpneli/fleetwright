@@ -214,7 +214,7 @@ that state, so the smoke system can feed them, take their totals, or leave them 
 
 - **A puff per mount fired**, born in the `ShotBook` from the shot's record and its gun's A_p and A_w. Its state is
   closed-form (research §5.3): the jet's forward carry `2.5 λ_f (1 − e^(−t/τ_m))` along the bore, the drift with the
-  weather's wind, the buoyant rise `0.6 λ_f (1 − e^(−t/(3 + 0.05 λ_f)))`, the spread σ_h, σ_z = 0.8 σ_h, and A(t)
+  weather's wind, the buoyant rise `0.6 λ_f (1 − e^(−t/(3 + 0.05 λ_f)))` (since 2026-11-13 the thermal the salvo's heat makes, the smoke field's own: docs/battle/smoke.md T5), the spread σ_h, σ_z = 0.8 σ_h, and A(t)
   ramping in after the flash (research §8.6: full A at t = 0 halos the young flash) with the water fog evaporating
   over τ_w. Nothing is simulated per frame.
 - **Merging** holds the count down (research §5.5): a mount's puffs within one σ of each other merge (sum A,

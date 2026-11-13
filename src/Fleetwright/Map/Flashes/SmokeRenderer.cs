@@ -97,7 +97,7 @@ public sealed unsafe class SmokeRenderer : IDisposable
     /// <paramref name="worldS"/>), then the puffs in view as instances.</summary>
     public void Build(in MapView view, ShotBook shots, double worldS, WeatherHere weather, double world, ShipLights frameLights)
     {
-        Book.Update(shots, shots.SeaClock, worldS, weather.WindFromDeg, weather.WindMs);
+        Book.Update(shots, shots.SeaClock, worldS, weather.WindFromDeg, weather.WindMs, Fleetwright.Sim.Combat.SmokeAir.Of(weather));
         lights = frameLights;
         count = 0;
         if (world <= 0 || !FlashLook.On || (FlashLook.Parts & 8) == 0)

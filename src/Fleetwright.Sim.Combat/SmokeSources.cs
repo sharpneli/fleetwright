@@ -46,16 +46,33 @@ public static class SmokeSources
         return new FirePlume(rate, flame, rise, riseS);
     }
 
+    /// <summary>A salvo's heat into its cloud (docs/battle/smoke.md T5): what of the blast's energy its wave doesn't carry
+    /// off (<see cref="GunBlastWaveShare"/>) and the afterburn at its chance (the secondary flash's), less what the fireball
+    /// radiates (<see cref="GunConvectiveShare"/>) [EST]. A 14" quad mount's ~2 GJ, a twin 5"'s ~45 MJ.</summary>
+    public const double GunBlastWaveShare = 0.5, GunConvectiveShare = 0.7;
+
+    /// <summary>A mount's salvo's heat into its cloud, J, all its guns (<see cref="GunBlastWaveShare"/>).</summary>
+    public static double GunHeatJ(in MuzzleFlash gun) =>
+        GunConvectiveShare * ((1 - GunBlastWaveShare) * gun.BlastJ + gun.SecondaryP * gun.AfterburnJ);
+
+    /// <summary>A salvo's cloud's rise on <paramref name="heatJ"/>, as a thermal in the air (<see cref="SmokeModel.Thermal"/>;
+    /// the air it climbs through is the surface layer's top's: <see cref="SmokeAir.Stability"/> there): m, over s.</summary>
+    public static (double RiseM, double RiseS) GunRise(double heatJ, in SmokeAir air) =>
+        SmokeModel.Thermal(SmokeModel.ThermalBuoyancy(heatJ, air.AirK > 0 ? air.AirK : SmokeAir.DefaultAirK), air.Stability(SmokeAir.SurfaceLayerM));
+
     /// <summary>A mount's smoke when <paramref name="barrels"/> of its guns fire (muzzle-flashes.md F1, the gun's
     /// <see cref="MuzzleFlash"/>): the solids of its charges (<see cref="MuzzleFlash.SmokeM2"/>, a share by the barrels
     /// that fired), carried along the bore by the jet to 2.5 of the expected fireball's length λ_f past the Mach disk, a
-    /// core 0.35 λ_f across, rising 0.6 λ_f over 3 + 0.05 λ_f s (the map's gun puffs, muzzle-flash research §5). The water
-    /// fog is left out: it's gone in seconds, before a sight line could read it.</summary>
-    public static GunPuff Gun(in MuzzleFlash gun, int barrels, double elevationDeg)
+    /// core 0.35 λ_f across (the map's gun puffs, muzzle-flash research §5); then rising as the thermal its heat makes
+    /// (<see cref="GunRise"/>, docs/battle/smoke.md T5), spreading as it climbs (the field's Δh/3.5): a 14" quad mount's
+    /// ~200 m in a minute, a twin 5"'s ~50. The water fog is left out: it's gone in seconds, before a sight line could
+    /// read it.</summary>
+    public static GunPuff Gun(in MuzzleFlash gun, int barrels, double elevationDeg, in SmokeAir air = default)
     {
         double lf = gun.ExpectedFlashLengthM, el = elevationDeg * Math.PI / 180, jet = gun.MachDiskM + 2.5 * lf;
         double share = Math.Clamp(barrels / (double)Math.Max(gun.Guns, 1), 0, 1);
-        return new GunPuff(gun.SmokeM2 * share, jet * Math.Cos(el), jet * Math.Sin(el), 0.35 * lf, 0.6 * lf, 3 + 0.05 * lf);
+        var (rise, riseS) = GunRise(share * GunHeatJ(gun), air);
+        return new GunPuff(gun.SmokeM2 * share, jet * Math.Cos(el), jet * Math.Sin(el), 0.35 * lf, rise, riseS);
     }
 
     /// <summary>A magazine's smoke (magazine-explosions.md X6, the drawing's body and after-smoke, here in Z4): the

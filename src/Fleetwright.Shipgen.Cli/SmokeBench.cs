@@ -107,7 +107,7 @@ static class SmokeBench
                 if (mounts.Length == 0)
                     continue;
                 var flash = MuzzleFlash.Of(c, mounts[0]);
-                var g = SmokeSources.Gun(flash, flash.Guns, 10);
+                var g = SmokeSources.Gun(flash, flash.Guns, 10, neutral);
                 var tt = c.TurretTypes[c.Mounts[mounts[0]].Type];
                 var pr = c.Charges[c.Mounts[mounts[0]].Type].Propellant;
                 Line(string.Format(Inv, "  battery {0} ({1:0} mm, {2} mounts; propellant solids {3:0.000}, {4:0.0} m²/g): a mount's salvo {5:0} m² ({6:0.0} kg of charges), its core σ {7:0.0} m, {8:0} m out along the bore, rising {9:0} m over {10:0.0} s",

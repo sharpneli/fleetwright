@@ -351,6 +351,29 @@ public static class SmokeModel
     /// <summary>A fire's buoyancy flux from the heat it gives the air, MW: Briggs' 8.8 m⁴/s³ a MW.</summary>
     public static double HeatFlux(double mw) => 8.8 * Math.Max(mw, 0);
 
+    /// <summary>A heat given the air at once (a thermal: a gun's salvo, docs/battle/smoke.md T5) as its buoyancy, m⁴/s²:
+    /// g·Q / (ρ c_p T), the air's ρ 1.225 kg/m³ and c_p 1005 J/(kg K) (π times Briggs' flux a watt: 27.7 a MJ at 288 K).</summary>
+    public static double ThermalBuoyancy(double heatJ, double airK = SmokeAir.DefaultAirK) => G * Math.Max(heatJ, 0) / (1.225 * 1005 * airK);
+
+    /// <summary>A thermal's rise law z = c·(B t²)^¼ (Scorer's w = 1.2 √(g′r) with r = 0.25 z, Turner 1973): c, and the
+    /// stable air's stop, z = k·(B/s)^¼, its k (the law's own scaling stopped at N t ≈ 2) [EST].</summary>
+    public const double ThermalRiseC = 2.2, ThermalStopK = 3;
+
+    /// <summary>A thermal's rise (docs/battle/smoke.md T5): the final rise, m, the stable air's stop
+    /// <see cref="ThermalStopK"/>·(B/s)^¼ under <see cref="MaxRiseM"/> (the lid; neutral air's thermals this size outlast
+    /// the sea's eddies), and the time the law z = c·(B t²)^¼ reaches it in, s, the time <see cref="RiseShare"/> runs on.
+    /// A thermal rises the same in a wind (it rides the air), unlike a plume.</summary>
+    public static (double RiseM, double RiseS) Thermal(double buoyancy, double stability)
+    {
+        if (!(buoyancy > 0))
+            return (0, 1);
+        double b4 = Math.Pow(buoyancy, 0.25), rise = MaxRiseM;
+        if (stability > 0)
+            rise = Math.Min(rise, ThermalStopK * b4 / Math.Pow(stability, 0.25));
+        double s = rise / (ThermalRiseC * b4);
+        return (rise, Math.Max(s * s, 0.1));
+    }
+
     /// <summary>Briggs' plume rise: the final rise, m, the lower of neutral air's (21.4 F^¾/U under F = 55, 38.7 F^⅗/U
     /// over) and stable air's 2.6 (F/(U s))^⅓, and the time it's reached in along Briggs' 1.6 F^⅓ (U t)^⅔ / U, s.
     /// <paramref name="windMs"/> is the wind the plume leaves in (relative to its source), at least 1 m/s.</summary>

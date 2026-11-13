@@ -163,7 +163,10 @@ public class FireDisciplineTests(ITestOutputHelper output)
     }
 
     /// <summary>A fight's rate (docs/battle/magazines.md "The stack and Stupidity"): the discipline's share of the crew's
-    /// battle factor reaches the guns, so rate first fires more rounds than drill at the same target in the same time.</summary>
+    /// battle factor reaches the guns, so rate first fires more rounds than drill at the same target in the same time. By
+    /// a salvo or so: at 14 km the fire control's cadence (a salvo every ~55 s, the 15" reloads in ~40) holds both, so the
+    /// faster crew gains little (104 rounds against 100; 104 against 92 while her own gun smoke still hung on her line,
+    /// before docs/battle/smoke.md T5).</summary>
     [Fact]
     public void Rate_first_fires_more_rounds_in_a_fight_than_drill()
     {
@@ -195,7 +198,7 @@ public class FireDisciplineTests(ITestOutputHelper output)
             return full - Left();
         }
         int drill = Rounds(0.5), rate = Rounds(1);
-        Assert.True(rate > drill * 1.08, $"rate first {rate}, drill {drill}");
+        Assert.True(rate > drill, $"rate first {rate}, drill {drill}");
     }
 
     [Fact]

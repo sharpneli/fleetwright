@@ -14,14 +14,16 @@ public class MuzzleFlashTests(ITestOutputHelper output)
 
     static double Fit(double calibreMm, double calibreLength) => 4000 * Math.Pow(calibreMm / 1000, 3) * calibreLength / 50;
 
-    /// <summary>The reference's numbers: λ_b, the expected λ_f, x_M, P_sec, t_s (of the expected λ_f), t_e, A_p, A_w.</summary>
+    /// <summary>The reference's numbers: λ_b, the expected λ_f, x_M, P_sec, t_s (of the expected λ_f), t_e, A_p, A_w. A_p
+    /// departs from the reference (docs/battle/smoke.md T5): the igniter's residue at black powder's 1.5 m²/g, as the
+    /// research's §5.1 has it, where the reference took it at the propellant's.</summary>
     public static TheoryData<string, double, double, int, double, string, double, double, double, double[]> Ladder => new()
     {
-        { "16\"/50 SPD", 406, 50, 1, 297, "single", 0.01, 0, 0, [17.1138, 26.8081, 8.59128, 0.972588, 0.390789, 0.0678667, 10023.3, 997.92] },
-        { "12\"/45 twin", 305, 45, 2, Fit(305, 45), "double", 0.01, 0, 0, [16.1001, 22.4842, 6.74155, 0.991088, 0.327758, 0.04595, 5987.12, 539.307] },
+        { "16\"/50 SPD", 406, 50, 1, 297, "single", 0.01, 0, 0, [17.1138, 26.8081, 8.59128, 0.972588, 0.390789, 0.0678667, 6330.52, 997.92] },
+        { "12\"/45 twin", 305, 45, 2, Fit(305, 45), "double", 0.01, 0, 0, [16.1001, 22.4842, 6.74155, 0.991088, 0.327758, 0.04595, 3447.13, 539.307] },
         { "12\"/35 twin, brown powder", 305, 35, 2, Fit(305, 35), "black", 0.01, 0, 0, [12.5482, 14.3626, 5.25969, 0.62942, 0.209367, 0.0357833, 199530, 38.1328] },
-        { "4\"/45 cased", 102, 45, 1, Fit(102, 45), "double", 0.003, 0, 0, [4.27352, 5.9595, 2.25455, 0.984336, 0.0868731, 0.0155, 45.4652, 10.0857] },
-        { "155 mm howitzer, salted", 155, 39, 1, 12, "triple", 0.01, 0.01, 0.005, [5.76757, 5.85042, 3.08021, 0.020829, 0.0852831, 0.02035, 1257.58, 43.2] },
+        { "4\"/45 cased", 102, 45, 1, Fit(102, 45), "double", 0.003, 0, 0, [4.27352, 5.9595, 2.25455, 0.984336, 0.0868731, 0.0155, 31.2149, 10.0857] },
+        { "155 mm howitzer, salted", 155, 39, 1, 12, "triple", 0.01, 0.01, 0.005, [5.76757, 5.85042, 3.08021, 0.020829, 0.0852831, 0.02035, 1108.37, 43.2] },
     };
 
     [Theory]

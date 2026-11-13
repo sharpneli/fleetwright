@@ -634,7 +634,8 @@ retired along it as the funnels' are:
   jet's end (2.5 of the expected fireball's length past the Mach disk), a core 0.35 λ_f across, rising 0.6 λ_f over
   3 + 0.05 λ_f s: the map's gun puffs' numbers (muzzle-flash research §5). Black powder's solids (0.56 of the charge at
   1.5 m²/g) against smokeless (0.001-0.004 at 3): a Devastation's 12" mount makes ~80,000 m² a salvo, a dreadnought's
-  ~6,000. The water fog is left out (gone in seconds, before a line could read it).
+  ~6,000. *Since T5 (2026-11-13):* a dreadnought's ~3,450 (the igniter at black powder's 1.5 m²/g), rising as a
+  thermal on the salvo's heat. The water fog is left out (gone in seconds, before a line could read it).
 - **Fires** (`SmokeSources.Fire`, laid each tick as one plume a ship like her funnels'): the map's fire smoke moved
   into the sim (one implementation; `FireEffects` draws it, its `yield`, `growyield` and `level` knobs replaced by a
   `smoke` gain): soot from the heat burnt (18 MJ/kg, a yield from a growing fire's 0.03 to a developed one's 0.08,
@@ -1271,6 +1272,62 @@ air and loses to the smoke, and the ships each side first held by their smoke):
 - **The runs' spread:** ×2.5 came out smokier than ×4; each run's battle takes its own course, so one run moves by some
   ±10 points. The table gives the scale, not a fine order: a finer tuning wants several seeds a setting (a seed for
   `smoke run`, not built).
+
+### T5 Gun smoke rises on its heat (done 2026-11-13)
+
+The user, 2026-11-13: "even with essentially WW2 ships a typical battleline crossing the T of another tends to block
+the sight of ships with smoke very easily due to great amounts of smoke from the guns. Is the amount of smoke that we
+currently have realistic for smokeless powder?"
+
+**What it was** (`smoke run` on a test scenario, four KGVs crossing the T of four Bismarcks, 20 kn, 8 kn of wind, 25 km
+visibility, 30 min; `smoke run`'s "whose smoke" now splits by source too):
+
+- The guns made 78-97% of the smoke on the smoky lines, the funnels 3-22%; 14-62% of the lines made out in clear air
+  were lost to it, most to her own side's (a follower steams through the clouds of the ships ahead).
+- A KGV's quad 14" mount laid ~19,000 m² a salvo (a broadside every ~40 s: ~1,400 m²/s against her oil funnel's 206 at
+  full power, 20 at 15 kn). 85% of it was the black-powder igniter (1% of a bag charge), not the cordite.
+- The amount a shot was about right; the life wasn't. The field spread a gun puff as it spreads a funnel's trail in the
+  sea's turbulence (K_h ~1.5 m²/s) from its 11.6 m core, and it rose 20 m and sat at ~35 m, the directors' height: a
+  salvo's cloud opaque through its middle (τ > 1.7) for five minutes, where the research's own per-shot form (§5.3)
+  clears it in about one and a half, and the record's cordite cloud thins within a minute or so.
+
+**Two changes, physical:**
+
+- **The igniter's residue at black powder's 1.5 m²/g** (`MuzzleFlash.Of`), as the research's §5.1 has it (the reference
+  script took it at the propellant's 3): a big bag gun's smoke 0.58-0.63 of what it was, black powder's unchanged. The
+  igniter stays 1% of a bag charge [EST; NavWeaps gives the RN 15"'s MD45 charge a 16 oz primer patch, ~0.9% if a
+  quarter's, a Japanese 15 cm bag 60 g, ~0.3%]. `MuzzleFlashTests`' ladder departs from the reference by this.
+- **A salvo's cloud is a thermal** (`SmokeSources.GunHeatJ`, `GunRise`; `SmokeModel.ThermalBuoyancy`, `Thermal`): its
+  heat the blast's energy less what its wave carries off (half) and the afterburn at the secondary flash's chance, less
+  the fireball's radiation (0.3) [EST]: a 14" quad mount's ~2.1 GJ, a twin 5"'s ~50 MJ. Its buoyancy B = g·Q/(ρ c_p T),
+  and a thermal's law z = 2.2 (B t²)^¼ (Scorer's w = 1.2 √(g′r), r = 0.25 z; Turner 1973); it rides the air, so the wind
+  doesn't bend it as it does a plume. It stops at the field's lid (`MaxRiseM`, 500 m: neutral air's eddies are far
+  weaker than a thermal this size) or in stable air at 3 (B/s)^¼ [EST, the law stopped at N t ≈ 2], and climbs along
+  the field's one rise curve (`RiseShare`) over the time the law takes, spreading as the field's rising smoke does
+  (Δh/3.5). The map's gun puffs (`SmokeBook`) take the same rise, so what's drawn climbs with the sim's.
+
+  | Salvo (8 kn, neutral) | A, m² | Rise, m, over s | Height at 15 / 60 s | τ on a line at 35 m at 5 / 15 / 30 s |
+  | --- | --- | --- | --- | --- |
+  | KGV quad 14" | 10,963 | 500 over 215 | 115 / 239 m | 0.54 / 0.03 / 0.01 |
+  | 16"/50 triple, SPD | 17,118 | 500 over 173 | 130 / 270 m | 0.45 / 0.02 / 0.01 |
+  | twin 5"/38 | 265 | 500 over 1,398 | 44 / 81 m | 1.32 / 0.33 / 0.05 |
+  | twin 12"/35, black powder | 199,530 | 500 over 830 | 57 / 109 m | 559 / 39 / 5.2 (0.97 at 60 s) |
+
+  A smokeless salvo blinds its own director's line for seconds (the research's tank crews' "several seconds"); a black-
+  powder one still blinds the line for about a minute (`A_powder_salvo_lays_its_cloud` holds).
+
+**The T crossing after:** the guns 13-18% of the smoke on the smoky lines (87% once, a ship's own newest salvo on her
+line); no line lost in the first ten minutes, 0-55% later, to the funnels' trails and, from 20 minutes, the ships' fires
+(26-77% of the smoke).
+
+**The chase test** (`A_chase_down_the_wind_is_lost_in_its_smoke`) had been carried by the chaser's own gun smoke: at
+18 kn the chase's trail alone hides her 81 s of 584. The record's case (the Falklands, "own funnel smoke across the
+range") is a chase at full power, coal forced: at 21 kn she's in sight 284 s of 584 and the chaser fires 7 salvos of
+11. The test now runs at full power, its bound 0.6 of the clear-air time.
+
+**Not done:** the thermal's slower start from its large first cloud (a virtual origin: the field's curve rises ~40 m in
+the first 5 s where it would rise ~25), and erosion by the air's eddies (it matters only for small guns, whose smoke
+matters little). Checking the rise against film of a broadside is the eye's job when the VFX pass comes.
 
 ## What stays out
 
