@@ -9,7 +9,9 @@ namespace Fleetwright.Designer;
 
 /// <summary>The designer's immune zone (docs/designer-ui/immune-zone.md IZ4), off the render thread: for the shown ship
 /// and a calibre of her own main battery (her own shells at it), a zone a plate picked (each at its centre), her armour's
-/// summary (belt, barbettes, deck), her vitals when asked, and the shells fired in anger at the range picked. Each zone
+/// summary (belt, barbettes, deck) and her vitals when asked: whether shells get through, not what they do after (the user,
+/// 2026-11-14: "The user wants to know if shells meaningfully penetrate when designing a ship and then the actual booms
+/// are discovered during gameplay"; shells fired in anger stay a bench's, `shipgen immune --anger`). Each zone
 /// fills to <see cref="First"/> shells a cell and is shown, then refines to <see cref="Refined"/> where it matters. A
 /// newer ask cancels the work in hand; what was done for the same ship and calibre is kept.</summary>
 sealed class ImmuneWorker : IDisposable
@@ -17,14 +19,11 @@ sealed class ImmuneWorker : IDisposable
     /// <summary>The shells a cell first, and where it matters after (decision 10; "fast first", the user).</summary>
     public const int First = 8, Refined = 32;
 
-    /// <summary>The ships a range band is fired at, and the hits each.</summary>
-    public const int AngerShips = 8, AngerHits = 10;
-
     /// <summary>What the tab asks for: the shown ship (and the design it was built from), the calibre, the plates picked,
-    /// whether the vitals are looked at, and the range picked for the shells fired in anger (m).</summary>
-    public sealed record Ask(Ship Ship, Design Design, double CalibreMm, PlatePick[] Plates, bool Vitals, double AngerM)
+    /// and whether the vitals are looked at.</summary>
+    public sealed record Ask(Ship Ship, Design Design, double CalibreMm, PlatePick[] Plates, bool Vitals)
     {
-        public bool Same(Ask o) => ReferenceEquals(Ship, o.Ship) && CalibreMm == o.CalibreMm && Vitals == o.Vitals && AngerM == o.AngerM &&
+        public bool Same(Ask o) => ReferenceEquals(Ship, o.Ship) && CalibreMm == o.CalibreMm && Vitals == o.Vitals &&
                                    Plates.AsSpan().SequenceEqual(o.Plates);
     }
 
@@ -39,9 +38,6 @@ sealed class ImmuneWorker : IDisposable
         public string? Error;
         public readonly ConcurrentDictionary<PlatePick, ImmuneZone> Plates = new();
         public volatile ImmuneZone? Armour, Vitals;
-        public volatile AngerRun? Anger;
-        /// <summary>The band whose ships are all fired (-1: none yet).</summary>
-        public volatile int AngerDone = -1;
     }
 
     readonly object gate = new();
@@ -153,18 +149,6 @@ sealed class ImmuneWorker : IDisposable
                 token.ThrowIfCancellationRequested();
                 r.Plates[p] = z;
             }
-        // the range picked: the shells fired in anger there
-        r.Anger ??= new AngerRun(r.Class, r.Shell, r.MaxElevationDeg, settings, 1, AngerHits);
-        int band = Array.FindIndex(r.Anger.Bands, x => ask.AngerM >= x.FromM && ask.AngerM < x.ToM);
-        if (band < 0 && r.Anger.Bands.Length > 0)
-            band = ask.AngerM < r.Anger.Bands[0].FromM ? 0 : r.Anger.Bands.Length - 1;
-        if (band >= 0)
-        {
-            r.AngerDone = r.Anger.Bands[band].Fired >= AngerShips ? band : -1;
-            r.Anger.FillBand(band, AngerShips, token);
-            token.ThrowIfCancellationRequested();
-            r.AngerDone = band;
-        }
         foreach (var p in ask.Plates)
         {
             r.Plates[p].Refine(Refined, [ZoneTarget.Plate], threads, token);

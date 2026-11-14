@@ -10,9 +10,9 @@ namespace Fleetwright.Designer;
 /// <summary>The Protection tab's Immune zone (docs/designer-ui/immune-zone.md, the mockup immune.html): the right column's
 /// second tab. Against her own main battery at a calibre (her own shells at it): the plates picked on the left (a click
 /// one, ctrl+click several, as on the battle map; the main belt and her thickest deck by default) tested at their
-/// centres, or her magazines or machinery; a half-polar chart by range and target angle, blended from holds to beaten; a
-/// headline; and what her own hits do at the range picked on the chart, with their dots on the elevation. The runs are
-/// <see cref="ImmuneWorker"/>'s.</summary>
+/// centres, or her magazines or machinery; a half-polar chart by range and target angle, blended from holds to beaten; and
+/// a headline. Whether shells get through, never what they do after: the booms are found in play (the user, 2026-11-14).
+/// The runs are <see cref="ImmuneWorker"/>'s.</summary>
 public sealed unsafe partial class DesignerScene
 {
     ImmuneWorker? immune;
@@ -21,7 +21,6 @@ public sealed unsafe partial class DesignerScene
     List<PRef> immuneNow = [];   // this frame's: the picked, or the default
     int immuneView;   // 0 the plates, 1 the magazines, 2 the machinery
     double immuneCal = double.NaN;   // NaN: her own
-    double immuneKm = 15;
 
     /// <summary>The calibres the stepper walks (and her own), mm.</summary>
     static readonly double[] ImmuneCalibres = [76, 102, 120, 127, 140, 152, 203, 234, 254, 280, 305, 343, 356, 381, 406, 460];
@@ -143,7 +142,7 @@ public sealed unsafe partial class DesignerScene
         var d = doc.Current;
         var picks = immuneNow.Select(r => PickOf(r, d)).OfType<PlatePick>().Distinct().ToArray();
         immune ??= new ImmuneWorker();
-        immune.Want(new ImmuneWorker.Ask(ship, design, cal, picks, immuneView > 0, immuneKm * 1000));
+        immune.Want(new ImmuneWorker.Ask(ship, design, cal, picks, immuneView > 0));
         var res = immune.Now;
         bool ready = res != null && ReferenceEquals(res.Ship, ship) && res.CalibreMm == cal && res.Class != null;
 
@@ -194,9 +193,9 @@ public sealed unsafe partial class DesignerScene
         y += UiFonts.Title.FontSize + P(3);
         y += dl.Wrapped(font, new Vector2(pos.X + P(10), y), T.Muted, why, size.X - P(20)) + P(4);
 
-        // the chart, the key (or the cell under the mouse) and the range picked
-        float angerH = P(54), keyH = P(18);
-        float chartH = pos.Y + size.Y - angerH - keyH - y - P(4);
+        // the chart, and the key (or the cell under the mouse)
+        float keyH = P(18);
+        float chartH = pos.Y + size.Y - keyH - y - P(8);
         float rad = MathF.Max(P(40), MathF.Min(chartH / 2 - P(12), size.X - P(120)));
         var c = new Vector2(pos.X + (size.X - rad) / 2, y + chartH / 2);
         string? hover = ImmuneChart(dl, c, rad, z0, zones, cal);
@@ -205,7 +204,6 @@ public sealed unsafe partial class DesignerScene
             dl.Text(font, new Vector2(pos.X + (size.X - Width(font, hover)) / 2, ky), T.Bright, hover);
         else
             ImmuneKey(dl, new Vector2(pos.X + size.X / 2, ky), zones);
-        ImmuneAnger(dl, new Vector2(pos.X, pos.Y + size.Y - angerH), new Vector2(size.X, angerH), res!);
     }
 
     /// <summary>The headline and the line under it: a plate alone, the plates together (their zone, then each in a
@@ -308,7 +306,7 @@ public sealed unsafe partial class DesignerScene
 
     /// <summary>The chart: her plan at the centre, bow up, the target angle round it and the range out from it; each cell
     /// blended from holds (green) to beaten, red where a side plate gives, amber where a deck does (beaten where any plate
-    /// picked is). Rings every 10 km, the range picked dashed. A click picks a range; the cell under the mouse in words.</summary>
+    /// picked is). Rings every 10 km; the cell under the mouse in words.</summary>
     string? ImmuneChart(ImDrawListPtr dl, Vector2 c, float rad, ImmuneZone z0, List<(ImmuneZone Z, ZoneTarget T, bool Lies, PRef R)> zones, double cal)
     {
         int n = z0.RangesM.Length, na = ImmuneZone.Angles.Length;
@@ -345,7 +343,7 @@ public sealed unsafe partial class DesignerScene
                 }
             }
         }
-        // rings every 10 km, labelled on the beam; the range picked dashed
+        // rings every 10 km, labelled on the beam
         var font = UiFonts.MonoSmall;
         for (double m = 10000; m < reach; m += 10000)
         {
@@ -353,12 +351,6 @@ public sealed unsafe partial class DesignerScene
             dl.PathStroke(T.U32(T.Edge with { W = 0.6f }), ImDrawFlags.None, 1);
             string s = $"{m / 1000:0}";
             dl.Text(font, new Vector2(c.X + Rad(m) - Width(font, s) - P(2), c.Y + P(2)), T.Bright, s);
-        }
-        float rk = Rad(immuneKm * 1000);
-        for (int k = 0; k < 36; k += 2)
-        {
-            dl.PathArcTo(c, rk, -MathF.PI / 2 + MathF.PI * k / 36, -MathF.PI / 2 + MathF.PI * (k + 1) / 36, 4);
-            dl.PathStroke(T.U32(T.Bright), ImDrawFlags.None, P(1.5f));
         }
         dl.Text(font, new Vector2(c.X + rad + P(4), c.Y - font.FontSize / 2), T.Muted, "km");
         dl.Text(font, new Vector2(c.X - Width(font, "bow") / 2, c.Y - rad - P(14)), T.Muted, "bow");
@@ -370,7 +362,7 @@ public sealed unsafe partial class DesignerScene
             dl.AddConvexPolyFilled(ref hp[0], hull.Length, T.U32(T.DrawingMid));
             dl.AddPolyline(ref hp[0], hull.Length, T.U32(T.PlanLine), ImDrawFlags.Closed, 1);
         }
-        // the mouse: a cell in words, a click picks its range
+        // the mouse: a cell in words
         ImGui.SetCursorScreenPos(c - new Vector2(0, rad));
         ImGui.InvisibleButton("##izchart", new Vector2(rad, 2 * rad));
         if (!ImGui.IsItemHovered())
@@ -379,8 +371,6 @@ public sealed unsafe partial class DesignerScene
         float dist = mv.Length();
         if (mv.X < 0 || dist > rad)
             return null;
-        if (ImGui.IsItemClicked())
-            immuneKm = Math.Max(1, Math.Round(dist / rad * reach / 1000));
         int ai = Math.Clamp((int)Math.Round(Math.Atan2(mv.X, -mv.Y) * 180 / Math.PI / 15), 0, na - 1);
         int ri = Math.Clamp((int)Math.Ceiling(dist / rad * reach / ImmuneZone.RangeStepM) - 1, 0, n - 1);
         {
@@ -432,68 +422,6 @@ public sealed unsafe partial class DesignerScene
             x += bw + P(6);
             dl.Text(font, new Vector2(x, mid.Y), T.Muted, lbl);
             x += Width(font, lbl) + P(12);
-        }
-    }
-
-    /// <summary>Her own hits at the range picked on the chart, in a sentence (<see cref="ImmuneWorker.AngerShips"/> ships
-    /// of <see cref="ImmuneWorker.AngerHits"/> hits each, settled half an hour).</summary>
-    void ImmuneAnger(ImDrawListPtr dl, Vector2 pos, Vector2 size, ImmuneWorker.Results res)
-    {
-        dl.AddLine(pos, pos + new Vector2(size.X, 0), T.U32(T.Line));
-        float x = pos.X + P(10), y = pos.Y + P(5);
-        var run = res.Anger;
-        int b = res.AngerDone;
-        var band = run != null && b >= 0 ? run.Bands[b] : null;
-        string title = band != null ? $"{ImmuneWorker.AngerHits} HITS AT {band.FromM / 1000:0}-{band.ToM / 1000:0} KM" : $"{ImmuneWorker.AngerHits} HITS AT {immuneKm:0} KM";
-        dl.Text(UiFonts.Head, new Vector2(x, y), T.Brass, title);
-        dl.Text(UiFonts.SansSmall, new Vector2(x + Width(UiFonts.Head, title) + P(10), y + P(1)), T.Muted, "click the chart for another range");
-        y += P(17);
-        if (band == null)
-        {
-            dl.Text(UiFonts.SansSmall, new Vector2(x, y), T.Muted, "Firing at her…");
-            return;
-        }
-        var r = band.Report;
-        int ships = Math.Max(r.Ships, 1);
-        int mounts = (int)Math.Round(r.MainMounts / ships), working = (int)Math.Round(r.MainWorking / ships);
-        string[] how = ["magazine", "flooding", "capsizing", "breaking in two"];
-        int worst = 1;
-        for (int k = 2; k < r.LostBy.Length; k++)
-            if (r.LostBy[k] > r.LostBy[worst])
-                worst = k;
-        string lost = r.Lost == 0 ? $"All {r.Ships} ships stay afloat." : $"{r.Lost} of {r.Ships} ships are lost (most to {how[Math.Clamp(worst - 1, 0, 3)]}).";
-        string rest = $" On average she takes {Math.Round(r.WaterT / ships / 100) * 100:N0} t of water and keeps {100 * r.SpeedShare / ships:0} % of her speed" +
-                      (mounts > 0 ? $" and {working} of {mounts} turrets firing." : ".");
-        dl.Wrapped(UiFonts.SansSmall, new Vector2(x, y), T.Bright, lost + rest, size.X - P(20));
-    }
-
-    /// <summary>Where her own hits at the range picked struck, on the elevation: burst inside her (red) or held or passed
-    /// (grey); over her main deck faint (the elevation draws only the turrets there).</summary>
-    void ImmuneDots(ImDrawListPtr dl, ElevMap m, Vector2? head = null)
-    {
-        if (!protImmune || immune?.Now is not { Anger: { } run, AngerDone: >= 0 } res || !ReferenceEquals(res.Ship, shown?.Ship))
-            return;
-        var band = run.Bands[res.AngerDone];
-        if (head == null)
-        {
-            foreach (var dot in band.Dots)
-            {
-                var col = dot.Class == 0 ? T.Hostile : T.PlanLine;
-                dl.AddCircleFilled(new Vector2(m.X((float)dot.Point.X), m.Z((float)dot.Point.Z)), P(2.2f), T.U32(col with { W = dot.Point.Z > 0.5 ? 0.3f : 0.85f }));
-            }
-            return;
-        }
-        // the key, in the elevation's head strip
-        var font = UiFonts.SansSmall;
-        string t = $"where {ImmuneWorker.AngerHits} hits at {band.FromM / 1000:0}-{band.ToM / 1000:0} km struck:";
-        float x = head.Value.X;
-        dl.Text(font, new Vector2(x, head.Value.Y), T.Bright, t);
-        x += Width(font, t) + P(10);
-        foreach (var (lbl, col) in new[] { ("burst inside", T.Hostile), ("held or passed", T.PlanLine) })
-        {
-            dl.AddCircleFilled(new Vector2(x, head.Value.Y + font.FontSize / 2), P(3), T.U32(col));
-            dl.Text(font, new Vector2(x + P(6), head.Value.Y), T.Muted, lbl);
-            x += P(6) + Width(font, lbl) + P(14);
         }
     }
 }

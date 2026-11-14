@@ -1858,7 +1858,7 @@ public sealed unsafe partial class DesignerScene
         switch (p[0])
         {
             case "immune":
-                // immune[:CALIBRE[:PLATE+PLATE...[:KM]]] opens the Immune zone (PLATE: belt, upper, end_fore, end_aft, bulk, deckN,
+                // immune[:CALIBRE[:PLATE+PLATE...]] opens the Immune zone (PLATE: belt, upper, end_fore, end_aft, bulk, deckN,
                 // slopes, turrets, barbettes, ct; magazines or machinery for those views)
                 protImmune = true;
                 if (p.Length > 1 && double.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double cal))
@@ -1889,8 +1889,6 @@ public sealed unsafe partial class DesignerScene
                         });
                     }
                 }
-                if (p.Length > 3 && double.TryParse(p[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double km))
-                    immuneKm = km;
                 return true;
             case "protsel" when p.Length > 1:
                 string id = p[1];

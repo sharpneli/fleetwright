@@ -399,12 +399,22 @@ zone misled in two ways.
   called that a hold. A plate is now beaten by a shell through it at all, whole or in pieces (decision 13); the history
   checks keep the record's measure (`ImmuneZone.WholeOnly`, `--anchors`, unchanged). Her belt against her own gun: beaten
   out to 17 km on the beam (was 6), out to 12 km over 60-120 degrees (was the beam alone).
-- **The flash path isn't in the zone** (open, for the user). The magazines view counts shells that get into a magazine
+- **The flash path isn't in the zone**, and stays out (decision 14). The magazines view counts shells that get into a magazine
   space; the damage model loses her to shells through a turret or barbette lighting charges that flash down the ammunition
   train, which the zone's walk (the terminal alone, no effects) never runs. Her turrets are beaten at every range by
   their 260 mm roofs, her barbettes out to 18 km, and neither is in the default pick.
 
 ![Yamato against her own 460 mm, after the fix](png/immune-game-yamato-460.png)
+
+**No damage analysis in the designer** (the user, 2026-11-14: "There is no need to do full damage analysis on the
+designer side. The user wants to know if shells meaningfully penetrate when designing a ship and then the actual booms
+are discovered during gameplay. Admiralty didn't have access to ultra realistic physical simulations on their ships
+blowing up which this thing would be."; decision 14). So no flash path, and the shells fired in anger leave the tab: the
+sentence under the chart (ships lost, water, speed, turrets), the range picked on the chart and the hits' dots on the
+elevation. The chart takes the room. `AngerRun` and `shipgen immune --anger` stay as the developers' bench; the mockup
+(`immune.html`) still shows the sentence and the dots as they were reviewed.
+
+![Yamato against her own 460 mm, penetration only](png/immune-game-yamato-460.png)
 
 ## Decisions (user, 2026-11-14)
 
@@ -426,3 +436,5 @@ zone misled in two ways.
 12. **Ctrl+click tests plates together** (ctrl as on the battle map) (beaten where any is); the default is the main belt and her thickest deck.
 13. **A plate is beaten by a shell through it whole or in pieces** (a holed belt didn't hold); the record's whole-only
     measure stays for the history checks.
+14. **No damage analysis in the designer:** whether shells meaningfully penetrate, never what they do after (no flash
+    path, no shells fired in anger in the tab: the booms are found in play). The bench keeps `--anger`.
