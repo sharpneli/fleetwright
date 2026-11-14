@@ -334,6 +334,8 @@ public static class Program
                 "fc-levels" => FcLevels.Run(Settings(a), a.Int("runs", 20), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
                 "fc-sensors" => FcSensors.Run(Settings(a), a.Int("runs", 12), Root(a), n => Class(a, n)),
                 "fc-history" => FcHistory.Run(Settings(a), a.Int("runs", 12), a.Get("case"), a.Has("ref") ? Root(a) : null, n => Class(a, n)),
+                "immune" when a.Has("anchors") => ImmuneBench.RunAnchors(Root(a), LoadDesign, Settings(a),
+                    new ImmuneBench.Options(true, 0, double.NaN, null, null, a.Int("shells", 128), a.Int("threads", 0), a.Int("seed", 1), false)),
                 "immune" => ImmuneBench.Run(a.Positional.ElementAtOrDefault(0) ?? "bismarck", n => LoadDesign(Resolve(a, n)), Settings(a),
                     new ImmuneBench.Options(a.Get("battery") != "secondary", a.Int("index", 0), D(a, "calibre", double.NaN), a.Get("kind"), a.Get("vitals"),
                         a.Int("shells", 128), a.Int("threads", 0), a.Int("seed", 1), a.Has("passes"), a.Get("cell"),
@@ -455,7 +457,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes" or "--anchors")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

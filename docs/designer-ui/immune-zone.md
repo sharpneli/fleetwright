@@ -1,7 +1,7 @@
 # Immune zone and shells fired in anger (plan, 2026-11-14)
 
-**Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0 and IZ2 built 2026-11-14 ("IZ0 and IZ2:
-how they went"); IZ1, the anchors, next, then the mockup.
+**Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0, IZ1 and IZ2 built 2026-11-14 ("IZ0 and
+IZ2: how they went", "IZ1: the record"); the mockup (IZ3) next.
 
 The Protection tab has carried a greyed placeholder since its first review (protection.md, 2026-10-11): "Immune zone
 and shells fired in anger · against her own 380 mm · NEEDS THE PENETRATION MODEL". The penetration model has been in
@@ -166,7 +166,7 @@ pick (battery, kind, calibre) is kept in the session, not in the design.
 | Step | What | Done when |
 |---|---|---|
 | IZ0 | `ImmuneZone`, the shells at a calibre, and `shipgen immune` | the bench prints both zones for bismarck, yamato, dreadnought against their own guns and other calibres; tests: deterministic, the same with 1 or N threads, a thicker belt never moves the inner edge out, a thicker deck never moves the outer edge in, the shells at the battery's own calibre equal the loadout's |
-| IZ1 | The anchors, as history checks (never set): bench-only designs with SoDak's and Iowa's schemes (research 08's table, armor/00 §9 row 12: Iowa against 16"/50 Mk 8 at 23.6-27.4 kyd, North Carolina's three studies), each against its own family at the record's calibre | the numbers beside the record, the gaps named; no tuning in this plan |
+| IZ1 | The anchors, as history checks (never set): bench-only designs with SoDak's and Iowa's schemes (`shipgen/anchors/`, not game assets; research 08's table, armor/00 §9 row 12), `shipgen immune --anchors` | done: the numbers beside the record, the gaps named ("IZ1: the record"); no tuning. North Carolina's studies left out: their 14"/50's 680 kg shell isn't a family of ours at 356 mm |
 | IZ2 | `AngerRun`: the sweep, progress, cancel, the summaries, the dots; its cost measured | `shipgen hits` unchanged, byte for byte (done); the same bands on any threads (done). The guess that Yamato against 305 mm is lost at short range didn't hold: see "how they went", for the user |
 | IZ3 | The mockup, `immune.html` (the Protection tab's pane, 1280 × 578): the facts pane's Plate and Immune zone tabs, the chart, the strip, the dots; set beside a designer screenshot | the user's review |
 | IZ4 | The port: worker, panel, chart, strip, dots, picker; `-designer-ui=immune:...` for screenshots | on bismarck and dreadnought, a belt edit moves the edge within a second; captures checked |
@@ -193,6 +193,35 @@ IZ0 and IZ2 can run together; the mockup waits for their numbers so it's drawn f
   none inside 6 km (none of her guns out, none under half speed there either: her belt, slopes and 650 mm faces hold a
   12" close in), magazines at 6-22 km, capsized at 8-10 and 28-30 km. Not what decision 6's "felled by WW1
   battleships if the range is short enough" expects: for the user, not tuned. Checked against the record in IZ1.
+
+## IZ1: the record (2026-11-14)
+
+The record's immune zones are the classic ones: the range out to which the main belt is beaten by a whole shell, and
+from which the main deck is. Ours (decision 1) asks more: the shell must get into the vitals whole. So the zone keeps
+both: per cell, the shells that met her main belt (her thickest plate lying as the side) and her main deck (her thickest
+lying as a deck) and of them those through it whole (not broken, not glanced off), whether or not they then reached the
+vitals; `Edges(..., beaten: true)` gives the classic edges. The chart's hover can say both ("the belt is beaten out to
+18 km, but the shells burst before the machinery").
+
+Two bench-only designs on Colorado's hull with the US 1941 family's AP Mk 8 (1,223 kg, 762 m/s from a 16"/50), each
+against her own gun, broadside, 128 shells a cell:
+
+| Scheme | Record | Classic edges (ours) | Vitals (ours): magazines, machinery |
+|---|---|---|---|
+| Iowa: 307 mm Class A at 19°, inside 38 mm STS; decks 38, 152, 16 mm | USN 23.6-27.4 kyd = 21.6-25.1 km | 18.4-26.2 km | never reached; 3.5-30.9 km |
+| South Dakota: 311 mm at 19° inside 32 mm; decks 38, 146 mm | research 08's own model: 23.0-26.5 km | none: belt beaten to ~31 km, deck from ~26 km | never reached; 9.0-26.9 km |
+
+- **The decks hold about right:** the outer edges within 1-2 km of both figures (vanilla Thompson, shells-armour-damage.md).
+- **The belt sits either side of the cap's threshold.** Iowa's 38 mm outer hull takes the Mk 8's cap off and the bare
+  nose then shatters on the Class A, so her belt holds 3 km farther in than the USN had it; South Dakota's 32 mm is
+  under the threshold, the capped shell meets the belt, and it's beaten 8 km farther out than research 08's figure
+  (which took the hull as a spaced plate, Okun's rule, not as a decapping one). This is armor/00 §9 row 12's "most
+  important IZ knob", now on both sides of it: a step in the physics, the threshold the cap comes off at, not a rule of
+  ours. For the user: whether the decapping plate's step wants a softer edge (no hard switches) is a terminal-model
+  question, not this tab's.
+- **The vitals' zone is much wider than the classic one**, as decision 1 makes it: shells that beat the belt at 15-20 km
+  mostly burst in the space above the splinter deck before the machinery (the outer hull starts their fuze), and the
+  magazines, deeper, are never reached at all by her own gun.
 
 ## Decisions (user, 2026-11-14)
 

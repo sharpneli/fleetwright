@@ -18,6 +18,36 @@ static class ImmuneBench
     public record Options(bool Main, int Index, double CalibreMm, string? Kind, string? Vitals, int Shots, int Threads, int Seed, bool Passes, string? Trace = null,
         int Anger = 0, int PerShip = 10, double SettleMin = 30);
 
+    /// <summary>The history checks (docs/designer-ui/immune-zone.md IZ1): bench-only designs with a real scheme, against
+    /// the record's gun (her own), the record's immune zone beside ours on the beam: the classic edges (the main belt and
+    /// deck beaten whole) and the vitals' own. Checks, never targets.</summary>
+    static readonly (string Design, string Record, double InnerKm, double OuterKm)[] Anchors =
+    [
+        ("iowa_scheme", "USN, against 16\"/50 Mk 8 (armor/05 3.4, armor/00 9 row 12): 23.6-27.4 kyd", 23.6 * 0.9144, 27.4 * 0.9144),
+        ("sodak_scheme", "research 08's own model, against 16\"/50 Mk 8 (damage/08 K)", 23.0, 26.5),
+    ];
+
+    public static int RunAnchors(string root, Func<string, Design> load, SimSettings settings, Options o)
+    {
+        Console.WriteLine("  design         record                                                             km           classic (armour held)   vitals (magazines, machinery)");
+        foreach (var (name, record, inner, outer) in Anchors)
+        {
+            var design = load(Path.Combine(root, "anchors", name + ".json"));
+            var cls = ShipClassCompiler.Compile(ShipDesign.Build(design));
+            var shell = Loadout.ShellsAt(design, true, 0, design.Main![0].CalibreMm!.Value).First(x => x.Kind == "ap").Shell;
+            double elev = 0;
+            foreach (ref readonly var m in cls.Mounts)
+                elev = Math.Max(elev, m.MaxElevationDeg);
+            var zone = new ImmuneZone(cls, shell, elev, settings, (ulong)o.Seed);
+            zone.Fill(o.Shots, o.Threads > 0 ? o.Threads : Environment.ProcessorCount);
+            int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
+            string Z((double In, double Out) e) => e.In < e.Out ? $"{e.In / 1000:0.0}-{e.Out / 1000:0.0}" : "none";
+            Console.WriteLine($"  {name,-14} {record,-82} {inner:0.0}-{outer:0.0}    {Z(zone.Edges(Vitals.Machinery, beam, beaten: true)),-22}  " +
+                              $"{Z(zone.Edges(Vitals.Magazines, beam))}, {Z(zone.Edges(Vitals.Machinery, beam))}");
+        }
+        return 0;
+    }
+
     public static int Run(string target, Func<string, Design> load, SimSettings settings, Options o)
     {
         var design = load(target);
@@ -106,10 +136,10 @@ static class ImmuneBench
                 Console.WriteLine($"{v}: she has none");
                 continue;
             }
-            Console.WriteLine($"{v}: in through the side / the deck, % of the shells at them (b: broken on the way, of all)");
+            Console.WriteLine($"{v}: in through the side / the deck / b in pieces, % of the shells at them");
             var head = new StringBuilder("   km ");
             foreach (double a in ImmuneZone.Angles)
-                head.Append(Inv, $"{a,9:0}°");
+                head.Append(Inv, $"{a,13:0}°");
             Console.WriteLine(head);
             for (int r = 0; r < zone.RangesM.Length; r++)
             {
@@ -117,17 +147,26 @@ static class ImmuneBench
                 for (int a = 0; a < ImmuneZone.Angles.Length; a++)
                 {
                     var c = zone[v, r, a];
-                    line.Append(c.Shots == 0 ? "        - " : string.Format(Inv, "{0,4:0}/{1,-4:0}{2}", 100 * c.SideShare, 100 * c.DeckShare,
-                        c.SideShare >= ImmuneZone.Edge || c.DeckShare >= ImmuneZone.Edge ? ' ' : '*'));
+                    line.Append(c.Shots == 0 ? "            - " : string.Format(Inv, "{0,4:0}/{1,-3:0}b{2,-3:0}{3}", 100 * c.SideShare, 100 * c.DeckShare,
+                        100 * c.BrokenShare, c.SideShare >= ImmuneZone.Edge || c.DeckShare >= ImmuneZone.Edge ? ' ' : '*'));
                 }
                 Console.WriteLine(line);
             }
             Console.WriteLine("   (* under half both ways)");
-            Console.WriteLine("  angle  immune            through the side most by          through the deck most by");
+            int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
+            Console.WriteLine("  on the beam, her main belt and main deck met, and beaten whole %");
+            for (int r = 0; r < zone.RangesM.Length; r += 2)
+            {
+                var c = zone[v, r, beam];
+                Console.WriteLine($"    {zone.RangesM[r] / 1000,4:0} km  fall {zone.Falls[r].FallDeg,4:0.0}°  {zone.Falls[r].StrikeMs,4:0} m/s   belt {c.BeltMet,4} {100 * c.BeltBeatenShare,4:0}%   deck {c.DeckMet,4} {100 * c.DeckBeatenShare,4:0}%");
+            }
+            Console.WriteLine("  angle  immune          armour held       through the side most by          through the deck most by");
             for (int a = 0; a < ImmuneZone.Angles.Length; a++)
             {
                 var (inner, outer) = zone.Edges(v, a);
+                var (bi, bo) = zone.Edges(v, a, beaten: true);
                 string z = inner < outer ? string.Format(Inv, "{0,5:0.0}-{1,-5:0.0} km", inner / 1000, outer / 1000) : "none          ";
+                z += bi < bo ? string.Format(Inv, "  {0,5:0.0}-{1,-5:0.0} km", bi / 1000, bo / 1000) : "  none          ";
                 int ri = Math.Clamp((int)Math.Round(inner / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
                 int ro = Math.Clamp((int)Math.Round(outer / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
                 Console.WriteLine($"  {ImmuneZone.Angles[a],4:0}°  {z}    {Name(zone.Most(v, ri, a, false)),-30}  {Name(zone.Most(v, ro, a, true))}");

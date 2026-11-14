@@ -18,6 +18,10 @@ public enum Vitals : byte
 public struct ZoneCell
 {
     public int Shots, Side, Deck, Broken;
+    /// <summary>The shells that met her main belt (her thickest plate lying as the side) and her main deck (her thickest
+    /// lying as a deck), and of them those that came whole through it, whether they then reached the vitals or not: the
+    /// armour beaten, the classic (USN) edges' measure.</summary>
+    public int BeltMet, BeltBeaten, DeckMet, DeckBeaten;
     /// <summary>Lines drawn, the misses of the vitals among them; and the shells for which no line reached them (the
     /// vitals hidden from there: below the sea's reach for a flat fall, or behind one another).</summary>
     public int Drawn, Unseen;
@@ -30,6 +34,8 @@ public struct ZoneCell
     public readonly double SideShare => Shots > 0 ? (double)Side / Shots : 0;
     public readonly double DeckShare => Shots > 0 ? (double)Deck / Shots : 0;
     public readonly double BrokenShare => Shots > 0 ? (double)Broken / Shots : 0;
+    public readonly double BeltBeatenShare => BeltMet > 0 ? (double)BeltBeaten / BeltMet : 0;
+    public readonly double DeckBeatenShare => DeckMet > 0 ? (double)DeckBeaten / DeckMet : 0;
 }
 
 /// <summary>A plate that let shells into the vitals: its kind and index (as the path's crossings name it), and its
@@ -86,6 +92,7 @@ public sealed class ImmuneZone
     readonly ZoneCell[] cells;
     readonly Dictionary<ZonePlate, int>[] sidePlates, deckPlates;
     readonly double[] bearings;
+    readonly double beltMm, deckMm;
 
     /// <summary>A zone of a shell on a class, its gun's elevation up to maxElevationDeg; empty until filled.</summary>
     public ImmuneZone(ShipClass c, in ShellTypeRow shell, double maxElevationDeg, SimSettings s, ulong seed)
@@ -120,6 +127,19 @@ public sealed class ImmuneZone
         cells = new ZoneCell[2 * n * Angles.Length];
         sidePlates = new Dictionary<ZonePlate, int>[cells.Length];
         deckPlates = new Dictionary<ZonePlate, int>[cells.Length];
+        // her main belt and main deck: the thickest plates lying as the side and as a deck
+        foreach (ref readonly var p in c.SidePlates)
+            beltMm = Math.Max(beltMm, p.ThicknessMm);
+        foreach (ref readonly var d in c.ArmourDecks)
+            deckMm = Math.Max(deckMm, d.ThicknessMm);
+        foreach (ref readonly var p in c.Inclined)
+        {
+            double dz = p.Z1 - p.Z0, du = p.U1 - p.U0;
+            if (Math.Abs(dz) > Math.Abs(du))
+                beltMm = Math.Max(beltMm, p.ThicknessMm);
+            else
+                deckMm = Math.Max(deckMm, p.ThicknessMm);
+        }
         bearings = new double[c.Mounts.Length];
         for (int i = 0; i < bearings.Length; i++)
             bearings[i] = c.Mounts[i].RestDeg;
@@ -307,23 +327,41 @@ public sealed class ImmuneZone
             int into = VitalAt(path, v);
             double tin = into >= 0 ? xs[into].T : double.NaN;
             Each?.Invoke(i, path, t, tin);
-            if (into < 0 || tin >= t.StopT)
-                continue;
             // whole up to: where it broke, burst or stopped
             double whole = t.Outcome is Outcome.BrokeUp or Outcome.Holed && t.Plate >= 0 ? xs[t.Plate].T
                 : t.Bursts && !double.IsNaN(t.BurstT) ? Math.Min(t.BurstT, t.StopT) : t.StopT;
+            // the heaviest plate on its way in (to the vitals, or as far as it went)
+            int heavy = -1;
+            for (int k = 0; k < (into >= 0 ? into : xs.Length) && xs[k].T < t.StopT + HitPath.SameM; k++)
+                if (xs[k].Plate is not (PlateKind.None or PlateKind.Contents or PlateKind.PartContents) && xs[k].Mm > 0 &&
+                    (heavy < 0 || xs[k].Mm > xs[heavy].Mm))
+                    heavy = k;
+            bool deck = heavy >= 0 && Lies(xs[heavy].Normal);
+            // the main belt and the main deck met on the way, and whether it came through each whole: the armour beaten,
+            // the classic edges' measure, whether or not the shell then reached the vitals
+            bool metBelt = false, beatBelt = false, metDeck = false, beatDeck = false;
+            for (int k = 0; k < xs.Length && xs[k].T < t.StopT + HitPath.SameM; k++)
+                if (xs[k].Plate is PlateKind.SideArmour or PlateKind.Inclined or PlateKind.ArmourDeck)
+                {
+                    bool flat = Lies(xs[k].Normal);
+                    if (xs[k].Mm < (flat ? deckMm : beltMm) * 0.9)
+                        continue;
+                    // through it whole: past it unbroken, not glanced off it
+                    bool through = xs[k].T < whole && t.Glance != k;
+                    if (flat && !metDeck)
+                        (metDeck, beatDeck) = (true, through);
+                    else if (!flat && !metBelt)
+                        (metBelt, beatBelt) = (true, through);
+                }
+            (cell.BeltMet, cell.BeltBeaten) = (cell.BeltMet + (metBelt ? 1 : 0), cell.BeltBeaten + (beatBelt ? 1 : 0));
+            (cell.DeckMet, cell.DeckBeaten) = (cell.DeckMet + (metDeck ? 1 : 0), cell.DeckBeaten + (beatDeck ? 1 : 0));
+            if (into < 0 || tin >= t.StopT)
+                continue;
             if (tin >= whole)
             {
                 cell.Broken++;
                 continue;
             }
-            // the heaviest plate it beat on the way in
-            int heavy = -1;
-            for (int k = 0; k < into; k++)
-                if (xs[k].Plate is not (PlateKind.None or PlateKind.Contents or PlateKind.PartContents) && xs[k].Mm > 0 &&
-                    (heavy < 0 || xs[k].Mm > xs[heavy].Mm))
-                    heavy = k;
-            bool deck = heavy >= 0 && Math.Abs(xs[heavy].Normal.Z) > Math.Sqrt(0.5);
             if (deck)
                 cell.Deck++;
             else
@@ -351,21 +389,24 @@ public sealed class ImmuneZone
 
     /// <summary>The zone at an angle: the inner edge (out to which half the shells at the vitals get in through the side;
     /// 0 if they never do) and the outer (from which half get in through the deck; the reach if they never do), m, each
-    /// between the ranges the share crosses half at. Immune between them if the inner is the nearer.</summary>
-    public (double InnerM, double OuterM) Edges(Vitals v, int angle)
+    /// between the ranges the share crosses half at. Immune between them if the inner is the nearer. With beaten, the
+    /// classic edges instead: the armour beaten by a whole shell, whether it then reached the vitals or not.</summary>
+    public (double InnerM, double OuterM) Edges(Vitals v, int angle, bool beaten = false)
     {
         int n = RangesM.Length;
         double inner = 0, outer = ReachM;
+        double SideOf(int k) => beaten ? this[v, k, angle].BeltBeatenShare : this[v, k, angle].SideShare;
+        double DeckOf(int k) => beaten ? this[v, k, angle].DeckBeatenShare : this[v, k, angle].DeckShare;
         for (int k = n - 1; k >= 0; k--)
-            if (this[v, k, angle].Shots > 0 && this[v, k, angle].SideShare >= Edge)
+            if (this[v, k, angle].Shots > 0 && SideOf(k) >= Edge)
             {
-                inner = k + 1 < n && this[v, k + 1, angle].Shots > 0 ? Cross(k, k + 1, this[v, k, angle].SideShare, this[v, k + 1, angle].SideShare) : RangesM[k];
+                inner = k + 1 < n && this[v, k + 1, angle].Shots > 0 ? Cross(k, k + 1, SideOf(k), SideOf(k + 1)) : RangesM[k];
                 break;
             }
         for (int k = 0; k < n; k++)
-            if (this[v, k, angle].Shots > 0 && this[v, k, angle].DeckShare >= Edge)
+            if (this[v, k, angle].Shots > 0 && DeckOf(k) >= Edge)
             {
-                outer = k > 0 && this[v, k - 1, angle].Shots > 0 ? Cross(k - 1, k, this[v, k - 1, angle].DeckShare, this[v, k, angle].DeckShare) : RangesM[k];
+                outer = k > 0 && this[v, k - 1, angle].Shots > 0 ? Cross(k - 1, k, DeckOf(k - 1), DeckOf(k)) : RangesM[k];
                 break;
             }
         return (inner, outer);
@@ -397,6 +438,9 @@ public sealed class ImmuneZone
             (lo, hi) = (Math.Max(lo, ta), Math.Min(hi, tc));
         }
     }
+
+    /// <summary>Whether a plate with this normal lies as a deck (within 45° of level) rather than as the side.</summary>
+    static bool Lies(P3 normal) => Math.Abs(normal.Z) > Math.Sqrt(0.5);
 
     static P3 Add(P3 a, P3 d, double t) => new(a.X + d.X * t, a.Y + d.Y * t, a.Z + d.Z * t);
     static double Dot(P3 a, P3 b) => a.X * b.X + a.Y * b.Y + a.Z * b.Z;
