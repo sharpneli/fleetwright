@@ -78,6 +78,8 @@ static class ImmuneBench
         if (o.Anger > 0)
             return Anger(cls, pick, cal, maxElev, settings, o);
         var zone = new ImmuneZone(cls, pick.Shell, maxElev, settings, (ulong)o.Seed);
+        if (zone.BeltCentre is { } bc)
+            Console.WriteLine($"  the belt's shells aimed at x {bc.X:0.0} m, {bc.Z - cls.Vertical.Waterline:+0.0;-0.0} m on the waterline");
         var targets = o.Vitals == null ? ImmuneZone.All : ImmuneZone.All.Where(t => t.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (o.Trace is { } tr)
         {

@@ -5,7 +5,7 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Sim.Combat;
 
 /// <summary>What an immune zone's shells are aimed at (docs/designer-ui/immune-zone.md): her armour, the main belt (its
-/// strakes and zones, on the side or inside it), the main battery's barbettes where they stand clear of the hull, the main armour deck (Armour.MainDeck's, with its slopes),
+/// strakes and zones, on the side or inside it; its shells all down the one line through its centre), the main battery's barbettes where they stand clear of the hull, the main armour deck (Armour.MainDeck's, with its slopes),
 /// each beaten by a shell that comes through it whole; or her vitals, the magazines and the machinery (boiler and engine
 /// rooms), reached by a shell that gets into them whole (decision 2), each from its own shells.</summary>
 public enum ZoneTarget : byte
@@ -52,8 +52,9 @@ public readonly record struct ZonePlate(PlateKind Kind, int Index, double Mm);
 /// out to which half the shells at them get through, the deck's outer edge the range from which half do. The vitals are
 /// reached by a shell that enters one of their spaces whole (its filler in it), or bursts inside one; broken up on the way
 /// it counts apart; each put down to the side or the deck by the heaviest plate it beat (within 45° of level a deck).
-/// <para>Each cell draws its shells from a stream of its own and each shell from its own substream, so the zone is the
-/// same on any number of threads, and filled in passes (<see cref="Fill(int, ReadOnlySpan{ZoneTarget}, int, CancellationToken)"/>)
+/// <para>Every range of a target and an angle fires the same shells (the same aim across the outline, lots and rolls), so
+/// a share falls or rises with range as the physics makes it, not by each cell's own draws; each shell comes from its own
+/// substream, so the zone is the same on any number of threads, and filled in passes (<see cref="Fill(int, ReadOnlySpan{ZoneTarget}, int, CancellationToken)"/>)
 /// it's the same as filled at once.</para></summary>
 public sealed class ImmuneZone
 {
@@ -101,6 +102,10 @@ public sealed class ImmuneZone
     readonly ulong seed;
     readonly bool[][] vital;
     readonly bool[] mainDeck;
+    readonly P3? beltCentre;
+
+    /// <summary>The point the belt's shells are aimed at (null: she has no belt).</summary>
+    public P3? BeltCentre => beltCentre;
     readonly Box[][] boxes;
     readonly ZoneCell[] cells;
     readonly Dictionary<ZonePlate, int>[] sidePlates, deckPlates;
@@ -150,6 +155,24 @@ public sealed class ImmuneZone
             if (p.Kind is InclinedKind.Belt or InclinedKind.Zone)
                 belt.Add(new Box(p.X0, p.X1, b.Y0, b.Y1, Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1)));
         boxes[(int)ZoneTarget.Belt] = [.. belt];
+        // her main belt's centre, on her starboard side (the shells come from starboard): the one point its shells are aimed
+        // at, the thickest belt plate's (the largest of equals), on the side or inside it; halfway along it, and halfway up the part of it over the
+        // waterline (where shells meet a belt: one deep under it would be aimed at the sea)
+        double best = 0;
+        foreach (ref readonly var p in c.SidePlates)
+            if (p.Kind == StrakeKind.Belt && p.ThicknessMm * 1e6 + (p.X1 - p.X0) * (p.Top - p.Bottom) > best)
+            {
+                best = p.ThicknessMm * 1e6 + (p.X1 - p.X0) * (p.Top - p.Bottom);
+                double x = (p.X0 + p.X1) / 2, z = Over(p.Bottom, p.Top, c.Vertical.Waterline);
+                beltCentre = new P3(x, c.Hull.HalfWidth(x, z), z);
+            }
+        foreach (ref readonly var p in c.Inclined)
+            if (p.Kind == InclinedKind.Belt && p.ThicknessMm * 1e6 + (p.X1 - p.X0) * Math.Abs(p.Z1 - p.Z0) > best)
+            {
+                best = p.ThicknessMm * 1e6 + (p.X1 - p.X0) * Math.Abs(p.Z1 - p.Z0);
+                double x = (p.X0 + p.X1) / 2, z = Over(Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1), c.Vertical.Waterline);
+                beltCentre = new P3(x, p.YAt(c.Hull, x, z), z);
+            }
         var barbettes = new List<Box>();
         foreach (ref readonly var sd in c.Solids.Solids)
             if (sd.Component >= 0 && MainBarbette(c, sd.Component) && sd.Box.Top > 0)
@@ -188,6 +211,9 @@ public sealed class ImmuneZone
         : c.Rooms[room].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom);
 
     static bool IsVitals(ZoneTarget t) => t >= ZoneTarget.Magazines;
+
+    /// <summary>Halfway up the part of a plate from lo to hi over the waterline wl (halfway up it all if none is).</summary>
+    static double Over(double lo, double hi, double wl) => hi > wl ? (Math.Max(lo, wl) + hi) / 2 : (lo + hi) / 2;
 
     /// <summary>Whether a component is a barbette of her main battery (the secondaries' are their own matter).</summary>
     static bool MainBarbette(ShipClass c, int component) =>
@@ -296,8 +322,12 @@ public sealed class ImmuneZone
         double far = 2 * c.Solids.Radius + 50, reach = WaterRun.ReachM(Shell, strike, settings);
         var bounds = c.Solids.Bounds;
         var water = Waterplane.Level(c);
-        var stream = RandomStream.Named(seed, "immune zone").Derive((ulong)i);
-        var lotStream = RandomStream.Named(seed, "immune zone lots").Derive((ulong)i);
+        // the same shells at every range of an angle (their aim across the outline, the plate's lot, the walk's rolls): a
+        // shell gets through out to some range and not beyond, so the share falls with range as the physics does, not
+        // by the cells' own draws
+        ulong key = (ulong)(ti * Angles.Length + angle);
+        var stream = RandomStream.Named(seed, "immune zone").Derive(key);
+        var lotStream = RandomStream.Named(seed, "immune zone lots").Derive(key);
         for (int shot = from; shot < to; shot++)
         {
             // a cell none of whose first shells could meet the target is hidden from there: it's out of its sight
@@ -307,9 +337,30 @@ public sealed class ImmuneZone
             // a line through the target's outline that, unstopped, meets it, and its first meeting with her
             int first = -1;
             double run = 0;
-            for (int draw = 0; draw < DrawsPerShot; draw++)
+            for (int draw = 0; draw < (target == ZoneTarget.Belt ? 1 : DrawsPerShot); draw++)
             {
                 cell.Drawn++;
+                if (target == ZoneTarget.Belt)
+                {
+                    // the belt: its shells all down the one line through its centre
+                    if (beltCentre is not { } bc)
+                        break;
+                    var o0 = Add(bc, dir, -far);
+                    if (!Slab(o0, dir, bounds, out double b0, out double b1))
+                        break;
+                    double w0 = dir.Z < 0 ? (o0.Z - water.Z) / -dir.Z : double.PositiveInfinity;
+                    cell.Traced++;
+                    ShipTracer.Trace(c, Add(o0, dir, Math.Max(0, Math.Min(b0, w0) - 2)), Add(o0, dir, b1 + 2), bearings, water, w.Probe);
+                    if (TargetAt(w.Probe, target, dir) < 0 || (first = HitQuery.FirstIn(w.Probe)) < 0)
+                    {
+                        first = -1;
+                        break;
+                    }
+                    run = WaterRun.RunM(w.Probe, first);
+                    if (run > reach)
+                        first = -1;   // the sea took it
+                    break;
+                }
                 double pick = rng.NextDouble() * total;
                 int lo = 0, hi = rects.Count - 1;
                 while (lo < hi)

@@ -39,8 +39,9 @@ shells through `Terminal.Resolve`). A test later checks the two don't drift far 
 
 **The armour first** (decision 7, 2026-11-14: "Usually at short ranges people can't reach magazines directly due to
 angles so what is more interesting is if the belt armor can hold and are barbettes penetrated"). The zone's own view
-aims shells at three plates, each from its own shells: her main belt (its strakes and zones, on the side or inside it,
-struck from outboard), her main battery's barbettes where they stand clear of the hull, and her main armour deck
+aims shells at three plates, each from its own shells: her main belt (its thickest plate, on the side or inside it,
+struck from outboard; every shell down the one line through its centre, halfway up its part over the waterline:
+decision 9), her main battery's barbettes where they stand clear of the hull, and her main armour deck
 (`Armour.MainDeck`'s, with its slopes, struck from above). A plate is beaten by a shell that comes through it whole, not
 broken, not glanced off. The belt and the barbettes hold from the range out to which half get through; the deck gives
 from the range at which half do; the armour's zone is between (`ImmuneZone.ArmourEdges`), the classic one. The vitals
@@ -274,6 +275,22 @@ now").
 - **Hover:** "20 km, 90° off the bow: belt 48 %, barbettes 56 %, deck 0 % through".
 - **Sections · plate** loses the placeholder line.
 
+**Fourth pass: less noise** (the user, 2026-11-14: "Belt can be just aimed at the center of it once, no need to do any
+fancy stuff with it. Any ideas how to reduce the noise? Seeing 2% penetration at some points at specific distance does
+not really give any actionable insights.")
+
+- **The belt down one line** through its centre (decision 9). Its shells differ only by the plate's own lot and the
+  walk's rolls: on the beam Bismarck's belt is beaten by every shell out to 18 km and by none past 27; Iowa's out to
+  17 km and none past 20. It's also the cheapest target (one trace a shell): the armour at 16 a cell fell from 4.6 to
+  2.7 s on one thread.
+- **The same shells at every range** of a target and an angle (their aim across the outline, the plate's lot, the
+  rolls). A shell gets through out to some range and not beyond, so a share falls (or rises) with range as the physics
+  makes it; before, each cell drew its own and neighbours disagreed by chance.
+- **Words, not percentages:** the hover says "belt beaten, barbettes mostly holds, deck holds" (under 10 % holds,
+  under half mostly holds, under 90 % mostly beaten, else beaten), on the line under the chart; the cell is outlined.
+
+![the armour, fourth pass](png/immune-mockup-armour.png)
+
 Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
 
@@ -292,3 +309,4 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 7. **The armour first:** whether the belt holds and the barbettes are beaten, more than whether shells reach the
    magazines, which at short range the angles rarely allow (section 1).
 8. **The tab takes the whole right column**, and the placeholder line goes from Sections · plate.
+9. **The belt aimed at its centre**, every shell down the one line: "no need to do any fancy stuff with it."

@@ -102,18 +102,22 @@ function chart() {
   // her plan, bow up
   g.fillStyle = '#3A4042'; g.strokeStyle = C.plan; g.beginPath(); g.moveTo(cx, cy - 16); g.quadraticCurveTo(cx + 5, cy - 4, cx + 4, cy + 14);
   g.lineTo(cx - 4, cy + 14); g.quadraticCurveTo(cx - 5, cy - 4, cx, cy - 16); g.fill(); g.stroke();
-  // hover: one line by the cursor
+  // hover: the cell outlined, in words on the line under the chart (a few shells in a hundred is no reason to change a
+  // design, so no percentages)
   if (S.hover) {
     const [r, ai] = S.hover.split(',').map(Number);
     if (r < n && ai >= 0 && ai < z.angles.length) {
-      const pct = x => Math.round(100 * x) + ' %', at = `${z.ranges[r] / 1000} km, ${z.angles[ai]}° off the bow: `;
+      const held = x => x < 0.1 ? 'holds' : x < 0.5 ? 'mostly holds' : x < 0.9 ? 'mostly beaten' : 'beaten';
+      const gets = x => x < 0.1 ? 'safe' : x < 0.5 ? 'a few get in' : x < 0.9 ? 'most get in' : 'all get in';
+      const at = `${z.ranges[r] / 1000} km, ${z.angles[ai]}° off the bow: `;
       let t;
-      if (S.v === 0) t = at + ['belt', 'barbettes', 'deck'].map((k, i) => T(i).cells[r][ai][0] ? `${k} ${pct(share(i, r, ai))}` : null).filter(Boolean).join(', ') + ' through';
-      else { const c = T(S.v + 2).cells[r][ai]; t = at + (c[0] ? `${pct((c[2] + c[3]) / c[0])} get in` : 'out of reach'); }
-      const a = (z.angles[ai] - 90) * Math.PI / 180, x = cx + Math.cos(a) * rOf(z.ranges[r]), y = cy + Math.sin(a) * rOf(z.ranges[r]);
-      g.font = '12px "Barlow Condensed", "Arial Narrow", sans-serif'; const w = g.measureText(t).width + 10, bx = Math.max(2, Math.min(x + 8, W - w - 2)), by = Math.max(4, y - 22);
-      g.fillStyle = '#141616'; g.fillRect(bx, by, w, 18); g.strokeStyle = '#3D4345'; g.strokeRect(bx, by, w, 18);
-      g.fillStyle = C.bright; g.fillText(t, bx + 5, by + 13);
+      if (S.v === 0) t = at + ['belt', 'barbettes', 'deck'].map((k, i) => T(i).cells[r][ai][0] ? `${k} ${held(share(i, r, ai))}` : null).filter(Boolean).join(', ');
+      else { const c = T(S.v + 2).cells[r][ai]; t = at + (c[0] ? gets((c[2] + c[3]) / c[0]) : 'out of reach'); }
+      // the cell outlined, its words on the line under the chart
+      const a0 = (Math.max(0, z.angles[ai] - 7.5) - 90) * Math.PI / 180, a1 = (Math.min(180, z.angles[ai] + 7.5) - 90) * Math.PI / 180;
+      g.beginPath(); g.arc(cx, cy, rOf(z.ranges[r]), a0, a1); g.arc(cx, cy, rOf(z.ranges[r] - 1000), a1, a0, true); g.closePath();
+      g.strokeStyle = C.bright; g.lineWidth = 1.5; g.stroke();
+      S.tip = t;
     }
   }
   cv.onmousemove = e => {
@@ -197,8 +201,11 @@ function render() {
         h('b', {on: () => { S.cal = cals[Math.max(0, ci - 1)]; render(); }}, '▶')),
       h('span', {class: 'r'}, h('span', {class: 'seg'}, ['Armour', 'Magazines', 'Machinery'].map((t, i) =>
         h('span', {class: i === S.v ? 'on' : '', on: () => { S.v = i; render(); }}, t))))));
-    col.append(...headline(), chart(),
-      h('div', {class: 'key'}, ...[fill.safe, C.red, C.amber].map((c, i) => h('span', {}, h('i', {style: 'background:' + c}), keys()[i]))),
+    S.tip = null;
+    const cv = chart();
+    col.append(...headline(), cv,
+      S.tip ? h('div', {class: 'key', style: 'color:var(--bright)'}, S.tip)
+        : h('div', {class: 'key'}, ...[fill.safe, C.red, C.amber].map((c, i) => h('span', {}, h('i', {style: 'background:' + c}), keys()[i]))),
       anger());
   }
   dots();
