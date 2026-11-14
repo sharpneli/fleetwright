@@ -1587,8 +1587,12 @@ public sealed record SimSettings
     public double FallOutWaitMin { get; init; } = 15;
     public double NeighbourShare { get; init; } = 0.5;
 
-    /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across.</summary>
-    public double ShellHoleCalibres { get; init; } = 1.5;
+    /// <summary>Holes: a shell that passes through plating leaves a hole this many calibres across [SRC: Prince of Wales at Denmark
+    /// Strait, a 15″ shell's "~15in clean hole" (damage/16's records); the armour research's holing, "a calibre-sized hole"], drawn
+    /// out along its line as an ellipse by 1/cos of its obliquity there, at most to this cosine's (a shell at a steeper slant breaks
+    /// up or glances: P5's) [EST].</summary>
+    public double ShellHoleCalibres { get; init; } = 1.0;
+    public double ShellHoleCosMin { get; init; } = 0.3;
 
     /// <summary>A belt that held still leaks (docs/battle/shells-armour-damage.md E4; damage/13 §2, <c>belt_leak</c>): the
     /// chance by where it struck against the waterline now (within <see cref="BeltWaterlineM"/> of it, higher, or within

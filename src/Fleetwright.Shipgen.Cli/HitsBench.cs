@@ -212,9 +212,18 @@ static class HitsBench
             100 * r.SpeedShare / r.Ships, r.MainWorking / r.Ships, r.MainMounts / r.Ships, r.DirectorsWorking / r.Ships, r.Directors / r.Ships,
             100.0 * r.Crippled / r.Ships, 100 * GivenHits.SlowShare, 100.0 * r.Slowed / r.Ships, 100.0 * r.SteeringLost / r.Ships,
             100.0 * r.MainSilenced / r.Ships, 100.0 * r.Lost / r.Ships));
-        Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
+        Console.WriteLine(string.Format(Inv, "  then {0:0} min of flooding and fire: water {1:0} t a ship; afloat, {8:0} t ({9:0} in magazines she flooded, {5:0} in spaces reaching past her belt, {6:0} in the citadel's protection and double bottom, {7:0} within); lost to the magazine {2:0.#}%, foundered {3:0.#}%, capsized {4:0.#}%",
             o.SettleMin, r.WaterT / r.Ships, 100.0 * r.LostBy[(int)LossKind.Magazine] / r.Ships, 100.0 * r.LostBy[(int)LossKind.Foundered] / r.Ships,
-            100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships));
+            100.0 * r.LostBy[(int)LossKind.Capsized] / r.Ships, r.WaterEndsT / Math.Max(r.Afloat, 1), r.WaterOutboardT / Math.Max(r.Afloat, 1), r.WaterInboardT / Math.Max(r.Afloat, 1),
+            r.WaterAfloatT / Math.Max(r.Afloat, 1), r.WaterFloodedT / Math.Max(r.Afloat, 1)));
+        if (r.WaterByCell.Length > 0)
+            Console.WriteLine("    the spaces most flooded, afloat (t a ship): " + string.Join(", ", r.WaterByCell.Select((w, i) => (w, i)).Where(x => x.w > 0)
+                .OrderByDescending(x => x.w).Take(12).Select(x => string.Format(Inv, "{0} {1:0} ({2})", tc.CellId(x.i), x.w / Math.Max(r.Afloat, 1),
+                    tc.Cells[x.i].Room >= 0 ? tc.Rooms[tc.Cells[x.i].Room].Kind.ToString() : "-"))));
+        if (r.HolesByCell.Length > 0)
+            Console.WriteLine("    the spaces most holed to the sea, afloat (m² a ship): " + string.Join(", ", r.HolesByCell.Select((w, i) => (w, i)).Where(x => x.w > 0)
+                .OrderByDescending(x => x.w).Take(12).Select(x => string.Format(Inv, "{0} {1:0.00} ({2})", tc.CellId(x.i), x.w / Math.Max(r.Afloat, 1),
+                    tc.Cells[x.i].Room >= 0 ? tc.Rooms[tc.Cells[x.i].Room].Kind.ToString() : "-"))));
         Console.WriteLine(string.Format(Inv, "    fires still burning {0:0.0} a ship (any in {1:0}% of ships); crew out of action {2:0}",
             r.BurningAfter / r.Ships, 100.0 * r.BurningShips / r.Ships, r.CrewAfter / r.Ships));
         if (r.MagazinesFlooded + r.Smoked > 0)

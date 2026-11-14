@@ -108,6 +108,14 @@ public static class GivenHits
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced, Out;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public double WaterT, ListDeg;
+        /// <summary>The water in the ships still afloat after the settle, t summed, and where it is: the magazines her crew flooded
+        /// against a fire; her ends (any space reaching past her main belt's length); the citadel's outboard spaces (a protection's,
+        /// the double bottom) and the rest within it. A ship lost has the sea in her; it's in <see cref="WaterT"/>, not here.</summary>
+        public double WaterAfloatT, WaterFloodedT, WaterEndsT, WaterOutboardT, WaterInboardT;
+        public int Afloat;
+        /// <summary>The water in each of her spaces after the settle, t summed over the ships, by cell; and the holes to the sea in
+        /// each, m² summed.</summary>
+        public double[] WaterByCell = [], HolesByCell = [];
         /// <summary>The ships afloat under half their speed, and the worst water (t) and list (degrees) among those afloat.</summary>
         public int UnderHalf;
         public double WorstWaterT, WorstListDeg;
@@ -625,6 +633,42 @@ public static class GivenHits
         return (HitQuery.Flight(aspectDeg, fall.FallDeg), fall);
     }
 
+    /// <summary>Where her water lies (<see cref="Report.WaterEndsT"/>): a magazine she flooded; a space reaching past her main belt's
+    /// length (its belt's and zones' strakes, not a steering box's); a space of a protection or the double bottom as outboard.</summary>
+    static void WaterWhere(ShipClass c, ShipCondition k, Report rep)
+    {
+        double x0 = double.PositiveInfinity, x1 = double.NegativeInfinity;
+        foreach (ref readonly var sp in c.SidePlates)
+            if (sp.Kind is StrakeKind.Belt or StrakeKind.Zone)
+                (x0, x1) = (Math.Min(x0, sp.X0), Math.Max(x1, sp.X1));
+        if (rep.WaterByCell.Length < c.Cells.Length)
+            (rep.WaterByCell, rep.HolesByCell) = (new double[c.Cells.Length], new double[c.Cells.Length]);
+        for (int i = 0; i < c.Cells.Length && i < k.BreachM2.Length; i++)
+            rep.HolesByCell[i] += k.BreachM2[i];
+        for (int i = 0; i < c.Cells.Length && i < k.WaterM3.Length; i++)
+        {
+            double t = k.WaterM3[i] * FloodModel.SeaT;
+            if (!(t > 0))
+                continue;
+            rep.WaterByCell[i] += t;
+            var b = c.Cells[i].Box;
+            bool outboard = c.Cells[i].TdsM > 0, flooded = false;
+            foreach (int room in c.RoomsIn(i))
+            {
+                outboard |= c.Rooms[room].Kind is RoomKind.Tds or RoomKind.DoubleBottom;
+                flooded |= c.Rooms[room].Kind == RoomKind.Magazine && room < k.MagazineFlood.Length && k.MagazineFlood[room];
+            }
+            if (flooded)
+                rep.WaterFloodedT += t;
+            else if (!(b.X0 >= x0 - 0.5 && b.X1 <= x1 + 0.5))
+                rep.WaterEndsT += t;
+            else if (outboard)
+                rep.WaterOutboardT += t;
+            else
+                rep.WaterInboardT += t;
+        }
+    }
+
     /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
     /// report.</summary>
     static void After(Report rep, ShipClass target, World w, int entity, int slot, double settleS, FallOutRule? fallOut, bool hitMagazine)
@@ -634,6 +678,11 @@ public static class GivenHits
             w.Damage.Settle(w, entity, settleS);
         var kk = w.Ships.Store.Combat.Condition(slot);
         rep.WaterT += kk.WaterT;
+        if (kk.Status == ShipStatus.Afloat)
+        {
+            (rep.WaterAfloatT, rep.Afloat) = (rep.WaterAfloatT + kk.WaterT, rep.Afloat + 1);
+            WaterWhere(target, kk, rep);
+        }
         rep.BurningAfter += kk.Fires;
         rep.BurningShips += kk.Fires > 0 ? 1 : 0;
         rep.CrewAfter += kk.CrewLost;

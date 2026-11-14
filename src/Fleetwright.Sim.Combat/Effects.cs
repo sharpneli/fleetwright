@@ -169,7 +169,10 @@ public static partial class Effects
             int behind = CellAt(xs, i, x.Kind == CrossingKind.HullIn);
             if (behind < 0)
                 continue;
-            double through = 0.5 * s.ShellHoleCalibres * calM;
+            // its own hole: a calibre across, drawn out along its line by the obliquity it met the plate at
+            var dir = path.LegOf(path.Leg(x.T)).Direction;
+            double cosOb = double.IsNaN(x.Normal.X) ? 1 : Math.Abs(dir.X * x.Normal.X + dir.Y * x.Normal.Y + dir.Z * x.Normal.Z);
+            double through = 0.5 * s.ShellHoleCalibres * calM, stretch = 1 / Math.Max(cosOb, s.ShellHoleCosMin);
             if (contact)
             {
                 BurstPlace(xs, t.BurstT, out int burstCell, out int burstPart);
@@ -188,7 +191,7 @@ public static partial class Effects
                     continue;
                 }
             }
-            double a = Math.PI * through * through;
+            double a = Math.PI * through * through * stretch;
             k.Hole(behind, a, x.Point);
             res.BreachM2 += a;
         }

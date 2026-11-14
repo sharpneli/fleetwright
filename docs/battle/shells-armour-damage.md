@@ -1995,6 +1995,50 @@ squadrons, and changes `Matchup.cs` with it.
       noise. Per heavy hit the German ships now go up about 1.2%, the British 0.3-0.6% (the record ~5% for the
       battlecruisers). The flash chances are the knob if the balance pass wants fewer or more.
 
+## Water at an immune range (2026-11-14)
+
+**The question (the user):** Yamato, under her own 46 cm AP inside her immune zone, took "constant leaks"; whether that's right
+wasn't known. `hits yamato --shooter yamato --kind ap`, 10 hits a ship, 30 min on: 1,933 t at 20 km, 2,928 t at 30 km, with
+a belt that held leaking a third of the time.
+
+**What the water is** (the `hits` bench now reads the water afloat, by the way it got in; and the spaces most flooded and most
+holed):
+
+| Yamato, afloat | 20 km | 30 km |
+|---|---|---|
+| Her ends, holed at the waterline through 11 mm plating past her belt | 1,395 t (69%) | 1,786 t |
+| Magazines her crew flooded against a fire (doctrine, 0.37 a ship) | 360 t | 218 t |
+| Her protection and double bottom (diving shells under a belt 3.5 m deep, the leaks into the wing behind) | 224 t | 980 t |
+| Inside the citadel | 55 t | 66 t |
+| Belt leaks, all told (BeltLeakChance 0 for a run) | 54 t | 116 t |
+
+- **The belt's leaks aren't it,** 3-4% of her water. E4's rule (13 §2) gives her 0.6 leaks in 10 hits, its record's rate.
+- **The citadel holds:** 55-66 t inside it. An immune zone keeps shells out of the box, not out of her ends.
+- **The bench read two things wrong:** its "water a ship" counted the ships lost to a magazine, their bottoms torn and the sea
+  in them (now the afloat figure stands beside it), and its citadel took its length from every plate near the belt's thickness,
+  a steering box's among them (now the belt's and zones' strakes).
+
+**What was wrong: a shell's own hole.** Most of her water came in by shells passing whole through her ends' 11 mm side at the
+waterline, each leaving a hole `ShellHoleCalibres` 1.5 across: 0.37 m² for a 46 cm, 2.25× its section, from no source. The
+record has a calibre: Prince of Wales' 15″ "~15in clean hole" at Denmark Strait (damage/16's records), the armour research's
+holing class "a calibre-sized hole". **Now 1.0 calibre, drawn out by 1/cos of the obliquity it met the plate at** (an ellipse
+along its line; `ShellHoleCosMin` 0.3 [EST], past which a shell breaks up or glances, P5's).
+
+**What it did** (old against new, the same seeds):
+
+- Yamato afloat: 2,035 t to 1,585 at 20 km (her ends 1,395 to 998), 3,050 to 2,653 at 30 km: 158 and 265 t a heavy hit, in
+  08 R7's 150-350 t. Bismarck under her own guns at 20 km 2,549 to 1,773 t. Iron Duke under Lion's AP 146 to 138 t.
+- **`damage-history`:** Bismarck's last battle lost 30% (80%; the record: afloat until torpedoed and scuttled at ~110 min, the
+  case wants her afloat after an hour); Kirishima 20% (30%; 8,850 t at 3 h, the case wants ≥ 2,000); Warspite 0% (5%); the
+  rest the same. **`dc-history`:** Lützow's torpedo flat 20% (35%), Seydlitz's second case 15% (10%).
+- **The panel** (`balance`, 8 seeds, Jutland 4): 7 of 14 sides within about twice the record (8), the record's loser lost more
+  in 23 of 44 seeds (22); Jutland Britain 21.3 (20.3), Germany 42.3 (42.8). Within the seeds' spread.
+
+**Left as found:** a belt that held leaks by the shell's impulse alone (`NonPen.SizeK`), whatever the plate's mass; physically
+the plate's drive-in goes as the impulse squared over the bay's mass, so a heavier belt leaks less to the same shell. It's 3%
+of the water here, so it waits. Yamato's design has no lower belt below 3.5 m (her namesake's ran to the double bottom
+against diving shells): her protection's water at 30 km is the design's, not the model's.
+
 ## What stays out
 
 - Bombs: the deck physics serves them, but bomb shapes and fuzes aren't researched yet.
