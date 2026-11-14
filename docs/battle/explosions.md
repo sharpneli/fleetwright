@@ -20,7 +20,8 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
   with no longer sits on the "research" figures (part of that match was a bug); **the user accepted that, 2026-11-06: those
   figures were an educated guess,** so they're no target.
 - **The stow's bed** (2026-11-07): tried and taken out (the research said it isn't physical; the user agreed).
-- **EX4** (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, hull holes in her section.
+- **EX4** (2026-11-07, "EX4: one near field"): one reach and one hole for every detonation, hull holes in her section (the
+  hole's rule rebuilt in "The near field's hole", 2026-11-14).
 - **EX5** (2026-11-07, "EX5: the water", EX5a-e): torpedoes on the one path, the bubble's whip by research 13's law, a
   boundary's mass, liquid in spaces, the protections as built. Open there: a held protection floods about three times the
   record; a destroyer is lost to one torpedo about half the time.
@@ -42,7 +43,9 @@ the charges stays in `magazines.md` (the trains, doors, discipline, valves), how
 
 - **One outside** (2026-11-13, "One outside"): every burst outside her on the one path, by where it is: shells on plates they
   didn't get through (`BurstOutsideK` gone), near misses (the D 5 gate gone), torpedoes (their own room, crew and magazine
-  rules gone), deck stores. Three calls open with the user there.
+  rules gone), deck stores. Its three calls settled 2026-11-14.
+- **The near field's hole** (2026-11-14): the hole is where the plate tears, a sphere about the charge: fragments, blast and
+  the water's pulse against Nurick's threshold. Research asked.
 
 **Next, for the user to pick:** the weak points in shipgen (Lion's steering), item 10 (the step's convergence, not yet run), the
 pre-dreadnought sinking in 25 min to two torpedoes, the light forces' run-in (BL5), PM's three groups still off (common shells on
@@ -1235,15 +1238,91 @@ her; a hole re-centred on each stacked space's own edge (one hole counted twice)
 Germany 1.8 (3.5), both now within twice the record. Heligoland Bight: Britain 2.5 (3.9). Most other sides within the seeds'
 spread. fc-history unchanged (gunnery isn't touched).
 
-**Open with the user (nothing tuned):**
+**The three calls (the user, 2026-11-14):**
 
-1. **The near field's hole off the plate.** EX4's rule (11 §3.1's contact hole cut by the sphere at its standoff) gives a
+1. **The near field's hole off the plate.** EX4's rule (11 §3.1's contact hole cut by the sphere at its standoff) gave a
    46 cm HE 8 m² at 1 m off a destroyer and 2.6 m² at 3 m; research 15 had 0.2-1.5 m² there from its splinters alone, and 11
-   calls the contact rule 1.4× big on thick plate. The test's band is now the near field's (`Close_heavy_HE_holes...`).
+   calls the contact rule 1.4× big on thick plate. **Dug into: rebuilt on physics, "The near field's hole" below.**
 2. **A burst on a belt sprays the thin plating beside it** into the machinery behind (the light cruiser slowed 53%, 20%
-   before; a battleship's spaces below take more of medium HE, the test's upper-works ratio 1.5 from 2.5).
+   before; a battleship's spaces below take more of medium HE, the test's upper-works ratio 1.5 from 2.5). **Accepted.**
 3. **Men in the open:** 16 §4.2's S is fitted to whole ships' casualties and taken everywhere, so near misses hurt open
    crews about four times as much as E7's free field did (Lion's HE 15 m short of Iron Duke kills 16, 2.5 before).
+   **Accepted.**
+
+## The near field's hole (2026-11-14)
+
+**Why.** The user asked for the physical basis of "One outside"'s call 1. Only part of EX4's rule had one:
+
+- **The contact hole in air,** 0.45·W^⅓·√(6/t), is sourced (11 §3.1, 13 measured shell holes, ×1.4 scatter).
+- **The reach a plate is holed within,** 1.0·W^⅓·√(6/t), was 11 §5.1's radius for *equipment* wrecked in the open with the
+  contact rule's thickness term put to it: no data on plates says so.
+- **The shape between,** the contact hole × √(1 − (d/reach)²), was chosen as a smooth curve; its only check was Marblehead.
+- **Under water** the hole was 0.668·W^⅓ "whatever the plate": a 46 cm AP's 33 kg against Yamato's 200 mm lower belt opened
+  14.5 m², as much as against 8 mm. The bomb record says otherwise: Kelvin's 130 kg at 10 ft buckled her, where the rule
+  holed her 9 m².
+
+**The rule now (`NearField.TearM`): the hole is where the plate tears.** The loading a plate takes falls with its distance from
+the charge, so what tears it lies within a sphere about the charge, of the radius R at which the loading meets what the plate
+takes. In contact that's the hole; off the plate, the circle that sphere cuts of it, √(R² − d²), nothing past R. Every
+space's piece of a plane takes the same circle, as before. Three loadings, the largest taking it:
+
+- **The casing's fragments and the shock together,** in contact in air: 11 §3.1's rule, unchanged. Off the plate the pieces'
+  density falls as 1/R² from the burst, so where they still tear the plate between them is a sphere whose radius is the
+  contact hole's.
+- **The blast** in air: 11 §1.1's reflected impulse by Z (Kingery-Bulmash, now in the code) against Nurick's tearing
+  threshold, `TearKPaSMm` 3 kPa·s a mm of mild steel [SRC 11 §1.1]. It comes out within 15% of 11's blast-only derivation
+  (0.15·W^0.51·(t/6)^−0.54) for 1-9 t, and decides a big bare charge's hole: the 2000 mm HE's 8.6 t tears 20 mm plate to 8.8
+  m, its fragments' to 5 m. A shell's is its fragments'.
+- **The water's pulse** under the sea: Cole's peak and decay (15 §3.1, the shock factor's), the momentum a plate of its mass
+  takes (Taylor's flat plate, 2ψ^(ψ/(1−ψ)) of the free field), times `WaterTakeK` for what a light plate takes after the water
+  closes back on it, at most a rigid plate's 2×, against the same threshold. **`WaterTakeK` 4.77 is fitted** to one torpedo,
+  Seydlitz's 12 × 4 m (48 m²) from ~200 kg on 12 mm [EST plate; 4.5-5.0 for 9-15 mm]. `TampedHoleK` went with it.
+- Air and water by `Tamp`, as before: no switch.
+- The walk looks as far as the charge tears her thinnest plating, or its wreck reach, whichever is farther (`WalkM`): a
+  torpedo's tear on 8 mm reaches past its 0.7·W^⅓.
+
+**Against the record** (`NearFieldTests`):
+
+| Case | Old rule | Now | Record |
+|---|---|---|---|
+| 46 cm AP's 33 kg against 200 mm under water | 14.5 m² | 0.06 m² | |
+| Torpedo, 300 kg on a destroyer's 8 mm / a battleship's 25 mm / 50 mm | 63 / 63 / 63 m² | 74 / 49 / 24 m² | |
+| Seydlitz, ~200 kg on 12 mm | 48 m² | 48 m² (the fit) | 12 × 4 m |
+| Kelvin, 130 kg at 10 ft, a direct-action bomb near the surface | 9 m² | none | buckled |
+| Nizam 130 kg at 15 ft, Somali 1,000 lb at 30 ft | none | none | buckled, indented |
+| Monarch, 944 kg 2.3 m off 20 mm | holed | 119 m² | outer layers holed |
+| 46 cm HE (62 kg) at 1 / 2 / 3 m off a destroyer's 7 mm | 7.9 / 6.0 / 2.8 m² | 5.4 / 0 / 0 (her splinter holes besides) | 15: 0.4-1.5 at 1-3 m |
+| HE on a belt, 0.3 m: 46 cm on 410 mm, 13.5″ on 305, 6″ on 76 | small holes | none | |
+
+Lützow's 1 × 10 m from a Tallboy 18 m off stays the shock's (13 §5.1): past any near field.
+
+**What it did** (old against new on the same seeds, before the panel):
+
+- **Near misses:** a 46 cm HE off a destroyer holes 6.1 m² at 1 m (8.9), 1.05 m² at 2 m (13.7 with the warheads it set off),
+  0.59 m² at 3 m (15.5); lost at 2 and 3 m 0% (27%, 43%: the deck's warheads no longer reached through a torn side). Iron
+  Duke's near misses the same. The 2000 mm HE: 450 m² at 0.1 m (175), and 5 m off breaks Iron Duke in two (25% lost).
+- **Torpedoes:** a destroyer's hole 57 m² (54), lost 47% (45); the 1913 super-dreadnought 36 m² (52), 4,612 t in the hour
+  (5,339); Yamato's 37 m² (50).
+- **Shells on armour:** water after 10 hits and 30 min: Iron Duke under Lion's HE 86 t (128), under AP 140 t (301); the light
+  cruiser under 6″ HE 7 t (23).
+- **Yamato under her own 46 cm** (`immune yamato --anger 8`): holes down a third to a half in the bands she lives through;
+  her losses, magazines, unchanged (below).
+- **`damage-history`:** the Yalu ironclad lost 0% (10; Dingyuan lived), Tiger 10% (20), Bismarck 80% (95), Kirishima 30% (25),
+  the 10 × 5″ destroyer 0% (5). **`dc-history`:** the pre-dreadnought with two torpedoes, lost in 24 min every run (the open
+  item) to 15% at about 3½ h, the rest afloat with 10,000 t, dead in the water (Formidable sank at 2¾ h); Oslyabya 10% (25).
+- **The explosion anchors** (`explode`): holes in the shells' own spaces fewer, nothing given that gave before.
+- **The panel** (`balance`, 8 seeds, Jutland 4; old and new side by side): 8 of 14 sides within about twice the record (7);
+  the record's loser lost more in 22 of 44 seeds (19); capsized 51%, broke in two 27%, foundered 22%, magazine 1%. Jutland:
+  Britain 20.3 lost a seed (28.5; record 14), now within twice, Germany 42.8 (40.5; 11). Heligoland Bight: Britain 1.0 (2.5).
+  Tsushima: Russia 3.3 (3.8; 7), Japan 2.3 (4.3; 0). The rest within the seeds' spread.
+
+**Found on the way, not this step's (the user's Yamato):** under her own AP inside her immune zone (20-30 km) she is lost
+4-5% after 10 hits, every one a magazine, lit in a gunhouse or its working chamber (and spall once): her turrets are got
+through, not her belt (`magazines.md`'s). And she takes 1,900-2,900 t in 30 min, much of it by belts that held and leaked
+(32% of them, some "major" or "lost": E4's `NonPen.Belt`, `shells-armour-damage.md`).
+
+**Research asked** (`research/REQUESTS.md`, 2026-11-14): holes against charge, plate and standoff; Nurick's thresholds by
+steel; what a light plate takes under water against Taylor; whether the sphere's cut is the right shape.
 
 ## What stays out
 

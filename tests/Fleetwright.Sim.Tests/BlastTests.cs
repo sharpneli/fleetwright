@@ -236,7 +236,7 @@ public class BlastTests(ITestOutputHelper output)
         int cell = Cell(c, k, RoomKind.Accommodation);
         var b = c.Cells[cell].Box;
         var r = RandomStream.Named(11, "holed");
-        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 60, Charge(60, "TNT"), new NearCharge(0.2, 0, 8), Settings, ref r);
+        var res = GasNetwork.For(c).Detonate(k, cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 60, Charge(60, "TNT"), NearField.Charge(Math.Cbrt(60.0), 1, 0, Settings), Settings, ref r);   // its own near field
         output.WriteLine($"  holed {res.Holed}, ruptured {res.Ruptured} ({res.Bulkheads} bulkheads, {res.Decks} decks), peak {res.PeakKPa:0} kPa");
         Assert.True(res.Holed > 0);
         Assert.True(res.Bulkheads + res.Decks > 0, "every boundary of the space within the near zone, none giving under a bomb's gas");

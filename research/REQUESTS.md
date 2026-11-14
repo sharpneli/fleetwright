@@ -12,6 +12,25 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-14 - Holes in plate from a charge or a shell at a distance from it, in air and under water
+- Question: (1) Measured holes (area, or a tear's length) in steel plate from a charge or a shell's burst at a known standoff from
+  it, against the same in contact: trials (ship target trials, plate trials, Hopkinson-era and WWII), and war damage with a
+  distance (a bomb or shell bursting beside a ship, a mine or a torpedo off her side). Above all where the hole shrinks to nothing:
+  at what standoff, for what charge and plate. (2) Plate tearing by impulse: Nurick's threshold for mild and high-tensile steel and
+  armour (we take ~3 kPa·s a mm of mild steel, I* ≈ 2.2, from one source recalled from memory), how it scales with yield
+  strength and with a stiffened ship panel against a clamped plate, and whether a tear from a charge in air near contact is the
+  blast's or the casing's fragments'. (3) Under water: what a light plate (8-25 mm) takes of a contact or near pulse, Taylor's
+  flat-plate share against what's measured (cavitation, the water closing on it, the bubble's push), and how a hull plate's tear
+  radius goes with charge, plate and standoff; the record's contact and non-contact holes from torpedoes, mines and bombs with
+  their charge, plate and distance (Seydlitz, Kelvin, Monarch's replica, Lützow's Tallboy).
+- Context / relevant files: `src/Fleetwright.Sim.Combat/NearField.cs` (`TearM`: the hole is where the plate tears, a sphere about
+  the charge; in air the larger of 11 §3.1's contact rule and the blast's reflected impulse against Nurick's; under water Cole's
+  pulse, Taylor's share times `WaterTakeK` 4.77 [FIT to Seydlitz's 48 m² from ~200 kg on 12 mm], at most a rigid plate's 2x),
+  `docs/battle/explosions.md` "The near field's hole", `docs/battle/damage/11_blast_confinement.md` §1.1 and §3.1,
+  `docs/battle/damage/15_near_misses.md` §3.
+- Wanted output: a table of holes against charge, plate and standoff with tags; Nurick's thresholds by steel; what a light plate
+  takes under water against Taylor; whether the sphere's cut (√(R² − d²)) is the right shape off the plate, or what is.
+
 ### 2026-11-09 - What a darkened ship showed: light discipline and its leaks, 1890-1925 first
 - Question: (1) Darkening ship in each navy and period: what the regulations shut and covered (scuttles and deadlights,
   doors and screens to lit flats, galley and engine-room skylights, navigation lights), and how well it was kept; what

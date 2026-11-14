@@ -72,18 +72,16 @@ public class NearMissTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>15 §6.7 test 4: heavy HE within 1-3 m holes a destroyer's waterline; 30 m off, none. 15's 0.2-1.5 m² was its splinters'
-    /// alone: on the one path (docs/battle/explosions.md "One outside") the near field's own hole by EX4's rule comes too, 11 §3.1's
-    /// contact hole cut by the standoff (about 8 m² at 1 m off her 7 mm side, 3 m² at 3 m). The near miss's own holes, not those of a
-    /// store of hers its pieces set off. Open with the user.</summary>
+    /// <summary>15 §6.7 test 4: heavy HE within 1-3 m holes a destroyer's waterline; 30 m off, none. At 3 m its splinters' holes, 15's
+    /// 0.2-1.5 m²; at 1 m its near field tears her 7 mm side too (docs/battle/explosions.md "The near field's hole": its fragments'
+    /// sphere, 1.65 m about it, cuts about 5 m² of her side). The near miss's own holes, not those of a store of hers its pieces set off.</summary>
     [Fact]
     public void Close_heavy_HE_holes_the_waterline_far_off_not()
     {
-        foreach (double d in (double[])[1, 3])
-        {
-            var r = Burst("yamato", ShellKind.He, "short", d, alone: true);
-            Assert.InRange(Per(r, r.HoleM2), 0.2, 12);
-        }
+        var close = Burst("yamato", ShellKind.He, "short", 1, alone: true);
+        Assert.InRange(Per(close, close.HoleM2), 2, 10);
+        var off = Burst("yamato", ShellKind.He, "short", 3, alone: true);
+        Assert.InRange(Per(off, off.HoleM2), 0.2, 1.5);
         Assert.Equal(0, Burst("yamato", ShellKind.He, "short", 30, alone: true).HoleM2);
     }
 

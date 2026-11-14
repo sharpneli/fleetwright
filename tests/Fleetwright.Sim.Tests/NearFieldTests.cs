@@ -32,17 +32,52 @@ public class NearFieldTests(ITestOutputHelper output)
 
     static P3 Middle(in Box b) => new((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2);
 
-    /// <summary>The two measured ends of the one rule: 11 §3.1's contact hole in air, the torpedo's 1.4·W^⅔ m² and 0.7·W^⅓ under water.</summary>
+    /// <summary>In contact in air a shell-sized charge's hole is 11 §3.1's contact rule, its fragments and shock together; a big bare
+    /// charge's is its blast's, near 11's blast-only derivation, 0.15·W^0.51·(t/6)^−0.54 (the reflected impulse against Nurick's).</summary>
     [Fact]
-    public void Air_and_water_are_the_two_ends_of_one_rule()
+    public void In_air_a_shells_hole_is_its_fragments_a_big_charges_its_blast()
     {
         const double size = 4;
         Assert.Equal(0.45 * size * Math.Sqrt(6.0 / 16), NearField.HoleM(size, 16, 0, Settings), 9);
-        double tamped = NearField.HoleM(size, 16, 1, Settings);
-        Assert.Equal(1.4 * size * size, Math.PI * tamped * tamped, 1);
-        Assert.Equal(tamped, NearField.HoleM(size, 300, 1, Settings), 9);
-        Assert.Equal(1.0 * size, NearField.Charge(size, 1, 0, Settings).ReachM, 9);
-        Assert.Equal(0.7 * size, NearField.Charge(size, 1, 1, Settings).ReachM, 9);
+        foreach (var (kg, mm) in new[] { (8600.0, 20.0), (3400.0, 12.0), (1000.0, 8.0) })
+        {
+            double hole = NearField.HoleM(Math.Cbrt(kg), mm, 0, Settings), derived = 0.15 * Math.Pow(kg, 0.51) * Math.Pow(mm / 6, -0.54);
+            output.WriteLine($"{kg} kg on {mm} mm: {hole:0.00} m against 11's {derived:0.00} and the fragments' {0.45 * Math.Cbrt(kg) * Math.Sqrt(6 / mm):0.00}");
+            Assert.True(hole > 0.45 * Math.Cbrt(kg) * Math.Sqrt(6 / mm), "the blast's");
+            Assert.InRange(hole / derived, 0.8, 1.25);
+        }
+    }
+
+    /// <summary>Under water the pulse's hole is fitted to one torpedo, Seydlitz's 48 m² from ~200 kg on 12 mm (1.4·W^⅔); a thinner side
+    /// tears wider, an armoured one narrower, and a shell's charge against a heavy belt hardly at all (the old rule holed any plate alike).</summary>
+    [Fact]
+    public void Under_water_the_plate_decides_how_far_it_tears()
+    {
+        double seydlitz = NearField.HoleM(Math.Cbrt(200.0), 12, 1, Settings);
+        Assert.Equal(48, Math.PI * seydlitz * seydlitz, 1.5);
+        double thin = NearField.HoleM(Math.Cbrt(300.0), 8, 1, Settings), side = NearField.HoleM(Math.Cbrt(300.0), 25, 1, Settings),
+            belt = NearField.HoleM(Math.Cbrt(33.0), 200, 1, Settings);
+        output.WriteLine($"300 kg on 8 mm {Math.PI * thin * thin:0} m², on 25 mm {Math.PI * side * side:0} m²; 33 kg on 200 mm {Math.PI * belt * belt:0.00} m²");
+        Assert.True(thin > side);
+        Assert.InRange(Math.PI * side * side, 25, 70);
+        Assert.InRange(Math.PI * belt * belt, 0, 0.3);
+    }
+
+    /// <summary>The bomb record's near misses (damage/15 §3.2) and research 13's Monarch, off the plate under water: Monarch's 944 kg
+    /// at 2.3 m holed her outer layers; Nizam's 130 kg at 15 ft and Somali's 1,000 lb at 30 ft buckled and indented, not holed. Kelvin's
+    /// 130 kg at 10 ft, a direct-action bomb near the surface, buckled too: the sea vents a shallow burst.</summary>
+    [Fact]
+    public void The_record_off_the_plate_under_water()
+    {
+        double Hole(double kg, double mm, double d, double depth)
+        {
+            double size = Math.Cbrt(kg);
+            return NearField.HoleM(NearField.Charge(size, 1, NearField.Tamp(depth, size, Settings), Settings), mm, d, Settings);
+        }
+        Assert.True(Hole(944, 20, 2.3, 6) > 1, "Monarch");
+        Assert.Equal(0, Hole(130, 9, 4.57, 3));
+        Assert.Equal(0, Hole(220, 9, 9.1, 3));
+        Assert.Equal(0, Hole(130, 9, 3.05, 0.5));
     }
 
     /// <summary>No step from air to water: a charge going down reads a little more each metre, and it's whole by the settings' depth.</summary>
@@ -54,15 +89,16 @@ public class NearFieldTests(ITestOutputHelper output)
         for (double depth = 0.1; depth < 5; depth += 0.1)
         {
             double hole = NearField.HoleM(size, 16, NearField.Tamp(depth, size, Settings), Settings);
-            Assert.InRange(hole - last, 0, 0.15);
+            Assert.InRange(hole - last, 0, 0.3);
             last = hole;
         }
         Assert.Equal(1, NearField.Tamp(Settings.TampDepthK * size, size, Settings));
         Assert.Equal(0, NearField.Tamp(-1, size, Settings));
     }
 
-    /// <summary>Off the plate it fades to nothing with no step, and the thicker the plate the nearer it must be (Marblehead's 76 mm
-    /// ruptured only in contact, 11 §3.2).</summary>
+    /// <summary>Off the plate it fades to nothing with no step, by the sphere its tear makes; the thicker the plate the nearer it must be
+    /// (Marblehead's 76 mm ruptured only in contact, 11 §3.2), and a 46 cm HE tears a destroyer's side within about its tear, not its
+    /// wreck reach (EX4 had it to 3.7 m).</summary>
     [Fact]
     public void A_thick_plate_is_holed_only_close_to()
     {
@@ -76,8 +112,11 @@ public class NearFieldTests(ITestOutputHelper output)
         }
         Assert.Equal(0, last);
         Assert.True(NearField.HoleM(ch, 76, 0, Settings) > 0, "in contact");
-        Assert.Equal(0, NearField.HoleM(ch, 76, 2, Settings));
-        Assert.True(NearField.HoleM(ch, 8, 2, Settings) > 0, "a thin one at the same distance");
+        Assert.Equal(0, NearField.HoleM(ch, 76, 1, Settings));
+        Assert.True(NearField.HoleM(ch, 8, 1, Settings) > 0, "a thin one at the same distance");
+        var he = NearField.Charge(Math.Cbrt(62.0), 1, 0, Settings);
+        Assert.True(NearField.HoleM(he, 7, 1, Settings) > 0);
+        Assert.Equal(0, NearField.HoleM(he, 7, 2, Settings));
     }
 
     /// <summary>However a plate is split between spaces, it's holed once.</summary>
@@ -136,7 +175,7 @@ public class NearFieldTests(ITestOutputHelper output)
         var (c, k) = Ship("destroyer");
         int cell = EngineRoom(c);
         var r = RandomStream.Named(5, "near field");
-        var weak = new NearCharge(0.5, 0, 6);   // a far reach and a small hole: thin plate goes, and it walks
+        var weak = NearField.Charge(Math.Cbrt(200.0), 1, 0, Settings);   // its near field tears what lies within its reach (the gas kept small)
         var far = GasNetwork.For(c).Detonate(k, cell, Middle(c.Cells[cell].Box), 0.1, Filler(0.1), weak, Settings, ref r);
         (c, k) = Ship("destroyer");
         var none = GasNetwork.For(c).Detonate(k, cell, Middle(c.Cells[cell].Box), 0.1, Filler(0.1), default, Settings, ref r);

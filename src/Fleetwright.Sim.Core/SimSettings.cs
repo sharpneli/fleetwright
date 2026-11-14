@@ -1377,15 +1377,23 @@ public sealed record SimSettings
     /// <summary>The burst's radii, m, times the cube root of its TNT kg: equipment wrecked by its shock and fragments, in
     /// the open and in the near zone of a burst inside (docs/battle/shells-armour-damage.md E5; damage/11 §3.3, §5.1: was
     /// 1.6, an internal number); a contact burst's hole in plating, times the square root of 6 mm over the plate (11 §3.1:
-    /// unbiased against 13 holes). People are E6's (<see cref="CasualtyS"/>). The same with water backing the charge
-    /// (<c>NearField</c>, docs/battle/explosions.md EX4): how far inboard it wrecks (a 300 kg charge 4.7 m, the depth of a TDS rated
-    /// for it; damage-model-research.md §3.4, A6), its hole's radius whatever the plate (1.4·W^⅔ m²: Seydlitz's 12 × 4 m from a
-    /// ~200 kg charge), and how deep it's whole, m a kg^⅓ [EST: where the surface no longer vents it].</summary>
+    /// unbiased against 13 holes; with the blast and the water's pulse, <c>NearField.TearM</c>). People are E6's
+    /// (<see cref="CasualtyS"/>). The same with water backing the charge (<c>NearField</c>, docs/battle/explosions.md EX4): how far
+    /// inboard it wrecks (a 300 kg charge 4.7 m, the depth of a TDS rated for it; damage-model-research.md §3.4, A6), and how deep
+    /// it's whole, m a kg^⅓ [EST: where the surface no longer vents it].</summary>
     public double WreckRadiusK { get; init; } = 1.0;
     public double HoleRadiusK { get; init; } = 0.45;
     public double TampedReachK { get; init; } = 0.7;
-    public double TampedHoleK { get; init; } = 0.6676;
     public double TampDepthK { get; init; } = 0.5;
+
+    /// <summary>A plate tears at its supports when the impulse it takes reaches Nurick's threshold, I* = v₀·√(ρ/σ) ≈ 2.2: about this
+    /// much a mm of mild steel, kPa·s [SRC damage/11 §1.1] (docs/battle/explosions.md "The near field's hole").</summary>
+    public double TearKPaSMm { get; init; } = 3;
+
+    /// <summary>What a light plate takes of a charge's pulse under water after it, over Taylor's flat plate's share (the water closing
+    /// on it as it kicks off; at most a rigid plate's twice the free field) [FIT: Seydlitz's 12 × 4 m, 48 m², from a ~200 kg charge
+    /// on 12 mm of plating, the torpedo's 1.4·W^⅔ m²; 4.5-5.0 for 9-15 mm] (<c>NearField.WaterImpulseKPaS</c>).</summary>
+    public double WaterTakeK { get; init; } = 4.77;
 
     /// <summary>A burst in a closed space (E5; damage/11 §1.2-§4): the gas pressure P = <see cref="BlastHeatK"/>·η·[Q_d +
     /// φ·(Q_c − Q_d)]·W/V MPa (W the filler's kg, V the space's gas, φ = 1/(1 + W·air/V) the afterburn its air allows);

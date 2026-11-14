@@ -383,6 +383,8 @@ public sealed partial class GasNetwork
     bool intoBubble;
     /// <summary>The outside faces one explosion's near field has had (its walk's id): each once, from outside or from within.</summary>
     int[] faceNear = [];
+    /// <summary>How far the near field under way is looked for (<see cref="NearField.WalkM"/>).</summary>
+    double nearWalkM;
     int[] trainStamp = [];
     GasResult res;
     // what a step reads of each boundary and isn't moved by the run (Run fills or stamps them, after the near field's holes): each
@@ -683,13 +685,14 @@ public sealed partial class GasNetwork
         int into = -1;
         double subtends = 0;
         double nearest = 0, gas = 0, vents = 0;
-        if (near.ReachM > 0)
+        double walkM = NearField.WalkM(near, s);
+        if (walkM > 0)
         {
             intoBubble = wet;   // the holes it makes in her open into its own bubble, growing at tens of m/s (research 14 §1)
             var cells = c.Cells;
             for (int i = 0; i < cells.Length; i++)
             {
-                if (Effects.BoxDistance(cells[i].Box, at) > near.ReachM)
+                if (Effects.BoxDistance(cells[i].Box, at) > walkM)
                     continue;
                 // its products go into the space it lies against: the nearest it opened
                 double opened = FacesFromOutside(i, at, near, out double g, out double vn, ref subtends), d = Effects.BoxDistance(cells[i].Box, at);
@@ -984,7 +987,8 @@ public sealed partial class GasNetwork
     /// holds back stays behind that plate.</summary>
     void Near(P3 at, in NearCharge near)
     {
-        if (!(near.ReachM > 0))
+        nearWalkM = NearField.WalkM(near, s);
+        if (!(nearWalkM > 0))
             return;
         for (int a = 0; a < nWalk; a++)   // the walk grows as it goes
         {
@@ -1004,7 +1008,7 @@ public sealed partial class GasNetwork
         {
             ref readonly var e = ref c.Neighbour(j);
             var there = c.Cells[e.Cell].Box;
-            if (Effects.BoxDistance(there, at) > near.ReachM)
+            if (Effects.BoxDistance(there, at) > nearWalkM)
                 continue;
             EdgeOpen(j);
             int q = canon[j];
