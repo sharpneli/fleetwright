@@ -121,6 +121,10 @@ public sealed class ImmuneZone
     public double[] RangesM { get; }
     public (double FallDeg, double StrikeMs)[] Falls { get; }
 
+    /// <summary>A plate beaten only by a shell through it whole (the record's "effective penetration", for the history
+    /// checks); else through it at all, whole or in pieces (the designer's: did the plate keep the shell out).</summary>
+    public bool WholeOnly { get; init; }
+
     /// <summary>The shells a target's cells have been filled to.</summary>
     public int ShotsPerCell(ZoneTarget t) => shotsPerCell[(int)t];
 
@@ -682,8 +686,10 @@ public sealed class ImmuneZone
                 : t.Bursts && !double.IsNaN(t.BurstT) ? Math.Min(t.BurstT, t.StopT) : t.StopT;
             if (!IsVitals(target))
             {
-                // a plate: through it whole and not glanced off it (a path that no longer meets it stopped short of it)
-                if (into < 0 || tin >= whole || tin >= t.StopT || t.Glance == into)
+                // a plate: through it and not glanced off it (a path that no longer meets it stopped short of it), whole or in
+                // pieces (the user, 2026-11-14: a belt holed by a shell breaking up didn't hold; Yamato's own 460 mm breaks
+                // up on her belt 15 degrees off the beam and still holes it); the record's measure is whole only
+                if (into < 0 || tin >= t.StopT || t.Glance == into || WholeOnly && tin >= whole)
                     continue;
                 cell.Through++;
                 Tally(sidePlates, i, xs[into]);

@@ -387,6 +387,25 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 - `-designer-ui=immune[:CALIBRE[:PLATE+PLATE...[:KM]]]` for captures (PLATE: belt, upper, end_fore, end_aft, bulk, deckN,
   slopes, turrets, barbettes, ct; magazines or machinery for those views), e.g. `-section=3 -designer-ui=immune:203:end_fore+deck0:14`.
 
+## After IZ4: two Yamatos (2026-11-14)
+
+The user spawned two Yamatos and fired one's whole AP outfit into the other, which sank within tens of seconds: "Something
+must be wrong with your model." The damage model behind the game agrees with the test (`shipgen hits yamato --shooter
+yamato`, 40 hits a ship: 19 % lost at 10 km, 38 % at 20 km, every magazine loss started by charges lit in a gunhouse); the
+zone misled in two ways.
+
+- **A plate holed by a shell breaking up counted as holding** (fixed). 15 degrees off the beam her 460 mm passes its
+  proof angle on her inclined 410 mm belt and holes it in pieces; "through it whole", the record's effective penetration,
+  called that a hold. A plate is now beaten by a shell through it at all, whole or in pieces (decision 13); the history
+  checks keep the record's measure (`ImmuneZone.WholeOnly`, `--anchors`, unchanged). Her belt against her own gun: beaten
+  out to 17 km on the beam (was 6), out to 12 km over 60-120 degrees (was the beam alone).
+- **The flash path isn't in the zone** (open, for the user). The magazines view counts shells that get into a magazine
+  space; the damage model loses her to shells through a turret or barbette lighting charges that flash down the ammunition
+  train, which the zone's walk (the terminal alone, no effects) never runs. Her turrets are beaten at every range by
+  their 260 mm roofs, her barbettes out to 18 km, and neither is in the default pick.
+
+![Yamato against her own 460 mm, after the fix](png/immune-game-yamato-460.png)
+
 ## Decisions (user, 2026-11-14)
 
 1. **Reaching the vitals:** the shell enters a vital space whole, filler in it, or bursts inside one. A shell broken up
@@ -405,3 +424,5 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 10. **The barbettes and the deck aimed the same way**, and more shells where it matters.
 11. **Any plate picked on the left is tested at its centre**, the main belt by default; the tab shows that plate.
 12. **Ctrl+click tests plates together** (ctrl as on the battle map) (beaten where any is); the default is the main belt and her thickest deck.
+13. **A plate is beaten by a shell through it whole or in pieces** (a holed belt didn't hold); the record's whole-only
+    measure stays for the history checks.

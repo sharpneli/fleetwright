@@ -39,7 +39,7 @@ static class ImmuneBench
             double elev = 0;
             foreach (ref readonly var m in cls.Mounts)
                 elev = Math.Max(elev, m.MaxElevationDeg);
-            var zone = new ImmuneZone(cls, shell, elev, settings, (ulong)o.Seed);
+            var zone = new ImmuneZone(cls, shell, elev, settings, (ulong)o.Seed) { WholeOnly = true };   // the record's measure
             zone.Fill(o.Shots, o.Threads > 0 ? o.Threads : Environment.ProcessorCount);
             int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
             string Z((double In, double Out) e) => e.In < e.Out ? $"{e.In / 1000:0.0}-{e.Out / 1000:0.0}" : "none";
@@ -86,7 +86,7 @@ static class ImmuneBench
         {
             // one cell's shells, walked on one thread: target:km:angle
             var parts = tr.Split(':');
-            var tt = ImmuneZone.All.First(t => t.ToString().StartsWith(parts[0], StringComparison.OrdinalIgnoreCase));
+            var tt = ImmuneZone.All.Append(ZoneTarget.Plate).First(t => t.ToString().StartsWith(parts[0], StringComparison.OrdinalIgnoreCase));
             int cellAt = zone.Index(tt, (int)Math.Round(double.Parse(parts[1]) * 1000 / ImmuneZone.RangeStepM) - 1, Array.IndexOf(ImmuneZone.Angles, double.Parse(parts[2])));
             int shown = 0;
             zone.Each = (i, path, t, tin) =>
@@ -201,7 +201,7 @@ static class ImmuneBench
                 continue;
             }
             bool vitals = t is ZoneTarget.Magazines or ZoneTarget.Machinery;
-            Console.WriteLine(vitals ? $"{t}: in through the side / the deck / b in pieces, % of the shells at them" : $"{t}: through it whole, % of the shells at it");
+            Console.WriteLine(vitals ? $"{t}: in through the side / the deck / b in pieces, % of the shells at them" : $"{t}: through it (whole or in pieces), % of the shells at it");
             var head = new StringBuilder("   km ");
             foreach (double a in ImmuneZone.Angles)
                 head.Append((vitals ? string.Format(Inv, "{0,13:0}", a) : string.Format(Inv, "{0,6:0}", a)) + "°");
