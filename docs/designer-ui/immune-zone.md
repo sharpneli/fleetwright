@@ -1,7 +1,7 @@
 # Immune zone and shells fired in anger (plan, 2026-11-14)
 
 **Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0, IZ1 and IZ2 built 2026-11-14 ("IZ0 and
-IZ2: how they went", "IZ1: the record"); the mockup (IZ3) drawn, awaiting the user's review ("IZ3: the mockup").
+IZ2: how they went", "IZ1: the record"); the mockup (IZ3) in its third pass after two reviews ("IZ3: the mockup"); the port (IZ4) next.
 
 The Protection tab has carried a greyed placeholder since its first review (protection.md, 2026-10-11): "Immune zone
 and shells fired in anger · against her own 380 mm · NEEDS THE PENETRATION MODEL". The penetration model has been in
@@ -37,7 +37,16 @@ shells through `Terminal.Resolve`). A test later checks the two don't drift far 
 
 ## 1. The immune zone
 
-### What it is
+**The armour first** (decision 7, 2026-11-14: "Usually at short ranges people can't reach magazines directly due to
+angles so what is more interesting is if the belt armor can hold and are barbettes penetrated"). The zone's own view
+aims shells at three plates, each from its own shells: her main belt (its strakes and zones, on the side or inside it,
+struck from outboard), her main battery's barbettes where they stand clear of the hull, and her main armour deck
+(`Armour.MainDeck`'s, with its slopes, struck from above). A plate is beaten by a shell that comes through it whole, not
+broken, not glanced off. The belt and the barbettes hold from the range out to which half get through; the deck gives
+from the range at which half do; the armour's zone is between (`ImmuneZone.ArmourEdges`), the classic one. The vitals
+(below, decisions 1 and 2) are the second view, a click away.
+
+### The vitals
 
 For a gun's shell (a battery of hers, at its calibre or another, its AP by default, any kind it carries on a pick), at each
 range out to the gun's reach and each target angle (the line of fire off her bow, 0-180°, one side; she's symmetric
@@ -234,7 +243,8 @@ against her own gun, broadside, 128 shells a cell:
 chart but the bottom chart was not intuitive at all"). It had the shell's figures, two edge lines, a legend of four,
 a hover box of five lines, a strip of water bars with lines for guns and speed, and three tables for the band picked.
 
-**Second pass: the chart is the picture, the rest in words.**
+**Second pass: the chart is the picture, the rest in words** (approved as the direction, 2026-11-14: "that looks better
+now").
 
 ![machinery against her own 380 mm, 15 km picked](png/immune-mockup-machinery.png)
 ![magazines against her own family at 305 mm](png/immune-mockup-magazines-305.png)
@@ -251,6 +261,23 @@ a hover box of five lines, a strip of water bars with lines for guns and speed, 
 - Gone: the shell's mass and speed, the armour-alone edges, the soft shading, the hidden shade (folded into safe), the
   strip, the band tables, the hits by where. The bench keeps all of it.
 
+**Third pass: the armour first** (decisions 7 and 8).
+
+![the armour against her own 380 mm](png/immune-mockup-armour.png)
+![the armour against her own family at 305 mm](png/immune-mockup-armour-305.png)
+
+- **Armour | Magazines | Machinery**, Armour first. In the Armour view red is the belt or the barbettes beaten, amber the
+  deck beaten, green holds.
+- **The headline** is the armour's zone ("Immune from 22 to 33 km on the beam"), and the line under it each plate in
+  turn: "The belt (320 mm) holds beyond 21 km. The barbettes (288 mm) hold beyond 22 km. The third deck (80 mm) gives
+  beyond 33 km."
+- **Hover:** "20 km, 90° off the bow: belt 48 %, barbettes 56 %, deck 0 % through".
+- **Sections · plate** loses the placeholder line.
+
+Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
+cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
+
+
 ## Decisions (user, 2026-11-14)
 
 1. **Reaching the vitals:** the shell enters a vital space whole, filler in it, or bursts inside one. A shell broken up
@@ -262,3 +289,6 @@ a hover box of five lines, a strip of water bars with lines for guns and speed, 
    gun than go search for a specific foreign weapon." No foreign designs, no free reference gun.
 6. **Fired in anger is a spread** over ranges and angles, not one cell: "we want to know the immunity zone. Even
    Yamato is felled by WW1 battleships if the range is short enough."
+7. **The armour first:** whether the belt holds and the barbettes are beaten, more than whether shells reach the
+   magazines, which at short range the angles rarely allow (section 1).
+8. **The tab takes the whole right column**, and the placeholder line goes from Sections · plate.

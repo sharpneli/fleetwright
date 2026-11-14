@@ -30,7 +30,7 @@ static class ImmuneBench
 
     public static int RunAnchors(string root, Func<string, Design> load, SimSettings settings, Options o)
     {
-        Console.WriteLine("  design         record                                                             km           classic (armour held)   vitals (magazines, machinery)");
+        Console.WriteLine("  design         record                                                             km           belt and deck held      vitals (magazines, machinery)");
         foreach (var (name, record, inner, outer) in Anchors)
         {
             var design = load(Path.Combine(root, "anchors", name + ".json"));
@@ -43,8 +43,9 @@ static class ImmuneBench
             zone.Fill(o.Shots, o.Threads > 0 ? o.Threads : Environment.ProcessorCount);
             int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
             string Z((double In, double Out) e) => e.In < e.Out ? $"{e.In / 1000:0.0}-{e.Out / 1000:0.0}" : "none";
-            Console.WriteLine($"  {name,-14} {record,-82} {inner:0.0}-{outer:0.0}    {Z(zone.Edges(Vitals.Machinery, beam, beaten: true)),-22}  " +
-                              $"{Z(zone.Edges(Vitals.Magazines, beam))}, {Z(zone.Edges(Vitals.Machinery, beam))}");
+            var classic = (zone.Edges(ZoneTarget.Belt, beam).InnerM, zone.Edges(ZoneTarget.Deck, beam).OuterM);
+            Console.WriteLine($"  {name,-14} {record,-82} {inner:0.0}-{outer:0.0}    {Z(classic),-22}  " +
+                              $"{Z(zone.Edges(ZoneTarget.Magazines, beam))}, {Z(zone.Edges(ZoneTarget.Machinery, beam))}");
         }
         return 0;
     }
@@ -77,23 +78,24 @@ static class ImmuneBench
         if (o.Anger > 0)
             return Anger(cls, pick, cal, maxElev, settings, o);
         var zone = new ImmuneZone(cls, pick.Shell, maxElev, settings, (ulong)o.Seed);
+        var targets = o.Vitals == null ? ImmuneZone.All : ImmuneZone.All.Where(t => t.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (o.Trace is { } tr)
         {
-            // one cell's shells, walked on one thread: vitals:km:angle
+            // one cell's shells, walked on one thread: target:km:angle
             var parts = tr.Split(':');
-            var tv = parts[0].StartsWith("mach", StringComparison.OrdinalIgnoreCase) ? Vitals.Machinery : Vitals.Magazines;
-            int cellAt = zone.Index(tv, (int)Math.Round(double.Parse(parts[1]) * 1000 / ImmuneZone.RangeStepM) - 1, Array.IndexOf(ImmuneZone.Angles, double.Parse(parts[2])));
+            var tt = ImmuneZone.All.First(t => t.ToString().StartsWith(parts[0], StringComparison.OrdinalIgnoreCase));
+            int cellAt = zone.Index(tt, (int)Math.Round(double.Parse(parts[1]) * 1000 / ImmuneZone.RangeStepM) - 1, Array.IndexOf(ImmuneZone.Angles, double.Parse(parts[2])));
             int shown = 0;
             zone.Each = (i, path, t, tin) =>
             {
                 if (i != cellAt || shown++ >= 6)
                     return;
-                Console.WriteLine($"shell: {t.Outcome}, stop {t.StopT:0.00}, burst {t.BurstT:0.00}, plate {t.Plate}, vitals at {tin:0.00}, strike {t.StrikeMs:0}");
+                Console.WriteLine($"shell: {t.Outcome}, stop {t.StopT:0.00}, burst {t.BurstT:0.00}, plate {t.Plate}, glance {t.Glance}, target at {tin:0.00}, strike {t.StrikeMs:0}");
                 foreach (var x in path.Crossings)
                     Console.WriteLine($"   {x.T,7:0.00} {x.Kind,-8} {x.Plate,-14} [{x.Index}] {x.Mm,6:0} mm  n=({x.Normal.X:0.00},{x.Normal.Y:0.00},{x.Normal.Z:0.00}) " +
                                       (x.Kind is CrossingKind.CellIn && x.Index >= 0 ? $"{cls.Cells[x.Index].Room} {(cls.Cells[x.Index].Room >= 0 ? cls.Rooms[cls.Cells[x.Index].Room].Kind : default)}" : ""));
             };
-            zone.Fill(8, 1);
+            zone.Fill(8, [tt], 1);
             return 0;
         }
         Console.WriteLine($"{cls.Name}: against her own {(o.Main ? "main" : "secondary")} battery at {cal:0} mm ({pick.Name}, {pick.Shell.MassKg:0} kg, " +
@@ -103,35 +105,35 @@ static class ImmuneBench
         foreach (int p in passes)
         {
             sw.Restart();
-            zone.Fill(p, threads);
+            zone.Fill(p, targets, threads);
             long drawn = 0, shots = 0, traced = 0, hidden = 0;
-            foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+            foreach (var t in targets)
                 for (int r = 0; r < zone.RangesM.Length; r++)
                     for (int a = 0; a < ImmuneZone.Angles.Length; a++)
-                        (drawn, shots, traced, hidden) = (drawn + zone[v, r, a].Drawn, shots + zone[v, r, a].Shots, traced + zone[v, r, a].Traced,
-                            hidden + (zone[v, r, a].Hidden ? 1 : 0));
+                        (drawn, shots, traced, hidden) = (drawn + zone[t, r, a].Drawn, shots + zone[t, r, a].Shots, traced + zone[t, r, a].Traced,
+                            hidden + (zone[t, r, a].Hidden ? 1 : 0));
             Console.WriteLine($"  filled to {p} a cell on {threads} threads: {sw.Elapsed.TotalMilliseconds:0} ms in all " +
                                    $"({shots} shells walked, {drawn} lines drawn, {traced} traced; {hidden} cells hidden)");
         }
-        // one thread's cost a shell, for the designer's budget
+        // one thread's cost a shell, for the designer's budget: the armour, the zone's own view
         if (o.Threads != 1)
         {
             var one = new ImmuneZone(cls, pick.Shell, maxElev, settings, (ulong)o.Seed);
             sw.Restart();
-            one.Fill(16, 1);
+            one.Fill(16, ImmuneZone.Armour, 1);
             long shots = 0;
-            foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+            foreach (var t in ImmuneZone.Armour)
                 for (int r = 0; r < one.RangesM.Length; r++)
                     for (int a = 0; a < ImmuneZone.Angles.Length; a++)
-                        shots += one[v, r, a].Shots;
-            Console.WriteLine($"  one thread, 16 a cell: {sw.Elapsed.TotalMilliseconds:0} ms, {1000 * sw.Elapsed.TotalMilliseconds / Math.Max(shots, 1):0} µs a shell");
+                        shots += one[t, r, a].Shots;
+            Console.WriteLine($"  one thread, the armour at 16 a cell: {sw.Elapsed.TotalMilliseconds:0} ms, {1000 * sw.Elapsed.TotalMilliseconds / Math.Max(shots, 1):0} µs a shell");
         }
 
         if (o.Json != null)
         {
-            // for the mockup (docs/designer-ui/immune.html): every cell, the edges both ways, the plates by name
-            var vit = new JsonArray();
-            foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+            // for the mockup (docs/designer-ui/immune.html): every cell, the edges, the plates by name
+            var all = new JsonArray();
+            foreach (var t in ImmuneZone.All)
             {
                 JsonArray cells = [], edges = [], sideBy = [], deckBy = [];
                 for (int r = 0; r < zone.RangesM.Length; r++)
@@ -139,78 +141,83 @@ static class ImmuneBench
                     JsonArray row = [], sb = [], db = [];
                     for (int a = 0; a < ImmuneZone.Angles.Length; a++)
                     {
-                        var c = zone[v, r, a];
-                        row.Add((JsonNode?)(Arr(c.Shots, c.Side, c.Deck, c.Broken, c.Unseen, c.BeltMet, c.BeltBeaten, c.DeckMet, c.DeckBeaten)));
-                        sb.Add((JsonNode?)(PlateName(cls, zone.Most(v, r, a, false))));
-                        db.Add((JsonNode?)(PlateName(cls, zone.Most(v, r, a, true))));
+                        var c = zone[t, r, a];
+                        row.Add((JsonNode?)Arr(c.Shots, c.Through, c.Side, c.Deck, c.Broken, c.Unseen));
+                        sb.Add((JsonNode?)PlateName(cls, zone.Most(t, r, a, false)));
+                        db.Add((JsonNode?)PlateName(cls, zone.Most(t, r, a, true)));
                     }
-                    cells.Add((JsonNode?)(row));
-                    sideBy.Add((JsonNode?)(sb));
-                    deckBy.Add((JsonNode?)(db));
+                    cells.Add((JsonNode?)row);
+                    sideBy.Add((JsonNode?)sb);
+                    deckBy.Add((JsonNode?)db);
                 }
                 for (int a = 0; a < ImmuneZone.Angles.Length; a++)
                 {
-                    var (e, c) = (zone.Edges(v, a), zone.Edges(v, a, true));
-                    edges.Add((JsonNode?)(Arr(Math.Round(e.InnerM), Math.Round(e.OuterM), Math.Round(c.InnerM), Math.Round(c.OuterM))));
+                    var e = zone.Edges(t, a);
+                    edges.Add((JsonNode?)Arr(Math.Round(e.InnerM), Math.Round(e.OuterM)));
                 }
-                vit.Add((JsonNode?)(new JsonObject { ["vitals"] = v.ToString(), ["has"] = zone.Has(v), ["cells"] = cells, ["edges"] = edges, ["sideBy"] = sideBy, ["deckBy"] = deckBy }));
+                all.Add((JsonNode?)new JsonObject { ["target"] = t.ToString(), ["has"] = zone.Has(t), ["cells"] = cells, ["edges"] = edges, ["sideBy"] = sideBy, ["deckBy"] = deckBy });
+            }
+            var armour = new JsonArray();
+            for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+            {
+                var e = zone.ArmourEdges(a);
+                armour.Add((JsonNode?)Arr(Math.Round(e.InnerM), Math.Round(e.OuterM)));
             }
             var falls = new JsonArray();
             foreach (var f in zone.Falls)
-                falls.Add((JsonNode?)(Arr(Math.Round(f.FallDeg, 2), Math.Round(f.StrikeMs))));
+                falls.Add((JsonNode?)Arr(Math.Round(f.FallDeg, 2), Math.Round(f.StrikeMs)));
             var doc = new JsonObject
             {
                 ["ship"] = cls.Name, ["calibre"] = cal, ["shell"] = pick.Name, ["massKg"] = Math.Round(pick.Shell.MassKg), ["mv"] = Math.Round(pick.Shell.MuzzleVelocityMs),
-                ["reachM"] = Math.Round(zone.ReachM), ["angles"] = Arr(ImmuneZone.Angles), ["ranges"] = Arr(zone.RangesM), ["falls"] = falls, ["vitals"] = vit,
+                ["reachM"] = Math.Round(zone.ReachM), ["angles"] = Arr(ImmuneZone.Angles), ["ranges"] = Arr(zone.RangesM), ["falls"] = falls, ["targets"] = all,
+                ["armour"] = armour,
             };
             File.WriteAllText(o.Json, doc.ToJsonString());
             Console.WriteLine($"  written {o.Json}");
         }
-        foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+        int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
+        foreach (var t in targets)
         {
-            if (o.Vitals != null && !v.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase))
-                continue;
             Console.WriteLine();
-            if (!zone.Has(v))
+            if (!zone.Has(t))
             {
-                Console.WriteLine($"{v}: she has none");
+                Console.WriteLine($"{t}: she has none");
                 continue;
             }
-            Console.WriteLine($"{v}: in through the side / the deck / b in pieces, % of the shells at them");
+            bool vitals = t >= ZoneTarget.Magazines;
+            Console.WriteLine(vitals ? $"{t}: in through the side / the deck / b in pieces, % of the shells at them" : $"{t}: through it whole, % of the shells at it");
             var head = new StringBuilder("   km ");
             foreach (double a in ImmuneZone.Angles)
-                head.Append(Inv, $"{a,13:0}°");
+                head.Append((vitals ? string.Format(Inv, "{0,13:0}", a) : string.Format(Inv, "{0,6:0}", a)) + "°");
             Console.WriteLine(head);
             for (int r = 0; r < zone.RangesM.Length; r++)
             {
                 var line = new StringBuilder(string.Format(Inv, "{0,5:0} ", zone.RangesM[r] / 1000));
                 for (int a = 0; a < ImmuneZone.Angles.Length; a++)
                 {
-                    var c = zone[v, r, a];
-                    line.Append(c.Shots == 0 ? "            - " : string.Format(Inv, "{0,4:0}/{1,-3:0}b{2,-3:0}{3}", 100 * c.SideShare, 100 * c.DeckShare,
-                        100 * c.BrokenShare, c.SideShare >= ImmuneZone.Edge || c.DeckShare >= ImmuneZone.Edge ? ' ' : '*'));
+                    var c = zone[t, r, a];
+                    line.Append(c.Shots == 0 ? (vitals ? "            - " : "      -")
+                        : vitals ? string.Format(Inv, "{0,4:0}/{1,-3:0}b{2,-3:0}{3}", 100 * c.SideShare, 100 * c.DeckShare, 100 * c.BrokenShare,
+                            c.SideShare >= ImmuneZone.Edge || c.DeckShare >= ImmuneZone.Edge ? ' ' : '*')
+                        : string.Format(Inv, "{0,6:0} ", 100 * c.ThroughShare));
                 }
                 Console.WriteLine(line);
             }
-            Console.WriteLine("   (* under half both ways)");
-            int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
-            Console.WriteLine("  on the beam, her main belt and main deck met, and beaten whole %");
-            for (int r = 0; r < zone.RangesM.Length; r += 2)
-            {
-                var c = zone[v, r, beam];
-                Console.WriteLine($"    {zone.RangesM[r] / 1000,4:0} km  fall {zone.Falls[r].FallDeg,4:0.0}°  {zone.Falls[r].StrikeMs,4:0} m/s   belt {c.BeltMet,4} {100 * c.BeltBeatenShare,4:0}%   deck {c.DeckMet,4} {100 * c.DeckBeatenShare,4:0}%");
-            }
-            Console.WriteLine("  angle  immune          armour held       through the side most by          through the deck most by");
+            Console.WriteLine("  angle  edges           most by");
             for (int a = 0; a < ImmuneZone.Angles.Length; a++)
             {
-                var (inner, outer) = zone.Edges(v, a);
-                var (bi, bo) = zone.Edges(v, a, beaten: true);
-                string z = inner < outer ? string.Format(Inv, "{0,5:0.0}-{1,-5:0.0} km", inner / 1000, outer / 1000) : "none          ";
-                z += bi < bo ? string.Format(Inv, "  {0,5:0.0}-{1,-5:0.0} km", bi / 1000, bo / 1000) : "  none          ";
-                int ri = Math.Clamp((int)Math.Round(inner / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
-                int ro = Math.Clamp((int)Math.Round(outer / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
-                Console.WriteLine($"  {ImmuneZone.Angles[a],4:0}°  {z}    {Name(zone.Most(v, ri, a, false)),-30}  {Name(zone.Most(v, ro, a, true))}");
+                var (inner, outer) = zone.Edges(t, a);
+                string z = vitals ? (inner < outer ? string.Format(Inv, "{0,5:0.0}-{1,-5:0.0} km", inner / 1000, outer / 1000) : "none          ")
+                    : t == ZoneTarget.Deck ? string.Format(Inv, "gives from {0,4:0.0} km", outer / 1000) : string.Format(Inv, "holds from {0,4:0.0} km", inner / 1000);
+                int ri = Math.Clamp((int)Math.Round((t == ZoneTarget.Deck ? outer : inner) / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
+                Console.WriteLine($"  {ImmuneZone.Angles[a],4:0}°  {z,-16}  {PlateName(cls, zone.Most(t, ri, a))}");
             }
+        }
+        if (targets.Length == ImmuneZone.All.Length)
+        {
+            var (i0, o0) = zone.ArmourEdges(beam);
+            Console.WriteLine();
+            Console.WriteLine(i0 < o0 ? $"The armour's zone on the beam: {i0 / 1000:0.0}-{o0 / 1000:0.0} km" : "No armour zone on the beam");
         }
         return 0;
     }
@@ -287,6 +294,7 @@ static class ImmuneBench
         PlateKind.ArmourDeck => $"{Decks.DeckNameLower(c.Decks[c.ArmourDecks[z.Index].Deck].Number)} {z.Mm:0} mm",
         PlateKind.Inclined => $"{c.Inclined[z.Index].Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
         PlateKind.ArmourBulkhead => $"citadel bulkhead {z.Mm:0} mm",
+        PlateKind.Barbette => $"barbette {z.Mm:0} mm",
         _ => $"{z.Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
     };
 
@@ -298,5 +306,4 @@ static class ImmuneBench
         return a;
     }
 
-    static string Name(ZonePlate? p) => p is { } z ? string.Format(Inv, "{0}[{1}] {2:0} mm", z.Kind, z.Index, z.Mm) : "-";
 }

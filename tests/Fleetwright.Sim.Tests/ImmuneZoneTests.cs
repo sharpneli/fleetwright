@@ -73,7 +73,7 @@ public class ImmuneZoneTests(ITestOutputHelper output)
         passes.Fill(5, 4);
         passes.Fill(12, 3);
         int shots = 0;
-        foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+        foreach (var v in ImmuneZone.All)
             for (int r = 0; r < one.RangesM.Length; r++)
                 for (int a = 0; a < ImmuneZone.Angles.Length; a++)
                 {
@@ -107,38 +107,41 @@ public class ImmuneZoneTests(ITestOutputHelper output)
         }
     }
 
-    /// <summary>A thicker belt lets no more in through the side, and thicker decks no more through the deck (summed over the
-    /// zone: one cell's few shells are noisy).</summary>
+    /// <summary>A thicker belt lets fewer shells through it, and a thicker deck fewer through it (summed over the zone: one
+    /// cell's few shells are noisy).</summary>
     [Fact]
-    public void More_armour_never_lets_more_in()
+    public void More_armour_lets_fewer_through()
     {
-        static double Sum(ImmuneZone z, bool deck)
+        static double Sum(ImmuneZone z, ZoneTarget t)
         {
             double s = 0;
-            foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
-                for (int r = 0; r < z.RangesM.Length; r++)
-                    for (int a = 0; a < ImmuneZone.Angles.Length; a++)
-                        s += deck ? z[v, r, a].DeckShare : z[v, r, a].SideShare;
+            for (int r = 0; r < z.RangesM.Length; r++)
+                for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+                    s += z[t, r, a].ThroughShare;
             return s;
         }
         int threads = Math.Max(2, Environment.ProcessorCount / 2);
-        // the belt: dreadnought's own 12" gets through it close in
+        ImmuneZone Of(Design d, ZoneTarget t)
+        {
+            var c = ShipClassCompiler.Compile(ShipDesign.Build(d));
+            var (shell, elev) = Ap(c);
+            var z = new ImmuneZone(c, shell, elev, Settings, 7);
+            z.Fill(16, [t], threads);
+            return z;
+        }
         var d = Load("dreadnought");
-        var baseZone = Zone(ShipClassCompiler.Compile(ShipDesign.Build(d)), 16, threads);
         var thick = d with { Armour = d.Armour! with { BeltMm = d.Armour!.BeltMm * 1.4 } };
-        var thickZone = Zone(ShipClassCompiler.Compile(ShipDesign.Build(thick)), 16, threads);
-        // the gun stays hers: the thicker belt's ship fires the same shell
-        output.WriteLine($"dreadnought, side: {Sum(baseZone, false):0.00} with her belt, {Sum(thickZone, false):0.00} with it 1.4 times as thick");
-        Assert.True(Sum(baseZone, false) > 1);
-        Assert.True(Sum(thickZone, false) < Sum(baseZone, false));
-        // the decks: bismarck's own 380 mm gets through them far out
+        double before = Sum(Of(d, ZoneTarget.Belt), ZoneTarget.Belt), after = Sum(Of(thick, ZoneTarget.Belt), ZoneTarget.Belt);
+        output.WriteLine($"dreadnought, through the belt: {before:0.00} with her belt, {after:0.00} with it 1.4 times as thick");
+        Assert.True(before > 1);
+        Assert.True(after < before);
         var b = Load("bismarck");
-        var deckBase = Zone(ShipClassCompiler.Compile(ShipDesign.Build(b)), 16, threads);
         var heavy = b with { Armour = b.Armour! with { Decks = [.. b.Armour!.Decks!.Select(x => x with { Mm = x.Mm * 1.5 })] } };
-        var deckHeavy = Zone(ShipClassCompiler.Compile(ShipDesign.Build(heavy)), 16, threads);
-        output.WriteLine($"bismarck, deck: {Sum(deckBase, true):0.00} with her decks, {Sum(deckHeavy, true):0.00} with them 1.5 times as thick");
-        Assert.True(Sum(deckBase, true) > 1);
-        Assert.True(Sum(deckHeavy, true) < Sum(deckBase, true));
+        before = Sum(Of(b, ZoneTarget.Deck), ZoneTarget.Deck);
+        after = Sum(Of(heavy, ZoneTarget.Deck), ZoneTarget.Deck);
+        output.WriteLine($"bismarck, through the deck: {before:0.00} with her decks, {after:0.00} with them 1.5 times as thick");
+        Assert.True(before > 1);
+        Assert.True(after < before);
     }
 }
 

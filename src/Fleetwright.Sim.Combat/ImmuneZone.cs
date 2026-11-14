@@ -4,57 +4,68 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Combat;
 
-/// <summary>The spaces an immune zone is of (docs/designer-ui/immune-zone.md decision 2): the magazines, or the machinery
-/// (boiler and engine rooms), each a zone from its own shells.</summary>
-public enum Vitals : byte
+/// <summary>What an immune zone's shells are aimed at (docs/designer-ui/immune-zone.md): her armour, the main belt (its
+/// strakes and zones, on the side or inside it), the main battery's barbettes where they stand clear of the hull, the main armour deck (Armour.MainDeck's, with its slopes),
+/// each beaten by a shell that comes through it whole; or her vitals, the magazines and the machinery (boiler and engine
+/// rooms), reached by a shell that gets into them whole (decision 2), each from its own shells.</summary>
+public enum ZoneTarget : byte
 {
+    Belt,
+    Barbettes,
+    Deck,
     Magazines,
     Machinery,
 }
 
-/// <summary>One cell of an immune zone, a range and a target angle: the shells aimed at the vitals (lines that, unstopped,
-/// would enter one) and what came of them: in whole through the side or through the deck (by the heaviest plate each
-/// beat), or in only as pieces.</summary>
+/// <summary>One cell of an immune zone, a target, a range and a target angle: the shells aimed at the target (lines that,
+/// unstopped, would meet it) and what came of them. A plate: those through it whole. The vitals: those in whole through
+/// the side or through the deck (by the heaviest plate each beat), or in only as pieces.</summary>
 public struct ZoneCell
 {
-    public int Shots, Side, Deck, Broken;
-    /// <summary>The shells that met her main belt (her thickest plate lying as the side) and her main deck (her thickest
-    /// lying as a deck), and of them those that came whole through it, whether they then reached the vitals or not: the
-    /// armour beaten, the classic (USN) edges' measure.</summary>
-    public int BeltMet, BeltBeaten, DeckMet, DeckBeaten;
-    /// <summary>Lines drawn, the misses of the vitals among them; and the shells for which no line reached them (the
-    /// vitals hidden from there: below the sea's reach for a flat fall, or behind one another).</summary>
+    public int Shots, Through, Side, Deck, Broken;
+    /// <summary>Lines drawn, and the shells for which no line met the target (hidden from there: below the sea's reach for
+    /// a flat fall, or behind the rest of her).</summary>
     public int Drawn, Unseen;
     /// <summary>The lines traced through her (the rest were sure misses), for the cost.</summary>
     public int Traced;
 
-    /// <summary>Whether no shell from here could reach the vitals at all: out of sight, as good as immune.</summary>
+    /// <summary>Whether no shell from here could meet the target at all: out of sight, as good as immune.</summary>
     public readonly bool Hidden => Shots == 0 && Unseen > 0;
 
+    public readonly double ThroughShare => Shots > 0 ? (double)Through / Shots : 0;
     public readonly double SideShare => Shots > 0 ? (double)Side / Shots : 0;
     public readonly double DeckShare => Shots > 0 ? (double)Deck / Shots : 0;
     public readonly double BrokenShare => Shots > 0 ? (double)Broken / Shots : 0;
-    public readonly double BeltBeatenShare => BeltMet > 0 ? (double)BeltBeaten / BeltMet : 0;
-    public readonly double DeckBeatenShare => DeckMet > 0 ? (double)DeckBeaten / DeckMet : 0;
+
+    /// <summary>The share that got through or in: a plate's beaten, the vitals' reached either way.</summary>
+    public readonly double InShare => Shots > 0 ? (double)(Through + Side + Deck) / Shots : 0;
 }
 
-/// <summary>A plate that let shells into the vitals: its kind and index (as the path's crossings name it), and its
-/// thickness where they met it.</summary>
+/// <summary>A plate that let shells through (or into the vitals): its kind and index (as the path's crossings name it), and
+/// its thickness where they met it.</summary>
 public readonly record struct ZonePlate(PlateKind Kind, int Index, double Mm);
 
 /// <summary>An immune zone (docs/designer-ui/immune-zone.md): a shell fired at a class at each range out to its gun's
-/// reach and each target angle, aimed at her magazines or her machinery, each shell walked through her by
-/// <see cref="Terminal.Resolve"/> on an intact ship, upright on her waterline, with the walk's own rolls. A shell
-/// reached them if it entered one of their spaces whole (its filler in it), or burst inside one; broken up on the way it
-/// counts apart. Each is put down to the side or the deck by the heaviest plate it beat on the way (a plate within 45° of
-/// level is the deck). The inner edge is where half the shells at the vitals get in through the side; the outer edge,
-/// where half get in through the deck (decision 3).
+/// reach and each target angle, aimed at a target (<see cref="ZoneTarget"/>), each shell walked through her by
+/// <see cref="Terminal.Resolve"/> on an intact ship, upright on her waterline, with the walk's own rolls. A plate is
+/// beaten by a shell through it whole (not broken, not glanced off): the belt's and the barbettes' inner edge is the range
+/// out to which half the shells at them get through, the deck's outer edge the range from which half do. The vitals are
+/// reached by a shell that enters one of their spaces whole (its filler in it), or bursts inside one; broken up on the way
+/// it counts apart; each put down to the side or the deck by the heaviest plate it beat (within 45° of level a deck).
 /// <para>Each cell draws its shells from a stream of its own and each shell from its own substream, so the zone is the
-/// same on any number of threads, and filled in passes (<see cref="Fill"/>) it's the same as filled at once.</para></summary>
+/// same on any number of threads, and filled in passes (<see cref="Fill(int, ReadOnlySpan{ZoneTarget}, int, CancellationToken)"/>)
+/// it's the same as filled at once.</para></summary>
 public sealed class ImmuneZone
 {
     /// <summary>The target angles, degrees off her bow the shells come from (one side: she's near enough symmetric).</summary>
     public static readonly double[] Angles = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
+
+    /// <summary>The armour targets, the zone's own view; the vitals are asked for apart.</summary>
+    public static readonly ZoneTarget[] Armour = [ZoneTarget.Belt, ZoneTarget.Barbettes, ZoneTarget.Deck];
+
+    public static readonly ZoneTarget[] All = [ZoneTarget.Belt, ZoneTarget.Barbettes, ZoneTarget.Deck, ZoneTarget.Magazines, ZoneTarget.Machinery];
+
+    public const int Targets = 5;
 
     /// <summary>The ranges' step, m (the first range is one step).</summary>
     public const double RangeStepM = 1000;
@@ -62,11 +73,11 @@ public sealed class ImmuneZone
     /// <summary>The muzzle's height over the sea for the flight, m (GivenHits's).</summary>
     public const double MuzzleM = 10;
 
-    /// <summary>Half the shells at the vitals getting in: an edge (decision 3).</summary>
+    /// <summary>Half the shells at the target getting through: an edge (decision 3).</summary>
     public const double Edge = 0.5;
 
-    /// <summary>The most lines drawn for a shell before it's given up as unseen (the vitals hidden from it behind the sea
-    /// or another space of them).</summary>
+    /// <summary>The most lines drawn for a shell before it's given up as unseen (the target hidden from it behind the sea
+    /// or the rest of her).</summary>
     const int DrawsPerShot = 24;
 
     /// <summary>A cell whose first this many shells all went unseen is hidden from there and drawn no more.</summary>
@@ -78,21 +89,23 @@ public sealed class ImmuneZone
     /// <summary>Each range's, m, and the shell's fall there (degrees under the horizontal) and striking speed (m/s).</summary>
     public double[] RangesM { get; }
     public (double FallDeg, double StrikeMs)[] Falls { get; }
-    /// <summary>The shells a cell has been filled to.</summary>
-    public int ShotsPerCell { get; private set; }
 
-    /// <summary>For benches: each shell walked (the cell's index, its path, the walk's result, where it entered the
-    /// vitals or NaN). Called on the filling threads.</summary>
+    /// <summary>The shells a target's cells have been filled to.</summary>
+    public int ShotsPerCell(ZoneTarget t) => shotsPerCell[(int)t];
+
+    /// <summary>For benches: each shell walked (the cell's index, its path, the walk's result, where it met the target, NaN
+    /// for never). Called on the filling threads.</summary>
     public Action<int, HitPath, TerminalResult, double>? Each { get; set; }
 
     readonly SimSettings settings;
     readonly ulong seed;
     readonly bool[][] vital;
-    readonly bool[] has;
+    readonly bool[] mainDeck;
+    readonly Box[][] boxes;
     readonly ZoneCell[] cells;
     readonly Dictionary<ZonePlate, int>[] sidePlates, deckPlates;
     readonly double[] bearings;
-    readonly double beltMm, deckMm;
+    readonly int[] shotsPerCell = new int[Targets];
 
     /// <summary>A zone of a shell on a class, its gun's elevation up to maxElevationDeg; empty until filled.</summary>
     public ImmuneZone(ShipClass c, in ShellTypeRow shell, double maxElevationDeg, SimSettings s, ulong seed)
@@ -108,85 +121,125 @@ public sealed class ImmuneZone
             RangesM[i] = (i + 1) * RangeStepM;
             Falls[i] = table.At(RangesM[i]);
         }
-        // the vital spaces' cells: a cell is of them if any room it holds is
+        // what each target is to the lines drawn at it: boxes, and for the vitals their cells
+        var b = c.Solids.Bounds;
+        boxes = new Box[Targets][];
         vital = new bool[2][];
-        has = new bool[2];
         for (int v = 0; v < 2; v++)
         {
+            var t = (ZoneTarget)(v + 3);
             vital[v] = new bool[c.Cells.Length];
+            var list = new List<Box>();
             for (int i = 0; i < c.Cells.Length; i++)
             {
                 ref readonly var cell = ref c.Cells[i];
-                bool of = Of(c, cell.Room, (Vitals)v);
+                bool of = Of(c, cell.Room, t);
                 foreach (int r in c.Links(cell.Also))
-                    of |= Of(c, r, (Vitals)v);
+                    of |= Of(c, r, t);
                 vital[v][i] = of;
-                has[v] |= of;
+                if (of)
+                    list.Add(cell.Box);
             }
+            boxes[v + 3] = [.. list];
         }
-        cells = new ZoneCell[2 * n * Angles.Length];
+        var belt = new List<Box>();
+        foreach (ref readonly var p in c.SidePlates)
+            if (p.Kind is StrakeKind.Belt or StrakeKind.Zone)
+                belt.Add(new Box(p.X0, p.X1, b.Y0, b.Y1, p.Bottom, p.Top));
+        foreach (ref readonly var p in c.Inclined)
+            if (p.Kind is InclinedKind.Belt or InclinedKind.Zone)
+                belt.Add(new Box(p.X0, p.X1, b.Y0, b.Y1, Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1)));
+        boxes[(int)ZoneTarget.Belt] = [.. belt];
+        var barbettes = new List<Box>();
+        foreach (ref readonly var sd in c.Solids.Solids)
+            if (sd.Component >= 0 && MainBarbette(c, sd.Component) && sd.Box.Top > 0)
+                barbettes.Add(sd.Box with { Base = Math.Max(sd.Box.Base, 0) });   // where it stands over the main deck
+        boxes[(int)ZoneTarget.Barbettes] = [.. barbettes];
+        // the main armour deck: Armour.MainDeck's (the class marks it), else the thickest
+        mainDeck = new bool[c.ArmourDecks.Length];
+        bool anyMain = false;
+        double thickest = 0;
+        foreach (ref readonly var d in c.ArmourDecks)
+            (anyMain, thickest) = (anyMain || d.Main, Math.Max(thickest, d.ThicknessMm));
+        var deck = new List<Box>();
+        for (int i = 0; i < c.ArmourDecks.Length; i++)
+        {
+            ref readonly var d = ref c.ArmourDecks[i];
+            mainDeck[i] = anyMain ? d.Main : d.ThicknessMm >= thickest;
+            if (!mainDeck[i])
+                continue;
+            double hw = double.IsNaN(d.W) ? Math.Max(-b.Y0, b.Y1) : d.W / 2;
+            deck.Add(new Box(d.X0, d.X1, -hw, hw, d.Z - 0.3, d.Z + 0.3));
+        }
+        foreach (ref readonly var p in c.Inclined)
+            if (p.Kind == InclinedKind.Slope)
+                deck.Add(new Box(p.X0, p.X1, b.Y0, b.Y1, Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1)));
+        boxes[(int)ZoneTarget.Deck] = [.. deck];
+        cells = new ZoneCell[Targets * n * Angles.Length];
         sidePlates = new Dictionary<ZonePlate, int>[cells.Length];
         deckPlates = new Dictionary<ZonePlate, int>[cells.Length];
-        // her main belt and main deck: the thickest plates lying as the side and as a deck
-        foreach (ref readonly var p in c.SidePlates)
-            beltMm = Math.Max(beltMm, p.ThicknessMm);
-        foreach (ref readonly var d in c.ArmourDecks)
-            deckMm = Math.Max(deckMm, d.ThicknessMm);
-        foreach (ref readonly var p in c.Inclined)
-        {
-            double dz = p.Z1 - p.Z0, du = p.U1 - p.U0;
-            if (Math.Abs(dz) > Math.Abs(du))
-                beltMm = Math.Max(beltMm, p.ThicknessMm);
-            else
-                deckMm = Math.Max(deckMm, p.ThicknessMm);
-        }
         bearings = new double[c.Mounts.Length];
         for (int i = 0; i < bearings.Length; i++)
             bearings[i] = c.Mounts[i].RestDeg;
     }
 
-    static bool Of(ShipClass c, int room, Vitals v) => room >= 0 && (v == Vitals.Magazines
+    static bool Of(ShipClass c, int room, ZoneTarget v) => room >= 0 && (v == ZoneTarget.Magazines
         ? c.Rooms[room].Kind == RoomKind.Magazine
         : c.Rooms[room].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom);
 
-    /// <summary>Whether she has any of these spaces.</summary>
-    public bool Has(Vitals v) => has[(int)v];
+    static bool IsVitals(ZoneTarget t) => t >= ZoneTarget.Magazines;
 
-    public ref readonly ZoneCell this[Vitals v, int range, int angle] => ref cells[Index(v, range, angle)];
+    /// <summary>Whether a component is a barbette of her main battery (the secondaries' are their own matter).</summary>
+    static bool MainBarbette(ShipClass c, int component) =>
+        c.Components[component].Kind == ComponentKind.Barbette && c.MountOf(component) is int m and >= 0 && c.Mounts[m].Kind == ComponentKind.Main;
 
-    public int Index(Vitals v, int range, int angle) => ((int)v * RangesM.Length + range) * Angles.Length + angle;
+    /// <summary>Whether she has any of this target.</summary>
+    public bool Has(ZoneTarget t) => boxes[(int)t].Length > 0;
 
-    /// <summary>The plate that let the most shells of a cell in through the side (or the deck); null for none.</summary>
-    public ZonePlate? Most(Vitals v, int range, int angle, bool deck)
+    public ref readonly ZoneCell this[ZoneTarget t, int range, int angle] => ref cells[Index(t, range, angle)];
+
+    public int Index(ZoneTarget t, int range, int angle) => ((int)t * RangesM.Length + range) * Angles.Length + angle;
+
+    /// <summary>The plate that let the most shells of a cell through (a plate target), or into the vitals through the side
+    /// (or the deck); null for none.</summary>
+    public ZonePlate? Most(ZoneTarget t, int range, int angle, bool deck = false)
     {
-        var d = (deck ? deckPlates : sidePlates)[Index(v, range, angle)];
+        var d = (deck ? deckPlates : sidePlates)[Index(t, range, angle)];
         if (d == null || d.Count == 0)
             return null;
-        var best = d.MaxBy(kv => (kv.Value, -(int)kv.Key.Kind, -kv.Key.Index));
-        return best.Key;
+        return d.MaxBy(kv => (kv.Value, -(int)kv.Key.Kind, -kv.Key.Index)).Key;
     }
 
-    /// <summary>Fill every cell up to this many shells at the vitals, on up to threads threads; stops early (leaving the
-    /// cells as they are, each whole) if cancelled.</summary>
-    public void Fill(int shotsPerCell, int threads = 1, CancellationToken cancel = default)
+    /// <summary>Fill the targets' cells up to this many shells, on up to threads threads; stops early (leaving the cells as
+    /// they are, each whole) if cancelled.</summary>
+    public void Fill(int shotsPerCell, ReadOnlySpan<ZoneTarget> targets, int threads = 1, CancellationToken cancel = default)
     {
-        if (shotsPerCell <= ShotsPerCell)
+        var todo = new List<(ZoneTarget T, int From)>();
+        foreach (var t in targets)
+            if (shotsPerCell > this.shotsPerCell[(int)t])
+                todo.Add((t, this.shotsPerCell[(int)t]));
+        if (todo.Count == 0)
             return;
-        int from = ShotsPerCell;
+        int per = RangesM.Length * Angles.Length;
         var opts = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads), CancellationToken = cancel };
         try
         {
-            Parallel.For(0, cells.Length, opts, () => new Walker(Class), (i, _, w) =>
+            Parallel.For(0, todo.Count * per, opts, () => new Walker(Class), (j, _, w) =>
             {
-                FillCell(i, from, shotsPerCell, w);
+                var (t, from) = todo[j / per];
+                FillCell((int)t * per + j % per, from, shotsPerCell, w);
                 return w;
             }, _ => { });
-            ShotsPerCell = shotsPerCell;
+            foreach (var (t, _) in todo)
+                this.shotsPerCell[(int)t] = shotsPerCell;
         }
         catch (OperationCanceledException)
         {
         }
     }
+
+    /// <summary>Every target, filled alike.</summary>
+    public void Fill(int shotsPerCell, int threads = 1, CancellationToken cancel = default) => Fill(shotsPerCell, All, threads, cancel);
 
     /// <summary>A thread's own tracer path, bender and intact condition.</summary>
     sealed class Walker
@@ -194,7 +247,7 @@ public sealed class ImmuneZone
         public readonly HitPath Path = new(), Probe = new();
         public readonly PathBender Bender = new();
         public readonly ShipCondition Intact = new();
-        public readonly List<(int Cell, double U0, double U1, double V0, double V1, double Upto)> Rects = [];
+        public readonly List<(int Box, double U0, double U1, double V0, double V1, double Upto)> Rects = [];
 
         public Walker(ShipClass c)
         {
@@ -205,17 +258,19 @@ public sealed class ImmuneZone
 
     void FillCell(int i, int from, int to, Walker w)
     {
-        int v = i / (RangesM.Length * Angles.Length), range = i / Angles.Length % RangesM.Length, angle = i % Angles.Length;
+        int ti = i / (RangesM.Length * Angles.Length), range = i / Angles.Length % RangesM.Length, angle = i % Angles.Length;
+        var target = (ZoneTarget)ti;
         ref var cell = ref cells[i];
-        if (!has[v] || double.IsNaN(Falls[range].FallDeg))
+        var tbox = boxes[ti];
+        if (tbox.Length == 0 || double.IsNaN(Falls[range].FallDeg))
             return;
         var c = Class;
         var (fall, strike) = Falls[range];
         var dir = HitQuery.Flight(Angles[angle], fall);
-        // two axes across the line of flight, and each vital space's outline on them (its box's, as a rectangle): a line is
-        // drawn by picking a space by the area of its rectangle, then a point within it, kept if it meets the space's box
-        // and then one time in as many of the spaces' boxes as it meets, so the lines fall evenly over the vitals as the
-        // shell sees them
+        // two axes across the line of flight, and each of the target's boxes' outline on them (as a rectangle): a line is
+        // drawn by picking a box by the area of its rectangle, then a point within it, kept if it meets the box and then
+        // one time in as many of the target's boxes as it meets, so the lines fall evenly over the target as the shell
+        // sees it
         var u = Normalize(Cross(dir, new P3(0, 0, 1)));
         if (Dot(u, u) < 0.5)
             u = new P3(0, 1, 0);
@@ -223,20 +278,19 @@ public sealed class ImmuneZone
         var rects = w.Rects;
         rects.Clear();
         double total = 0;
-        for (int k = 0; k < c.Cells.Length; k++)
-            if (vital[v][k])
+        for (int k = 0; k < tbox.Length; k++)
+        {
+            var bx = tbox[k];
+            double u0 = double.MaxValue, u1 = double.MinValue, v0 = double.MaxValue, v1 = double.MinValue;
+            for (int corner = 0; corner < 8; corner++)
             {
-                var b = c.Cells[k].Box;
-                double u0 = double.MaxValue, u1 = double.MinValue, v0 = double.MaxValue, v1 = double.MinValue;
-                for (int corner = 0; corner < 8; corner++)
-                {
-                    var p = new P3((corner & 1) == 0 ? b.X0 : b.X1, (corner & 2) == 0 ? b.Y0 : b.Y1, (corner & 4) == 0 ? b.Base : b.Top);
-                    double a = Dot(p, u), e = Dot(p, vv);
-                    (u0, u1, v0, v1) = (Math.Min(u0, a), Math.Max(u1, a), Math.Min(v0, e), Math.Max(v1, e));
-                }
-                total += (u1 - u0) * (v1 - v0);
-                rects.Add((k, u0, u1, v0, v1, total));
+                var p = new P3((corner & 1) == 0 ? bx.X0 : bx.X1, (corner & 2) == 0 ? bx.Y0 : bx.Y1, (corner & 4) == 0 ? bx.Base : bx.Top);
+                double a = Dot(p, u), e = Dot(p, vv);
+                (u0, u1, v0, v1) = (Math.Min(u0, a), Math.Max(u1, a), Math.Min(v0, e), Math.Max(v1, e));
             }
+            total += (u1 - u0) * (v1 - v0);
+            rects.Add((k, u0, u1, v0, v1, total));
+        }
         if (total <= 0)
             return;
         double far = 2 * c.Solids.Radius + 50, reach = WaterRun.ReachM(Shell, strike, settings);
@@ -246,11 +300,11 @@ public sealed class ImmuneZone
         var lotStream = RandomStream.Named(seed, "immune zone lots").Derive((ulong)i);
         for (int shot = from; shot < to; shot++)
         {
-            // a cell none of whose first shells could reach the vitals is hidden from there: they're out of its sight
+            // a cell none of whose first shells could meet the target is hidden from there: it's out of its sight
             if (shot >= HiddenAfter && cell.Shots == 0)
                 return;
             var rng = stream.Derive((ulong)shot);
-            // a line through the vitals' outline that, unstopped, enters one of them, and its first meeting with her
+            // a line through the target's outline that, unstopped, meets it, and its first meeting with her
             int first = -1;
             double run = 0;
             for (int draw = 0; draw < DrawsPerShot; draw++)
@@ -270,15 +324,14 @@ public sealed class ImmuneZone
                 double a = rng.NextDouble(q.U0, q.U1), e = rng.NextDouble(q.V0, q.V1);
                 var at = new P3(u.X * a + vv.X * e, u.Y * a + vv.Y * e, u.Z * a + vv.Z * e);
                 var from0 = Add(at, dir, -far);
-                // sure misses before the trace: the line misses the space's box (it can't enter the space), or meets the
-                // sea farther out from her than the shell runs under it
-                if (!Slab(from0, dir, c.Cells[q.Cell].Box, out _, out _) || !Slab(from0, dir, bounds, out double tb, out double te))
+                // sure misses before the trace: the line misses the box (it can't meet what's in it), or meets the sea
+                // farther out from her than the shell runs under it
+                if (!Slab(from0, dir, tbox[q.Box], out _, out _) || !Slab(from0, dir, bounds, out double tb, out double te))
                     continue;
-                // a line through m of the spaces' boxes could have come from any of them: kept one time in m, so the lines
-                // fall evenly over them all
+                // a line through m of the boxes could have come from any of them: kept one time in m
                 int m = 0;
                 foreach (var o in rects)
-                    m += Slab(from0, dir, c.Cells[o.Cell].Box, out _, out _) ? 1 : 0;
+                    m += Slab(from0, dir, tbox[o.Box], out _, out _) ? 1 : 0;
                 if (m > 1 && rng.NextDouble() * m >= 1)
                     continue;
                 double tw = dir.Z < 0 ? (from0.Z - water.Z) / -dir.Z : double.PositiveInfinity;
@@ -287,7 +340,7 @@ public sealed class ImmuneZone
                 cell.Traced++;
                 // the line from just before it meets the sea or her bounds to just past them
                 ShipTracer.Trace(c, Add(from0, dir, Math.Max(0, Math.Min(tb, tw) - 2)), Add(from0, dir, te + 2), bearings, water, w.Probe);
-                if (VitalAt(w.Probe, v) < 0)
+                if (TargetAt(w.Probe, target, dir) < 0)
                     continue;
                 first = HitQuery.FirstIn(w.Probe);
                 if (first < 0)
@@ -324,37 +377,21 @@ public sealed class ImmuneZone
             var t = Terminal.Resolve(c, hit, path, w.Bender, lotStream.Derive((ulong)shot), settings, ref r, w.Intact);
             cell.Shots++;
             var xs = path.Crossings;
-            int into = VitalAt(path, v);
+            int into = TargetAt(path, target, dir);
             double tin = into >= 0 ? xs[into].T : double.NaN;
             Each?.Invoke(i, path, t, tin);
             // whole up to: where it broke, burst or stopped
             double whole = t.Outcome is Outcome.BrokeUp or Outcome.Holed && t.Plate >= 0 ? xs[t.Plate].T
                 : t.Bursts && !double.IsNaN(t.BurstT) ? Math.Min(t.BurstT, t.StopT) : t.StopT;
-            // the heaviest plate on its way in (to the vitals, or as far as it went)
-            int heavy = -1;
-            for (int k = 0; k < (into >= 0 ? into : xs.Length) && xs[k].T < t.StopT + HitPath.SameM; k++)
-                if (xs[k].Plate is not (PlateKind.None or PlateKind.Contents or PlateKind.PartContents) && xs[k].Mm > 0 &&
-                    (heavy < 0 || xs[k].Mm > xs[heavy].Mm))
-                    heavy = k;
-            bool deck = heavy >= 0 && Lies(xs[heavy].Normal);
-            // the main belt and the main deck met on the way, and whether it came through each whole: the armour beaten,
-            // the classic edges' measure, whether or not the shell then reached the vitals
-            bool metBelt = false, beatBelt = false, metDeck = false, beatDeck = false;
-            for (int k = 0; k < xs.Length && xs[k].T < t.StopT + HitPath.SameM; k++)
-                if (xs[k].Plate is PlateKind.SideArmour or PlateKind.Inclined or PlateKind.ArmourDeck)
-                {
-                    bool flat = Lies(xs[k].Normal);
-                    if (xs[k].Mm < (flat ? deckMm : beltMm) * 0.9)
-                        continue;
-                    // through it whole: past it unbroken, not glanced off it
-                    bool through = xs[k].T < whole && t.Glance != k;
-                    if (flat && !metDeck)
-                        (metDeck, beatDeck) = (true, through);
-                    else if (!flat && !metBelt)
-                        (metBelt, beatBelt) = (true, through);
-                }
-            (cell.BeltMet, cell.BeltBeaten) = (cell.BeltMet + (metBelt ? 1 : 0), cell.BeltBeaten + (beatBelt ? 1 : 0));
-            (cell.DeckMet, cell.DeckBeaten) = (cell.DeckMet + (metDeck ? 1 : 0), cell.DeckBeaten + (beatDeck ? 1 : 0));
+            if (!IsVitals(target))
+            {
+                // a plate: through it whole and not glanced off it (a path that no longer meets it stopped short of it)
+                if (into < 0 || tin >= whole || tin >= t.StopT || t.Glance == into)
+                    continue;
+                cell.Through++;
+                Tally(sidePlates, i, xs[into]);
+                continue;
+            }
             if (into < 0 || tin >= t.StopT)
                 continue;
             if (tin >= whole)
@@ -362,56 +399,98 @@ public sealed class ImmuneZone
                 cell.Broken++;
                 continue;
             }
+            // the heaviest plate it beat on the way in
+            int heavy = -1;
+            for (int k = 0; k < into; k++)
+                if (xs[k].Plate is not (PlateKind.None or PlateKind.Contents or PlateKind.PartContents) && xs[k].Mm > 0 &&
+                    (heavy < 0 || xs[k].Mm > xs[heavy].Mm))
+                    heavy = k;
+            bool deck = heavy >= 0 && Lies(xs[heavy].Normal);
             if (deck)
                 cell.Deck++;
             else
                 cell.Side++;
             if (heavy >= 0)
-            {
-                var plates = deck ? deckPlates : sidePlates;
-                var key = new ZonePlate(xs[heavy].Plate, xs[heavy].Index, Math.Round(xs[heavy].Mm));
-                var d = plates[i] ??= [];
-                d[key] = d.GetValueOrDefault(key) + 1;
-            }
+                Tally(deck ? deckPlates : sidePlates, i, xs[heavy]);
         }
     }
 
-    /// <summary>The crossing at which a path first enters a vital space (the plates at that point come before it); -1 for
-    /// never.</summary>
-    int VitalAt(HitPath path, int v)
+    static void Tally(Dictionary<ZonePlate, int>[] plates, int i, in Crossing x)
     {
+        var key = new ZonePlate(x.Plate, x.Index, Math.Round(x.Mm));
+        var d = plates[i] ??= [];
+        d[key] = d.GetValueOrDefault(key) + 1;
+    }
+
+    /// <summary>The crossing at which a path first meets the target from outside, along d: a plate of it struck on its outer
+    /// face (the belt from outboard, the deck from above; a barbette where it stands clear of the hull), or a space of the
+    /// vitals (the plates at that point come before it); -1 for never.</summary>
+    int TargetAt(HitPath path, ZoneTarget target, P3 d)
+    {
+        var c = Class;
         var xs = path.Crossings;
+        bool inHull = false;
         for (int k = 0; k < xs.Length; k++)
-            if (xs[k].Kind == CrossingKind.CellIn && xs[k].Index >= 0 && vital[v][xs[k].Index])
+        {
+            ref readonly var x = ref xs[k];
+            if (x.Kind == CrossingKind.HullIn)
+                inHull = true;
+            else if (x.Kind == CrossingKind.HullOut)
+                inHull = false;
+            bool outer = Dot(d, x.Normal) < 0;
+            bool met = target switch
+            {
+                ZoneTarget.Belt => outer && (x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index].Kind is StrakeKind.Belt or StrakeKind.Zone
+                    || x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind is InclinedKind.Belt or InclinedKind.Zone),
+                ZoneTarget.Barbettes => x.Plate == PlateKind.Barbette && x.Kind == CrossingKind.PartIn && !inHull && MainBarbette(c, x.Index),
+                ZoneTarget.Deck => outer && (x.Plate == PlateKind.ArmourDeck && mainDeck[x.Index]
+                    || x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind == InclinedKind.Slope),
+                _ => x.Kind == CrossingKind.CellIn && x.Index >= 0 && vital[(int)target - 3][x.Index],
+            };
+            if (met)
                 return k;
+        }
         return -1;
     }
 
-    /// <summary>The zone at an angle: the inner edge (out to which half the shells at the vitals get in through the side;
-    /// 0 if they never do) and the outer (from which half get in through the deck; the reach if they never do), m, each
-    /// between the ranges the share crosses half at. Immune between them if the inner is the nearer. With beaten, the
-    /// classic edges instead: the armour beaten by a whole shell, whether it then reached the vitals or not.</summary>
-    public (double InnerM, double OuterM) Edges(Vitals v, int angle, bool beaten = false)
+    /// <summary>A target's edges at an angle, m, each between the ranges its share crosses half at. The belt and the
+    /// barbettes: out to which half the shells at them get through (0 if they never do), and the reach. The deck: 0, and
+    /// from which half get through (the reach if they never do). The vitals: out to which half get in through the side,
+    /// and from which half get in through the deck. Immune between them if the inner is the nearer.</summary>
+    public (double InnerM, double OuterM) Edges(ZoneTarget t, int angle)
     {
         int n = RangesM.Length;
         double inner = 0, outer = ReachM;
-        double SideOf(int k) => beaten ? this[v, k, angle].BeltBeatenShare : this[v, k, angle].SideShare;
-        double DeckOf(int k) => beaten ? this[v, k, angle].DeckBeatenShare : this[v, k, angle].DeckShare;
-        for (int k = n - 1; k >= 0; k--)
-            if (this[v, k, angle].Shots > 0 && SideOf(k) >= Edge)
-            {
-                inner = k + 1 < n && this[v, k + 1, angle].Shots > 0 ? Cross(k, k + 1, SideOf(k), SideOf(k + 1)) : RangesM[k];
-                break;
-            }
-        for (int k = 0; k < n; k++)
-            if (this[v, k, angle].Shots > 0 && DeckOf(k) >= Edge)
-            {
-                outer = k > 0 && this[v, k - 1, angle].Shots > 0 ? Cross(k - 1, k, DeckOf(k - 1), DeckOf(k)) : RangesM[k];
-                break;
-            }
+        bool vitals = IsVitals(t);
+        double SideOf(int k) => vitals ? this[t, k, angle].SideShare : this[t, k, angle].ThroughShare;
+        double DeckOf(int k) => vitals ? this[t, k, angle].DeckShare : this[t, k, angle].ThroughShare;
+        if (t != ZoneTarget.Deck)
+            for (int k = n - 1; k >= 0; k--)
+                if (this[t, k, angle].Shots > 0 && SideOf(k) >= Edge)
+                {
+                    inner = k + 1 < n && this[t, k + 1, angle].Shots > 0 ? Cross(k, k + 1, SideOf(k), SideOf(k + 1)) : RangesM[k];
+                    break;
+                }
+        if (t == ZoneTarget.Deck || vitals)
+            for (int k = 0; k < n; k++)
+                if (this[t, k, angle].Shots > 0 && DeckOf(k) >= Edge)
+                {
+                    outer = k > 0 && this[t, k - 1, angle].Shots > 0 ? Cross(k - 1, k, DeckOf(k - 1), DeckOf(k)) : RangesM[k];
+                    break;
+                }
         return (inner, outer);
 
         double Cross(int a, int b, double sa, double sb) => sa == sb ? RangesM[a] : RangesM[a] + (RangesM[b] - RangesM[a]) * (Edge - sa) / (sb - sa);
+    }
+
+    /// <summary>The armour's zone at an angle (the classic one): from where the belt and the barbettes hold to where the deck
+    /// gives.</summary>
+    public (double InnerM, double OuterM) ArmourEdges(int angle)
+    {
+        double belt = Has(ZoneTarget.Belt) ? Edges(ZoneTarget.Belt, angle).InnerM : 0;
+        double barbettes = Has(ZoneTarget.Barbettes) ? Edges(ZoneTarget.Barbettes, angle).InnerM : 0;
+        double deck = Has(ZoneTarget.Deck) ? Edges(ZoneTarget.Deck, angle).OuterM : ReachM;
+        return (Math.Max(belt, barbettes), deck);
     }
 
     /// <summary>Where a line from o along d enters a box and leaves it (t along it), if it meets it at all.</summary>
