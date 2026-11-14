@@ -1,7 +1,7 @@
 # Immune zone and shells fired in anger (plan, 2026-11-14)
 
 **Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0, IZ1 and IZ2 built 2026-11-14 ("IZ0 and
-IZ2: how they went", "IZ1: the record"); the mockup (IZ3) next.
+IZ2: how they went", "IZ1: the record"); the mockup (IZ3) drawn, awaiting the user's review ("IZ3: the mockup").
 
 The Protection tab has carried a greyed placeholder since its first review (protection.md, 2026-10-11): "Immune zone
 and shells fired in anger · against her own 380 mm · NEEDS THE PENETRATION MODEL". The penetration model has been in
@@ -168,7 +168,7 @@ pick (battery, kind, calibre) is kept in the session, not in the design.
 | IZ0 | `ImmuneZone`, the shells at a calibre, and `shipgen immune` | the bench prints both zones for bismarck, yamato, dreadnought against their own guns and other calibres; tests: deterministic, the same with 1 or N threads, a thicker belt never moves the inner edge out, a thicker deck never moves the outer edge in, the shells at the battery's own calibre equal the loadout's |
 | IZ1 | The anchors, as history checks (never set): bench-only designs with SoDak's and Iowa's schemes (`shipgen/anchors/`, not game assets; research 08's table, armor/00 §9 row 12), `shipgen immune --anchors` | done: the numbers beside the record, the gaps named ("IZ1: the record"); no tuning. North Carolina's studies left out: their 14"/50's 680 kg shell isn't a family of ours at 356 mm |
 | IZ2 | `AngerRun`: the sweep, progress, cancel, the summaries, the dots; its cost measured | `shipgen hits` unchanged, byte for byte (done); the same bands on any threads (done). The guess that Yamato against 305 mm is lost at short range didn't hold: see "how they went", for the user |
-| IZ3 | The mockup, `immune.html` (the Protection tab's pane, 1280 × 578): the facts pane's Plate and Immune zone tabs, the chart, the strip, the dots; set beside a designer screenshot | the user's review |
+| IZ3 | The mockup, `immune.html` (the Protection tab's pane, 1270 × 552 at 1080p) over a capture of the tab: the chart, the strip, the band, the dots | drawn ("IZ3: the mockup"); the user's review |
 | IZ4 | The port: worker, panel, chart, strip, dots, picker; `-designer-ui=immune:...` for screenshots | on bismarck and dreadnought, a belt edit moves the edge within a second; captures checked |
 | IZ5 | Beyond the tab: the line in the particulars and the ship card; the matchup profiles checked against the zone (a test in a loose band); the Overview levers' "immune zone" hints made real numbers if the probes can afford it | each as the user picks |
 
@@ -222,6 +222,44 @@ against her own gun, broadside, 128 shells a cell:
 - **The vitals' zone is much wider than the classic one**, as decision 1 makes it: shells that beat the belt at 15-20 km
   mostly burst in the space above the splinter deck before the machinery (the outer hull starts their fuze), and the
   magazines, deeper, are never reached at all by her own gun.
+
+## IZ3: the mockup (2026-11-14)
+
+`immune.html`: the Protection tab's pane at 1920 × 1080 (1270 × 552). Its left half is the game's own pane
+(`png/immune-base.png`, a capture) under the run's dots; the right column is the new tab, drawn live from real runs
+(`immune-data.js`: `shipgen immune bismarck --calibre 380|305 --shells 64 --json` and `--anger 12 --json`). URL:
+`?cal=305`, `?v=mag|mach`, `?band=N`, `?hover=R,A` (a cell's tip by range and angle index), `?tab=plate` (the column as
+today).
+
+![machinery against her own 380 mm, the 38-40 km band picked](png/immune-mockup-machinery.png)
+![magazines against her own family at 305 mm, the 24-26 km band](png/immune-mockup-magazines-305.png)
+
+- **The tab takes the whole right column** (the sections and the selected plate): decision 4 put it beside Plate, but
+  the facts pane alone is 520 × 200, too small for a chart and a strip. The column's sub-bar holds the two tabs
+  (S: sections and plate, I: immune zone).
+- **Against:** her battery, its calibre (a stepper: her own shells at it), the kind; the shell's mass, speed and reach;
+  Magazines | Machinery.
+- **The line and the edges:** the zone on the beam, the plate that sets each edge, and the armour alone's edges (the
+  classic measure, IZ1) under it.
+- **The chart:** USN half-polar, bow up, rings every 5 km: red where more than half get in through the side, amber
+  through the deck, green (faint, softer toward 10-50 %) immune, dark where no shell reaches them. Hover: the cell's
+  fall and striking speed, the shares and the plates, the main belt and deck met and beaten.
+- **The strip:** a column a 2 km band, under the same range scale: the mean water she took as the bar, a red square a
+  ship lost, her main guns working and her speed left as lines. Ships lost alone said nothing for a battleship (Bismarck
+  lost none in 252 ships at 10 hits of her own guns, at any range), so the strip carries the graded measures.
+- **A band picked:** its ships (lost and how, water, speed, guns, the worst afloat), per 100 hits (fires, magazines,
+  killed, holes), where they struck; and the hits as dots on the elevation, coloured by class. Over the main deck the
+  elevation draws only the turrets, so the upper works' hits are drawn faint there.
+
+### For the review
+
+1. The tab over the whole right column rather than the facts pane alone?
+2. The strip's measures: water, main guns, speed, ships lost. And 10 hits a ship: a 40,000 t ship hardly notices them;
+   the stepper (5, 10, 20, 40) stays, but should its start scale with her size?
+3. The dots on the elevation (upper works faint), or on the profile above the pane, which draws the upper works?
+4. The armour-alone line: keep it under the zone, or only in the hover?
+5. Defaults for speed (the user, 2026-11-14: fast first): the zone at 16 shells a cell first (about 0.3 s on four
+   threads for a battleship), then 64; the sweep at 8 ships a band (about 1 s on four threads), Fire again for more.
 
 ## Decisions (user, 2026-11-14)
 

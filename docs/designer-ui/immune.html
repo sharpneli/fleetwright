@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Immune Zone Mockup</title>
+<!-- The Protection tab's pane (1270 x 552 at 1920 x 1080) with the Immune zone tab (docs/designer-ui/immune-zone.md IZ3).
+     The left half is the game's own pane (png/immune-base.png, a capture of 2026-11-14) under the run's dots; the right
+     column is the new tab, drawn live from real runs (immune-data.js: shipgen immune bismarck ... --json).
+     URL: ?cal=305  ?v=mach|mag  ?band=N (a range band picked)  ?hover=R,A (a cell's tip: range index, angle index)
+     ?tab=plate (the right column as it is today) -->
+<style>
+@font-face{font-family:'Saira Extra Condensed';font-weight:700;src:url(assets/fonts/saira-extra-condensed-latin-700-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:400;src:url(assets/fonts/barlow-condensed-latin-400-normal.woff2)}
+@font-face{font-family:'Barlow Condensed';font-weight:600;src:url(assets/fonts/barlow-condensed-latin-600-normal.woff2)}
+@font-face{font-family:'Red Hat Mono';font-weight:400;src:url(assets/fonts/red-hat-mono-latin-400-normal.woff2)}
+:root{
+  --ground:#181B1C;--panel:#242728;--panel2:#2B2F31;--inset:#141616;--line:#303536;--edge:#0A0B0C;
+  --title-top:#2D3133;--header:#1E2122;--text:#D5D6D7;--bright:#F5F5F5;--muted:#919597;--faint:#586164;
+  --brass:#E8772E;--brass-dark:#5C3416;--brass-darker:rgba(232,119,46,.16);--amber:#E8B64A;--ok:#8DBE6B;--red:#E04A3C;
+  --planline:#B0B3B4;--btn:#333839;--border:#3D4345;
+  --font-head:'Saira Extra Condensed','Arial Narrow',sans-serif;--font-ui:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-data:'Red Hat Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--edge);font:13px/1.3 var(--font-ui);color:var(--text)}
+#pane{position:relative;width:1270px;height:552px;overflow:hidden;background:var(--ground) url(png/immune-base.png) no-repeat}
+#dots{position:absolute;left:0;top:0;pointer-events:none}
+#col{position:absolute;left:741px;top:24px;width:529px;height:528px;background:var(--panel);border-left:1px solid var(--edge);display:flex;flex-direction:column}
+.sub{height:20px;flex:none;display:flex;align-items:center;gap:6px;padding:0 6px;color:var(--muted);font-size:12px;background:var(--header);border-bottom:1px solid var(--line);white-space:nowrap}
+.cap{color:var(--text);font-family:var(--font-head);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:11px}
+.tab{padding:0 7px;height:20px;line-height:20px;color:var(--muted);cursor:pointer;font-family:var(--font-head);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+.tab i{font-style:normal;font-family:var(--font-data);font-size:9.5px;border:1px solid currentColor;padding:0 2px;margin-right:4px}
+.tab.on{color:var(--brass);background:var(--brass-darker);box-shadow:inset 0 -2px 0 var(--brass)}
+.r{margin-left:auto;display:flex;gap:4px;align-items:center}
+.dd{display:inline-flex;align-items:center;justify-content:space-between;gap:6px;height:16px;padding:0 5px;background:var(--btn);border:1px solid var(--border);color:var(--text);font-size:12px;cursor:pointer}
+.dd i{font-style:normal;color:var(--muted);font-size:9px}
+.step{display:inline-flex;align-items:center;height:16px;border:1px solid var(--border);background:var(--inset)}
+.step b{width:14px;text-align:center;color:var(--muted);cursor:pointer;font-weight:400;font-size:10px}
+.step span{font-family:var(--font-data);font-size:11px;color:var(--bright);padding:0 4px;min-width:52px;text-align:center}
+.seg{display:inline-flex;border:1px solid var(--border)}
+.seg span{padding:0 6px;height:14px;line-height:14px;font-size:11.5px;color:var(--muted);cursor:pointer;background:var(--inset)}
+.seg span.on{color:var(--brass);background:var(--brass-darker)}
+.btn{height:16px;padding:0 8px;border:1px solid var(--brass-dark);background:var(--btn);color:var(--brass);font-size:12px;line-height:14px;cursor:pointer}
+.mono{font-family:var(--font-data);font-size:11px;font-variant-numeric:tabular-nums}
+.line{padding:4px 8px 2px;font-size:12.5px;color:var(--bright)}
+.line .mut,.mut{color:var(--muted)}
+.edges{padding:0 8px 4px;font-size:11.5px;color:var(--muted)}
+.edges b{color:var(--text);font-weight:600}
+#mid{display:flex;flex:none;height:226px;border-bottom:1px solid var(--line)}
+#chart{flex:none}
+#side{flex:1;padding:4px 8px;font-size:11.5px;color:var(--muted);overflow:hidden}
+#side .k{color:var(--muted)} #side .v{color:var(--bright);font-family:var(--font-data);font-size:11px}
+.lg{display:flex;align-items:center;gap:5px;height:15px}
+.lg i{display:inline-block;width:10px;height:8px}
+.tip{margin-top:4px;padding:3px 6px;background:var(--inset);border:1px solid var(--border);color:var(--text);line-height:1.3;min-height:84px}
+.tip .h{color:var(--brass);font-family:var(--font-head);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+#strip{flex:none;height:78px;position:relative;border-bottom:1px solid var(--line)}
+#detail{flex:1;display:flex;gap:10px;padding:3px 8px;font-size:11.5px;overflow:hidden}
+#detail table{border-collapse:collapse}
+#detail td{padding:0 6px 0 0;height:14px;white-space:nowrap}
+#detail td.n{text-align:right;font-family:var(--font-data);font-size:11px;color:var(--bright)}
+.stale{color:var(--amber)}
+</style></head>
+<body>
+<div id="pane">
+  <canvas id="dots" width="1270" height="552"></canvas>
+  <div id="col"></div>
+</div>
+<script src="immune-data.js"></script>
+<script>
+const q = new URLSearchParams(location.search);
+const S = {cal: +(q.get('cal') || 380), v: q.get('v') === 'mag' ? 0 : 1, band: q.has('band') ? +q.get('band') : 2, hover: q.get('hover'), tab: q.get('tab') || 'iz'};
+const C = {red: '#E04A3C', amber: '#E8B64A', ok: '#8DBE6B', faint: '#586164', muted: '#919597', line: '#303536', inset: '#141616', text: '#D5D6D7',
+  brass: '#E8772E', plan: '#B0B3B4', bright: '#F5F5F5'};
+const h = (t, a = {}, ...k) => { const e = document.createElement(t); for (const [n, x] of Object.entries(a)) n === 'on' ? e.onclick = x : e.setAttribute(n, x);
+  for (const c of k.flat()) if (c != null) e.append(c.nodeType ? c : document.createTextNode(c)); return e; };
+const km = m => (m / 1000).toFixed(1);
+const Z = () => IZ.zones[S.cal], A = () => IZ.anger[S.cal], V = () => Z().vitals[S.v];
+
+// a cell's state: hidden, through the side, through the deck, immune; and its strength (the 10-90 % band soft)
+function state(c) {
+  const [shots, side, deck, broken, unseen] = c;
+  if (shots === 0) return unseen > 0 ? {k: 'hidden'} : {k: 'none'};
+  const s = side / shots, d = deck / shots, m = Math.max(s, d);
+  if (m >= 0.5) return {k: s >= d ? 'side' : 'deck', a: Math.min(1, 0.35 + (m - 0.1) / 0.8 * 0.65)};
+  return {k: 'immune', a: m > 0.1 ? 1 - (m - 0.1) / 0.4 * 0.6 : 1, s, d};
+}
+const fill = {side: C.red, deck: C.amber, immune: C.ok};
+
+function chart() {
+  const W = 236, H = 226, cv = h('canvas', {id: 'chart', width: W, height: H}), g = cv.getContext('2d');
+  const z = Z(), v = V(), cx = 18, cy = H / 2, R = 96, n = z.ranges.length, reach = z.reachM;
+  const rOf = m => m / reach * R;
+  g.fillStyle = '#1E2122'; g.fillRect(0, 0, W, H);
+  // the cells, ring by ring: angle 0 up (her bow), 180 down, one side
+  z.angles.forEach((ang, ai) => {
+    const a0 = (ang - 7.5) * Math.PI / 180, a1 = (ang + 7.5) * Math.PI / 180;
+    for (let r = 0; r < n; r++) {
+      const st = state(v.cells[r][ai]);
+      if (st.k === 'none') continue;
+      const r0 = rOf(z.ranges[r] - 1000), r1 = rOf(z.ranges[r]);
+      g.beginPath();
+      g.arc(cx, cy, r1, -Math.PI / 2 + Math.max(0, a0), -Math.PI / 2 + Math.min(Math.PI, a1));
+      g.arc(cx, cy, r0, -Math.PI / 2 + Math.min(Math.PI, a1), -Math.PI / 2 + Math.max(0, a0), true);
+      g.closePath();
+      if (st.k === 'hidden') { g.fillStyle = '#2A2F31'; g.fill(); }
+      else { g.globalAlpha = st.k === 'immune' ? 0.28 * st.a : st.a; g.fillStyle = fill[st.k]; g.fill(); g.globalAlpha = 1; }
+      if (S.hover && +S.hover.split(',')[0] === r && +S.hover.split(',')[1] === ai) { g.strokeStyle = C.bright; g.lineWidth = 1.5; g.stroke(); }
+    }
+  });
+  // the picked band's ring
+  const b = A().bands[S.band];
+  if (b) { g.strokeStyle = C.brass; g.lineWidth = 1; g.setLineDash([3, 2]);
+    for (const m of [b.from, b.to]) { g.beginPath(); g.arc(cx, cy, rOf(m), -Math.PI / 2, Math.PI / 2); g.stroke(); } g.setLineDash([]); }
+  // rings every 5 km, labelled on the beam
+  g.strokeStyle = 'rgba(235,240,242,.14)'; g.fillStyle = C.muted; g.font = '10px "Red Hat Mono"'; g.lineWidth = 1;
+  for (let m = 5000; m < reach; m += 5000) { g.beginPath(); g.arc(cx, cy, rOf(m), -Math.PI / 2, Math.PI / 2); g.stroke(); g.fillText(m / 1000, cx + rOf(m) - 6, cy - 3); }
+  g.beginPath(); g.arc(cx, cy, R, -Math.PI / 2, Math.PI / 2); g.strokeStyle = C.faint; g.stroke();
+  for (const ang of [0, 45, 90, 135, 180]) { const a = (ang - 90) * Math.PI / 180;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); g.strokeStyle = 'rgba(235,240,242,.08)'; g.stroke();
+    g.fillStyle = C.muted; g.fillText(ang + '°', cx + Math.cos(a) * (R + 9) - 8, cy + Math.sin(a) * (R + 9) + 4); }
+  // her plan, small, bow up
+  g.fillStyle = '#3A4042'; g.strokeStyle = C.plan; g.beginPath(); g.moveTo(cx, cy - 14); g.quadraticCurveTo(cx + 4, cy - 4, cx + 3, cy + 12);
+  g.lineTo(cx - 3, cy + 12); g.quadraticCurveTo(cx - 4, cy - 4, cx, cy - 14); g.fill(); g.stroke();
+  g.fillStyle = C.muted; g.fillText('km', cx + R - 2, cy + 12);
+  // hover: the cell under the cursor
+  cv.onmousemove = e => { const x = e.offsetX - cx, y = e.offsetY - cy, d = Math.hypot(x, y); if (x < 0 || d > R) return;
+    const ang = Math.atan2(x, -y) * 180 / Math.PI, ai = Math.round(ang / 15), r = Math.max(0, Math.ceil(d / R * reach / 1000) - 1);
+    if (r < n) { S.hover = `${r},${ai}`; render(); } };
+  return cv;
+}
+
+function plateName(s) { return s || '—'; }
+
+function side() {
+  const z = Z(), v = V(), beam = z.angles.indexOf(90);
+  const items = [h('div', {class: 'lg'}, h('i', {style: 'background:' + C.red}), 'in through the side, more than half'),
+    h('div', {class: 'lg'}, h('i', {style: 'background:' + C.amber}), 'in through the deck, more than half'),
+    h('div', {class: 'lg'}, h('i', {style: 'background:' + C.ok + ';opacity:.3'}), 'immune: fewer than half get in (soft: 10-50 %)'),
+    h('div', {class: 'lg'}, h('i', {style: 'background:#2A2F31;border:1px solid #3D4345'}), 'hidden: no shell reaches them from there')];
+  let tip;
+  if (S.hover) {
+    const [r, ai] = S.hover.split(',').map(Number), c = v.cells[r]?.[ai];
+    if (c) {
+      const [shots, sd, dk, br, un, bm, bb, dm, db] = c, f = z.falls[r];
+      tip = h('div', {class: 'tip'}, h('div', {class: 'h'}, `${z.ranges[r] / 1000} km · ${z.angles[ai]}° off the bow`),
+        `falling ${f[0].toFixed(1)}°, striking at ${f[1]} m/s`, h('br'),
+        shots === 0 ? 'No shell aimed at them meets her before the sea takes it: hidden.' : [
+          `Of ${shots} shells at the ${v.vitals.toLowerCase()}: `, h('b', {}, `${Math.round(100 * sd / shots)} %`), ' in through the side',
+          sd ? ` (most by the ${plateName(v.sideBy[r][ai])})` : '', ', ', h('b', {}, `${Math.round(100 * dk / shots)} %`), ' through the deck',
+          dk ? ` (the ${plateName(v.deckBy[r][ai])})` : '', `, ${Math.round(100 * br / shots)} % in pieces.`, h('br'),
+          h('span', {class: 'mut'}, `Main belt met by ${bm}, beaten whole by ${bm ? Math.round(100 * bb / bm) : 0} %; main deck met by ${dm}, beaten by ${dm ? Math.round(100 * db / dm) : 0} %.`)]);
+    }
+  }
+  tip ??= h('div', {class: 'tip mut'}, 'Hover a cell for its shells: how many got in, through what, and the armour beaten on the way. ',
+    h('br'), 'Click a band in the strip for its ships.');
+  return h('div', {id: 'side'}, items, tip);
+}
+
+function strip() {
+  // a column a band: the water she took (mean, t) as the bar, a ship lost marked over it; her main guns still working
+  // and her speed left (shares) as lines across the bands
+  const W = 529, H = 78, cv = h('canvas', {width: W, height: H}), g = cv.getContext('2d'), a = A(), z = Z();
+  const x0 = 46, x1 = W - 8, reach = z.reachM, X = m => x0 + (x1 - x0) * m / reach, base = 62, top = 6, maxT = 5000;
+  g.fillStyle = '#242728'; g.fillRect(0, 0, W, H);
+  g.font = '10px "Red Hat Mono"'; g.fillStyle = C.muted;
+  g.fillText('5000 t', 2, top + 8); g.fillText('water', 2, base - 2);
+  const guns = [], speed = [];
+  a.bands.forEach((b, i) => {
+    const bx = X(b.from) + 1, bw = X(b.to) - X(b.from) - 2;
+    if (i === S.band) { g.fillStyle = 'rgba(232,119,46,.16)'; g.fillRect(bx - 1, 1, bw + 2, H - 2); }
+    g.fillStyle = '#141616'; g.fillRect(bx, top, bw, base - top);
+    const hh = (base - top) * Math.min(1, b.waterT / maxT);
+    g.fillStyle = '#4C7A93'; g.fillRect(bx, base - hh, bw, hh);
+    for (let k = 0; k < b.lost; k++) { g.fillStyle = C.red; g.fillRect(bx + 2 + k * 5, top + 2, 4, 4); }
+    guns.push([bx + bw / 2, top + (base - top) * (1 - b.guns)]);
+    speed.push([bx + bw / 2, top + (base - top) * (1 - b.speed)]);
+  });
+  for (const [pts, col] of [[guns, C.plan], [speed, C.amber]]) {
+    g.strokeStyle = col; g.lineWidth = 1.2; g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.stroke(); }
+  g.fillStyle = C.muted;
+  for (let m = 5000; m < reach; m += 5000) g.fillText(m / 1000, X(m) - 5, H - 3);
+  g.fillText('km', x1 - 14, H - 3);
+  cv.onclick = e => { const m = (e.offsetX - x0) / (x1 - x0) * reach; const i = a.bands.findIndex(b => m >= b.from && m < b.to); if (i >= 0) { S.band = i; render(); } };
+  return h('div', {id: 'strip'}, cv);
+}
+
+function detail() {
+  const a = A(), b = a.bands[S.band];
+  if (!b) return h('div', {id: 'detail'});
+  const per = 100 / Math.max(1, b.hits), rows = (pairs) => h('table', {}, pairs.map(([k, v]) => h('tr', {}, h('td', {class: 'mut'}, k), h('td', {class: 'n'}, v))));
+  const struck = Object.entries(b.struck).sort((x, y) => y[1] - x[1]).slice(0, 6).map(([k, n]) => [k, Math.round(100 * n / b.hits) + ' %']);
+  return h('div', {id: 'detail'},
+    rows([[`${km(b.from)}-${km(b.to)} km`, `${b.ships} ships`], ['lost', b.lost ? `${b.lost} (mag ${b.lostBy[0]}, foundered ${b.lostBy[1]}, capsized ${b.lostBy[2]})` : 'none'],
+      ['water, speed, main guns', `${b.waterT} t · ${Math.round(100 * b.speed)} % · ${Math.round(100 * b.guns)} %`],
+      ['main guns all out, under half speed', `${b.gunsOut}, ${b.underHalf}`], ['worst afloat', `${b.worstWaterT} t, list ${b.worstListDeg}°`]]),
+    rows([['per 100 hits', ''], ['fires', (b.fires * per).toFixed(0)], ['magazines', (b.mags * per).toFixed(1)], ['killed', (b.killed * per).toFixed(0)],
+      ['holes', (b.holesM2 * per).toFixed(1) + ' m²']]),
+    rows([['struck', ''], ...struck.slice(0, 5)]));
+}
+
+function dots() {
+  const cv = document.getElementById('dots'), g = cv.getContext('2d'), a = A(), b = a.bands[S.band];
+  g.clearRect(0, 0, cv.width, cv.height);
+  if (S.tab !== 'iz' || !b) return;
+  // the elevation in the pane (immune-base.png): the hull from x 67 (stern) to 723 (bow), main deck at y 101, the
+  // waterline at 132, the keel at 190; heights stretched deck by deck, so the dots are placed by the same bands
+  const L = a.lengthM, wl = a.waterline, keel = -a.depth;
+  const X = x => 67 + (x + L / 2) / L * 656, Y = zz => zz >= wl ? 101 + (0 - zz) / (0 - wl) * 31 : 132 + (wl - zz) / (wl - keel) * 58;
+  const col = [C.red, C.amber, C.faint, C.plan];
+  for (const [x, y, zz, k] of b.dots) {
+    // over her main deck the elevation draws only the turrets: the upper works' hits faint there
+    g.fillStyle = col[k]; g.globalAlpha = zz > 0.5 ? 0.35 : 0.9; g.beginPath(); g.arc(X(x), Y(zz), 2.2, 0, 7); g.fill(); }
+  g.globalAlpha = 1;
+  // the key, in the elevation's title row
+  g.font = '11px "Barlow Condensed"'; let x = 214;
+  g.fillStyle = '#1E2122'; g.fillRect(208, 26, 405, 16);
+  g.fillStyle = C.brass; g.fillText(`${b.hits} hits at ${km(b.from)}-${km(b.to)} km:`, x, 38); x += g.measureText(`${b.hits} hits at ${km(b.from)}-${km(b.to)} km:`).width + 10;
+  ['burst inside', 'passed through', 'dud', 'held by armour'].forEach((t, k) => { g.fillStyle = col[k]; g.beginPath(); g.arc(x, 34, 3, 0, 7); g.fill();
+    g.fillStyle = C.muted; g.fillText(t, x + 6, 38); x += g.measureText(t).width + 16; });
+}
+
+function render() {
+  const col = document.getElementById('col');
+  col.replaceChildren();
+  col.append(h('div', {class: 'sub'},
+    h('span', {class: 'tab' + (S.tab === 'plate' ? ' on' : ''), on: () => { S.tab = 'plate'; render(); }}, h('i', {}, 'S'), 'Sections · plate'),
+    h('span', {class: 'tab' + (S.tab === 'iz' ? ' on' : ''), on: () => { S.tab = 'iz'; render(); }}, h('i', {}, 'I'), 'Immune zone')));
+  if (S.tab === 'plate') { col.style.background = 'transparent'; dots(); return; }
+  col.style.background = '';
+  const z = Z(), v = V(), beam = z.angles.indexOf(90), e = v.edges[beam];
+  const cals = [380, 305], ci = cals.indexOf(S.cal);
+  col.append(h('div', {class: 'sub'}, h('span', {class: 'cap'}, 'Against'),
+    h('span', {class: 'dd', style: 'width:96px'}, 'her main battery', h('i', {}, '▼')),
+    h('span', {class: 'step'}, h('b', {on: () => { S.cal = cals[Math.min(1, ci + 1)]; render(); }}, '◀'), h('span', {}, `${S.cal} mm`),
+      h('b', {on: () => { S.cal = cals[Math.max(0, ci - 1)]; render(); }}, '▶')),
+    h('span', {class: 'dd', style: 'width:40px'}, 'AP', h('i', {}, '▼')),
+    h('span', {class: 'mut'}, `${z.massKg} kg · ${z.mv} m/s · reach ${km(z.reachM)} km`),
+    h('span', {class: 'r'}, h('span', {class: 'seg'}, ['Magazines', 'Machinery'].map((t, i) => h('span', {class: i === S.v ? 'on' : '', on: () => { S.v = i; render(); }}, t))))));
+  const immune = e[0] < e[1];
+  col.append(h('div', {class: 'line'}, immune ? `Immune ${km(e[0])}-${km(e[1])} km on the beam` : 'No immune zone on the beam',
+    h('span', {class: 'mut'}, ` · her ${v.vitals.toLowerCase()} against her own ${S.cal} mm AP`)));
+  const ri = Math.max(0, Math.round(e[0] / 1000) - 1), ro = Math.min(z.ranges.length - 1, Math.round(e[1] / 1000) - 1);
+  col.append(h('div', {class: 'edges'}, 'inner edge ', h('b', {}, e[0] > 0 ? plateName(v.sideBy[ri][beam]) : 'none: the side holds close in'),
+    ' · outer edge ', h('b', {}, e[1] < z.reachM ? plateName(v.deckBy[ro][beam]) : 'none within her reach'),
+    h('br'), `the armour alone (main belt and deck beaten whole): ${e[2] < e[3] ? km(e[2]) + '-' + km(e[3]) + ' km' : 'no zone'}`));
+  col.append(h('div', {id: 'mid'}, chart(), side()));
+  col.append(h('div', {class: 'sub'}, h('span', {class: 'cap'}, 'Shells fired in anger'),
+    h('span', {class: 'mut'}, `${A().bands[0].ships} a band, ${A().hitsPerShip} hits, ${A().settleMin} min`),
+    h('span', {class: 'lg'}, h('i', {style: 'background:#4C7A93'}), 'water'), h('span', {class: 'lg'}, h('i', {style: 'background:' + C.plan + ';height:2px'}), 'main guns'),
+    h('span', {class: 'lg'}, h('i', {style: 'background:' + C.amber + ';height:2px'}), 'speed'), h('span', {class: 'lg'}, h('i', {style: 'background:' + C.red + ';width:5px;height:5px'}), 'lost'),
+    h('span', {class: 'r'}, h('span', {class: 'btn'}, 'Fire again'))));
+  col.append(strip());
+  col.append(detail());
+  dots();
+}
+render();
+</script>
+</body></html>

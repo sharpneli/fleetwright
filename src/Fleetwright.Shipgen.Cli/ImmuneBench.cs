@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Text.Json.Nodes;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 using Fleetwright.Sim.Ships;
@@ -16,7 +17,7 @@ static class ImmuneBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(bool Main, int Index, double CalibreMm, string? Kind, string? Vitals, int Shots, int Threads, int Seed, bool Passes, string? Trace = null,
-        int Anger = 0, int PerShip = 10, double SettleMin = 30);
+        int Anger = 0, int PerShip = 10, double SettleMin = 30, string? Json = null);
 
     /// <summary>The history checks (docs/designer-ui/immune-zone.md IZ1): bench-only designs with a real scheme, against
     /// the record's gun (her own), the record's immune zone beside ours on the beam: the classic edges (the main belt and
@@ -126,6 +127,45 @@ static class ImmuneBench
             Console.WriteLine($"  one thread, 16 a cell: {sw.Elapsed.TotalMilliseconds:0} ms, {1000 * sw.Elapsed.TotalMilliseconds / Math.Max(shots, 1):0} µs a shell");
         }
 
+        if (o.Json != null)
+        {
+            // for the mockup (docs/designer-ui/immune.html): every cell, the edges both ways, the plates by name
+            var vit = new JsonArray();
+            foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
+            {
+                JsonArray cells = [], edges = [], sideBy = [], deckBy = [];
+                for (int r = 0; r < zone.RangesM.Length; r++)
+                {
+                    JsonArray row = [], sb = [], db = [];
+                    for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+                    {
+                        var c = zone[v, r, a];
+                        row.Add((JsonNode?)(Arr(c.Shots, c.Side, c.Deck, c.Broken, c.Unseen, c.BeltMet, c.BeltBeaten, c.DeckMet, c.DeckBeaten)));
+                        sb.Add((JsonNode?)(PlateName(cls, zone.Most(v, r, a, false))));
+                        db.Add((JsonNode?)(PlateName(cls, zone.Most(v, r, a, true))));
+                    }
+                    cells.Add((JsonNode?)(row));
+                    sideBy.Add((JsonNode?)(sb));
+                    deckBy.Add((JsonNode?)(db));
+                }
+                for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+                {
+                    var (e, c) = (zone.Edges(v, a), zone.Edges(v, a, true));
+                    edges.Add((JsonNode?)(Arr(Math.Round(e.InnerM), Math.Round(e.OuterM), Math.Round(c.InnerM), Math.Round(c.OuterM))));
+                }
+                vit.Add((JsonNode?)(new JsonObject { ["vitals"] = v.ToString(), ["has"] = zone.Has(v), ["cells"] = cells, ["edges"] = edges, ["sideBy"] = sideBy, ["deckBy"] = deckBy }));
+            }
+            var falls = new JsonArray();
+            foreach (var f in zone.Falls)
+                falls.Add((JsonNode?)(Arr(Math.Round(f.FallDeg, 2), Math.Round(f.StrikeMs))));
+            var doc = new JsonObject
+            {
+                ["ship"] = cls.Name, ["calibre"] = cal, ["shell"] = pick.Name, ["massKg"] = Math.Round(pick.Shell.MassKg), ["mv"] = Math.Round(pick.Shell.MuzzleVelocityMs),
+                ["reachM"] = Math.Round(zone.ReachM), ["angles"] = Arr(ImmuneZone.Angles), ["ranges"] = Arr(zone.RangesM), ["falls"] = falls, ["vitals"] = vit,
+            };
+            File.WriteAllText(o.Json, doc.ToJsonString());
+            Console.WriteLine($"  written {o.Json}");
+        }
         foreach (var v in new[] { Vitals.Magazines, Vitals.Machinery })
         {
             if (o.Vitals != null && !v.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase))
@@ -191,6 +231,37 @@ static class ImmuneBench
         });
         long ships = run.Bands.Sum(b => (long)b.Report.Ships);
         Console.WriteLine($"  {ships} ships in all on {threads} threads, {sw.Elapsed.TotalMilliseconds / ships * threads:0} ms a ship-thread");
+        if (o.Json != null)
+        {
+            var bands = new JsonArray();
+            foreach (var b in run.Bands)
+            {
+                var r = b.Report;
+                var struck = new JsonObject();
+                foreach (var (k, n) in r.Struck)
+                    struck[k] = n;
+                var dots = new JsonArray();
+                foreach (var d in b.Dots)
+                    dots.Add((JsonNode?)(Arr(Math.Round(d.Point.X, 2), Math.Round(d.Point.Y, 2), Math.Round(d.Point.Z, 2), d.Class)));
+                bands.Add((JsonNode)new JsonObject
+                {
+                    ["from"] = b.FromM, ["to"] = b.ToM, ["ships"] = r.Ships, ["hits"] = r.Hits, ["lost"] = r.Lost,
+                    ["lostBy"] = Arr(r.LostBy[(int)LossKind.Magazine], r.LostBy[(int)LossKind.Foundered], r.LostBy[(int)LossKind.Capsized], r.LostBy[(int)LossKind.BrokeInTwo]),
+                    ["gunsOut"] = r.MainSilenced, ["underHalf"] = r.UnderHalf, ["fires"] = r.Fires, ["mags"] = r.Magazines, ["killed"] = Math.Round(r.Killed),
+                    ["wounded"] = Math.Round(r.Wounded), ["holesM2"] = Math.Round(r.BreachM2, 1), ["worstWaterT"] = Math.Round(r.WorstWaterT),
+                    ["worstListDeg"] = Math.Round(r.WorstListDeg, 1), ["struck"] = struck, ["dots"] = dots,
+                    ["waterT"] = Math.Round(r.WaterT / Math.Max(r.Ships, 1)), ["speed"] = Math.Round(r.SpeedShare / Math.Max(r.Ships, 1), 3),
+                    ["guns"] = Math.Round(r.MainWorking / Math.Max(r.MainMounts, 1), 3), ["crewOut"] = Math.Round(r.CrewAfter / Math.Max(r.Ships, 1)),
+                });
+            }
+            var doc = new JsonObject
+            {
+                ["ship"] = cls.Name, ["calibre"] = cal, ["hitsPerShip"] = o.PerShip, ["settleMin"] = o.SettleMin, ["lengthM"] = cls.Length,
+                ["waterline"] = cls.Vertical.Waterline, ["depth"] = cls.Vertical.Depth, ["draught"] = cls.Vertical.Draught, ["bands"] = bands,
+            };
+            File.WriteAllText(o.Json, doc.ToJsonString());
+            Console.WriteLine($"  written {o.Json}");
+        }
         Console.WriteLine();
         Console.WriteLine("    km  ships  lost (mag/fndr/caps/broke)  guns out  <½ speed   per 100 hits: fires  mags  killed  holes m²   in/thru/dud/armour %");
         foreach (var b in run.Bands)
@@ -207,6 +278,24 @@ static class ImmuneBench
                               $"{r.Fires * per,16:0}  {r.Magazines * per,4:0.0}  {r.Killed * per,6:0}  {r.BreachM2 * per,8:0.0}   {classes}");
         }
         return 0;
+    }
+
+    /// <summary>A plate as the designer names it: the belt or its zone, an armour deck by its deck, a slope.</summary>
+    static string PlateName(ShipClass c, ZonePlate? p) => p is not { } z ? "" : z.Kind switch
+    {
+        PlateKind.SideArmour => (c.SidePlates[z.Index].Kind switch { StrakeKind.Zone => "belt zone", var k => k.ToString().ToLowerInvariant() }) + $" {z.Mm:0} mm",
+        PlateKind.ArmourDeck => $"{Decks.DeckNameLower(c.Decks[c.ArmourDecks[z.Index].Deck].Number)} {z.Mm:0} mm",
+        PlateKind.Inclined => $"{c.Inclined[z.Index].Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
+        PlateKind.ArmourBulkhead => $"citadel bulkhead {z.Mm:0} mm",
+        _ => $"{z.Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
+    };
+
+    static JsonArray Arr(params double[] xs)
+    {
+        var a = new JsonArray();
+        foreach (double x in xs)
+            a.Add((JsonNode?)(x));
+        return a;
     }
 
     static string Name(ZonePlate? p) => p is { } z ? string.Format(Inv, "{0}[{1}] {2:0} mm", z.Kind, z.Index, z.Mm) : "-";
