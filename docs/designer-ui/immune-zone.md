@@ -226,40 +226,30 @@ against her own gun, broadside, 128 shells a cell:
 ## IZ3: the mockup (2026-11-14)
 
 `immune.html`: the Protection tab's pane at 1920 × 1080 (1270 × 552). Its left half is the game's own pane
-(`png/immune-base.png`, a capture) under the run's dots; the right column is the new tab, drawn live from real runs
+(`png/immune-base.png`, a capture) under the dots; the right column is the new tab, drawn live from real runs
 (`immune-data.js`: `shipgen immune bismarck --calibre 380|305 --shells 64 --json` and `--anger 12 --json`). URL:
-`?cal=305`, `?v=mag|mach`, `?band=N`, `?hover=R,A` (a cell's tip by range and angle index), `?tab=plate` (the column as
-today).
+`?cal=305`, `?v=mag|mach`, `?km=N` (the range picked), `?hover=R,A`, `?tab=plate` (the column as today).
 
-![machinery against her own 380 mm, the 38-40 km band picked](png/immune-mockup-machinery.png)
-![magazines against her own family at 305 mm, the 24-26 km band](png/immune-mockup-magazines-305.png)
+**First pass: too dense** (the user, 2026-11-14: "Way too information dense ... I did like the angle and distance style
+chart but the bottom chart was not intuitive at all"). It had the shell's figures, two edge lines, a legend of four,
+a hover box of five lines, a strip of water bars with lines for guns and speed, and three tables for the band picked.
 
-- **The tab takes the whole right column** (the sections and the selected plate): decision 4 put it beside Plate, but
-  the facts pane alone is 520 × 200, too small for a chart and a strip. The column's sub-bar holds the two tabs
-  (S: sections and plate, I: immune zone).
-- **Against:** her battery, its calibre (a stepper: her own shells at it), the kind; the shell's mass, speed and reach;
-  Magazines | Machinery.
-- **The line and the edges:** the zone on the beam, the plate that sets each edge, and the armour alone's edges (the
-  classic measure, IZ1) under it.
-- **The chart:** USN half-polar, bow up, rings every 5 km: red where more than half get in through the side, amber
-  through the deck, green (faint, softer toward 10-50 %) immune, dark where no shell reaches them. Hover: the cell's
-  fall and striking speed, the shares and the plates, the main belt and deck met and beaten.
-- **The strip:** a column a 2 km band, under the same range scale: the mean water she took as the bar, a red square a
-  ship lost, her main guns working and her speed left as lines. Ships lost alone said nothing for a battleship (Bismarck
-  lost none in 252 ships at 10 hits of her own guns, at any range), so the strip carries the graded measures.
-- **A band picked:** its ships (lost and how, water, speed, guns, the worst afloat), per 100 hits (fires, magazines,
-  killed, holes), where they struck; and the hits as dots on the elevation, coloured by class. Over the main deck the
-  elevation draws only the turrets, so the upper works' hits are drawn faint there.
+**Second pass: the chart is the picture, the rest in words.**
 
-### For the review
+![machinery against her own 380 mm, 15 km picked](png/immune-mockup-machinery.png)
+![magazines against her own family at 305 mm](png/immune-mockup-magazines-305.png)
 
-1. The tab over the whole right column rather than the facts pane alone?
-2. The strip's measures: water, main guns, speed, ships lost. And 10 hits a ship: a 40,000 t ship hardly notices them;
-   the stepper (5, 10, 20, 40) stays, but should its start scale with her size?
-3. The dots on the elevation (upper works faint), or on the profile above the pane, which draws the upper works?
-4. The armour-alone line: keep it under the zone, or only in the hover?
-5. Defaults for speed (the user, 2026-11-14: fast first): the zone at 16 shells a cell first (about 0.3 s on four
-   threads for a battleship), then 64; the sweep at 8 ships a band (about 1 s on four threads), Fire again for more.
+- **Against her own** ◀ 380 mm ▶ and Magazines | Machinery. Nothing else in the bar.
+- **A headline** ("Immune from 0 to 37 km on the beam", "Immune at every range on the beam", "Not immune on the beam")
+  and one line on what sets the edges ("Beyond 37 km they come down through the third deck 80 mm").
+- **The chart**, big: three colours only, safe (fewer than half get in, or nothing reaches them), through the side,
+  through the deck. Rings every 10 km, bow up. Hover: one line by the cursor ("31 km, 60° off the bow: 28 % get in").
+- **Click the chart to pick a range**: a dashed ring, and under the chart in a sentence what her own hits do there
+  ("10 hits at 14-16 km: All 12 ships stay afloat. On average she takes 2,100 t of water and keeps 94 % of her speed
+  and 3 of 4 turrets firing.").
+- **The dots** on the elevation for that range, two kinds: burst inside her, or held or passed.
+- Gone: the shell's mass and speed, the armour-alone edges, the soft shading, the hidden shade (folded into safe), the
+  strip, the band tables, the hits by where. The bench keeps all of it.
 
 ## Decisions (user, 2026-11-14)
 
