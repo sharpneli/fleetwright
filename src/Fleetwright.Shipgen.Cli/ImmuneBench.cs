@@ -17,7 +17,7 @@ static class ImmuneBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(bool Main, int Index, double CalibreMm, string? Kind, string? Vitals, int Shots, int Threads, int Seed, bool Passes, string? Trace = null,
-        int Anger = 0, int PerShip = 10, double SettleMin = 30, string? Json = null, int Refine = 0);
+        int Anger = 0, int PerShip = 10, double SettleMin = 30, string? Json = null, int Refine = 0, string? Plate = null);
 
     /// <summary>The history checks (docs/designer-ui/immune-zone.md IZ1): bench-only designs with a real scheme, against
     /// the record's gun (her own), the record's immune zone beside ours on the beam: the classic edges (the main belt and
@@ -77,10 +77,11 @@ static class ImmuneBench
 
         if (o.Anger > 0)
             return Anger(cls, pick, cal, maxElev, settings, o);
-        var zone = new ImmuneZone(cls, pick.Shell, maxElev, settings, (ulong)o.Seed);
+        PlatePick? plate = o.Plate is { } pn ? ParsePlate(pn) : null;
+        var zone = new ImmuneZone(cls, pick.Shell, maxElev, settings, (ulong)o.Seed, plate);
         if (zone.BeltCentre is { } bc)
             Console.WriteLine($"  the belt's shells aimed at x {bc.X:0.0} m, {bc.Z - cls.Vertical.Waterline:+0.0;-0.0} m on the waterline");
-        var targets = o.Vitals == null ? ImmuneZone.All : ImmuneZone.All.Where(t => t.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var targets = plate != null ? [ZoneTarget.Plate] : o.Vitals == null ? ImmuneZone.All : ImmuneZone.All.Where(t => t.ToString().StartsWith(o.Vitals, StringComparison.OrdinalIgnoreCase)).ToArray();
         if (o.Trace is { } tr)
         {
             // one cell's shells, walked on one thread: target:km:angle
@@ -146,8 +147,10 @@ static class ImmuneBench
         {
             // for the mockup (docs/designer-ui/immune.html): every cell, the edges, the plates by name
             var all = new JsonArray();
-            foreach (var t in ImmuneZone.All)
+            foreach (var t in ImmuneZone.All.Append(ZoneTarget.Plate))
             {
+                if (zone.ShotsPerCell(t) == 0)
+                    continue;
                 JsonArray cells = [], edges = [], sideBy = [], deckBy = [];
                 for (int r = 0; r < zone.RangesM.Length; r++)
                 {
@@ -197,7 +200,7 @@ static class ImmuneBench
                 Console.WriteLine($"{t}: she has none");
                 continue;
             }
-            bool vitals = t >= ZoneTarget.Magazines;
+            bool vitals = t is ZoneTarget.Magazines or ZoneTarget.Machinery;
             Console.WriteLine(vitals ? $"{t}: in through the side / the deck / b in pieces, % of the shells at them" : $"{t}: through it whole, % of the shells at it");
             var head = new StringBuilder("   km ");
             foreach (double a in ImmuneZone.Angles)
@@ -221,8 +224,8 @@ static class ImmuneBench
             {
                 var (inner, outer) = zone.Edges(t, a);
                 string z = vitals ? (inner < outer ? string.Format(Inv, "{0,5:0.0}-{1,-5:0.0} km", inner / 1000, outer / 1000) : "none          ")
-                    : t == ZoneTarget.Deck ? string.Format(Inv, "gives from {0,4:0.0} km", outer / 1000) : string.Format(Inv, "holds from {0,4:0.0} km", inner / 1000);
-                int ri = Math.Clamp((int)Math.Round((t == ZoneTarget.Deck ? outer : inner) / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
+                    : t == ZoneTarget.Deck || t == ZoneTarget.Plate && plate is { Lies: true } ? string.Format(Inv, "gives from {0,4:0.0} km", outer / 1000) : string.Format(Inv, "holds from {0,4:0.0} km", inner / 1000);
+                int ri = Math.Clamp((int)Math.Round((t == ZoneTarget.Deck || t == ZoneTarget.Plate && plate is { Lies: true } ? outer : inner) / ImmuneZone.RangeStepM) - 1, 0, zone.RangesM.Length - 1);
                 Console.WriteLine($"  {ImmuneZone.Angles[a],4:0}°  {z,-16}  {PlateName(cls, zone.Most(t, ri, a))}");
             }
         }
@@ -308,7 +311,30 @@ static class ImmuneBench
         PlateKind.Inclined => $"{c.Inclined[z.Index].Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
         PlateKind.ArmourBulkhead => $"citadel bulkhead {z.Mm:0} mm",
         PlateKind.Barbette => $"barbette {z.Mm:0} mm",
+        PlateKind.TurretFace => $"turret face {z.Mm:0} mm",
+        PlateKind.TurretSide => $"turret side {z.Mm:0} mm",
+        PlateKind.TurretRear => $"turret rear {z.Mm:0} mm",
+        PlateKind.TurretRoof => $"turret roof {z.Mm:0} mm",
+        PlateKind.PartArmour => $"{c.Components[z.Index].Kind switch { ComponentKind.ConningTower => "conning tower", var k => k.ToString().ToLowerInvariant() }} {z.Mm:0} mm",
         _ => $"{z.Kind.ToString().ToLowerInvariant()} {z.Mm:0} mm",
+    };
+
+    /// <summary>A plate by name: belt, upper, end-fore, end-aft, zone, bulkheads, deck:N (0 the main deck), slopes,
+    /// barbettes, turrets, ct.</summary>
+    static PlatePick ParsePlate(string s) => s.ToLowerInvariant() switch
+    {
+        "belt" => new(PlatePart.Belt),
+        "upper" => new(PlatePart.UpperBelt),
+        "end-fore" => new(PlatePart.EndFore),
+        "end-aft" => new(PlatePart.EndAft),
+        "zone" => new(PlatePart.BeltZone),
+        "bulkheads" => new(PlatePart.Bulkheads),
+        "slopes" => new(PlatePart.Slopes),
+        "barbettes" => new(PlatePart.Barbettes),
+        "turrets" => new(PlatePart.Turrets),
+        "ct" => new(PlatePart.ConningTower),
+        var d when d.StartsWith("deck:", StringComparison.Ordinal) => new(PlatePart.Deck, int.Parse(d[5..])),
+        _ => throw new ArgumentException($"no plate {s} (belt, upper, end-fore, end-aft, zone, bulkheads, deck:N, slopes, barbettes, turrets, ct)"),
     };
 
     static JsonArray Arr(params double[] xs)

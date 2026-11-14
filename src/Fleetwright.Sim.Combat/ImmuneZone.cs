@@ -16,6 +16,33 @@ public enum ZoneTarget : byte
     Deck,
     Magazines,
     Machinery,
+    /// <summary>A plate picked in the designer (<see cref="PlatePick"/>): the user, 2026-11-14, "clicking on a plate ... and
+    /// it'll run the simulation for that plate (center of it)".</summary>
+    Plate,
+}
+
+/// <summary>The parts of her armour a plate can be picked from, as the Protection tab lists them.</summary>
+public enum PlatePart : byte
+{
+    Belt,
+    UpperBelt,
+    EndFore,
+    EndAft,
+    BeltZone,
+    Bulkheads,
+    /// <summary>An armour deck, by its deck number (<see cref="PlatePick.Deck"/>: 0 the main deck, 1 the second, ...).</summary>
+    Deck,
+    Slopes,
+    Barbettes,
+    Turrets,
+    ConningTower,
+}
+
+/// <summary>A plate to test (<see cref="ZoneTarget.Plate"/>): a part, and for a deck its number.</summary>
+public readonly record struct PlatePick(PlatePart Part, int Deck = 0)
+{
+    /// <summary>Whether it lies as a deck: beaten from far off, by falling shells, rather than close in.</summary>
+    public bool Lies => Part is PlatePart.Deck or PlatePart.Slopes;
 }
 
 /// <summary>One cell of an immune zone, a target, a range and a target angle: the shells aimed at the target (lines that,
@@ -69,7 +96,7 @@ public sealed class ImmuneZone
 
     public static readonly ZoneTarget[] All = [ZoneTarget.Belt, ZoneTarget.Barbettes, ZoneTarget.Deck, ZoneTarget.Magazines, ZoneTarget.Machinery];
 
-    public const int Targets = 5;
+    public const int Targets = 6;
 
     /// <summary>The ranges' step, m (the first range is one step).</summary>
     public const double RangeStepM = 1000;
@@ -121,8 +148,11 @@ public sealed class ImmuneZone
     readonly int[] shotsPerCell = new int[Targets];
 
     /// <summary>A zone of a shell on a class, its gun's elevation up to maxElevationDeg; empty until filled.</summary>
-    public ImmuneZone(ShipClass c, in ShellTypeRow shell, double maxElevationDeg, SimSettings s, ulong seed)
+    public ImmuneZone(ShipClass c, in ShellTypeRow shell, double maxElevationDeg, SimSettings s, ulong seed, PlatePick? plate = null)
     {
+        this.plate = plate;
+        foreach (ref readonly var bh in c.ArmourBulkheads)
+            citadelBulkheadMm = Math.Max(citadelBulkheadMm, bh.ThicknessMm);
         (Class, Shell, settings, this.seed) = (c, shell, s, seed);
         var table = new RangeTable(BallisticKey.Of(shell, maxElevationDeg), MuzzleM);
         ReachM = table.ReachM;
@@ -235,6 +265,9 @@ public sealed class ImmuneZone
             aims[(int)ZoneTarget.Deck] = [];
         aims[(int)ZoneTarget.Magazines] = [];
         aims[(int)ZoneTarget.Machinery] = [];
+        // the plate picked: its own aim points
+        aims[(int)ZoneTarget.Plate] = plate is { } pk ? AimsOf(c, pk) : [];
+        boxes[(int)ZoneTarget.Plate] = [.. aims[(int)ZoneTarget.Plate].ToArray().Select(a => new Box(a.X, a.X, a.Y, a.Y, a.Z, a.Z))];
         cells = new ZoneCell[Targets * n * Angles.Length];
         sidePlates = new Dictionary<ZonePlate, int>[cells.Length];
         deckPlates = new Dictionary<ZonePlate, int>[cells.Length];
@@ -247,7 +280,143 @@ public sealed class ImmuneZone
         ? c.Rooms[room].Kind == RoomKind.Magazine
         : c.Rooms[room].Kind is RoomKind.BoilerRoom or RoomKind.EngineRoom);
 
-    static bool IsVitals(ZoneTarget t) => t >= ZoneTarget.Magazines;
+    static bool IsVitals(ZoneTarget t) => t is ZoneTarget.Magazines or ZoneTarget.Machinery;
+
+    readonly PlatePick? plate;
+    readonly double citadelBulkheadMm;
+
+    /// <summary>The plate picked, if any.</summary>
+    public PlatePick? Picked => plate;
+
+    /// <summary>Whether a target lies as a deck (its edge the far one: beaten from a range on).</summary>
+    bool LiesFlat(ZoneTarget t) => t == ZoneTarget.Deck || t == ZoneTarget.Plate && plate is { Lies: true };
+
+    /// <summary>A side plate's centre on her starboard side: halfway along it, halfway up its part over the waterline.</summary>
+    static P3 SideAim(ShipClass c, double x0, double x1, double bottom, double top)
+    {
+        double x = (x0 + x1) / 2, z = Over(bottom, top, c.Vertical.Waterline);
+        return new P3(x, c.Hull.HalfWidth(x, z), z);
+    }
+
+    /// <summary>The points a picked plate's shells are aimed at: its centre (the largest of its rows, on the starboard
+    /// side), five along a deck, each barbette's, turret's or bulkhead's in turn.</summary>
+    static P3[] AimsOf(ShipClass c, PlatePick pick)
+    {
+        var res = new List<P3>();
+        void Largest(Func<SidePlateRow, bool> of)
+        {
+            SidePlateRow? best = null;
+            foreach (var p in c.SidePlates.ToArray())
+                if (of(p) && (best is not { } b || (p.X1 - p.X0) * (p.Top - p.Bottom) > (b.X1 - b.X0) * (b.Top - b.Bottom)))
+                    best = p;
+            if (best is { } q)
+                res.Add(SideAim(c, q.X0, q.X1, q.Bottom, q.Top));
+        }
+        switch (pick.Part)
+        {
+            case PlatePart.UpperBelt:
+                Largest(p => p.Kind == StrakeKind.Upper);
+                break;
+            case PlatePart.EndFore:
+                Largest(p => p.Kind == StrakeKind.End && p.Extent == Extent.Fore);
+                break;
+            case PlatePart.EndAft:
+                Largest(p => p.Kind == StrakeKind.End && p.Extent == Extent.Aft);
+                break;
+            case PlatePart.BeltZone:
+                Largest(p => p.Kind == StrakeKind.Zone);
+                foreach (var p in c.Inclined.ToArray())
+                    if (res.Count == 0 && p.Kind == InclinedKind.Zone)
+                    {
+                        double x = (p.X0 + p.X1) / 2, z = Over(Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1), c.Vertical.Waterline);
+                        res.Add(new P3(x, p.YAt(c.Hull, x, z), z));
+                    }
+                break;
+            case PlatePart.Bulkheads:
+                // the citadel's: the thickest (the end belts' own bulkheads are thinner)
+                double thick = 0;
+                foreach (var bh in c.ArmourBulkheads.ToArray())
+                    thick = Math.Max(thick, bh.ThicknessMm);
+                foreach (var bh in c.ArmourBulkheads.ToArray())
+                    if (bh.ThicknessMm >= 0.9 * thick)
+                        res.Add(new P3(bh.X, 0, (bh.Bottom + bh.Top) / 2));
+                break;
+            case PlatePart.Deck:
+                ArmourDeckRow? longest = null;
+                foreach (var d in c.ArmourDecks.ToArray())
+                    if (c.Decks[d.Deck].Number == pick.Deck && (longest is not { } l || d.X1 - d.X0 > l.X1 - l.X0))
+                        longest = d;
+                if (longest is { } ld)
+                    foreach (double f in (ReadOnlySpan<double>)[0.5, 0.1, 0.9, 0.3, 0.7])
+                        res.Add(new P3(ld.X0 + f * (ld.X1 - ld.X0), 0, ld.Z));
+                break;
+            case PlatePart.Slopes:
+                foreach (var p in c.Inclined.ToArray())
+                    if (p.Kind == InclinedKind.Slope)
+                    {
+                        double x = (p.X0 + p.X1) / 2, z = (p.Z0 + p.Z1) / 2;
+                        res.Add(new P3(x, p.YAt(c.Hull, x, z), z));
+                    }
+                break;
+            case PlatePart.Barbettes:
+                foreach (var sd in c.Solids.Solids.ToArray())
+                    if (sd.Component >= 0 && MainBarbette(c, sd.Component))
+                    {
+                        double lo = Math.Max(sd.Box.Base, c.Hull.DeckTop(sd.Cx));
+                        if (sd.Box.Top > lo)
+                            res.Add(new P3(sd.Cx, sd.Cy, (lo + sd.Box.Top) / 2));
+                    }
+                break;
+            case PlatePart.Turrets:
+                foreach (var sd in c.Solids.Solids.ToArray())
+                    if (sd.Component >= 0 && MainTurret(c, sd.Component))
+                        res.Add(new P3(sd.Cx, sd.Cy, (sd.Box.Base + sd.Box.Top) / 2));
+                break;
+            case PlatePart.ConningTower:
+                foreach (var sd in c.Solids.Solids.ToArray())
+                    if (sd.Component >= 0 && c.Components[sd.Component].Kind == ComponentKind.ConningTower)
+                        res.Add(new P3((sd.Box.X0 + sd.Box.X1) / 2, (sd.Box.Y0 + sd.Box.Y1) / 2, (sd.Box.Base + sd.Box.Top) / 2));
+                break;
+            default:
+                Largest(p => p.Kind == StrakeKind.Belt);
+                foreach (var p in c.Inclined.ToArray())
+                    if (p.Kind == InclinedKind.Belt && (res.Count == 0 || p.ThicknessMm > 0 && res.Count == 0))
+                    {
+                        double x = (p.X0 + p.X1) / 2, z = Over(Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1), c.Vertical.Waterline);
+                        res.Add(new P3(x, p.YAt(c.Hull, x, z), z));
+                    }
+                break;
+        }
+        return [.. res];
+    }
+
+    /// <summary>Whether a component is one of her main battery's turrets.</summary>
+    static bool MainTurret(ShipClass c, int component) =>
+        c.Components[component].Kind == ComponentKind.Main && c.MountOf(component) is int m and >= 0 && c.Mounts[m].Kind == ComponentKind.Main;
+
+    /// <summary>Whether a crossing is the picked plate, struck from outside (outer: against its outer face; inHull: the
+    /// shell already inside her hull).</summary>
+    bool PlateMet(in Crossing x, bool outer, bool inHull)
+    {
+        var c = Class;
+        return plate?.Part switch
+        {
+            PlatePart.UpperBelt => outer && x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index].Kind == StrakeKind.Upper,
+            PlatePart.EndFore => outer && x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index] is { Kind: StrakeKind.End, Extent: Extent.Fore },
+            PlatePart.EndAft => outer && x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index] is { Kind: StrakeKind.End, Extent: Extent.Aft },
+            PlatePart.BeltZone => outer && (x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index].Kind == StrakeKind.Zone
+                || x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind == InclinedKind.Zone),
+            PlatePart.Bulkheads => outer && x.Plate == PlateKind.ArmourBulkhead && x.Mm >= 0.9 * citadelBulkheadMm,
+            PlatePart.Deck => outer && x.Plate == PlateKind.ArmourDeck && c.Decks[c.ArmourDecks[x.Index].Deck].Number == plate.Value.Deck,
+            PlatePart.Slopes => outer && x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind == InclinedKind.Slope,
+            PlatePart.Barbettes => x.Plate == PlateKind.Barbette && x.Kind == CrossingKind.PartIn && !inHull && MainBarbette(c, x.Index),
+            PlatePart.Turrets => x.Kind == CrossingKind.PartIn && x.Plate is >= PlateKind.TurretFace and <= PlateKind.TurretRoof && MainTurret(c, x.Index),
+            PlatePart.ConningTower => x.Kind == CrossingKind.PartIn && x.Plate == PlateKind.PartArmour && c.Components[x.Index].Kind == ComponentKind.ConningTower,
+            PlatePart.Belt => outer && (x.Plate == PlateKind.SideArmour && c.SidePlates[x.Index].Kind is StrakeKind.Belt or StrakeKind.Zone
+                || x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind is InclinedKind.Belt or InclinedKind.Zone),
+            _ => false,
+        };
+    }
 
     /// <summary>Halfway up the part of a plate from lo to hi over the waterline wl (halfway up it all if none is).</summary>
     static double Over(double lo, double hi, double wl) => hi > wl ? (Math.Max(lo, wl) + hi) / 2 : (lo + hi) / 2;
@@ -395,7 +564,7 @@ public sealed class ImmuneZone
             total += (u1 - u0) * (v1 - v0);
             rects.Add((k, u0, u1, v0, v1, total));
         }
-        if (total <= 0)
+        if (total <= 0 && aims[ti].Length == 0)
             return;
         double far = 2 * c.Solids.Radius + 50, reach = WaterRun.ReachM(Shell, strike, settings);
         var bounds = c.Solids.Bounds;
@@ -573,6 +742,7 @@ public sealed class ImmuneZone
                 ZoneTarget.Barbettes => x.Plate == PlateKind.Barbette && x.Kind == CrossingKind.PartIn && !inHull && MainBarbette(c, x.Index),
                 ZoneTarget.Deck => outer && (x.Plate == PlateKind.ArmourDeck && mainDeck[x.Index]
                     || x.Plate == PlateKind.Inclined && c.Inclined[x.Index].Kind == InclinedKind.Slope),
+                ZoneTarget.Plate => PlateMet(x, outer, inHull),
                 _ => x.Kind == CrossingKind.CellIn && x.Index >= 0 && vital[(int)target - 3][x.Index],
             };
             if (met)
@@ -592,14 +762,14 @@ public sealed class ImmuneZone
         bool vitals = IsVitals(t);
         double SideOf(int k) => vitals ? this[t, k, angle].SideShare : this[t, k, angle].ThroughShare;
         double DeckOf(int k) => vitals ? this[t, k, angle].DeckShare : this[t, k, angle].ThroughShare;
-        if (t != ZoneTarget.Deck)
+        if (!LiesFlat(t))
             for (int k = n - 1; k >= 0; k--)
                 if (this[t, k, angle].Shots > 0 && SideOf(k) >= Edge)
                 {
                     inner = k + 1 < n && this[t, k + 1, angle].Shots > 0 ? Cross(k, k + 1, SideOf(k), SideOf(k + 1)) : RangesM[k];
                     break;
                 }
-        if (t == ZoneTarget.Deck || vitals)
+        if (LiesFlat(t) || vitals)
             for (int k = 0; k < n; k++)
                 if (this[t, k, angle].Shots > 0 && DeckOf(k) >= Edge)
                 {

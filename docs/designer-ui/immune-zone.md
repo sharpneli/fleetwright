@@ -306,8 +306,26 @@ the same for barbettes and the deck. You can toss bit more on the areas where it
   beam where the whole deck with its slopes held to 33-35. Together her zone against her own guns closes: "Not immune on
   the beam" (a zone under 1 km isn't called one). Against her own family at 305 mm: immune 18-28 km.
 
-![the armour against her own 380 mm, fifth pass](png/immune-mockup-armour.png)
-![against her own family at 305 mm](png/immune-mockup-armour-305.png)
+**Sixth pass: any plate, picked on the left** (the user, 2026-11-14: "allow clicking on a plate on the left side and
+it'll run the simulation for that plate (center of it) and show the penetration there ... see if the front extended
+belt is immune to heavy cruisers etc. By default it should be the main belt"; decision 11).
+
+- **`ZoneTarget.Plate` and `PlatePick`:** the belt, the upper belt, the end belts fore and aft, the belt's zone over the
+  magazines, the citadel bulkheads (the thickest), any armour deck by its number, the slopes, the main barbettes, the
+  main turrets (any of their plates) and the conning tower. Each aimed at its centre (the largest of its rows, on the
+  starboard side, halfway up its part over the waterline), five points along a deck, each barbette, turret or bulkhead
+  in turn; struck from outside (against its outer face; a barbette clear of the hull). A plate that stands as the side
+  holds beyond a range, one that lies as a deck gives beyond one. `shipgen immune --plate end-fore` and the rest.
+- **The tab:** a click on a plate's row in the table, or on the plate on the elevation, tests it (outlined in brass);
+  the belt by default. The view switch reads the plate's name | Magazines | Machinery. The headline is the plate
+  ("End belt, fore (60 mm) holds beyond 26 km on the beam"); under it her immune zone in one line (belt, barbettes,
+  deck) and "Click a plate on the left to test it." Red where a side plate is beaten, amber where a deck is, green holds.
+- Against a heavy cruiser's 203 mm (her own family at that calibre): her belt holds beyond 3.5 km, her 60 mm fore end
+  belt only beyond 26 km, her 50 mm main deck gives beyond 22 km, her 80 mm third deck holds within the gun's 30 km.
+
+![the belt against her own 380 mm (the default)](png/immune-mockup-armour.png)
+![the fore end belt picked, against 203 mm](png/immune-mockup-endfore-203.png)
+![the main deck picked, against 203 mm](png/immune-mockup-deck-203.png)
 
 Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
@@ -329,3 +347,4 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 8. **The tab takes the whole right column**, and the placeholder line goes from Sections · plate.
 9. **The belt aimed at its centre**, every shell down the one line: "no need to do any fancy stuff with it."
 10. **The barbettes and the deck aimed the same way**, and more shells where it matters.
+11. **Any plate picked on the left is tested at its centre**, the main belt by default; the tab shows that plate.

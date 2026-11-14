@@ -110,6 +110,32 @@ public class ImmuneZoneTests(ITestOutputHelper output)
         Assert.InRange(some, 1, all / 2);
     }
 
+    /// <summary>A plate picked (the designer's click): every part she has gets its aim points, and against her own family at
+    /// a heavy cruiser's calibre her 60 mm fore end belt is beaten farther out on the beam than her 320 mm belt.</summary>
+    [Fact]
+    public void A_picked_plate_is_tested_at_its_centre()
+    {
+        var d = Load("bismarck");
+        var c = Fleet.Get("bismarck").Class!;
+        var (_, elev) = Ap(c);
+        var shell = Loadout.ShellsAt(d, true, 0, 203).First(x => x.Kind == "ap").Shell;
+        int beam = Array.IndexOf(ImmuneZone.Angles, 90.0);
+        double Inner(PlatePart part)
+        {
+            var z = new ImmuneZone(c, shell, elev, Settings, 7, new PlatePick(part));
+            Assert.True(z.Aims(ZoneTarget.Plate).Length > 0, $"{part}: no aim points");
+            z.Fill(8, [ZoneTarget.Plate], Math.Max(2, Environment.ProcessorCount / 2));
+            return z.Edges(ZoneTarget.Plate, beam).InnerM;
+        }
+        double belt = Inner(PlatePart.Belt), end = Inner(PlatePart.EndFore);
+        output.WriteLine($"against 203 mm on the beam: the belt holds beyond {belt / 1000:0.0} km, the fore end belt beyond {end / 1000:0.0} km");
+        Assert.True(end > belt + 5000);
+        foreach (var part in new[] { PlatePart.UpperBelt, PlatePart.EndAft, PlatePart.Bulkheads, PlatePart.Slopes, PlatePart.Barbettes,
+                     PlatePart.Turrets, PlatePart.ConningTower })
+            Assert.True(new ImmuneZone(c, shell, elev, Settings, 7, new PlatePick(part)).Aims(ZoneTarget.Plate).Length > 0, $"{part}: no aim points");
+        Assert.True(new ImmuneZone(c, shell, elev, Settings, 7, new PlatePick(PlatePart.Deck, 2)).Aims(ZoneTarget.Plate).Length == 5);
+    }
+
     /// <summary>Her own shells at her battery's own calibre are the loadout's.</summary>
     [Fact]
     public void Her_shells_at_her_own_calibre_are_the_loadouts()
