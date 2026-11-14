@@ -341,6 +341,24 @@ after the flicker of a cell going between 49 % and 51 %).
 ![the barbettes, blended](png/immune-mockup-barbettes.png)
 ![the machinery, blended and softened](png/immune-mockup-machinery.png)
 
+**Eighth pass: plates together** (the user, 2026-11-14: "Shift + click on plates gives a joint penetration, and let's
+have the default be the main belt + thickest deck being selected"; decision 12).
+
+- **A click picks one plate, shift+click adds or drops one**; the default is the main belt and her thickest armour deck
+  (Bismarck's third deck, 80 mm). Every plate picked is outlined; the view switch reads "Belt + Third deck".
+- **Together, a cell is beaten where any plate picked is**, its colour by the kind that gives most: red a plate that
+  stands as the side, amber one that lies as a deck. That's why the two colours were there from the start (the USN's
+  chart: red the zone's inner edge, through the side close in; amber its outer edge, down through the deck far off): with
+  one plate shown it told nothing, with several it says which gave. The key shows a gradient for each kind picked.
+- **The headline is their joint zone**, from where every side plate picked holds to where the first deck picked gives
+  ("Immune from 17 to 28 km on the beam", Bismarck's belt and third deck against her own family at 305 mm), and under it
+  each plate in a sentence. One plate alone reads as before.
+- Each plate is its own run (its own aim points); the port keeps them by plate and combines them for the chart, so
+  adding a plate costs only that plate's run.
+
+![the default: belt and third deck, against 305 mm](png/immune-mockup-joint-305.png)
+![the fore end belt and the main deck, against 203 mm](png/immune-mockup-joint-203.png)
+
 Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
 
@@ -362,3 +380,4 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 9. **The belt aimed at its centre**, every shell down the one line: "no need to do any fancy stuff with it."
 10. **The barbettes and the deck aimed the same way**, and more shells where it matters.
 11. **Any plate picked on the left is tested at its centre**, the main belt by default; the tab shows that plate.
+12. **Shift+click tests plates together** (beaten where any is); the default is the main belt and her thickest deck.
