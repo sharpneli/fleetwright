@@ -92,6 +92,24 @@ public readonly record struct Fall(P3 Water, double Along, double Beside)
 /// segment crossed is the <see cref="HitPath"/>; a miss's fall comes from it too. Allocates nothing.</summary>
 public static class HitQuery
 {
+    /// <summary>The first crossing into her hull or a part of her along a path; -1 for none.</summary>
+    public static int FirstIn(HitPath path)
+    {
+        var xs = path.Crossings;
+        for (int i = 0; i < xs.Length; i++)
+            if (xs[i].Kind is CrossingKind.HullIn or CrossingKind.PartIn)
+                return i;
+        return -1;
+    }
+
+    /// <summary>A shell's line of flight in the ship's frame, coming from aspectDeg off her bow (clockwise: 90 from her
+    /// starboard beam), falling fallDeg under the horizontal.</summary>
+    public static P3 Flight(double aspectDeg, double fallDeg)
+    {
+        double b = double.DegreesToRadians(aspectDeg), f = double.DegreesToRadians(fallDeg);
+        return new P3(-Math.Cos(b) * Math.Cos(f), -Math.Sin(b) * Math.Cos(f), -Math.Sin(f));
+    }
+
     /// <summary>The world segment w0 to w1 through the ship: false (and an empty path) when it doesn't come within the
     /// ship's radius. bearingsDeg: each mount's bearing, ship-relative (missing or NaN: at rest).</summary>
     public static bool Trace(ShipClass c, in ShipFrame frame, in Attitude attitude, Vec3d w0, Vec3d w1, ReadOnlySpan<double> bearingsDeg,

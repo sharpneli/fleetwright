@@ -468,7 +468,7 @@ public sealed partial class DamageSystem : IWorldSystem
         double far = 2 * cls.Solids.Radius + 50;
         ShipTracer.Trace(cls, new P3(aim.X - dir.X * far, aim.Y - dir.Y * far, aim.Z - dir.Z * far),
             new P3(aim.X + dir.X * far, aim.Y + dir.Y * far, aim.Z + dir.Z * far), [], HitQuery.WaterOf(cls, k.Attitude), probe);
-        int first = GivenHits.First(probe);
+        int first = HitQuery.FirstIn(probe);
         if (first < 0)
             return;
         double run = WaterRun.RunM(probe, first);

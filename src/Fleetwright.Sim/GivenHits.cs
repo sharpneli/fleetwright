@@ -108,6 +108,9 @@ public static class GivenHits
         public int Crippled, Slowed, SteeringLost, Lost, MainSilenced, Out;
         public readonly int[] LostBy = new int[Enum.GetValues<LossKind>().Length];
         public double WaterT, ListDeg;
+        /// <summary>The ships afloat under half their speed, and the worst water (t) and list (degrees) among those afloat.</summary>
+        public int UnderHalf;
+        public double WorstWaterT, WorstListDeg;
         /// <summary>After the settle: the fires still burning, the ships with any, the crew out of action, the magazines
         /// flooded against a fire and the machinery spaces still abandoned to smoke (docs/battle/fire.md B2).</summary>
         public double BurningAfter, CrewAfter, MagazinesFlooded, Smoked;
@@ -167,102 +170,111 @@ public static class GivenHits
         var rng = RandomStream.Named(seed, "given hits");
         int entity = 0;
         while (rep.Hits < n)
-        {
-            if (entity != 0)
-                w.Apply(ShipSystem.Drop(entity));
-            w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
-            entity = w.Ships.NewestEntity;
-            int slot = w.Ships.Store.SlotOf(entity);
-            rep.Ships++;
-            bool hitMagazine = false;
-            for (int k = 0; k < perShip && rep.Hits < n; k++)
-            {
-                var hit = aim.Next(w, entity, slot, path, ref rng, out string where);
-                double run = hit.WaterRunM;
-                rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
-                var k0 = w.Ships.Store.Combat.Condition(slot);
-                var before = (PartState[])k0.State.Clone();
-                w.Damage.StrikeOut(w, hit);
-                var t = w.Damage.LastTerminal;
-                var fx = w.Damage.LastEffects;
-                each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
-                rep.Hits++;
-                rep.Outcomes[(int)t.Outcome]++;
-                (rep.Decapped, rep.Shattered, rep.BrokeNearLimit) =
-                    (rep.Decapped + (t.Decapped ? 1 : 0), rep.Shattered + (t.Shattered ? 1 : 0), rep.BrokeNearLimit + (t.BrokeNearLimit ? 1 : 0));
-                if (!double.IsNaN(t.Spall))
-                    (rep.Spalled, rep.SpallS) = (rep.Spalled + 1, rep.SpallS + t.Spall);
-                if (t.Glance >= 0)
-                    rep.Glanced++;
-                if (t.TurnDeg > 0)
-                    (rep.Bent, rep.TurnDeg) = (rep.Bent + 1, rep.TurnDeg + t.TurnDeg);
-                double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
-                if (!double.IsNaN(heavyT))
-                    (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));
-                if (t.Burst == BurstKind.Inside && t.Outcome is Outcome.BurstInside or Outcome.LowOrder && t.Plate >= 0)
-                    (rep.Delayed, rep.DelayedM) = (rep.Delayed + 1, rep.DelayedM + t.BurstT - w.Damage.LastPath.Crossings[t.Plate].T);
-                if (t.Underwater)
-                    (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
-                rep.Fires += fx.Fire ? 1 : 0;
-                rep.Magazines += fx.Magazine ? 1 : 0;
-                rep.Stores += fx.Stores > 0 ? 1 : 0;
-                rep.Spalls += fx.Spall ? 1 : 0;
-                rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
-                hitMagazine |= fx.Magazine;
-                rep.Jams += fx.Jammed ? 1 : 0;
-                rep.Stuns += fx.Stunned ? 1 : 0;
-                if (fx.Blast.Spaces > 0 && !fx.Blast.Open)
-                {
-                    (rep.Confined, rep.BlastSpaces, rep.BlastRuptured, rep.BlastDoors) =
-                        (rep.Confined + 1, rep.BlastSpaces + fx.Blast.Spaces, rep.BlastRuptured + fx.Blast.Ruptured, rep.BlastDoors + fx.Blast.Doors);
-                    (rep.BlastFelt, rep.BlastOpenM2, rep.BlastHoleM2) =
-                        (rep.BlastFelt + fx.Blast.FeltMPa, rep.BlastOpenM2 + fx.Blast.OpenM2 + fx.Blast.LeakM2, rep.BlastHoleM2 + fx.Blast.HoleM2);
-                }
-                int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
-                var hp = held >= 0 ? w.Damage.LastPath.Crossings[held].Plate : PlateKind.None;
-                bool shaken = hp is PlateKind.SideArmour or PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof ||
-                              hp == PlateKind.PartArmour && target.Components[w.Damage.LastPath.Crossings[held].Index].Kind == ComponentKind.ConningTower;
-                if (shaken)
-                    (rep.ShockHeld, rep.Shocks, rep.Blackouts) = (rep.ShockHeld + 1, rep.Shocks + (fx.Shock ? 1 : 0), rep.Blackouts + (fx.Blackout ? 1 : 0));
-                if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate == PlateKind.SideArmour)
-                {
-                    rep.BeltHeld++;
-                    rep.Leaks[(int)fx.Leak]++;
-                    rep.Feeds += fx.Feed ? 1 : 0;
-                }
-                if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
-                    target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
-                {
-                    rep.TurretHeld++;
-                    ref readonly var hx = ref w.Damage.LastPath.Crossings[held];
-                    rep.TurretSpots[(int)NonPen.Spot(hx.Plate, hx.Point.Z)]++;
-                    rep.TurretMarginK += NonPen.MarginK(NonPen.Margin(t.PlateU));
-                    rep.TurretBlows[(int)fx.Turret.Blow]++;
-                    if (fx.Turret.Blow == TurretBlow.Jam)
-                        (rep.JamCauses[(int)fx.Turret.Cause], rep.JamsForBattle) = (rep.JamCauses[(int)fx.Turret.Cause] + 1, rep.JamsForBattle + (fx.Turret.Ms == NonPen.Battle ? 1 : 0));
-                }
-                rep.CrewLost += fx.CrewLost;
-                rep.Men(fx, t.Outcome);
-                rep.BreachM2 += fx.BreachM2;
-                for (int i = 0; i < before.Length; i++)
-                    if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
-                        rep.PartsOut[i]++;
-                if (curveEvery > 0 && (k + 1) % curveEvery == 0)
-                {
-                    int c = (k + 1) / curveEvery - 1;
-                    if (c == rep.CurveOut.Count)
-                    {
-                        rep.CurveOut.Add(0);
-                        rep.CurveShips.Add(0);
-                    }
-                    rep.CurveOut[c] += k0.CrewLost;
-                    rep.CurveShips[c]++;
-                }
-            }
-            After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
-        }
+            entity = Ship(rep, w, cls, entity, aim, path, ref rng, Math.Min(perShip, n - rep.Hits), settleS, fallOut, curveEvery, each);
         (rep.StoresGone, rep.StoresBurned) = (w.Damage.StoresSetOff, w.Damage.StoresBurned);
         return rep;
+    }
+
+    /// <summary>One ship of the class into a report: the last one (entity, 0 for none) dropped, a fresh one spawned in the
+    /// world, given hits of the aim's shell, settled settleS seconds and tallied; her entity. <see cref="Run"/>'s step,
+    /// and the designer's shells fired in anger (<see cref="AngerRun"/>), each ship at a range and angle of its own.</summary>
+    public static int Ship(Report rep, World w, int cls, int entity, Aim aim, HitPath path, ref RandomStream rng, int hits, double settleS,
+        FallOutRule? fallOut = null, int curveEvery = 0, Action<int, HitPath, TerminalResult, EffectsResult>? each = null)
+    {
+        var target = aim.Target;
+        if (entity != 0)
+            w.Apply(ShipSystem.Drop(entity));
+        w.Apply(ShipSystem.Spawn(cls, 56, 4, 0, 15));
+        entity = w.Ships.NewestEntity;
+        int slot = w.Ships.Store.SlotOf(entity);
+        rep.Ships++;
+        bool hitMagazine = false;
+        for (int k = 0; k < hits; k++)
+        {
+            var hit = aim.Next(w, entity, slot, path, ref rng, out string where);
+            double run = hit.WaterRunM;
+            rep.Struck[where] = rep.Struck.GetValueOrDefault(where) + 1;
+            var k0 = w.Ships.Store.Combat.Condition(slot);
+            var before = (PartState[])k0.State.Clone();
+            w.Damage.StrikeOut(w, hit);
+            var t = w.Damage.LastTerminal;
+            var fx = w.Damage.LastEffects;
+            each?.Invoke(rep.Hits, w.Damage.LastPath, t, fx);
+            rep.Hits++;
+            rep.Outcomes[(int)t.Outcome]++;
+            (rep.Decapped, rep.Shattered, rep.BrokeNearLimit) =
+                (rep.Decapped + (t.Decapped ? 1 : 0), rep.Shattered + (t.Shattered ? 1 : 0), rep.BrokeNearLimit + (t.BrokeNearLimit ? 1 : 0));
+            if (!double.IsNaN(t.Spall))
+                (rep.Spalled, rep.SpallS) = (rep.Spalled + 1, rep.SpallS + t.Spall);
+            if (t.Glance >= 0)
+                rep.Glanced++;
+            if (t.TurnDeg > 0)
+                (rep.Bent, rep.TurnDeg) = (rep.Bent + 1, rep.TurnDeg + t.TurnDeg);
+            double heavyT = HeavyPlateT(w.Damage.LastPath, t.StopT);
+            if (!double.IsNaN(heavyT))
+                (rep.Heavy, rep.HeavyBurst) = (rep.Heavy + 1, rep.HeavyBurst + (t.Burst == BurstKind.Inside && t.BurstT > heavyT ? 1 : 0));
+            if (t.Burst == BurstKind.Inside && t.Outcome is Outcome.BurstInside or Outcome.LowOrder && t.Plate >= 0)
+                (rep.Delayed, rep.DelayedM) = (rep.Delayed + 1, rep.DelayedM + t.BurstT - w.Damage.LastPath.Crossings[t.Plate].T);
+            if (t.Underwater)
+                (rep.Underwater, rep.UnderwaterRunM, rep.UnderwaterStrikeMs) = (rep.Underwater + 1, rep.UnderwaterRunM + run, rep.UnderwaterStrikeMs + t.StrikeMs);
+            rep.Fires += fx.Fire ? 1 : 0;
+            rep.Magazines += fx.Magazine ? 1 : 0;
+            rep.Stores += fx.Stores > 0 ? 1 : 0;
+            rep.Spalls += fx.Spall ? 1 : 0;
+            rep.MagazinesBy[(int)fx.MagazineVia] += fx.Magazine ? 1 : 0;
+            hitMagazine |= fx.Magazine;
+            rep.Jams += fx.Jammed ? 1 : 0;
+            rep.Stuns += fx.Stunned ? 1 : 0;
+            if (fx.Blast.Spaces > 0 && !fx.Blast.Open)
+            {
+                (rep.Confined, rep.BlastSpaces, rep.BlastRuptured, rep.BlastDoors) =
+                    (rep.Confined + 1, rep.BlastSpaces + fx.Blast.Spaces, rep.BlastRuptured + fx.Blast.Ruptured, rep.BlastDoors + fx.Blast.Doors);
+                (rep.BlastFelt, rep.BlastOpenM2, rep.BlastHoleM2) =
+                    (rep.BlastFelt + fx.Blast.FeltMPa, rep.BlastOpenM2 + fx.Blast.OpenM2 + fx.Blast.LeakM2, rep.BlastHoleM2 + fx.Blast.HoleM2);
+            }
+            int held = t.Glance >= 0 ? t.Glance : t.Outcome is Outcome.Defeated or Outcome.BurstOutside ? t.Plate : -1;
+            var hp = held >= 0 ? w.Damage.LastPath.Crossings[held].Plate : PlateKind.None;
+            bool shaken = hp is PlateKind.SideArmour or PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof ||
+                          hp == PlateKind.PartArmour && target.Components[w.Damage.LastPath.Crossings[held].Index].Kind == ComponentKind.ConningTower;
+            if (shaken)
+                (rep.ShockHeld, rep.Shocks, rep.Blackouts) = (rep.ShockHeld + 1, rep.Shocks + (fx.Shock ? 1 : 0), rep.Blackouts + (fx.Blackout ? 1 : 0));
+            if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate == PlateKind.SideArmour)
+            {
+                rep.BeltHeld++;
+                rep.Leaks[(int)fx.Leak]++;
+                rep.Feeds += fx.Feed ? 1 : 0;
+            }
+            if (held >= 0 && w.Damage.LastPath.Crossings[held].Plate is PlateKind.Barbette or >= PlateKind.TurretFace and <= PlateKind.TurretRoof &&
+                target.MountOf(w.Damage.LastPath.Crossings[held].Index) >= 0)
+            {
+                rep.TurretHeld++;
+                ref readonly var hx = ref w.Damage.LastPath.Crossings[held];
+                rep.TurretSpots[(int)NonPen.Spot(hx.Plate, hx.Point.Z)]++;
+                rep.TurretMarginK += NonPen.MarginK(NonPen.Margin(t.PlateU));
+                rep.TurretBlows[(int)fx.Turret.Blow]++;
+                if (fx.Turret.Blow == TurretBlow.Jam)
+                    (rep.JamCauses[(int)fx.Turret.Cause], rep.JamsForBattle) = (rep.JamCauses[(int)fx.Turret.Cause] + 1, rep.JamsForBattle + (fx.Turret.Ms == NonPen.Battle ? 1 : 0));
+            }
+            rep.CrewLost += fx.CrewLost;
+            rep.Men(fx, t.Outcome);
+            rep.BreachM2 += fx.BreachM2;
+            for (int i = 0; i < before.Length; i++)
+                if (before[i] < PartState.Disabled && k0.State[i] >= PartState.Disabled)
+                    rep.PartsOut[i]++;
+            if (curveEvery > 0 && (k + 1) % curveEvery == 0)
+            {
+                int c = (k + 1) / curveEvery - 1;
+                if (c == rep.CurveOut.Count)
+                {
+                    rep.CurveOut.Add(0);
+                    rep.CurveShips.Add(0);
+                }
+                rep.CurveOut[c] += k0.CrewLost;
+                rep.CurveShips[c]++;
+            }
+        }
+        After(rep, target, w, entity, slot, settleS, fallOut, hitMagazine);
+        return entity;
     }
 
     /// <summary>A shell's fall on a class (the bench's): its flight at a range from a bearing off the target's bow, in the
@@ -278,9 +290,15 @@ public static class GivenHits
         readonly double u0, u1, v0, v1, far, reach;
 
         public Aim(ShipClass target, ShellTypeRow shell, double maxElevationDeg, double rangeM, double aspectDeg, SimSettings settings)
+            : this(target, shell, Flight(shell, maxElevationDeg, rangeM, aspectDeg), settings)
+        {
+        }
+
+        /// <summary>The aim of a flight already worked out (its line in the ship's frame and its fall).</summary>
+        public Aim(ShipClass target, ShellTypeRow shell, (P3 Dir, (double Range, double Tof, double FallDeg, double StrikeMs) Fall) flight, SimSettings settings)
         {
             (Target, Shell) = (target, shell);
-            (Dir, Fall) = Flight(shell, maxElevationDeg, rangeM, aspectDeg);
+            (Dir, Fall) = flight;
             // two axes across the line of flight, and the ship's outline on them
             u = Normalize(Cross(Dir, new P3(0, 0, 1)));
             v = Cross(u, Dir);
@@ -306,7 +324,7 @@ public static class GivenHits
                 double a = rng.NextDouble(u0, u1), c = rng.NextDouble(v0, v1);
                 var mid = new P3(u.X * a + v.X * c, u.Y * a + v.Y * c, u.Z * a + v.Z * c);
                 ShipTracer.Trace(Target, Add(mid, Dir, -far), Add(mid, Dir, far), [], water, path);
-                int first = First(path);
+                int first = HitQuery.FirstIn(path);
                 if (first < 0)
                     continue;
                 var x = path.Crossings[first];
@@ -488,7 +506,7 @@ public static class GivenHits
                 double a = mr + sigmaRangeM * rng.NextGaussian(), c = md + sigmaDeflM * rng.NextGaussian();
                 var water = new P3(along.X * a + right.X * c, along.Y * a + right.Y * c, wl);
                 ShipTracer.Trace(target, Add(water, dir, -far), Add(water, dir, reach + 1), [], Waterplane.Level(target), path);
-                int first = First(path);
+                int first = HitQuery.FirstIn(path);
                 if (first >= 0 && WaterRun.RunM(path, first) <= reach)
                 {
                     rep.Hits++;
@@ -604,8 +622,7 @@ public static class GivenHits
         if (double.IsNaN(e))
             throw new ArgumentException($"{rangeM:0} m is beyond the gun's reach");
         var fall = table.Fall(e, 10);
-        double b = double.DegreesToRadians(aspectDeg), f = double.DegreesToRadians(fall.FallDeg);
-        return (new P3(-Math.Cos(b) * Math.Cos(f), -Math.Sin(b) * Math.Cos(f), -Math.Sin(f)), fall);
+        return (HitQuery.Flight(aspectDeg, fall.FallDeg), fall);
     }
 
     /// <summary>A ship after its hits: its flooding and fire run on for a while, then what it can still do into the
@@ -645,6 +662,9 @@ public static class GivenHits
         bool lost = kk.Status != ShipStatus.Afloat, slowed = speed < SlowShare, steer = kk.Steering is Steering.Jammed or Steering.Lost or Steering.Engines;
         rep.Lost += lost ? 1 : 0;
         rep.Slowed += slowed ? 1 : 0;
+        rep.UnderHalf += !lost && speed < 0.5 ? 1 : 0;
+        if (!lost)
+            (rep.WorstWaterT, rep.WorstListDeg) = (Math.Max(rep.WorstWaterT, kk.WaterT), Math.Max(rep.WorstListDeg, Math.Abs(kk.Attitude.HeelDeg)));
         rep.SteeringLost += steer ? 1 : 0;
         rep.MainSilenced += main > 0 && mainOk == 0 ? 1 : 0;
         rep.Crippled += lost || slowed || steer || main > 0 && mainOk == 0 ? 1 : 0;
@@ -669,15 +689,6 @@ public static class GivenHits
         }
     }
 
-    /// <summary>The first crossing into the ship: its hull or a part.</summary>
-    internal static int First(HitPath path)
-    {
-        var xs = path.Crossings;
-        for (int i = 0; i < xs.Length; i++)
-            if (xs[i].Kind is CrossingKind.HullIn or CrossingKind.PartIn)
-                return i;
-        return -1;
-    }
 
     /// <summary>Where a hit struck, in a word: the side armour, the hull's side or deck, a turret, a barbette, the
     /// conning tower, superstructure, a funnel, and so on.</summary>

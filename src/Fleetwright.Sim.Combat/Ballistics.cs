@@ -152,6 +152,13 @@ public sealed class BallisticTable
         }
     }
 
+    static readonly System.Collections.Concurrent.ConcurrentDictionary<BallisticKey, Lazy<BallisticTable>> shared = new();
+
+    /// <summary>The table for a key, built the first time any world in the process asks for it and shared after: a table
+    /// is the key's alone and read-only once built, so a world made again (a restart, the designer's runs, the launch
+    /// screen's matchups) doesn't build its guns' tables again.</summary>
+    public static BallisticTable Shared(BallisticKey key) => shared.GetOrAdd(key, k => new Lazy<BallisticTable>(() => new BallisticTable(k))).Value;
+
     public BallisticTable(BallisticKey key)
     {
         Key = key;
@@ -488,7 +495,7 @@ public sealed class BallisticsRegistry
     {
         if (index.TryGetValue(key, out int i))
             return i;
-        var t = new BallisticTable(key);
+        var t = BallisticTable.Shared(key);
         var grown = new BallisticTable[tables.Length + 1];
         tables.CopyTo(grown, 0);
         grown[^1] = t;
@@ -498,4 +505,62 @@ public sealed class BallisticsRegistry
     }
 
     public bool TryIndex(BallisticKey key, out int i) => index.TryGetValue(key, out i);
+}
+
+/// <summary>A gun's range table without a <see cref="BallisticTable"/> (docs/designer-ui/immune-zone.md): flights at the
+/// shell's own speed in the air at a muzzle h0 over the sea, every stepDeg of elevation up to the key's highest, each
+/// integrated by <see cref="Ballistics.Step"/> to where it comes down to the sea. For readouts, a whole range table for
+/// the price of a few dozen flights, where a BallisticTable integrates nine flights at every half degree for the world's
+/// fire control.</summary>
+public sealed class RangeTable
+{
+    readonly (double S, double Fall, double V)[] landed;
+
+    /// <summary>The farthest any flight comes down, m.</summary>
+    public double ReachM { get; }
+
+    public RangeTable(in BallisticKey key, double h0, double stepDeg = 0.5)
+    {
+        double k = Ballistics.DragK(key) * BallisticTable.DensityAt(h0);
+        int n = (int)Math.Ceiling(key.MaxElevationDeg / stepDeg);
+        landed = new (double, double, double)[n + 1];
+        landed[0] = (0, 0, key.MuzzleVelocityMs);
+        for (int i = 1; i <= n; i++)
+        {
+            var st = Ballistics.Start(Math.Min(i * stepDeg, key.MaxElevationDeg), key.MuzzleVelocityMs);
+            var (s0, hh0, sd0, hd0) = Ballistics.Polar(st);
+            while (true)
+            {
+                var next = Ballistics.Step(st, k, BallisticTable.IntegrationStep);
+                var (s1, h1, sd1, hd1) = Ballistics.Polar(next);
+                if (h1 < -h0 && hd1 < 0)
+                {
+                    // down to the sea between the two: a straight line between them
+                    double u = (hh0 + h0) / (hh0 - h1);
+                    double sd = sd0 + (sd1 - sd0) * u, hd = hd0 + (hd1 - hd0) * u;
+                    landed[i] = (s0 + (s1 - s0) * u, double.RadiansToDegrees(Math.Atan2(-hd, sd)), Math.Sqrt(sd * sd + hd * hd));
+                    break;
+                }
+                (st, s0, hh0, sd0, hd0) = (next, s1, h1, sd1, hd1);
+            }
+            ReachM = Math.Max(ReachM, landed[i].S);
+        }
+    }
+
+    /// <summary>The fall at a range (degrees under the horizontal) and the striking speed (m/s): between the two flights
+    /// that come down either side of it on the lower arc; NaN past the reach.</summary>
+    public (double FallDeg, double StrikeMs) At(double rangeM)
+    {
+        for (int i = 1; i < landed.Length; i++)
+        {
+            if (landed[i].S <= landed[i - 1].S)
+                break;   // past the reach's elevation: the upper arc
+            if (landed[i].S >= rangeM)
+            {
+                double u = (rangeM - landed[i - 1].S) / (landed[i].S - landed[i - 1].S);
+                return (landed[i - 1].Fall + (landed[i].Fall - landed[i - 1].Fall) * u, landed[i - 1].V + (landed[i].V - landed[i - 1].V) * u);
+            }
+        }
+        return (double.NaN, double.NaN);
+    }
 }

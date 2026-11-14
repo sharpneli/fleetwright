@@ -63,6 +63,30 @@ public sealed class Loadout
     /// (largest remainder, so they add up), int.MaxValue each for a mount that counts none.</summary>
     public ReadOnlySpan<int> LoadRounds => loadRounds;
 
+    /// <summary>A shell type as shipgen resolved it for a gun of this calibre: the row the sim fires (the loadout's, and
+    /// the designer's immune zone's at another calibre).</summary>
+    public static ShellTypeRow ShellOf(ShellReport s, double calibreMm) => new()
+    {
+        CalibreMm = calibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
+        FillerKg = s.FillerKg, FillerRe = s.FillerRe, FillerQDet = s.FillerQDet, FillerQComb = s.FillerQComb, FillerAirM3Kg = s.FillerAirM3Kg,
+        FillerEta = s.FillerEta, FillerInPlate = s.FillerInPlate, FillerFull = s.FillerFull, FillerFire = s.FillerFire, Fuze = Kinds.FuzeOf(s.Fuze),
+        FuzeDelayS = s.FuzeDelayS, FuzeStartCal = s.FuzeStartCal, FuzeOblique = s.FuzeOblique, FuzeTwoPlate = s.FuzePlates == "two",
+        FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind, FuzeWaterMs = s.FuzeWaterMs, FuzeWaterFires = s.FuzeWaterFires,
+        Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
+        Fragments = Fragments.Of(s, calibreMm), StarCd = s.StarCd ?? 0, StarBurnS = s.StarBurnS ?? 0, StarFallMs = s.StarFallMs ?? 0,
+    };
+
+    /// <summary>A battery's shells at another calibre (docs/designer-ui/immune-zone.md decision 5): her own shell family and
+    /// blocks and her gun, the battery's calibre set on a copy of the design, as shipgen resolves them; each with its
+    /// block's name and kind, in the loadout's order. At the battery's own calibre, the loadout's rows.</summary>
+    public static List<(string Name, string Kind, ShellTypeRow Shell)> ShellsAt(Design design, bool main, int index, double calibreMm)
+    {
+        var list = (main ? design.Main : design.Secondary)!.ToList();
+        list[index] = list[index] with { CalibreMm = calibreMm };
+        var d = main ? design with { Main = list } : design with { Secondary = list };
+        return [.. Ammunition.ResolveBattery(d, main ? "main" : "secondary", index).Select(r => (r.Ammo, r.Kind, ShellOf(r, calibreMm)))];
+    }
+
     /// <summary>The batteries' shells as shipgen resolved them (the report's, or a loadout's), into a loadout of the
     /// class: each battery's by its kind and gun, a shell type per block and gun, in the magazine order.</summary>
     internal static Loadout Compile(ShipClass c, IReadOnlyList<BatteryShells>? report, string name, ContentHash hash)
@@ -87,16 +111,6 @@ public sealed class Loadout
             typeIds.Add(key);
             return types.Count - 1;
         }
-        static ShellTypeRow Given(ShellReport s, BatteryRow b) => new()
-        {
-            CalibreMm = b.CalibreMm, MassKg = s.MassKg, MuzzleVelocityMs = s.MuzzleVelocityMs, FormFactor = s.FormFactor, Kind = Kinds.ShellKindOf(s.Kind),
-            FillerKg = s.FillerKg, FillerRe = s.FillerRe, FillerQDet = s.FillerQDet, FillerQComb = s.FillerQComb, FillerAirM3Kg = s.FillerAirM3Kg,
-            FillerEta = s.FillerEta, FillerInPlate = s.FillerInPlate, FillerFull = s.FillerFull, FillerFire = s.FillerFire, Fuze = Kinds.FuzeOf(s.Fuze),
-            FuzeDelayS = s.FuzeDelayS, FuzeStartCal = s.FuzeStartCal, FuzeOblique = s.FuzeOblique, FuzeTwoPlate = s.FuzePlates == "two",
-            FuzeScatter = s.FuzeScatter, FuzeBlind = s.FuzeBlind, FuzeWaterMs = s.FuzeWaterMs, FuzeWaterFires = s.FuzeWaterFires,
-            Cap = Kinds.CapOf(s.Cap), CapShare = s.CapShare, BreakObDeg = s.BreakObDeg, BreakTD = s.BreakTD, BodyQuality = s.BodyQuality,
-            Fragments = Fragments.Of(s, b.CalibreMm), StarCd = s.StarCd ?? 0, StarBurnS = s.StarBurnS ?? 0, StarFallMs = s.StarFallMs ?? 0,
-        };
 
         var batteries = c.Batteries;
         l.shells = new Slice[batteries.Length];
@@ -109,7 +123,7 @@ public sealed class Loadout
             var given = report?.FirstOrDefault(s => s.Battery == which && s.CalibreMm == row.CalibreMm && s.CalibreLength == row.CalibreLength)
                 ?? throw new ShipCompileException($"{which} {row.CalibreMm}/{row.CalibreLength}: no shells in the report");
             foreach (var s in given.Shells)
-                loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), Given(s, row)), s.Share));
+                loads.Add(new ShellLoad(TypeOf(FormattableString.Invariant($"{row.CalibreMm:0.#}/{row.CalibreLength:0.#} {s.Ammo}"), ShellOf(s, row.CalibreMm)), s.Share));
             // in the magazine order (stable: a kind's loads keep the design's order)
             var kind = row.Kind;
             var ordered = loads.Skip(l0).Select((x, i) => (x, i)).OrderBy(x => MagazineOrder.Rank(kind, types[x.x.ShellType].Kind)).ThenBy(x => x.i)

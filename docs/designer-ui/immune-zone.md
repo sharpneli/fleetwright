@@ -1,6 +1,7 @@
 # Immune zone and shells fired in anger (plan, 2026-11-14)
 
-**Status:** plan, the user's answers in (2026-11-14, "Decisions" at the end). Nothing built yet; IZ0 next.
+**Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0 and IZ2 built 2026-11-14 ("IZ0 and IZ2:
+how they went"); IZ1, the anchors, next, then the mockup.
 
 The Protection tab has carried a greyed placeholder since its first review (protection.md, 2026-10-11): "Immune zone
 and shells fired in anger · against her own 380 mm · NEEDS THE PENETRATION MODEL". The penetration model has been in
@@ -22,12 +23,12 @@ Everything below is built and tested; the plan adds a readout over it, not a mod
 
 | Piece | Where | Used for |
 |---|---|---|
-| The shell's flight: fall and striking speed at a range, from a target angle | `GivenHits.Flight` (on `Ballistics`) | both |
+| The shell's flight: fall and striking speed at a range, from a target angle | `Ballistics.Step` (now through `RangeTable`, below) | both |
 | The tracer: a line through the ship's plates, parts and watertight cells | `ShipTracer.Trace`, `HitPath` (`CellIn` crossings carry the cell, `CellRow.Room` its room kind) | both |
 | The terminal walk, plate by plate, with the plate lots, caps, shatter, break-up, turn, glance and fuze | `Terminal.Resolve` | the immune zone |
 | A hit through the world's own damage system | `DamageSystem.StrikeOut`, `ShotRange` | shells fired in anger |
 | N hits drawn uniformly over the ship's outline as the shell sees it, run on fresh ships, settled for flooding and fire | `GivenHits.Run`, its `Aim` and `Report` (`shipgen hits`) | shells fired in anger |
-| A battery's shells from the design (its family and blocks at its calibre) | `Ammunition.ResolveBattery` (Shipgen), into rows by `Loadout`'s `Given` | the "against" picker |
+| A battery's shells from the design (its family and blocks at its calibre) | `Ammunition.ResolveBattery` (Shipgen), into rows by `Loadout.ShellOf` | the "against" picker |
 | A design compiled into a class | `ShipClassCompiler.Compile` | both |
 
 The matchup's profiles (`MatchupProfile.SideArmour`/`DeckArmour`) are a quick per-class estimate the AI asks every
@@ -43,17 +44,16 @@ range out to the gun's reach and each target angle (the line of fire off her bow
 enough):
 
 1. **Shells at the vitals.** Lines of flight drawn over her outline as the shell sees it, kept only if the line, unstopped,
-   would enter a vital space. Vitals are cells whose room is a magazine or shell room (the magazines' zone) or a boiler or
-   engine room (the machinery's). The USN gave both zones; so do we, two zones, each from its own shells (decision 2).
+   would enter a vital space. Vitals are cells holding a magazine (shell rooms are magazines in the model: the
+   magazines' zone) or a boiler or engine room (the machinery's). The USN gave both zones; so do we, two zones, each from its own shells (decision 2).
 2. **Each shell walked** through `Terminal.Resolve` on an undamaged ship, upright on her design waterline: the same walk
    a hit in battle takes, with its rolls (the plate's lot, shatter, break-up, the fuze). No effects, no world: the
    walk only says where the shell went and whether it was whole.
 3. **Reached** if the shell enters a vital cell whole, filler in it, before it stops (or bursts inside one). Shells
    broken up on the way don't count; their share shows on hover (decision 1).
-4. **Through the side or the deck:** each shell that reached is put down to the heaviest plate it beat: a belt, strake,
-   inclined plate, inner bulkhead or barbette is the side; an armour deck, its slopes seen from above, or a grating is the
-   deck. A slope is the side when the shell met it from outboard, the deck when it came down on it: the plate's normal
-   against the line decides, not its name.
+4. **Through the side or the deck:** each shell that reached is put down to the heaviest plate it beat on the way in,
+   by how the plate lies, not its name: within 45° of level it's the deck (an armour deck, a turtleback's slopes, a
+   grating), steeper the side (a belt, an inclined belt, a bulkhead, a barbette).
 5. **The edges.** At each angle, the inner edge is the range out to which more than half the shells at the vitals get
    in through the side; the outer edge, the range from which more than half get in through the deck. Between them she's
    immune; with the inner edge past the outer, she has no zone at that angle (Iowa against her own gun without the
@@ -64,9 +64,14 @@ What it doesn't count, on purpose: hits on the ends, upperworks and turrets (the
 own motion (roll and heel would move the deck edge a little), and damage from earlier hits. Shells fired in anger
 covers all of those.
 
-Cost: a range step of 1 km to the gun's reach (≈35 steps for a 15" gun), 10 angles, 128 shells a cell: ≈45,000 walks.
-A walk is the tracer plus the plate steps, likely tens of microseconds (IZ0 measures it); then it's about a second on
-the designer's own worker threads. It refines in passes (16, then 64, then 128 a cell) so the chart appears at once and sharpens.
+**Hidden cells.** Vitals deep under the waterline can't be reached at all by a flat fall: the shell meets the sea farther
+out than it runs under water, or every line to them passes the side above them. A cell whose first 8 shells found no
+line is hidden: out of the shell's sight, as good as immune, drawn as its own shade.
+
+Cost (measured, IZ0): a range step of 1 km to the gun's reach, 13 angles every 15°, both zones: about 1,100 cells for
+a 15" gun. A shell costs 80-110 µs on one thread, almost all of it the tracer (its 5 cm march through the hull), so 16
+shells a cell is about 1.1-1.6 s on one thread, a quarter of that on four. It refines in passes (16, then more) so the
+chart appears at once and sharpens; the shells a cell come down until it's fast enough (the user, 2026-11-14).
 
 **Common random numbers.** Every build of the design uses the same seed, so one cell's lines and rolls are the same
 before and after an edit: a 10 mm thicker belt moves the edge because the belt did, not because the dice did.
@@ -90,12 +95,12 @@ before and after an edit: a 10 mm thicker belt moves the edge because the belt d
 A sweep across the fight, not one shot: the zone says where her vitals are safe, this says what she suffers at every
 range, inside the zone, short of it and past it (decision 6).
 
-**The run.** `GivenHits.Run` as `shipgen hits` runs it, once a range band: bands every 2 km from 2 km to the gun's
-reach. In a band each ship takes **10 hits** at one range in the band and one target angle, the angles taken in turn
-over the chart's ten so every band sees each alike; the hits drawn uniformly over her outline as the shell sees it,
+**The run.** `GivenHits.Ship`, the step `shipgen hits` runs too, once a ship: bands every 2 km from 2 km to the gun's
+reach. In a band each ship takes **10 hits** at one range in the band and one target angle, the chart's 13 angles taken
+in a spread order (0, 75, 150, 30, 105, ...) so a few ships see them all round; the hits drawn uniformly over her outline as the shell sees it,
 through the world's own damage system, then the ship **settled 30 minutes** for her flooding and fires. Ships are added
-a band at a time, round-robin, so every band fills together and the strip sharpens as it runs; it stops at **25 ships
-a band** (≈4,000 hits for a 15" gun), or when stopped. Hits a ship (5, 10, 20, 40) is a stepper. Nothing new in the
+a round at a time over every band, so every band fills together and the strip sharpens as it runs; it stops at the
+ships a band asked, or when stopped. Each band is a world of its own, so a band's ships are the same on any threads. Hits a ship (5, 10, 20, 40) is a stepper. Nothing new in the
 model; the readout is new.
 
 Same seed for every build of the design, as the zone: a run before an edit and one after differ by the edit.
@@ -117,8 +122,10 @@ What it shows:
   - **the ships:** the water and list of the worst still afloat, and the crew out of action against hits (the
     `CurveOut` the bench already keeps).
 
-Cost: a hit through the damage system is ≈200 µs; a ship's 30-minute settle is more (flooding and fire on their steps)
-and IZ2 measures it. If 25 ships a band takes more than a few seconds, the stop comes down, not the model. It runs on a
+Cost (measured, IZ2): a ship with her 10 hits and 30 minutes' settle is about 30 ms on one thread, the settle most of
+it; 16 bands of 8 ships, 128 ships, is about 4 s on one thread, 1 s on four. The ships a band come down until it's fast
+enough, not the model. Every world in the process now shares its guns' ballistic tables
+(`BallisticTable.Shared`): each band's world would otherwise build them again, 2-4 s of work a world. It runs on a
 click (Fire), never by itself on an edit; an edit marks the result stale (greyed, "before the last edit") until fired
 again.
 
@@ -137,20 +144,22 @@ pick (battery, kind, calibre) is kept in the session, not in the design.
 
 ## Where the code goes
 
-- **`Fleetwright.Sim/ImmuneZone.cs`** beside `ShotRange`: a class and a shell in, the grid of cells out for each vital
-  zone (shares by side, deck, broken; the plate that let most through), by passes, cancellable. Pure, no GPU, no UI;
-  allocates per run, never per walk.
-- **`Fleetwright.Sim/AngerRun.cs`:** the sweep over `GivenHits.Run` by band, with progress, a cancel and a summary
-  record a band the UI reads (the bench's `Report` is large and bench-shaped), and the hits' first points and classes
-  for the dots.
-- **The shells at a calibre:** a small function by `Ammunition.ResolveBattery` and `Loadout`'s conversion, in
-  `Fleetwright.Sim.Ships`.
+- **`Fleetwright.Sim.Combat/ImmuneZone.cs`** (built): a class and a shell in, the grid of cells out for each vital
+  zone (shares by side, deck, broken; the plate that let most through), by passes, cancellable. No world: the walk
+  only, on an intact `ShipCondition` (so coal and oil still slow shells). Pure, no GPU, no UI; allocates per run, never
+  per walk. Its falls from **`RangeTable`** (Ballistics.cs): the gun's flights at its own speed every half degree, a
+  whole range table for a few dozen flights where a `BallisticTable` integrates nine at every half degree.
+- **`Fleetwright.Sim/AngerRun.cs`** (built): the sweep over `GivenHits.Ship` by band, with progress and a cancel; each
+  band's `GivenHits.Report` (now with the ships under half speed and the worst afloat) and each hit's dot.
+- **The shells at a calibre** (built): `Loadout.ShellsAt`, by `Ammunition.ResolveBattery` and `Loadout.ShellOf` (the
+  loadout's own conversion, made public).
 - **`Fleetwright/Designer/ImmuneWorker.cs`:** compiles the design's class off the render thread (cached by the design
   hash), runs the zone on a couple of threads, newest request wins, as `DesignProbes` does; the sweep on a click.
 - **`Fleetwright/Designer/DesignerScene.Immune.cs`:** the panel, the strip and the dots.
-- **`shipgen immune DESIGN [--battery main|secondary] [--calibre MM] [--kind ap|common|he] [--vitals magazines|machinery]
-  [--shells N] [--angles N] [--anger [--ships N] [--per-ship K]]`:** the chart as a table, the edges by angle and the
-  plates setting them; with `--anger`, the strip as a table; with no design, the anchors (IZ1).
+- **`shipgen immune DESIGN [--battery main|secondary] [--index I] [--calibre MM] [--kind ap|common|he]
+  [--vitals mag|mach] [--shells N] [--passes] [--threads N] [--cell VITALS:KM:ANGLE] [--anger SHIPS [--per-ship K]
+  [--settle MIN]]`** (built): the chart as a table, the edges by angle and the plates setting them, and the cost; `--cell`
+  prints one cell's walks; `--anger` the strip as a table. The anchors (IZ1) to come.
 
 ## Steps
 
@@ -158,12 +167,32 @@ pick (battery, kind, calibre) is kept in the session, not in the design.
 |---|---|---|
 | IZ0 | `ImmuneZone`, the shells at a calibre, and `shipgen immune` | the bench prints both zones for bismarck, yamato, dreadnought against their own guns and other calibres; tests: deterministic, the same with 1 or N threads, a thicker belt never moves the inner edge out, a thicker deck never moves the outer edge in, the shells at the battery's own calibre equal the loadout's |
 | IZ1 | The anchors, as history checks (never set): bench-only designs with SoDak's and Iowa's schemes (research 08's table, armor/00 §9 row 12: Iowa against 16"/50 Mk 8 at 23.6-27.4 kyd, North Carolina's three studies), each against its own family at the record's calibre | the numbers beside the record, the gaps named; no tuning in this plan |
-| IZ2 | `AngerRun`: the sweep, progress, cancel, the summaries, the dots; its cost measured | `shipgen hits` unchanged, byte for byte; yamato against 305 mm shows her lost at short range and not in the zone |
+| IZ2 | `AngerRun`: the sweep, progress, cancel, the summaries, the dots; its cost measured | `shipgen hits` unchanged, byte for byte (done); the same bands on any threads (done). The guess that Yamato against 305 mm is lost at short range didn't hold: see "how they went", for the user |
 | IZ3 | The mockup, `immune.html` (the Protection tab's pane, 1280 × 578): the facts pane's Plate and Immune zone tabs, the chart, the strip, the dots; set beside a designer screenshot | the user's review |
 | IZ4 | The port: worker, panel, chart, strip, dots, picker; `-designer-ui=immune:...` for screenshots | on bismarck and dreadnought, a belt edit moves the edge within a second; captures checked |
 | IZ5 | Beyond the tab: the line in the particulars and the ship card; the matchup profiles checked against the zone (a test in a loose band); the Overview levers' "immune zone" hints made real numbers if the probes can afford it | each as the user picks |
 
 IZ0 and IZ2 can run together; the mockup waits for their numbers so it's drawn from real zones and runs.
+
+## IZ0 and IZ2: how they went (2026-11-14)
+
+- **The first numbers were wrong three ways**, each found by printing one cell's walks (`--cell`): the tracer's path was
+  made with a 16-crossing buffer copied from `ShotRange`'s probe, so it kept only the line's last 16 crossings and the
+  walk began inside her; a cell gave up for good after one shell found no line; and the heaviest plate was looked for
+  before the crossing into the vitals by its T, which skipped the armour deck lying at the same point. All three fixed.
+- **Sampling.** A space of the vitals is picked by the area of its box's outline across the line of flight and a point
+  drawn in it; the line is kept one time in as many of the vitals' boxes as it meets, which makes the lines even over
+  them all without tracing to find which one comes first. Sure misses (the box missed, the sea met farther out than the
+  shell runs under it) never reach the tracer. A line that meets nothing before her is the hit's own path already, so
+  only shells that strike under water are traced twice. 330 → 106 µs a shell on Bismarck, the same zone.
+- **First readings,** against her own main battery's AP, broadside: Dreadnought's machinery open through the belt out to
+  6.5 km, her magazines closed at every range by the slopes behind it, her decks never beaten within her guns' 18 km;
+  Bismarck immune from 0 to 37 km over her machinery (the turtleback) and nearly everywhere over her magazines; Yamato
+  1.8-34 km over her machinery, and her own family at 305 mm getting in nowhere. In the sweep, Yamato against her own
+  family at 305 mm lost one ship in 128 with 10 hits each (a magazine at 24-26 km), and with 40 hits each 8 of 128:
+  none inside 6 km (none of her guns out, none under half speed there either: her belt, slopes and 650 mm faces hold a
+  12" close in), magazines at 6-22 km, capsized at 8-10 and 28-30 km. Not what decision 6's "felled by WW1
+  battleships if the range is short enough" expects: for the user, not tuned. Checked against the record in IZ1.
 
 ## Decisions (user, 2026-11-14)
 

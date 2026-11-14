@@ -95,7 +95,7 @@ public sealed class ShotRange(SimSettings settings)
         double far = 2 * target.Solids.Radius + 50;
         ShipTracer.Trace(target, new P3(aim.X - dir.X * far, aim.Y - dir.Y * far, aim.Z - dir.Z * far),
             new P3(aim.X + dir.X * far, aim.Y + dir.Y * far, aim.Z + dir.Z * far), [], water, probe);
-        int first = GivenHits.First(probe);
+        int first = HitQuery.FirstIn(probe);
         if (first < 0)
         {
             shot.Note = "missed her";
