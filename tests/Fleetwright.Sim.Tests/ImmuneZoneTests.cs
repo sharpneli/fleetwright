@@ -83,6 +83,33 @@ public class ImmuneZoneTests(ITestOutputHelper output)
         Assert.True(shots > 1000, $"{shots} shells walked");
     }
 
+    /// <summary>More shells where it matters: a refined cell is the cell filled to that many at once (the same shells), the
+    /// rest are left as they were, and only some are refined.</summary>
+    [Fact]
+    public void A_refined_cell_is_the_cell_filled()
+    {
+        var c = Fleet.Get("dreadnought").Class!;
+        var (shell, elev) = Ap(c);
+        var refined = new ImmuneZone(c, shell, elev, Settings, 7);
+        refined.Fill(6, ImmuneZone.Armour, 4);
+        refined.Refine(18, ImmuneZone.Armour, 4);
+        var full = new ImmuneZone(c, shell, elev, Settings, 7);
+        full.Fill(18, ImmuneZone.Armour, 4);
+        int some = 0, all = 0;
+        foreach (var t in ImmuneZone.Armour)
+            for (int r = 0; r < full.RangesM.Length; r++)
+                for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+                {
+                    all++;
+                    if (refined[t, r, a].Tried < 18)
+                        continue;
+                    some++;
+                    Assert.Equal(full[t, r, a], refined[t, r, a]);
+                }
+        output.WriteLine($"{some} of {all} cells refined");
+        Assert.InRange(some, 1, all / 2);
+    }
+
     /// <summary>Her own shells at her battery's own calibre are the loadout's.</summary>
     [Fact]
     public void Her_shells_at_her_own_calibre_are_the_loadouts()

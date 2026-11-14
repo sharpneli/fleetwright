@@ -289,7 +289,25 @@ not really give any actionable insights.")
 - **Words, not percentages:** the hover says "belt beaten, barbettes mostly holds, deck holds" (under 10 % holds,
   under half mostly holds, under 90 % mostly beaten, else beaten), on the line under the chart; the cell is outlined.
 
-![the armour, fourth pass](png/immune-mockup-armour.png)
+**Fifth pass: the barbettes and the deck aimed too, more shells where it matters** (the user, 2026-11-14: "Let's do
+the same for barbettes and the deck. You can toss bit more on the areas where it matters more"; decision 10).
+
+- **The barbettes:** a line through each main barbette's centre, halfway up the part over her deck, the shells taking
+  them in turn. **The deck:** five points along the main deck's longest stretch on the centreline (one point alone put
+  the deck's answer on a 150 mm secondary turret that stood over it from the beam).
+- **More shells where it matters** (`ImmuneZone.Refine`): after the first pass, a cell with its share between 10 % and
+  90 %, or beside a cell on the other side of half (the next range or angle), is filled further. A refined cell is the
+  same cell filled at once (the same shells: a test). The designer's default: 8 a cell, then 32 where it matters; for
+  Bismarck's armour about 2.4 s on one thread for the first pass and 1 s more for the refining (about 0.6 s and 0.25 s
+  on four).
+- **What it does to the answers.** Aimed at the centre, a barbette is struck square, the worst case for a round plate:
+  sampled over its face, most hits came in oblique and glanced. Bismarck's barbettes are now beaten out to 24 km at
+  almost every angle by her own 380 mm (half of them were, sampled). The deck's centreline is beaten from 25 km on the
+  beam where the whole deck with its slopes held to 33-35. Together her zone against her own guns closes: "Not immune on
+  the beam" (a zone under 1 km isn't called one). Against her own family at 305 mm: immune 18-28 km.
+
+![the armour against her own 380 mm, fifth pass](png/immune-mockup-armour.png)
+![against her own family at 305 mm](png/immune-mockup-armour-305.png)
 
 Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
@@ -310,3 +328,4 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
    magazines, which at short range the angles rarely allow (section 1).
 8. **The tab takes the whole right column**, and the placeholder line goes from Sections · plate.
 9. **The belt aimed at its centre**, every shell down the one line: "no need to do any fancy stuff with it."
+10. **The barbettes and the deck aimed the same way**, and more shells where it matters.

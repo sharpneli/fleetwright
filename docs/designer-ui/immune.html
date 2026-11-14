@@ -135,7 +135,7 @@ function headline() {
   const z = Z(), beam = z.angles.indexOf(90), idx = m => Math.min(z.ranges.length - 1, Math.max(0, Math.round(m / 1000) - 1));
   const [inner, outer] = S.v === 0 ? z.armour[beam] : T(S.v + 2).edges[beam];
   const head = inner <= 0 && outer >= z.reachM ? 'Immune at every range on the beam'
-    : inner < outer ? `Immune from ${kmOf(inner)} to ${kmOf(outer)} km on the beam` : 'Not immune on the beam';
+    : outer - inner >= 1000 ? `Immune from ${kmOf(inner)} to ${kmOf(outer)} km on the beam` : 'Not immune on the beam';   // under a km is no zone
   const why = [];
   if (S.v === 0) {
     // "belt 320 mm" reads "belt (320 mm)"

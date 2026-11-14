@@ -17,7 +17,7 @@ static class ImmuneBench
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
     public record Options(bool Main, int Index, double CalibreMm, string? Kind, string? Vitals, int Shots, int Threads, int Seed, bool Passes, string? Trace = null,
-        int Anger = 0, int PerShip = 10, double SettleMin = 30, string? Json = null);
+        int Anger = 0, int PerShip = 10, double SettleMin = 30, string? Json = null, int Refine = 0);
 
     /// <summary>The history checks (docs/designer-ui/immune-zone.md IZ1): bench-only designs with a real scheme, against
     /// the record's gun (her own), the record's immune zone beside ours on the beam: the classic edges (the main belt and
@@ -116,6 +116,17 @@ static class ImmuneBench
                             hidden + (zone[t, r, a].Hidden ? 1 : 0));
             Console.WriteLine($"  filled to {p} a cell on {threads} threads: {sw.Elapsed.TotalMilliseconds:0} ms in all " +
                                    $"({shots} shells walked, {drawn} lines drawn, {traced} traced; {hidden} cells hidden)");
+        }
+        if (o.Refine > 0)
+        {
+            sw.Restart();
+            zone.Refine(o.Refine, targets, threads);
+            int refined = 0, all = 0;
+            foreach (var t in targets)
+                for (int r = 0; r < zone.RangesM.Length; r++)
+                    for (int a = 0; a < ImmuneZone.Angles.Length; a++)
+                        (refined, all) = (refined + (zone[t, r, a].Tried >= o.Refine ? 1 : 0), all + 1);
+            Console.WriteLine($"  refined to {o.Refine} where it matters: {refined} of {all} cells, {sw.Elapsed.TotalMilliseconds:0} ms");
         }
         // one thread's cost a shell, for the designer's budget: the armour, the zone's own view
         if (o.Threads != 1)

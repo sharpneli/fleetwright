@@ -5,7 +5,8 @@ using Fleetwright.Sim.Ships;
 namespace Fleetwright.Sim.Combat;
 
 /// <summary>What an immune zone's shells are aimed at (docs/designer-ui/immune-zone.md): her armour, the main belt (its
-/// strakes and zones, on the side or inside it; its shells all down the one line through its centre), the main battery's barbettes where they stand clear of the hull, the main armour deck (Armour.MainDeck's, with its slopes),
+/// strakes and zones, on the side or inside it), the main battery's barbettes, the main armour deck; each plate's shells
+/// all down the lines through its aim points (its centre; each barbette's; five along the deck), the main battery's barbettes where they stand clear of the hull, the main armour deck (Armour.MainDeck's, with its slopes),
 /// each beaten by a shell that comes through it whole; or her vitals, the magazines and the machinery (boiler and engine
 /// rooms), reached by a shell that gets into them whole (decision 2), each from its own shells.</summary>
 public enum ZoneTarget : byte
@@ -23,6 +24,8 @@ public enum ZoneTarget : byte
 public struct ZoneCell
 {
     public int Shots, Through, Side, Deck, Broken;
+    /// <summary>The shells it has been filled to (each shell's index: the same shells at every range).</summary>
+    public int Tried;
     /// <summary>Lines drawn, and the shells for which no line met the target (hidden from there: below the sea's reach for
     /// a flat fall, or behind the rest of her).</summary>
     public int Drawn, Unseen;
@@ -103,9 +106,14 @@ public sealed class ImmuneZone
     readonly bool[][] vital;
     readonly bool[] mainDeck;
     readonly P3? beltCentre;
+    readonly P3[][] aims = new P3[Targets][];
 
     /// <summary>The point the belt's shells are aimed at (null: she has no belt).</summary>
     public P3? BeltCentre => beltCentre;
+
+    /// <summary>The points a plate target's shells are aimed at, in turn (the belt's centre, each main barbette's, five
+    /// along the main deck); empty for the vitals, whose shells fall over their outline.</summary>
+    public ReadOnlySpan<P3> Aims(ZoneTarget t) => aims[(int)t];
     readonly Box[][] boxes;
     readonly ZoneCell[] cells;
     readonly Dictionary<ZonePlate, int>[] sidePlates, deckPlates;
@@ -198,6 +206,35 @@ public sealed class ImmuneZone
             if (p.Kind == InclinedKind.Slope)
                 deck.Add(new Box(p.X0, p.X1, b.Y0, b.Y1, Math.Min(p.Z0, p.Z1), Math.Max(p.Z0, p.Z1)));
         boxes[(int)ZoneTarget.Deck] = [.. deck];
+        // the plates' aim points (decision 9: the belt at its centre, "the same for barbettes and the deck"): every shell
+        // down a line through one of them, so a cell's shells differ by the plate's lot and the walk's rolls alone
+        aims[(int)ZoneTarget.Belt] = beltCentre is { } bc0 ? [bc0] : [];
+        var bp = new List<P3>();
+        foreach (ref readonly var sd in c.Solids.Solids)
+            if (sd.Component >= 0 && MainBarbette(c, sd.Component))
+            {
+                // halfway up the part of it that stands over her deck there
+                double deckTop = c.Hull.DeckTop(sd.Cx), lo = Math.Max(sd.Box.Base, deckTop);
+                if (sd.Box.Top > lo)
+                    bp.Add(new P3(sd.Cx, sd.Cy, (lo + sd.Box.Top) / 2));
+            }
+        aims[(int)ZoneTarget.Barbettes] = [.. bp];
+        // the main deck: five points along its longest stretch, on the centreline (one point alone would put the deck's
+        // answer on whatever stands over it: a secondary turret, a funnel)
+        int longestAt = -1;
+        double longest = 0;
+        for (int k = 0; k < c.ArmourDecks.Length; k++)
+            if (mainDeck[k] && c.ArmourDecks[k].X1 - c.ArmourDecks[k].X0 > longest)
+                (longest, longestAt) = (c.ArmourDecks[k].X1 - c.ArmourDecks[k].X0, k);
+        if (longestAt >= 0)
+        {
+            var d = c.ArmourDecks[longestAt];
+            aims[(int)ZoneTarget.Deck] = [.. new[] { 0.5, 0.1, 0.9, 0.3, 0.7 }.Select(f => new P3(d.X0 + f * (d.X1 - d.X0), 0, d.Z))];
+        }
+        else
+            aims[(int)ZoneTarget.Deck] = [];
+        aims[(int)ZoneTarget.Magazines] = [];
+        aims[(int)ZoneTarget.Machinery] = [];
         cells = new ZoneCell[Targets * n * Angles.Length];
         sidePlates = new Dictionary<ZonePlate, int>[cells.Length];
         deckPlates = new Dictionary<ZonePlate, int>[cells.Length];
@@ -240,24 +277,63 @@ public sealed class ImmuneZone
     /// they are, each whole) if cancelled.</summary>
     public void Fill(int shotsPerCell, ReadOnlySpan<ZoneTarget> targets, int threads = 1, CancellationToken cancel = default)
     {
-        var todo = new List<(ZoneTarget T, int From)>();
+        var todo = new List<int>();
+        int per = RangesM.Length * Angles.Length;
         foreach (var t in targets)
-            if (shotsPerCell > this.shotsPerCell[(int)t])
-                todo.Add((t, this.shotsPerCell[(int)t]));
+            for (int k = 0; k < per; k++)
+                if (cells[(int)t * per + k].Tried < shotsPerCell)
+                    todo.Add((int)t * per + k);
+        Run(todo, shotsPerCell, threads, cancel);
+        foreach (var t in targets)
+            this.shotsPerCell[(int)t] = Math.Max(this.shotsPerCell[(int)t], shotsPerCell);
+    }
+
+    /// <summary>More shells where it matters (the user, 2026-11-14: "toss bit more on the areas where it matters more"): the
+    /// cells near an edge, their share between <see cref="Unsure"/> and 1 - it, or beside a cell on the other side of half
+    /// (the next range or angle), filled up to this many shells.</summary>
+    public void Refine(int shotsPerCell, ReadOnlySpan<ZoneTarget> targets, int threads = 1, CancellationToken cancel = default)
+    {
+        var todo = new List<int>();
+        int n = RangesM.Length, na = Angles.Length;
+        foreach (var t in targets)
+            for (int r = 0; r < n; r++)
+                for (int a = 0; a < na; a++)
+                {
+                    ref readonly var c = ref this[t, r, a];
+                    if (c.Tried >= shotsPerCell || c.Shots == 0)
+                        continue;
+                    double sh = Share(t, c);
+                    bool edge = sh > Unsure && sh < 1 - Unsure;
+                    bool side = Share(t, this[t, r, a]) >= Edge;
+                    if (r > 0 && this[t, r - 1, a].Shots > 0 && Share(t, this[t, r - 1, a]) >= Edge != side ||
+                        r + 1 < n && this[t, r + 1, a].Shots > 0 && Share(t, this[t, r + 1, a]) >= Edge != side ||
+                        a > 0 && this[t, r, a - 1].Shots > 0 && Share(t, this[t, r, a - 1]) >= Edge != side ||
+                        a + 1 < na && this[t, r, a + 1].Shots > 0 && Share(t, this[t, r, a + 1]) >= Edge != side)
+                        edge = true;
+                    if (edge)
+                        todo.Add(Index(t, r, a));
+                }
+        Run(todo, shotsPerCell, threads, cancel);
+    }
+
+    /// <summary>A share under this (or over one less it) is sure enough; between, a cell is refined.</summary>
+    public const double Unsure = 0.1;
+
+    /// <summary>The share a cell's colour goes by: through a plate, or into the vitals either way.</summary>
+    static double Share(ZoneTarget t, in ZoneCell c) => IsVitals(t) ? Math.Max(c.SideShare, c.DeckShare) : c.ThroughShare;
+
+    void Run(List<int> todo, int to, int threads, CancellationToken cancel)
+    {
         if (todo.Count == 0)
             return;
-        int per = RangesM.Length * Angles.Length;
         var opts = new ParallelOptions { MaxDegreeOfParallelism = Math.Max(1, threads), CancellationToken = cancel };
         try
         {
-            Parallel.For(0, todo.Count * per, opts, () => new Walker(Class), (j, _, w) =>
+            Parallel.For(0, todo.Count, opts, () => new Walker(Class), (j, _, w) =>
             {
-                var (t, from) = todo[j / per];
-                FillCell((int)t * per + j % per, from, shotsPerCell, w);
+                FillCell(todo[j], to, w);
                 return w;
             }, _ => { });
-            foreach (var (t, _) in todo)
-                this.shotsPerCell[(int)t] = shotsPerCell;
         }
         catch (OperationCanceledException)
         {
@@ -282,11 +358,13 @@ public sealed class ImmuneZone
         }
     }
 
-    void FillCell(int i, int from, int to, Walker w)
+    void FillCell(int i, int to, Walker w)
     {
         int ti = i / (RangesM.Length * Angles.Length), range = i / Angles.Length % RangesM.Length, angle = i % Angles.Length;
         var target = (ZoneTarget)ti;
         ref var cell = ref cells[i];
+        int from = cell.Tried;
+        cell.Tried = to;
         var tbox = boxes[ti];
         if (tbox.Length == 0 || double.IsNaN(Falls[range].FallDeg))
             return;
@@ -337,15 +415,14 @@ public sealed class ImmuneZone
             // a line through the target's outline that, unstopped, meets it, and its first meeting with her
             int first = -1;
             double run = 0;
-            for (int draw = 0; draw < (target == ZoneTarget.Belt ? 1 : DrawsPerShot); draw++)
+            var aim = aims[ti];
+            for (int draw = 0; draw < (aim.Length > 0 ? 1 : DrawsPerShot); draw++)
             {
                 cell.Drawn++;
-                if (target == ZoneTarget.Belt)
+                if (aim.Length > 0)
                 {
-                    // the belt: its shells all down the one line through its centre
-                    if (beltCentre is not { } bc)
-                        break;
-                    var o0 = Add(bc, dir, -far);
+                    // a plate: its shells down the lines through its aim points, in turn
+                    var o0 = Add(aim[shot % aim.Length], dir, -far);
                     if (!Slab(o0, dir, bounds, out double b0, out double b1))
                         break;
                     double w0 = dir.Z < 0 ? (o0.Z - water.Z) / -dir.Z : double.PositiveInfinity;

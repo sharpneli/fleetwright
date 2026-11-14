@@ -339,7 +339,7 @@ public static class Program
                 "immune" => ImmuneBench.Run(a.Positional.ElementAtOrDefault(0) ?? "bismarck", n => LoadDesign(Resolve(a, n)), Settings(a),
                     new ImmuneBench.Options(a.Get("battery") != "secondary", a.Int("index", 0), D(a, "calibre", double.NaN), a.Get("kind"), a.Get("vitals"),
                         a.Int("shells", 128), a.Int("threads", 0), a.Int("seed", 1), a.Has("passes"), a.Get("cell"),
-                        a.Int("anger", 0), a.Int("per-ship", 10), D(a, "settle", 30), a.Get("json"))),
+                        a.Int("anger", 0), a.Int("per-ship", 10), D(a, "settle", 30), a.Get("json"), a.Int("refine", 0))),
                 "hits" => HitsBench.Run(a.Positional.ElementAtOrDefault(0) ?? "dreadnought", n => LoadDesign(Resolve(a, n)),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     new HitsBench.Options(a.Get("shooter"), a.Int("battery", 0), a.Get("kind"), D(a, "range", 12_000), D(a, "aspect", 90), a.Int("n", 2000),
