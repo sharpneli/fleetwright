@@ -144,7 +144,12 @@ them), a table of the parts the ship has with sub-rows for zones and slopes (a `
 values from the belt, `x` removes), the selected plate's facts and Shape, and the sub-bar's coverage presets, Layout
 templates and Materials; brass handles drag belt edges and lean, reach, decks, a slope's knee and the torpedo, wing and
 inner walls, and a drag edits once, on release. Its dev hooks: `-designer-ui=protsel:ID,protcut:K:STOP,protlink,protlayout,
-prottip:layout:N,protcomp,protrooms:0` (`DesignerScene.ApplyProtDevUi`). The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
+prottip:layout:N,protcomp,protrooms:0` (`DesignerScene.ApplyProtDevUi`). The right column's second tab is the Immune zone
+(`docs/designer-ui/immune-zone.md`, `DesignerScene.Immune.cs`, `ImmuneWorker`): against her own main battery at a calibre,
+the plates picked on the left (a click, ctrl+click for several; the main belt and her thickest deck by default) tested at
+their centres, or her magazines or machinery, on a half-polar chart by range and target angle; a click on the chart picks
+a range and her own hits there are told in a sentence, their dots on the elevation;
+`-designer-ui=immune[:CALIBRE[:PLATE+PLATE...[:KM]]]`. The Overview tab (`docs/designer-ui/overview.md`) is a trim sheet of
 18 broad-stroke levers, each with what one step down and up does to the standard displacement, measured by real builds
 in the background (`DesignProbes`: validate and build only, on several threads, a newer batch supersedes); limits
 (mocked in `DesignLimits` until the gameplay layer hands them in) only report, never refuse; Fit is greyed out until the

@@ -155,7 +155,7 @@ public sealed unsafe partial class DesignerScene
         /// <summary>The main transverse bulkheads (x, kind) and the run that sinks her, when warned.</summary>
         public required (float X, string Kind)[] Compartments;
         public (float X0, float X1, string Tip)? Warned;
-        public string CompChip = "", CompTip = "", CompLabel = "", ImmuneLine = "";
+        public string CompChip = "", CompTip = "", CompLabel = "";
         public bool CompOk = true;
         public required (string Tag, float X, float Z, double Mm, PRef R)[] Tags;
         public string Reads = "";
@@ -169,7 +169,6 @@ public sealed unsafe partial class DesignerScene
         public int LayoutIndex = -1;
         public required string[] LayoutTips;
         public string PlainTip = "";
-        public string ImmuneGun = "";
         public required NumRow BeltHeight, BeltDepth, TdsRow;
         public bool Built;
         public string BeltTip = "", TdsTip = "";
@@ -962,13 +961,11 @@ public sealed unsafe partial class DesignerScene
             HasCitadel = hasBelt || PE.Has(d, Part.Bulkheads) || designDecks.Count > 0, DeckChoices = choices.ToArray(), Stops = stops.ToArray(),
             Rooms = proom.ToArray(), Compartments = comps.ToArray(), Warned = warned,
             CompChip = $"{cstd}", CompLabel = $"Compartments {cstd}     ", CompOk = cstd >= need,
-            ImmuneLine = "Immune zone and shells fired in anger · against " + (mains.Count > 0 ? $"her own {Fmt(mains[0].CalibreMm ?? 0, Quantity.Calibre)}" : "a gun"),
             CompTip = $"The main watertight bulkheads. A {Count(cstd)}-compartment ship: any {Count(cstd)} adjacent compartments flooded, she floats " +
                       $"with the margin line clear (her type asks {need})." + (warning != null ? "\n\n" + warning : ""),
             Tags = tags.ToArray(), Reads = reads, Coverage = cov, CoverTips = coverTips, Materials = ArmourPick(d),
             LayoutName = layoutName, LayoutOwn = layoutOwn, LayoutIndex = exact ? li : -1, LayoutTips = layoutTips,
             PlainTip = "Plain: no slopes, an upright belt on the side, no inner bulkhead or boxes; zones and plates stay.",
-            ImmuneGun = mains.Count > 0 ? $"her own {Fmt(mains[0].CalibreMm ?? 0, Quantity.Calibre)}" : "a gun",
             BeltHeight = R(Knobs.BeltHeight), BeltDepth = R(Knobs.BeltDepth), TdsRow = R(Knobs.Tds), Built = ship != null,
             BeltTip = "Drag the belt's top or bottom edge (0.1 m steps)\n" +
                       $"now {beltBot - wl:+0.0;−0.0} to {beltTop - wl:+0.0;−0.0} m on the waterline · the end belts share the heights",
@@ -999,6 +996,7 @@ public sealed unsafe partial class DesignerScene
         protHotNext = null;
         if (ProtRowOf(pp, protSel) == null && pp.Rows.Length > 0)
             protSel = pp.Rows[0].Ref;
+        immuneNow = ImmuneSelection(pp);
 
         ProtBar(dl, o, w, pp);
         float rowH = ProtRowH, groupH = P(15);
@@ -1025,11 +1023,19 @@ public sealed unsafe partial class DesignerScene
         float secH = MathF.Round(Math.Clamp(avail * 0.57f, P(240), MathF.Max(P(240), avail - P(200))));
         ResolveCuts(pp);
         ProtElevation(dl, new Vector2(o.X + gap, topY), new Vector2(leftW, elevH), pp);
-        ProtSections(dl, new Vector2(o.X + 2 * gap + leftW, topY), new Vector2(rightW, secH), pp);
+        // the right column: its two tabs (decision 8), then the sections over the selected plate, or the immune zone
+        float tabH = P(20), rx = o.X + 2 * gap + leftW;
+        ImmuneTabs(dl, new Vector2(rx, topY), rightW);
         float lowY = topY + elevH + gap;
         ProtTable(dl, new Vector2(o.X + gap, lowY), new Vector2(leftW, o.Y + size.Y - gap - lowY), pp);
-        float insY = topY + secH + gap;
-        ProtInspector(dl, new Vector2(o.X + 2 * gap + leftW, insY), new Vector2(rightW, o.Y + size.Y - gap - insY), pp);
+        if (protImmune)
+            ImmunePane(dl, new Vector2(rx, topY + tabH), new Vector2(rightW, o.Y + size.Y - gap - topY - tabH), pp);
+        else
+        {
+            ProtSections(dl, new Vector2(rx, topY + tabH), new Vector2(rightW, secH - tabH), pp);
+            float insY = topY + secH + gap;
+            ProtInspector(dl, new Vector2(rx, insY), new Vector2(rightW, o.Y + size.Y - gap - insY), pp);
+        }
         ProtMenu(pp);
         LayoutMenu(pp);
         CutMenu(pp);
@@ -1181,7 +1187,7 @@ public sealed unsafe partial class DesignerScene
         _ => null,
     };
 
-    bool ProtLit(PRef r) => r == protSel || protHot == r;
+    bool ProtLit(PRef r) => r == protSel || protHot == r || protImmune && immuneNow.Contains(r);
 
     // ------------------------------------------------------------------ parts: add and remove
 
@@ -1391,6 +1397,8 @@ public sealed unsafe partial class DesignerScene
         {
             protSel = r.Ref;
             stale = true;
+            if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+                ImmunePick(r.Ref);
         }
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
             (protSel, protMenuFor, openProtMenu) = (r.Ref, r.Ref, true);
@@ -1398,6 +1406,8 @@ public sealed unsafe partial class DesignerScene
         if (ImGui.IsItemHovered())
             protHotNext = r.Ref;
         dl.RowBg(p, w, RowH, n);
+        if (protImmune && immuneNow.Contains(r.Ref))   // a plate the Immune zone tests
+            dl.AddRect(p, p + new Vector2(w, rowH), T.U32(T.Brass), 0, ImDrawFlags.None, P(1.5f));
         if (on)
         {
             dl.AddRectFilled(p, p + new Vector2(w, rowH), T.U32(T.Brass with { W = hover ? 0.13f : 0.10f }));
@@ -1569,7 +1579,7 @@ public sealed unsafe partial class DesignerScene
         float ih = P(22);
         float x = pos.X + P(8), y = pos.Y + P(22);
         float factsW = MathF.Round(size.X * 0.46f);
-        float bottom = pos.Y + size.Y - ih - P(6);
+        float bottom = pos.Y + size.Y - P(6);
         if (r != null)
         {
             // the facts, on the left
@@ -1595,17 +1605,6 @@ public sealed unsafe partial class DesignerScene
             dl.AddLine(new Vector2(pos.X + factsW, pos.Y + P(24)), new Vector2(pos.X + factsW, bottom - P(2)), T.U32(T.Edge));
             ShapePanel(dl, new Vector2(pos.X + factsW + P(8), pos.Y + P(22)), new Vector2(size.X - factsW - P(16), bottom - pos.Y - P(22)), r);
         }
-        // the immune zone: a one-line placeholder until the penetration model
-        var a = new Vector2(pos.X + P(8), pos.Y + size.Y - ih - P(4));
-        var b = new Vector2(pos.X + size.X - P(8), pos.Y + size.Y - P(4));
-        dl.AddRect(a, b, T.U32(T.ButtonEdge));
-        var grey = T.DropBox;
-        float ly = a.Y + (ih - font.FontSize) / 2;
-        dl.Text(font, new Vector2(a.X + P(6), ly), grey, pp.ImmuneLine);
-        string tag = "NEEDS THE PENETRATION MODEL";
-        var tg = new Vector2(b.X - P(6) - Width(font, tag) - P(6), ly);
-        dl.AddRect(tg - new Vector2(0, P(1)), tg + new Vector2(Width(font, tag) + P(6), font.FontSize + P(1)), T.U32(T.BrassDark));
-        dl.Text(font, tg + new Vector2(P(3), 0), T.Brass with { W = 0.6f }, tag);
     }
 
     /// <summary>Shape: what changes the part's form rather than its thickness (a zone, slopes, the belt's lean and place),
@@ -1858,6 +1857,41 @@ public sealed unsafe partial class DesignerScene
     {
         switch (p[0])
         {
+            case "immune":
+                // immune[:CALIBRE[:PLATE+PLATE...[:KM]]] opens the Immune zone (PLATE: belt, upper, end_fore, end_aft, bulk, deckN,
+                // slopes, turrets, barbettes, ct; magazines or machinery for those views)
+                protImmune = true;
+                if (p.Length > 1 && double.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double cal))
+                    immuneCal = cal;
+                if (p.Length > 2)
+                {
+                    immuneSel.Clear();
+                    foreach (var id0 in p[2].Split('+'))
+                    {
+                        if (id0 is "magazines" or "machinery")
+                        {
+                            immuneView = id0 == "magazines" ? 1 : 2;
+                            continue;
+                        }
+                        int n0 = int.TryParse(new string(id0.Where(char.IsDigit).ToArray()), out int v0) ? v0 : 0;
+                        immuneSel.Add(id0 switch
+                        {
+                            "upper" => new PRef(PK.Upper),
+                            "end_fore" => new PRef(PK.EndFore),
+                            "end_aft" => new PRef(PK.EndAft),
+                            "bulk" => new PRef(PK.Bulkheads),
+                            "slopes" => new PRef(PK.Slope, n0),
+                            "turrets" => new PRef(PK.Main),
+                            "barbettes" => new PRef(PK.Barbettes),
+                            "ct" => new PRef(PK.Ct),
+                            _ when id0.StartsWith("deck", StringComparison.Ordinal) => new PRef(PK.Deck, n0),
+                            _ => new PRef(PK.Belt),
+                        });
+                    }
+                }
+                if (p.Length > 3 && double.TryParse(p[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double km))
+                    immuneKm = km;
+                return true;
             case "protsel" when p.Length > 1:
                 string id = p[1];
                 int num = int.TryParse(new string(id.Where(char.IsDigit).ToArray()), out int v) ? v : 0;

@@ -7,7 +7,7 @@
      Second pass (2026-11-14, the user: "way too information dense"): the chart alone, a headline, and in words what hits
      at the range picked on the chart do to her. Third: the armour first (the belt, the main barbettes, the deck), the
      vitals a click away; the placeholder gone from Sections · plate. Sixth: a plate picked on the left (a row of the
-     table, or the plate on the elevation) is tested at its centre; the main belt by default. Eighth: shift+click adds or
+     table, or the plate on the elevation) is tested at its centre; the main belt by default. Eighth: ctrl+click (as on the battle map) adds or
      drops a plate, the plates picked tested together (beaten where any is); the main belt and her thickest deck by default.
      URL: ?cal=305|203  ?v=plate|mag|mach  ?plate=belt,deck:2 (any of belt, upper, end-fore, end-aft, bulkheads, deck:0,
      deck:2, slopes, turrets, barbettes, ct)  ?km=N (the range picked)  ?hover=R,A (a cell's tip: range index, angle index)
@@ -201,7 +201,7 @@ function headline() {
         : inner <= 0 ? `${name} ${holds} at every range` : inner >= z.reachM - 1000 ? `${name} ${is} beaten at every range`
         : `${name} ${holds} beyond ${kmOf(inner)} km`;
     };
-    const hint = S.sel.length > 1 ? 'Shift+click a plate to add or drop it.' : 'Click a plate on the left to test it; shift+click to test several together.';
+    const hint = S.sel.length > 1 ? 'Ctrl+click a plate to add or drop it.' : 'Click a plate on the left to test it; ctrl+click to test several together.';
     if (S.sel.length === 1)
       return [h('div', {class: 'head'}, sentence(S.sel[0]) + ' on the beam'),
         h('div', {class: 'why'}, `Her immune zone on the beam (belt, barbettes, deck): ${zone}. ${hint}`)];
@@ -273,7 +273,7 @@ function hotspots() {
     for (const [x, y, w, hh] of [[4, pl.row, 730, 18], ...pl.el])
       pane.append(h('div', {class: 'hot', title: `Test the ${pl.name.toLowerCase()} at its centre`,
         style: `left:${x}px;top:${y}px;width:${w}px;height:${hh}px`, on: e => {
-          if (e.shiftKey) S.sel = S.sel.includes(key) ? (S.sel.length > 1 ? S.sel.filter(k => k !== key) : S.sel) : [...S.sel, key];
+          if (e.ctrlKey || e.metaKey) S.sel = S.sel.includes(key) ? (S.sel.length > 1 ? S.sel.filter(k => k !== key) : S.sel) : [...S.sel, key];
           else S.sel = [key];
           S.v = 0; S.tab = 'iz'; render();
         }}));

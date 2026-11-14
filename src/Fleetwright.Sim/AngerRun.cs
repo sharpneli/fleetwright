@@ -24,10 +24,12 @@ public sealed class AngerRun
         public double ToM { get; init; }
         public GivenHits.Report Report { get; init; } = null!;
         public List<Dot> Dots { get; } = [];
-        internal World World = null!;
+        internal World? World;
         internal int Entity;
         internal readonly HitPath Path = new();
         internal int Cls;
+        /// <summary>The ships it has had (by their index: the same ships however it was filled).</summary>
+        public int Fired { get; internal set; }
     }
 
     public ShipClass Class { get; }
@@ -50,12 +52,7 @@ public sealed class AngerRun
         ReachM = table.ReachM;
         var bands = new List<Band>();
         for (double from = BandM; from + BandM / 4 < ReachM; from += BandM)
-        {
-            var w = new World(WorldTime.FromUtc(1916, 5, 31, 14), RandomStream.Named(seed, "anger world").Derive((ulong)bands.Count).Seed, s);
-            var band = new Band { FromM = from, ToM = Math.Min(from + BandM, ReachM), Report = Fresh(c), World = w };
-            band.Cls = w.Ships.AddClass(c);
-            bands.Add(band);
-        }
+            bands.Add(new Band { FromM = from, ToM = Math.Min(from + BandM, ReachM), Report = Fresh(c) });
         Bands = [.. bands];
     }
 
@@ -82,8 +79,24 @@ public sealed class AngerRun
         }
     }
 
+    /// <summary>Add ships to one band until it has had this many (the designer's range picked on its chart): its own
+    /// ships, the same as <see cref="Fill"/> gives it; stops between ships if cancelled.</summary>
+    public void FillBand(int b, int ships, CancellationToken cancel = default)
+    {
+        var band = Bands[b];
+        while (band.Fired < ships && !cancel.IsCancellationRequested)
+            OneShip(band, b, band.Fired);
+    }
+
     void OneShip(Band band, int b, int k)
     {
+        band.Fired = Math.Max(band.Fired, k + 1);
+        if (band.World == null)
+        {
+            // each band a world of its own, made when its first ship comes
+            band.World = new World(WorldTime.FromUtc(1916, 5, 31, 14), RandomStream.Named(seed, "anger world").Derive((ulong)b).Seed, settings);
+            band.Cls = band.World.Ships.AddClass(Class);
+        }
         var rng = RandomStream.Named(seed, "anger").Derive((ulong)b).Derive((ulong)k);
         double range = rng.NextDouble(band.FromM, band.ToM);
         var (fall, strike) = table.At(range);

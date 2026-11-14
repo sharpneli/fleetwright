@@ -108,6 +108,8 @@ public static class Theme
     public static readonly Vector4 KeyText = Hex(0xA3A7A9);
     /// <summary>The enemy, in figures and marks only (<c>MapPalette.Hostile</c>); never a refusal.</summary>
     public static readonly Vector4 Hostile = Hex(0xE04A3C);
+    /// <summary>The designer's immune zone: a plate that holds (its chart blends to Hostile or Amber where it's beaten).</summary>
+    public static readonly Vector4 ZoneHolds = Hex(0x3E5A36);
     /// <summary>Status chips' and the margin box's grounds and borders: ready, a consequence.</summary>
     public static readonly Vector4 OkTint = Hex(0x292F23);
     public static readonly Vector4 OkEdge = Hex(0x55753F);

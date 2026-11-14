@@ -62,7 +62,8 @@ menu.
   job.
 - **The elevation keeps real heights**, stretched: they show the plates' relative sizes at a glance.
 - **The immune zone stays as a greyed placeholder**, a fixed panel at the foot of the selected plate. It will hold the
-  penetration model and a "1,000 shells fired in anger" run. Planned in `immune-zone.md` (2026-11-14).
+  penetration model and a "1,000 shells fired in anger" run. Built as the right column's Immune zone tab
+  (`immune-zone.md`, 2026-11-14); the placeholder is gone.
 - **Engine rules stay read-only** (the conning tower takes the belt; barbettes 0.8 × the faces). When the engine
   changes, the UI changes with it.
 - **Turret faces stay on both tabs**, here and on Main battery.

@@ -262,7 +262,9 @@ public sealed unsafe partial class DesignerScene
         int flagHot = Flags(dl, m, pos, size, pp, mouse, hover && ghostHot == null, clickL);
         var plateHot = protDrag == DragKind.None && hover && ghostHot == null && flagHot < 0 ? HitPlate(mouse) : null;
         var handleHot = flagHot >= 0 ? DragKind.Cut : ElevHandles(dl, m, pp, mouse, hover, clickL);
+        ImmuneDots(dl, m);
         dl.PopClipRect();
+        ImmuneDots(dl, m, pos + new Vector2(P(250), P(3)));
         if (plateHot is { } ph && handleHot == DragKind.None)
         {
             protHotNext = ph;
@@ -272,6 +274,7 @@ public sealed unsafe partial class DesignerScene
             {
                 protSel = ph;
                 stale = true;
+                ImmunePick(ph);
             }
             if (clickR)
                 (protSel, protMenuFor, openProtMenu) = (ph, ph, true);

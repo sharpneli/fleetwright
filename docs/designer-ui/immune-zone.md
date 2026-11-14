@@ -1,7 +1,8 @@
 # Immune zone and shells fired in anger (plan, 2026-11-14)
 
 **Status:** the user's answers in (2026-11-14, "Decisions" at the end). IZ0, IZ1 and IZ2 built 2026-11-14 ("IZ0 and
-IZ2: how they went", "IZ1: the record"); the mockup (IZ3) in its third pass after two reviews ("IZ3: the mockup"); the port (IZ4) next.
+IZ2: how they went", "IZ1: the record"); the mockup (IZ3) through eight passes, approved 2026-11-14 ("it looks and seems to work well. Let's do this!"); the port
+(IZ4) built 2026-11-14 ("IZ4: in the game"). IZ5 (beyond the tab) as the user picks.
 
 The Protection tab has carried a greyed placeholder since its first review (protection.md, 2026-10-11): "Immune zone
 and shells fired in anger · against her own 380 mm · NEEDS THE PENETRATION MODEL". The penetration model has been in
@@ -179,7 +180,7 @@ pick (battery, kind, calibre) is kept in the session, not in the design.
 | IZ1 | The anchors, as history checks (never set): bench-only designs with SoDak's and Iowa's schemes (`shipgen/anchors/`, not game assets; research 08's table, armor/00 §9 row 12), `shipgen immune --anchors` | done: the numbers beside the record, the gaps named ("IZ1: the record"); no tuning. North Carolina's studies left out: their 14"/50's 680 kg shell isn't a family of ours at 356 mm |
 | IZ2 | `AngerRun`: the sweep, progress, cancel, the summaries, the dots; its cost measured | `shipgen hits` unchanged, byte for byte (done); the same bands on any threads (done). The guess that Yamato against 305 mm is lost at short range didn't hold: see "how they went", for the user |
 | IZ3 | The mockup, `immune.html` (the Protection tab's pane, 1270 × 552 at 1080p) over a capture of the tab: the chart, the strip, the band, the dots | drawn ("IZ3: the mockup"); the user's review |
-| IZ4 | The port: worker, panel, chart, strip, dots, picker; `-designer-ui=immune:...` for screenshots | on bismarck and dreadnought, a belt edit moves the edge within a second; captures checked |
+| IZ4 | The port: worker, panel, chart, dots, picker; `-designer-ui=immune:...` for screenshots | done ("IZ4: in the game"); captures checked |
 | IZ5 | Beyond the tab: the line in the particulars and the ship card; the matchup profiles checked against the zone (a test in a loose band); the Overview levers' "immune zone" hints made real numbers if the probes can afford it | each as the user picks |
 
 IZ0 and IZ2 can run together; the mockup waits for their numbers so it's drawn from real zones and runs.
@@ -344,7 +345,7 @@ after the flicker of a cell going between 49 % and 51 %).
 **Eighth pass: plates together** (the user, 2026-11-14: "Shift + click on plates gives a joint penetration, and let's
 have the default be the main belt + thickest deck being selected"; decision 12).
 
-- **A click picks one plate, shift+click adds or drops one**; the default is the main belt and her thickest armour deck
+- **A click picks one plate, ctrl+click adds or drops one** (ctrl, as on the battle map: the user, 2026-11-14); the default is the main belt and her thickest armour deck
   (Bismarck's third deck, 80 mm). Every plate picked is outlined; the view switch reads "Belt + Third deck".
 - **Together, a cell is beaten where any plate picked is**, its colour by the kind that gives most: red a plate that
   stands as the side, amber one that lies as a deck. That's why the two colours were there from the start (the USN's
@@ -363,6 +364,29 @@ Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bis
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
 
 
+## IZ4: in the game (2026-11-14)
+
+![the default: belt and third deck against her own family at 305 mm](png/immune-game-default-305.png)
+![the fore end belt and the main deck against 203 mm](png/immune-game-joint-203.png)
+![her magazines against her own 380 mm](png/immune-game-magazines.png)
+
+- **`Designer/DesignerScene.Immune.cs`:** the right column's tabs (S Sections · plate, I Immune zone); the bar
+  (against her own, a calibre stepper over her own and the common calibres, her own shells at it; the plates picked |
+  Magazines | Machinery); the headline and its line; the half-polar chart (cells as quads, blended `Theme.ZoneHolds` to
+  `Hostile` or `Amber`, softened with their neighbours, rings every 10 km, the range picked dashed); the key or the cell
+  under the mouse in words; her own hits at the range picked in a sentence; their dots on the elevation with a key in its
+  head strip. A click on a row or an elevation plate picks it (ctrl+click adds or drops); the picked rows are outlined in
+  brass. The placeholder line is gone from Sections · plate.
+- **`Designer/ImmuneWorker.cs`:** a thread of its own (below normal), the newest ask cancelling the work in hand: her
+  class compiled, her own shells at the calibre; each plate picked filled to 8 a cell and shown, the range picked's band
+  fired (8 ships, 10 hits, half an hour's settle), the plates refined to 32 where it matters, her armour's summary (the
+  single plate's line), her vitals when looked at. What's done for a ship and calibre is kept, so picking a plate again
+  costs nothing. Up to 8 threads (the cores less two).
+- **`AngerRun.FillBand`:** one band's ships alone (the same ships `Fill` gives it); each band's world made when its first
+  ship comes.
+- `-designer-ui=immune[:CALIBRE[:PLATE+PLATE...[:KM]]]` for captures (PLATE: belt, upper, end_fore, end_aft, bulk, deckN,
+  slopes, turrets, barbettes, ct; magazines or machinery for those views), e.g. `-section=3 -designer-ui=immune:203:end_fore+deck0:14`.
+
 ## Decisions (user, 2026-11-14)
 
 1. **Reaching the vitals:** the shell enters a vital space whole, filler in it, or bursts inside one. A shell broken up
@@ -380,4 +404,4 @@ cross more of her than the vitals' did), so the designer starts at 8 a cell (abo
 9. **The belt aimed at its centre**, every shell down the one line: "no need to do any fancy stuff with it."
 10. **The barbettes and the deck aimed the same way**, and more shells where it matters.
 11. **Any plate picked on the left is tested at its centre**, the main belt by default; the tab shows that plate.
-12. **Shift+click tests plates together** (beaten where any is); the default is the main belt and her thickest deck.
+12. **Ctrl+click tests plates together** (ctrl as on the battle map) (beaten where any is); the default is the main belt and her thickest deck.

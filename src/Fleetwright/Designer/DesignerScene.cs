@@ -895,6 +895,7 @@ public sealed unsafe partial class DesignerScene : IScene
     public void Dispose()
     {
         probes.Dispose();
+        immune?.Dispose();
         if (ownsWorker)
             worker.Dispose();
         SDL_WaitForGPUIdle(device);
