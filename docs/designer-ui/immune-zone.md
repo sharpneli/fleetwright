@@ -327,6 +327,20 @@ belt is immune to heavy cruisers etc. By default it should be the main belt"; de
 ![the fore end belt picked, against 203 mm](png/immune-mockup-endfore-203.png)
 ![the main deck picked, against 203 mm](png/immune-mockup-deck-203.png)
 
+**Seventh pass: smooth colours** (the user, 2026-11-14: "Could we have bit smoother gradients here for the colors?",
+after the flicker of a cell going between 49 % and 51 %).
+
+- A cell's colour is blended along its share instead of switching at half: green at 10 % or less getting through (or
+  in), the beaten colour (red for a side plate, amber for a deck) from 90 %, mixed between. The key is a gradient bar,
+  "holds ... beaten".
+- For the colour alone, each cell's share is softened with its neighbours (half its own, the rest from the next ranges
+  and angles), so the vitals' views (still sampled over their outline) aren't mottled. The headline, the edges and the
+  hover keep the cells' own shares and the 50 % mark.
+- "Barbettes (288 mm) hold": the plural plates take the plural verb.
+
+![the barbettes, blended](png/immune-mockup-barbettes.png)
+![the machinery, blended and softened](png/immune-mockup-machinery.png)
+
 Cost: the three plates at 16 shells a cell are about 4.6 s on one thread for Bismarck (190 µs a shell: the belt's lines
 cross more of her than the vitals' did), so the designer starts at 8 a cell (about 0.6 s on four threads) and refines.
 
