@@ -245,61 +245,62 @@
     "brooklyn": {
       "desc": "US-inspired",
       "eras": {
-        // US-inspired 1890s-1900s, the Great White Fleet: white hull and turrets, buff upperworks, funnels and masts
+        // US-inspired 1907-09, the Great White Fleet: white hull and upperworks, buff funnels with black tops, buff masts
+        // and fittings, round turrets, awnings aft (picked from three options, 2026-11-15)
         "victorian": {
           "from": "generic/victorian",
-          "desc": "US-inspired 1890s-1900s: white hull, buff upperworks and funnels",
+          "desc": "US-inspired 1900s, the Great White Fleet: white hull and upperworks, buff funnels and masts, awnings",
           "palette": {
-            "hull": "#ecebe5", "wood": "#d8c8a0", "deck": "#8c8170",
-            "levels": ["#cfb07a", "#d6b984", "#ddc28f", "#e4cb9a"], "turret": "#ecebe5", "barbette": "#d6d3c9",
-            "barrel": "#2b2b2c", "tub": "#dcd9cf", "funnel": "#c9a04a", "funnel_cap": "#161616",
-            "funnel_band": "#161616", "boat": "#f4f2ec", "fitting": "#8a7d63", "mast": "#b8913f", "crane": "#8a7d63"
+            "hull": "#eeede6", "wood": "#d8c8a0", "deck": "#8c8170", "deck_line": "#9a8660",
+            "levels": ["#e8e6de", "#ecebe4", "#f0efea", "#f4f3ef"], "turret": "#ecebe5", "barbette": "#dedbd2",
+            "barrel": "#2b2b2c", "tub": "#e2dfd6", "funnel": "#c9a04a", "funnel_cap": "#161616",
+            "funnel_band": "#161616", "boat": "#f6f4ee", "fitting": "#b8913f", "mast": "#b8913f", "crane": "#b8913f"
           },
-          "turrets": "slab",
-          "shapes": {"blocks": "boxy"}
+          "turrets": "round",
+          "shapes": {"blocks": "soft", "funnel": "oval", "awnings": true}
         },
-        // US-inspired 1917-18: light blue-tinged grey over pale, cool teak under navy-blue, mid-blue and pale grey dazzle
-        // (decks too), big cage masts, boxy turrets
+        // US-inspired 1918: black, blue-grey and white dazzle on the hull and upperworks only, pale teak decks left bare,
+        // a lighter grey under it, an oval funnel, boxy turrets
         "great_war": {
           "from": "generic/great_war",
-          "desc": "US-inspired 1917-18: light blue-grey and pale teak under blue dazzle, big cage masts, boxy turrets",
+          "desc": "US-inspired 1918: black, blue-grey and white dazzle on hull and upperworks, pale teak",
           "adjust": [
-            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.12, "styles": ["warship", "carrier", "planing"]},
-            {"keys": ["hull", "upperworks", "armament"], "tint": ["#6f8aa3", 0.18], "styles": ["warship", "carrier", "planing"]},
-            {"keys": "wood", "tint": ["#b9b19c", 1.0], "styles": ["warship", "carrier", "planing"]}
+            {"keys": ["hull", "upperworks", "armament", "funnels"], "lighten": 0.14, "styles": ["warship", "carrier", "planing"]},
+            {"keys": "wood", "tint": ["#bdb29a", 1.0], "styles": ["warship", "carrier", "planing"]}
           ],
-          "palette": {"camo": ["#1c2f52", "#3b6db0", "#d6e2ee"]},
+          "palette": {"camo": ["#1d2733", "#6f88a2", "#e2e7ea"]},
           "turrets": "slab",
-          "shapes": {
-            "funnel": "box", "blocks": "boxy", "dazzle": true, "dazzle_decks": 0.75
-          }
+          "shapes": {"funnel": "oval", "blocks": "boxy", "dazzle": true, "dazzle_decks": 0, "dazzle_upperworks": 0.9}
         },
-        // US-inspired 1920s-30s, the Battle Fleet: navy grey over honey-oiled teak, big white hull numbers on the
-        // foredeck, the cage masts kept until the rebuilds
+        // US-inspired 1930s, the Battle Fleet's division colours: Standard Navy Gray #5, holystoned teak, a division's
+        // yellow and blue across the turret roofs and round the funnel tops, dark foredeck numbers, awnings
         "treaty": {
           "from": "generic/treaty",
-          "desc": "US-inspired 1920s-30s: navy grey, honey teak, foredeck numbers, cage masts",
-          "palette": {"number": "#f4f2ea"},
-          "adjust": [
-            {"keys": ["hull", "upperworks"], "tint": ["#6f8aa3", 0.08], "styles": ["warship", "carrier", "planing"]},
-            {"keys": ["hull", "upperworks", "armament"], "lighten": -0.12, "styles": ["warship", "carrier", "planing"]},
-            {"keys": "wood", "tint": ["#bb8a50", 1.0], "styles": ["warship", "carrier", "planing"]},
-            {"keys": "deck_line", "tint": ["#6b4a26", 1.0], "styles": ["warship", "carrier", "planing"]}
-          ],
+          "desc": "US-inspired 1930s: light grey, holystoned teak, division colours on turret roofs and funnels, numbers",
+          "palette": {
+            "hull": "#8f969a", "levels": ["#989fa3", "#a1a8ac", "#aab0b4", "#b3b9bc"], "turret": "#9aa1a5",
+            "barbette": "#7f868a", "tub": "#8c9397", "funnel": "#9aa1a5", "funnel_band": "#c9a227", "funnel_cap": "#1d1f21",
+            "wood": "#d6c9a8", "deck_line": "#8a7650", "deck": "#7c8387", "number": "#2e3338", "boat": "#c4c9cc",
+            "mast": "#5d6468", "recog_a": "#c9a227", "recog_b": "#1f2f55"
+          },
+          "by_style": {"merchant": {"funnel_band": "#2b2f33"}},
           "turrets": "slab",
           "shapes": {
-            "funnel": "box", "blocks": "boxy", "hull_number": true
+            "funnel": "box", "blocks": "boxy", "hull_number": true, "funnel_band_w": 0.8,
+            "turret_bands": ["recog_a", "recog_b"], "awnings": true
           }
         },
-        // US-inspired: Measure 21-style deck blue on every horizontal surface, boxy slab-sided turrets
+        // US-inspired 1945-46, Measure 13: haze grey overall, the teak scrubbed back, deck grey steel, capped funnels
+        // with black tops, a round-fronted tower, slab-sided turrets. Close to generic's WWII look on purpose: generic was
+        // the first default style, itself the typical US WWII ship (user, 2026-11-15)
         "wwii": {
-          "desc": "US-inspired: deck-blue horizontals, boxy turrets",
+          "desc": "US-inspired: haze grey and teak (Measure 13), capped funnels, slab turrets",
           "palette": {
-            "hull": "#465361", "deck": "#3e4b59", "wood": "#4f5b68", "deck_line": "#232b33",
-            "levels": ["#5d6b7a", "#6b7988", "#7a8795", "#8995a2"], "turret": "#6a7a8b", "barbette": "#4a5765",
-            "barrel": "#363e47", "tub": "#56636f", "funnel": "#6b7988", "funnel_cap": "#20262c", "boat": "#8c98a4",
-            "fitting": "#4d5964", "mast": "#2a3138", "flight_deck": "#3b4858", "marking": "#eef0ea",
-            "stripe": "#e4c64a"
+            "hull": "#7a8289", "deck": "#5f666d", "wood": "#a8916b", "deck_line": "#5a4a35", "steel_line": "#3c4248",
+            "levels": ["#838b92", "#8b9299", "#939aa0", "#9ba1a7"], "turret": "#858d94", "barbette": "#6a7279",
+            "barrel": "#4a5157", "tub": "#7a8289", "funnel": "#858d94", "funnel_cap": "#1c1f22", "funnel_band": "#1c1f22",
+            "boat": "#a0a6ab", "fitting": "#5c646b", "mast": "#4a5157", "crane": "#4b5560", "flight_deck": "#3b4858",
+            "marking": "#eef0ea", "stripe": "#e4c64a"
           },
           "by_style": {
             "merchant": {
@@ -313,19 +314,19 @@
             }
           },
           "turrets": "slab",
-          "shapes": {"funnel": "box", "blocks": "boxy"}
+          "shapes": {"funnel": "capped", "blocks": "tower", "tower_level": 2}
         },
-        // US-inspired 1950s-60s: haze grey over a dark, faintly blue non-skid (the deck blue's echo), weathered grey teak, white hull numbers on the
-        // foredeck
+        // US-inspired 1950s-60s: haze grey, deck grey non-skid, broad black funnel tops, weathered teak, foredeck numbers
         "cold_war": {
           "from": "generic/cold_war",
-          "desc": "US-inspired 1950s-60s: haze grey, dark non-skid, foredeck numbers",
+          "desc": "US-inspired 1950s-60s: haze grey, black funnel tops, deck grey non-skid, foredeck numbers",
           "palette": {
-            "deck": "#404a57", "flight_deck": "#3b424a", "number": "#e4e6e2", "wood": "#8b8579",
-            "deck_line": "#5a5040"
+            "hull": "#7c848b", "levels": ["#80888f", "#878f96", "#8e959c", "#959ca2"], "turret": "#80888f",
+            "funnel": "#80888f", "funnel_band": "#1a1c1e", "funnel_cap": "#1a1c1e", "deck": "#4d5256", "steel_line": "#30343a",
+            "wood": "#98896e", "deck_line": "#5a4d3a", "number": "#eceeea", "mast": "#2c3034"
           },
           "turrets": "slab",
-          "shapes": {"funnel": "box", "hull_number": true}
+          "shapes": {"funnel": "capped", "blocks": "boxy", "hull_number": true, "funnel_band_w": 0.9}
         }
       }
     },

@@ -234,6 +234,10 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   alleys, propellers and rudders; no size, SVG or sprite.json moves. 57 of 111 screws stand more than a diameter under
   the hull again: the spread is what a hit meets, the struts aren't modelled. ShipDesign.Version 64.
 - 2026-11-15, `iowa` and `montana` added (new cases, written by `golden-update`; no PNGs). Every other case unchanged.
+- 2026-11-15, `brooklyn` redrawn (docs/shipgen/DECISIONS.md, "`brooklyn` redrawn"), on purpose: the US look's five eras
+  repainted and partly reshaped (turrets, funnels, blocks, awnings, turret bands). The hull and turret SVGs of its 21
+  cases change (colorado, connecticut, des_moines, iowa, montana, pennsylvania and 15 fuzz cases); design records and
+  sprite.json unchanged.
 
 ## Layout
 
