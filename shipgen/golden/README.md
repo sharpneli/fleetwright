@@ -233,11 +233,12 @@ Since the port the C# side owns them: a deliberate change rewrites the cases it 
   85%) and put lion out of the fight 89% of the time for 26%; a seat at one diameter did no better. 215 cases' shafts,
   alleys, propellers and rudders; no size, SVG or sprite.json moves. 57 of 111 screws stand more than a diameter under
   the hull again: the spread is what a hit meets, the struts aren't modelled. ShipDesign.Version 64.
+- 2026-11-15, `iowa` and `montana` added (new cases, written by `golden-update`; no PNGs). Every other case unchanged.
 
 ## Layout
 
 ```
-../designs/*.json             the 71 designs (copied from ../shipgen/designs)
+../designs/*.json             the 74 designs (71 copied from ../shipgen/designs, the rest added since)
 ../designs/fuzz/*.json        300 fuzz mutants (fuzz.mutate, mode all): fuzz_lim_* drawn inside the input
                               limits (seed 1), fuzz_free_* without them (seed 2)
 cases.json                    every case: name, design file, base design, limits flag, the mutations

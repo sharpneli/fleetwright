@@ -264,6 +264,13 @@
    "changes": []
   },
   {
+   "case": "iowa",
+   "design": "designs/iowa.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
    "case": "karlsruhe",
    "design": "designs/karlsruhe.json",
    "source": null,
@@ -329,6 +336,13 @@
   {
    "case": "mikasa",
    "design": "designs/mikasa.json",
+   "source": null,
+   "limits": true,
+   "changes": []
+  },
+  {
+   "case": "montana",
+   "design": "designs/montana.json",
    "source": null,
    "limits": true,
    "changes": []

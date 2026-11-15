@@ -271,7 +271,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- damage-history [-
 ```
 
 `mono-check` (about 15 s) lists where adding weight gave a lighter ship (reversals) or one step jumped far more than its
-neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 372 of 372 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
+neighbours (lumps); a sizing change shouldn't add to them. `golden-check` must stay at 374 of 374 for any change to `Fleetwright.Shipgen` that isn't a deliberate fix (fixes
 update the goldens on purpose with `golden-update`, one per commit, and bump `ShipDesign.Version`, so compiled ships
 know they're stale). `svg-check` and `sprite-check` do the same for
 `Fleetwright.Shipgen.Render`: a deliberate drawing change rewrites them with `golden-update` too, noted in
@@ -442,7 +442,7 @@ tests/
   Fleetwright.Shipgen.Tests/  # xUnit: design input, every golden case, concurrent builds, the drawing, the
                               #   bake (trait Gpu: needs a GPU)
 shipgen/                      # the port's test data
-  designs/                    #   the 71 designs, and fuzz/ (300 mutants)
+  designs/                    #   the 74 designs, and fuzz/ (300 mutants)
   golden/                     #   Python's output (README.md there)
 Content/                      # copied into the game's output folder; the bake shaders are embedded in Shipgen.Render
                               #   (the output's Content/Designs/ comes from shipgen/designs, see GameAsset)

@@ -1355,6 +1355,14 @@
   "borodino": {
    "max_height_m": 26.81,
    "clutter": 52
+  },
+  "montana": {
+   "max_height_m": 28.56,
+   "clutter": 110
+  },
+  "iowa": {
+   "max_height_m": 28.98,
+   "clutter": 100
   }
  }
 }

@@ -38,10 +38,10 @@ public class RenderTests
     }
 
     [Fact]
-    public void EverySvgMatches() => Every(RenderGolden.CheckSvgs, "svg", 326);
+    public void EverySvgMatches() => Every(RenderGolden.CheckSvgs, "svg", 328);
 
     [Fact]
-    public void EverySpriteMatches() => Every(RenderGolden.CheckSprite, "sprite", 71);
+    public void EverySpriteMatches() => Every(RenderGolden.CheckSprite, "sprite", 73);
 
     static string Golden(string rel)
     {
