@@ -73,6 +73,27 @@ public static class NonPen
     /// the most (<see cref="SimSettings.NonPenSizeMax"/>).</summary>
     public static double SizeK(double impulse, SimSettings s) => Math.Min(s.NonPenSizeMax, Math.Sqrt(Math.Max(impulse, 0) / s.NonPenImpulseRef));
 
+    /// <summary>How much of the heavy hit's rate a belt that held a shell gets (damage/13 §2.3, §6): the shell drives the struck plate
+    /// and its bay in against its backing by the energy it gives them, E = I²/2M, M the bay's mass (<see cref="BayKg"/>), so how far
+    /// they go in falls with their mass. The record's rate was fitted on the shell's impulse alone, √(I/I_ref), on the record's belts;
+    /// as the same function of the energy, (E/E_ref)^¼, it's that on a bay of the record's, less on a heavier belt and more on a
+    /// lighter one; at most <see cref="SimSettings.NonPenSizeMax"/>.</summary>
+    public static double BeltSizeK(double impulse, double plateMm, SimSettings s)
+    {
+        double i = Math.Max(impulse, 0) / s.NonPenImpulseRef, m = BayKg(plateMm, s) / BayKg(s.BeltBayRefMm, s);
+        return Math.Min(s.NonPenSizeMax, Math.Pow(i * i / m, 0.25));
+    }
+
+    /// <summary>The mass of a struck belt plate and its bay, kg: the plate's steel and the skin, backing and frames behind it
+    /// (<see cref="SimSettings.BeltBayStructureKgM2"/>), over the bay's area: what makes a bay of the record's belt
+    /// (<see cref="SimSettings.BeltBayRefMm"/>) weigh <see cref="SimSettings.BeltBayT"/>.</summary>
+    public static double BayKg(double plateMm, SimSettings s)
+    {
+        const double SteelKgM3 = 7850;
+        double areaM2 = s.BeltBayT * 1000 / (SteelKgM3 * s.BeltBayRefMm / 1000 + s.BeltBayStructureKgM2);
+        return areaM2 * (SteelKgM3 * Math.Max(plateMm, 0) / 1000 + s.BeltBayStructureKgM2);
+    }
+
     /// <summary>A near thing (r about 1) throws plate and spall, a shell far short only dents: 1 to r 1, 0.7 at 2, 0.4
     /// from 3.</summary>
     public static double MarginK(double r) => Math.Clamp(1.3 - 0.3 * r, 0.4, 1);
@@ -143,15 +164,16 @@ public static class NonPen
         }
     }
 
-    /// <summary>Whether a belt that held a shell of an impulse at a margin leaks, and how (damage/13 §2.3,
-    /// <c>belt_leak</c>): the zone's chance over the joints' mean share, times size(I)·margin(r), on a joint by
+    /// <summary>Whether a belt of plateMm that held a shell of an impulse at a margin leaks, and how (damage/13 §2.3,
+    /// <c>belt_leak</c>): the zone's chance over the joints' mean share, times size·margin(r) (size by the energy it gives the plate
+    /// and its bay: <see cref="BeltSizeK"/>), on a joint by
     /// <see cref="SimSettings.BeltJointK"/>, a plate a leak loosened before by <see cref="SimSettings.BeltRepeatK"/>, a
     /// welded skin by <see cref="SimSettings.WeldedSkinK"/>, at most <see cref="SimSettings.BeltLeakMax"/>; then the regime,
     /// a near thing, a joint or a loosened plate shifting it to the bad end, and its opening, m² (log-uniform).</summary>
-    public static (LeakRegime Regime, double M2) BeltLeak(BeltZone zone, double impulse, double r, bool joint, bool repeat, bool welded,
-        SimSettings s, ref RandomStream rng)
+    public static (LeakRegime Regime, double M2) BeltLeak(BeltZone zone, double impulse, double plateMm, double r, bool joint, bool repeat,
+        bool welded, SimSettings s, ref RandomStream rng)
     {
-        double k = SizeK(impulse, s) * MarginK(r);
+        double k = BeltSizeK(impulse, plateMm, s) * MarginK(r);
         double p = s.BeltLeakChance[(int)zone] / (1 + s.BeltJointShare * (s.BeltJointK - 1)) * k;
         if (joint)
             p *= s.BeltJointK;

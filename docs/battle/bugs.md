@@ -23,6 +23,17 @@ runs 5-7, after its fix, and the Debug run had none.
   ships share a side and the salvos are a dev `ShellSystem.FireAt`, so neither the AI's target choice nor gunnery runs:
   something in the shell, near-miss or damage path that differs between two worlds under load (a static, or a parallel
   reduction's order). Replays must be exact: chase with the suite under load beside it, as the hang above was.
+  - **Chased 2026-11-15, not fixed.** It fails every time when run beside `CoarseParityTests.Coarse_fire_allocates_nothing`
+    (`--filter` on both: the two classes run in parallel), and that test then allocates 69 KB. Each passes alone. **A
+    reproducer:** run the salvo world once, then 20 rounds of it each beside `new CoarseParityTests(output).Coarse_fire_allocates_nothing()`
+    on `Task.Run`, comparing `World.HashParts()`: **12 of 20 rounds differ at 6cbba35f, before "One outside"**, every time in
+    `DamageSystem` alone; holes, killed, near misses and hits the same to the last digit. What differs is the target's
+    (the destroyer's) gas network: in one world a run 26 spaces wide with gas and a magazine's trains linked, in the other a
+    fresh 6-space one at ambient. **Ruled out:** a network rented while a ship still holds it or held by a ship it isn't
+    bound to (checks in `GasNetwork.Of`, never fired); fresh networks against reused ones in sequence (the same hash); the
+    outside path (skipped whole, it still parts); `HullGirder` (stack scratch) and `FloodModel` (one per world). **Shared
+    between the two:** the destroyer's `ShipClass` (`Fleet` caches it), so its gas pool, `HullFaces`, `HullGirder`; thread
+    statics on the sim's workers (`GasNetwork.mine`, `Slices`, `StepK`, `Matchup`'s tables, `NearField`'s tear cache).
 
 - [x] **The Sim suite hung at 0% CPU now and then** (2026-10-28, twice, beside a CLI build and the history benches).
   Fixed 2026-10-28, reproduced first with 32 busy loops beside the suite and `--blame-hang` dumps. Two causes, both in

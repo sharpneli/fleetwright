@@ -2034,10 +2034,27 @@ along its line; `ShellHoleCosMin` 0.3 [EST], past which a shell breaks up or gla
 - **The panel** (`balance`, 8 seeds, Jutland 4): 7 of 14 sides within about twice the record (8), the record's loser lost more
   in 23 of 44 seeds (22); Jutland Britain 21.3 (20.3), Germany 42.3 (42.8). Within the seeds' spread.
 
-**Left as found:** a belt that held leaks by the shell's impulse alone (`NonPen.SizeK`), whatever the plate's mass; physically
-the plate's drive-in goes as the impulse squared over the bay's mass, so a heavier belt leaks less to the same shell. It's 3%
-of the water here, so it waits. Yamato's design has no lower belt below 3.5 m (her namesake's ran to the double bottom
-against diving shells): her protection's water at 30 km is the design's, not the model's.
+**Left as found:** Yamato's design has no lower belt below 3.5 m (her namesake's ran to the double bottom against diving shells):
+her protection's water at 30 km is the design's, not the model's.
+
+### A belt that held leaks by its weight (2026-11-15)
+
+**What was wrong** (the user raised it next): a belt that held leaked by the shell's impulse alone, size(I) = √(I/I_ref), 13 §2.3's
+fit on the record's belts, whatever the plate. A shell drives the struck plate and its bay in against the backing by the energy it
+gives them, E = I²/2M, so how far they go in falls with their mass: a heavier belt should leak less to the same shell.
+
+**The rule now (`NonPen.BeltSizeK`):** the same function of that energy, (E/E_ref)^¼, at most `NonPenSizeMax` as before: on a bay
+of the record's it is √(I/I_ref) exactly, a heavier one leaks less and a lighter one more, and twice the impulse on a bay four
+times the mass is the same blow. The bay (`NonPen.BayKg`): the plate's steel at its thickness there and the skin, backing and
+frames behind it (`BeltBayStructureKgM2` 300 [EST]), over the area that makes the record's (`BeltBayRefMm` 280 [EST: the cases'
+belts, 229-350 mm]) weigh `BeltBayT` 100 t [SRC 13 §3.4: "struck plate and its bay (50-150 t)", a 15″ at 4 m/s].
+
+**What it does:** a 15″ APC at r 1.3 at the waterline leaks a 102 mm belt 52.7% of the time, the record's 280 mm 46.0%, Yamato's
+410 mm 42.3% (`A_heavier_belt_leaks_less_to_the_same_shell`). In play the shares are small, the mass entering at a quarter power
+as the record's fit does in the impulse: Yamato's belt under KGV's 14″ leaks 24.0% of the belts that held (25.3%); under her own
+46 cm 31.7% (32.2%: past the cap either way); Iron Duke under Lion's 13.5″ and Seydlitz under it unchanged (their belts near the
+record's). The water barely moves. Turrets' and barbettes' harm stays on the impulse alone (13 §1.4's fit: a jam is the ring's,
+the gun's, the debris', not a plate driven in).
 
 ## What stays out
 

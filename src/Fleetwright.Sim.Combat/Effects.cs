@@ -420,7 +420,7 @@ public static partial class Effects
         double along = Math.Abs(x.Point.X - row.X0) % s.BeltPlateM[0], up = Math.Max(x.Point.Z - row.Bottom, 0) % s.BeltPlateM[1];
         bool joint = Math.Min(along, s.BeltPlateM[0] - along) <= s.BeltJointM || Math.Min(up, s.BeltPlateM[1] - up) <= s.BeltJointM;
         bool repeat = k.Loosened(x.Index, x.Point, s.BeltRepeatM);
-        var (regime, a) = NonPen.BeltLeak((BeltZone)zone, impulse, margin, joint, repeat, c.ShellJoint == Joint.Welded, s, ref r);
+        var (regime, a) = NonPen.BeltLeak((BeltZone)zone, impulse, x.Mm, margin, joint, repeat, c.ShellJoint == Joint.Welded, s, ref r);
         if (regime == LeakRegime.None)
             return;
         k.Hole(behind, a, x.Point, seam: regime is LeakRegime.Seep or LeakRegime.Moderate);   // rivets and seams; worse, the plate dished or loose

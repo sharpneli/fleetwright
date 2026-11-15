@@ -1727,6 +1727,15 @@ public sealed record SimSettings
     /// <see cref="ThinBarbetteK"/> (Savo, Boise).</summary>
     public double NonPenImpulseRef { get; init; } = 4e5;
     public double NonPenSizeMax { get; init; } = 1.15;
+
+    /// <summary>A belt that held: the struck plate and its bay, what a shell drives in (<c>NonPen.BayKg</c>, <c>BeltSizeK</c>): about
+    /// this many tonnes for the record's belts [SRC damage/13 §3.4 and nonpen_ref.py: "struck plate and its bay (50-150 t)", 100 t,
+    /// a 15″'s 4×10⁵ N·s at 4 m/s], which were of about this thickness, mm [EST: Lion's 229, Moltke's 270, Derfflinger's 300,
+    /// Grosser Kurfürst's and Markgraf's 350; the cases of 13 §2.1]; and the skin, backing and frames behind each m² of plate, kg
+    /// [EST: a 16-25 mm skin, 50-100 mm of teak, the frames; 13 §2.2].</summary>
+    public double BeltBayT { get; init; } = 100;
+    public double BeltBayRefMm { get; init; } = 280;
+    public double BeltBayStructureKgM2 { get; init; } = 300;
     public double[] TurretNonPen { get; init; } =
     [
         0.38, 0.06, 0.05, 0.03, 0.10,
