@@ -18,7 +18,7 @@ Hunted 2026-10-24: every flaky entry below is closed. The check was seven full D
 together, plus one full Debug run of `Fleetwright.Sim.Tests`. Runs 1-4 had one failure in all, the achieved speed (below);
 runs 5-7, after its fix, and the Debug run had none.
 
-- [ ] **`NearMissTests.Salvos_short_of_a_ship_burst_beside_her_the_same_each_run` hashed two runs differently** (2026-11-09,
+- [x] **`NearMissTests.Salvos_short_of_a_ship_burst_beside_her_the_same_each_run` hashed two runs differently** (2026-11-09,
   once in four full DevRelease runs of `Fleetwright.Sim.Tests`; passes alone, and the full suite twice after). The two
   ships share a side and the salvos are a dev `ShellSystem.FireAt`, so neither the AI's target choice nor gunnery runs:
   something in the shell, near-miss or damage path that differs between two worlds under load (a static, or a parallel
@@ -34,6 +34,17 @@ runs 5-7, after its fix, and the Debug run had none.
     outside path (skipped whole, it still parts); `HullGirder` (stack scratch) and `FloodModel` (one per world). **Shared
     between the two:** the destroyer's `ShipClass` (`Fleet` caches it), so its gas pool, `HullFaces`, `HullGirder`; thread
     statics on the sim's workers (`GasNetwork.mine`, `Slices`, `StepK`, `Matchup`'s tables, `NearField`'s tear cache).
+  - **Fixed 2026-11-15: the class's gas pool.** With the pool off (every rent a new network) 0 of 20 rounds parted. A probe
+    on the destroyer's network showed the first rent differ: the clean run got one never used, the parted run one the coarse
+    world had just released (`stepsN` 12, `stepDt`, `quietS`, ...). `GasNetwork.Begin` reset most of a run but not its stepping
+    clock and a few other per-run scalars (`moving`, `soonest`, `lag`, `plainLag`, `intoBubble`, `nearWalkM`, `walkShare`, a
+    part's walls). `Start` resets the clock only once a source kicks the run, so a run that never stepped (an open near miss)
+    kept the last ship's in its hash, and `Advance` gave its leftover `stepsN` as `res.Steps`. That's why two runs one after the other
+    agreed: the salvo world's own runs never step, so what they leave in the pool looks like a new network. Only a stepped run
+    (the coarse world's hits inside her) leaves something behind. `Begin` now resets all of them.
+    `BlastTests.A_network_back_from_its_pool_begins_as_a_new_one` (fails without the fix) and the near-miss test comparing
+    the damage system's hash every 100 ms hold it. The 26 spaces against 6 seen earlier weren't chased further: with the
+    reset, the 20 rounds agree with the clean run at every 100 ms sample.
 
 - [x] **The Sim suite hung at 0% CPU now and then** (2026-10-28, twice, beside a CLI build and the history benches).
   Fixed 2026-10-28, reproduced first with 32 busy loops beside the suite and `--blame-hang` dumps. Two causes, both in

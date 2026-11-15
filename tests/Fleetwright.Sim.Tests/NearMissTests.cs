@@ -114,12 +114,13 @@ public class NearMissTests(ITestOutputHelper output)
     }
 
     /// <summary>In the world: HE salvos aimed just short of a destroyer burst beside her as near misses (the combat log's
-    /// lines, the shell system's count), she takes their splinters, and a second run is the same.</summary>
+    /// lines, the shell system's count), she takes their splinters, and a second run is the same, its damage system's hash every
+    /// 100 ms: the second's gas networks are the first's, back from their pool, and begin as new ones would (docs/battle/bugs.md).</summary>
     [Fact]
     public void Salvos_short_of_a_ship_burst_beside_her_the_same_each_run()
     {
-        var (a, ha) = Run();
-        var (b, hb) = Run();
+        var (a, ha, ta) = Run();
+        var (b, hb, tb) = Run();
         Assert.True(a.Shells.NearMissCount > a.Shells.Hits, $"near misses {a.Shells.NearMissCount}, hits {a.Shells.Hits}");
         int lines = 0;
         for (int i = 0; i < a.CombatLog.Count; i++)
@@ -134,12 +135,14 @@ public class NearMissTests(ITestOutputHelper output)
         }
         else
             output.WriteLine($"near misses {a.Shells.NearMissCount}, logged {lines}; hits {a.Shells.Hits}; she went down");
+        Assert.Equal(ta, tb);
         Assert.Equal(ha, hb);
         Assert.Equal(a.Shells.NearMissCount, b.Shells.NearMissCount);
     }
 
-    static (World W, ulong Hash) Run()
+    static (World W, ulong Hash, List<ulong> Damage) Run()
     {
+        var damage = new List<ulong>();
         var w = new World(Start, 11, Settings with { GunneryErrors = Settings.GunneryErrors with { Dispersion = 0.13 } });
         _ = new AiSystem(w);
         int shooter = w.Ships.AddClass(Class("dreadnought")), target = w.Ships.AddClass(Class("destroyer"));
@@ -150,13 +153,23 @@ public class NearMissTests(ITestOutputHelper output)
         var t = w.Ships.Store[w.Ships.Store.SlotOf(2)];
         var aim = t.Position + t.Frame.ToWorld(0, -t.Handling.Class.Beam / 2 - 30, 0) - t.Frame.ToWorld(0, 0, 0);
         var (lat, lon) = Earth.LatLon(aim);
+        void Advance(long ms)
+        {
+            for (var end = w.Time + ms; w.Time < end;)
+            {
+                w.AdvanceTo(w.Time + 100);
+                foreach (var (part, hash) in w.HashParts())
+                    if (part == nameof(DamageSystem))
+                        damage.Add(hash);
+            }
+        }
         for (int k = 0; k < 6; k++)
         {
             w.Apply(ShellSystem.FireAt(1, 0, lat, lon, ShellKind.He));
-            w.AdvanceTo(w.Time + 30_000);
+            Advance(30_000);
         }
-        w.AdvanceTo(w.Time + 60_000);
-        return (w, w.ComputeHash());
+        Advance(60_000);
+        return (w, w.ComputeHash(), damage);
     }
 
     /// <summary>15 §6.7 test 7 (and §3.2): the British bomb near misses of 1939-41 come out at 15's factors (within 10%), each

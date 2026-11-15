@@ -846,6 +846,10 @@ public sealed partial class GasNetwork
         res = new GasResult { FirstS = double.NaN, HullS = double.NaN, VentS = double.NaN };
         (whipKg, whipJ, whipPeak, whipSince) = (0, 0, 0, 0);
         (started, finished, lastSourceS, startMs, nTouched, stowsLanded, sourceCell) = (false, true, 0, 0, 0, 0, -1);
+        // a pooled network begins as a new one would: its last ship's stepping (its own world's, maybe) carries over into nothing
+        // (docs/battle/bugs.md: a world's gas parted from another's run beside it)
+        (stepDt, quietS, stepsN, moving, soonest, lag, plainLag) = (0, 0, 0, false, double.PositiveInfinity, 0, 0);
+        (intoBubble, nearWalkM, walkShare, partM2, partMm, partWalls) = (false, 0, 1, 0, 0, default);
         (SourceCause, MagazineCause, Girder, SourceAt, sourced) = (-1, -1, default, default, false);
         // any run can light a magazine (EX6a): what it would stow, and how its trains stand
         if (!armed)

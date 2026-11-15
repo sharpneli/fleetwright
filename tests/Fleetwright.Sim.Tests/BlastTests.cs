@@ -89,6 +89,36 @@ public class BlastTests(ITestOutputHelper output)
         Assert.InRange(res.FeltMPa, 0.05, 0.15);
     }
 
+    /// <summary>A ship's gas back from its class's pool begins as a new one would: a run stepped to its end on another ship of the
+    /// class (another world's, maybe) leaves nothing of its stepping in the next ship's (docs/battle/bugs.md: a world's gas parted
+    /// from another's run beside it, as the pool handed one's network to the other).</summary>
+    [Fact]
+    public void A_network_back_from_its_pool_begins_as_a_new_one()
+    {
+        const long Ms = 1000;
+        static ulong Begun(ShipCondition k)
+        {
+            var g = GasNetwork.Of(k, Settings, Ms);
+            var h = new StateHash();
+            g.Hash(ref h);
+            g.Release();
+            return h.Value;
+        }
+        var (c, k0) = Ship("destroyer");
+        ulong before = Begun(k0);
+        var (_, k1) = Ship("destroyer");
+        var net = GasNetwork.Of(k1, Settings, Ms);
+        int cell = Cell(c, k1, RoomKind.Accommodation);
+        var b = c.Cells[cell].Box;
+        var f = Charge(9.7, "Explosive D");
+        net.AddBurst(cell, new P3((b.X0 + b.X1) / 2, (b.Y0 + b.Y1) / 2, (b.Base + b.Top) / 2), 9.7, f, NearField.Charge(Math.Cbrt(9.7 * f.FillerRe), 1, 0, Settings));
+        net.AdvanceTo(Ms + 60_000);
+        Assert.True(net.Report().Steps > 0, "the run stepped");
+        net.Release();
+        var (_, k2) = Ship("destroyer");
+        Assert.Equal(before, Begun(k2));
+    }
+
     /// <summary>11 §5.5 test 2: an 8" HE in the same space opens its way into the next spaces (its doors blown or the near
     /// zone holing the bulkheads) and loads it past what disables most people (0.12 MPa, Bowen's 50%).</summary>
     [Fact]
