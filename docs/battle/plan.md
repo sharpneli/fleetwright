@@ -68,6 +68,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | 4.8-4.9 The coarse tier's fighting | J0-J8 done 2026-10-27 | `coarse.md` | one coarse pass: night leftovers, day gunnery drift since J7 |
 | 4.11 Collisions and ramming | not started | here | |
 | 5.0, 5.1a-d, 5.1g The AI | done 2026-10-14, 10-15 | `command.md` | |
+| 5.1h Allocating forces | planned 2026-11-16: jobs by task, a fleet-level allocation in place of per-unit roles | `allocation.md` | AL0-AL8; two questions for the user |
 | 5.1e Signals | not started | `command.md` | |
 | 5.1f The whole | a piece done 2026-10-20 | `command.md` | the AI's bugs in `bugs.md` |
 | 5.2 The UI | HUD U0-U7, orders O1-O9, symbols, grid, input, launch built 2026-10-22 to 10-26; the Dunkelgrau skin 2026-11-08 | `docs/map-ui/`, `admirals-orders.md` | edge markers, radial menu, doctrine card, orders as objects, the rumble (`command.md` "5.2"); the user's playtest |
