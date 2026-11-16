@@ -1,0 +1,222 @@
+Allocation: a battle squadron alone (a-battle-squadron.json): 8 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      1st Battle Squadron          Heavy      its orders         117,160 t  21.3 kn  4 Iron Duke-like (1914)
+    Germany: the commander NoContact
+      III Squadron                 Heavy      its orders          96,920 t  21.0 kn  4 König-like (1914)
+  no contact in 240 min
+
+Allocation: battle fleets (b-battle-fleet.json): 48 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      2nd Battle Squadron          Heavy      its orders         109,780 t  21.5 kn  4 King George V-like (1912)
+      4th Battle Squadron          Heavy      its orders         117,160 t  21.3 kn  4 Iron Duke-like (1914)
+      1st Battle Cruiser Squadron  Heavy      its orders         176,030 t  28.0 kn  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+      2nd Light Cruiser Squadron   Scout      its orders          16,050 t  25.5 kn  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      11th Flotilla                Flotilla   its orders          16,000 t  34.0 kn  8 M class destroyer (1915)
+    Germany: the commander NoContact
+      High Seas Fleet (force)      Heavy      its orders         403,080 t  21.0 kn  2 Derfflinger-like (1914) + 4 G101-like large torpedo boat (1914) + 2 Graudenz-like (1914) + 4 Kaiser-like (1912) + 4 König-like (1914) + 1 Moltke-like (1911) + 2 Pillau-like (1914) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 4 V25-like torpedo boat (1914)
+        III Squadron               Heavy      its orders          96,920 t  21.0 kn  4 König-like (1914)
+        VI Division                Heavy      its orders         119,488 t  21.0 kn  4 Kaiser-like (1912)
+        I Scouting Group           Heavy      its orders         139,602 t  25.5 kn  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913)
+        II Scouting Group          Scout      Scout OnTask        31,990 t  27.3 kn  2 Graudenz-like (1914) + 2 Pillau-like (1914)
+        II Flotilla                Flotilla   Screen OnTask       15,080 t  33.5 kn  4 G101-like large torpedo boat (1914) + 4 V25-like torpedo boat (1914)
+  five minutes after the first contact (1916-05-31 09:58:01.000), 1916-05-31 10:03:01.000:
+    Britain: the commander Battle
+      2nd Battle Squadron          Heavy      its orders         109,780 t  21.5 kn  4 King George V-like (1912)
+      4th Battle Squadron          Heavy      its orders         117,160 t  21.3 kn  4 Iron Duke-like (1914)
+      1st Battle Cruiser Squadron  Heavy      its orders         176,030 t  28.0 kn  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+      2nd Light Cruiser Squadron   Scout      its orders          16,050 t  25.5 kn  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      11th Flotilla                Flotilla   its orders          16,000 t  34.0 kn  8 M class destroyer (1915)
+    Germany: the commander Contact
+      High Seas Fleet (force)      Heavy      Intercept OnTask   403,080 t  21.0 kn  2 Derfflinger-like (1914) + 4 G101-like large torpedo boat (1914) + 2 Graudenz-like (1914) + 4 Kaiser-like (1912) + 4 König-like (1914) + 1 Moltke-like (1911) + 2 Pillau-like (1914) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 4 V25-like torpedo boat (1914)
+        III Squadron               Heavy      its orders          96,920 t  21.0 kn  4 König-like (1914)
+        VI Division                Heavy      its orders         119,488 t  21.0 kn  4 Kaiser-like (1912)
+        I Scouting Group           Heavy      its orders         139,602 t  25.5 kn  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913)
+        II Scouting Group          Scout      Scout InContact     31,990 t  27.3 kn  2 Graudenz-like (1914) + 2 Pillau-like (1914)
+        II Flotilla (force)        Flotilla   Screen OnTask       15,080 t  33.5 kn  4 G101-like large torpedo boat (1914) + 4 V25-like torpedo boat (1914)
+          II Flotilla I            Flotilla   its orders           7,408 t  33.5 kn  4 V25-like torpedo boat (1914)
+          II Flotilla II           Flotilla   its orders           7,672 t  33.5 kn  4 G101-like large torpedo boat (1914)
+
+Allocation: destroyers alone (c-destroyers.json): 16 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      12th Flotilla                Heavy      its orders           8,000 t  34.0 kn  4 M class destroyer (1915)
+      13th Flotilla                Heavy      its orders           4,860 t  29.0 kn  4 Laforey-like L class destroyer (1913)
+    Germany: the commander NoContact
+      VI Flotilla                  Heavy      its orders           7,408 t  33.5 kn  4 V25-like torpedo boat (1914)
+      IX Flotilla                  Heavy      its orders           7,672 t  33.5 kn  4 G101-like large torpedo boat (1914)
+  five minutes after the first contact (1916-05-31 08:46:01.000), 1916-05-31 08:51:01.000:
+    Britain: the commander Battle
+      12th Flotilla                Heavy      its orders           8,000 t  34.0 kn  4 M class destroyer (1915)
+      13th Flotilla                Heavy      its orders           4,860 t  29.0 kn  4 Laforey-like L class destroyer (1913)
+    Germany: the commander Contact
+      VI Flotilla                  Heavy      Intercept Engaged    7,408 t  33.5 kn  4 V25-like torpedo boat (1914)
+      IX Flotilla                  Heavy      Intercept Engaged    7,672 t  33.5 kn  4 G101-like large torpedo boat (1914)
+
+The prizes' war, 1920 (prizes-war.json): 12 ships
+  at the start, 1920-09-14 08:00:01.000:
+    France: the commander None
+      Division légère (force)      Heavy      its orders          26,343 t  27.0 kn  1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 2 V25-like torpedo boat (1914) + 1 Wiesbaden-like (1915)
+        Cruisers                   Heavy      its orders          20,721 t  27.0 kn  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Wiesbaden-like (1915)
+        Destroyers                 Scout      Scout OnTask         5,622 t  33.5 kn  1 G101-like large torpedo boat (1914) + 2 V25-like torpedo boat (1914)
+    Italy: the commander NoContact
+      Divisione esploratori (force) Heavy      its orders          26,819 t  27.0 kn  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914) + 1 V25-like torpedo boat (1914)
+        Esploratori                Heavy      its orders          20,524 t  27.0 kn  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914)
+        Cacciatorpediniere         Scout      Scout OnTask         6,295 t  33.5 kn  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 V25-like torpedo boat (1914)
+  five minutes after the first contact (1920-09-14 08:13:01.000), 1920-09-14 08:18:01.000:
+    France: the commander Battle
+      Division légère (force)      Heavy      its orders          26,343 t  27.0 kn  1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 2 V25-like torpedo boat (1914) + 1 Wiesbaden-like (1915)
+        Cruisers                   Heavy      its orders          20,721 t  27.0 kn  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Wiesbaden-like (1915)
+        Destroyers                 Scout      Scout InContact      5,622 t  33.5 kn  1 G101-like large torpedo boat (1914) + 2 V25-like torpedo boat (1914)
+    Italy: the commander Battle
+      Divisione esploratori (force) Heavy      its orders          26,819 t  27.0 kn  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914) + 1 V25-like torpedo boat (1914)
+        Esploratori                Heavy      its orders          20,524 t  27.0 kn  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914)
+        Cacciatorpediniere         Scout      Scout InContact      6,295 t  33.5 kn  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 V25-like torpedo boat (1914)
+
+The Yalu, 1894 (yalu.json): 15 ships
+  at the start, 1894-09-17 04:00:01.000:
+    Japan: the commander None
+      Flying Squadron              Heavy      its orders          16,306 t  18.0 kn  2 Naniwa-like protected cruiser (1885) + 2 Yoshino-like protected cruiser (1893)
+      Main Squadron                Scout      its orders          10,311 t  16.0 kn  1 Chiyoda-like belted cruiser (1890) + 3 Matsushima-like coast-defence cruiser (1890)
+    China: the commander NoContact
+      Beiyang Fleet (force)        Heavy      its orders          30,168 t  14.5 kn  2 Dingyuan-like ironclad (1884) + 1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 2 Laiyuan-like armoured cruiser (1887) + 1 Zhiyuan-like protected cruiser (1887)
+        Ironclads                  Heavy      its orders          20,570 t  14.5 kn  2 Dingyuan-like ironclad (1884)
+        Armoured Cruisers          Flotilla   Screen OnTask        4,308 t  15.5 kn  2 Laiyuan-like armoured cruiser (1887)
+        Cruisers                   Flotilla   Screen OnTask        5,290 t  15.0 kn  1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 1 Zhiyuan-like protected cruiser (1887)
+  five minutes after the first contact (1894-09-17 04:36:01.000), 1894-09-17 04:41:01.000:
+    Japan: the commander Battle
+      Flying Squadron              Heavy      its orders          16,306 t  18.0 kn  2 Naniwa-like protected cruiser (1885) + 2 Yoshino-like protected cruiser (1893)
+      Main Squadron                Scout      its orders          10,311 t  16.0 kn  1 Chiyoda-like belted cruiser (1890) + 3 Matsushima-like coast-defence cruiser (1890)
+    China: the commander Battle
+      Beiyang Fleet (force)        Heavy      its orders          30,168 t  14.5 kn  2 Dingyuan-like ironclad (1884) + 1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 2 Laiyuan-like armoured cruiser (1887) + 1 Zhiyuan-like protected cruiser (1887)
+        Ironclads                  Heavy      its orders          20,570 t  14.5 kn  2 Dingyuan-like ironclad (1884)
+        Armoured Cruisers          Flotilla   Screen OnTask        4,308 t  15.5 kn  2 Laiyuan-like armoured cruiser (1887)
+        Cruisers                   Flotilla   Screen OnTask        5,290 t  15.0 kn  1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 1 Zhiyuan-like protected cruiser (1887)
+
+Jutland (jutland.json): 250 ships
+  at the start, 1916-05-31 14:00:01.000:
+    Britain: the commander None
+      Battlecruiser Fleet (force)  Heavy      GoTo OnTask        235,510 t  25.8 kn  2 Indefatigable-like (1911) + 2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        1st Battlecruiser Squadron Heavy      its orders         176,030 t  28.0 kn  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        2nd Battlecruiser Squadron Heavy      its orders          59,480 t  25.8 kn  2 Indefatigable-like (1911)
+      5th Battle Squadron          Heavy      Cover OnTask       128,240 t  24.0 kn  4 Super-dreadnought (Queen Elizabeth-like, 1913)
+      Battlecruiser Fleet light cruisers (force) Scout      its orders          49,454 t  25.5 kn  4 Arethusa-like (1914) + 4 Birmingham-like Town (1914) + 3 Chatham-like Town (1912)
+        1st Light Cruiser Squadron Scout      its orders          21,552 t  28.5 kn  4 Arethusa-like (1914)
+        3rd Light Cruiser Squadron Scout      its orders          11,852 t  25.5 kn  2 Birmingham-like Town (1914) + 1 Chatham-like Town (1912)
+        2nd Light Cruiser Squadron Scout      its orders          16,050 t  25.5 kn  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      1st Flotilla                 Flotilla   Screen OnTask       14,001 t  25.0 kn  1 Boadicea-like scout (1909) + 9 Laforey-like L class destroyer (1913)
+      13th Flotilla                Flotilla   Screen OnTask       28,842 t  28.5 kn  1 Cambrian-like C class (1916) + 12 M class destroyer (1915)
+      9th and 10th Flotillas       Flotilla   Screen OnTask        7,290 t  29.0 kn  6 Laforey-like L class destroyer (1913)
+      Grand Fleet (force)          Heavy      GoTo OnTask        695,798 t  20.8 kn  1 Agincourt-like (1914) + 3 Bellerophon-like (1909) + 1 Canada-like (1915) + 2 Colossus-like (1911) + 1 Erin-like (1914) + 3 Iron Duke-like (1914) + 3 King George V-like (1912) + 1 Neptune-like (1911) + 4 Orion-like (1912) + 2 Revenge-like (1916) + 3 St Vincent-like (1910)
+        2nd Battle Squadron (force) Heavy      its orders         215,191 t  21.0 kn  1 Erin-like (1914) + 3 King George V-like (1912) + 4 Orion-like (1912)
+          1st Division             Heavy      its orders         108,055 t  21.0 kn  1 Erin-like (1914) + 3 King George V-like (1912)
+          2nd Division             Heavy      its orders         107,136 t  21.0 kn  4 Orion-like (1912)
+        4th Battle Squadron (force) Heavy      its orders         224,853 t  20.8 kn  3 Bellerophon-like (1909) + 1 Canada-like (1915) + 2 Iron Duke-like (1914) + 1 Revenge-like (1916) + 1 St Vincent-like (1910)
+          3rd Division             Heavy      its orders         112,519 t  20.8 kn  1 Bellerophon-like (1909) + 1 Canada-like (1915) + 1 Iron Duke-like (1914) + 1 Revenge-like (1916)
+          4th Division             Heavy      its orders         112,334 t  20.8 kn  2 Bellerophon-like (1909) + 1 Iron Duke-like (1914) + 1 St Vincent-like (1910)
+        1st Battle Squadron (force) Heavy      its orders         255,754 t  21.0 kn  1 Agincourt-like (1914) + 2 Colossus-like (1911) + 1 Iron Duke-like (1914) + 1 Neptune-like (1911) + 1 Revenge-like (1916) + 2 St Vincent-like (1910)
+          5th Division             Heavy      its orders         112,171 t  21.0 kn  1 Colossus-like (1911) + 1 Neptune-like (1911) + 2 St Vincent-like (1910)
+          6th Division             Heavy      its orders         143,583 t  21.0 kn  1 Agincourt-like (1914) + 1 Colossus-like (1911) + 1 Iron Duke-like (1914) + 1 Revenge-like (1916)
+      Cruiser screen (force)       Heavy      Scout OnTask       106,531 t  22.3 kn  2 Duke of Edinburgh-like (1906) + 3 Minotaur-like (1908) + 2 Warrior-like (1907)
+        2nd Cruiser Squadron       Heavy      its orders          48,157 t  22.8 kn  2 Minotaur-like (1908) + 1 Warrior-like (1907)
+        1st Cruiser Squadron       Heavy      its orders          58,374 t  22.3 kn  2 Duke of Edinburgh-like (1906) + 1 Minotaur-like (1908) + 1 Warrior-like (1907)
+      4th Light Cruiser Squadron   Scout      Scout OnTask        24,210 t  28.5 kn  5 Caroline-like C class (1914)
+      Attached cruisers, port      Scout      its orders           6,132 t  25.0 kn  2 Boadicea-like scout (1909)
+      Attached cruisers, starboard Scout      its orders           6,132 t  25.0 kn  2 Boadicea-like scout (1909)
+      4th Flotilla                 Flotilla   Screen OnTask       18,254 t  29.0 kn  13 Acasta-like K class destroyer (1912) + 2 Faulknor-like flotilla leader (1914)
+      11th Flotilla                Flotilla   Screen OnTask       34,364 t  28.5 kn  1 Cambrian-like C class (1916) + 1 Faulknor-like flotilla leader (1914) + 14 M class destroyer (1915)
+      12th Flotilla                Flotilla   Screen OnTask       31,044 t  31.0 kn  2 Faulknor-like flotilla leader (1914) + 14 M class destroyer (1915)
+      Fleet tenders                Flotilla   its orders           3,312 t  29.0 kn  1 Abdiel-like minelayer (1916) + 1 Laforey-like L class destroyer (1913)
+      3rd Battlecruiser Squadron (force) Heavy      Scout OnTask        72,051 t  25.5 kn  4 Acasta-like K class destroyer (1912) + 3 Invincible-like (echelon)
+        3rd Battlecruisers         Heavy      its orders          67,371 t  25.5 kn  3 Invincible-like (echelon)
+        3rd BCS destroyers         Flotilla   Screen OnTask        4,680 t  29.0 kn  4 Acasta-like K class destroyer (1912)
+      3rd BCS light cruisers       Scout      Scout OnTask         8,669 t  25.5 kn  1 Birmingham-like Town (1914) + 1 Cambrian-like C class (1916)
+      Yarmouth                     Scout      its orders           4,198 t  25.5 kn  1 Chatham-like Town (1912)
+      Engadine                     Auxiliary  its orders           1,402 t  21.5 kn  1 Engadine-like seaplane carrier (1911)
+      Hampshire                    Heavy      its orders          12,183 t  22.0 kn  1 Devonshire-like (1905)
+    Germany: the commander NoContact
+      1st Scouting Group           Heavy      GoTo OnTask        166,762 t  24.8 kn  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 1 Von der Tann-like (1910)
+      2nd Scouting Group           Scout      Scout OnTask        32,818 t  27.5 kn  2 Pillau-like (1914) + 2 Wiesbaden-like (1915)
+      Scouting torpedo boats (force) Flotilla   Screen OnTask       62,701 t  27.3 kn  4 B97-like large torpedo boat (1915) + 4 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 20 V25-like torpedo boat (1914)
+        Regensburg                 Scout      its orders           7,889 t  27.3 kn  1 Graudenz-like (1914)
+        II Flotilla                Flotilla   Screen OnTask       17,772 t  33.5 kn  4 B97-like large torpedo boat (1915) + 4 G101-like large torpedo boat (1914)
+        VI Flotilla                Flotilla   Screen OnTask       16,668 t  33.5 kn  9 V25-like torpedo boat (1914)
+        IX Flotilla                Flotilla   Screen OnTask       20,372 t  33.5 kn  11 V25-like torpedo boat (1914)
+      B109 and B110                Flotilla   its orders           5,050 t  36.0 kn  2 B97-like large torpedo boat (1915)
+      High Seas Fleet (force)      Heavy      GoTo OnTask        471,299 t  18.0 kn  1 Braunschweig-like pre-dreadnought (1905) + 5 Deutschland-like pre-dreadnought (1906) + 4 Helgoland-like (1911) + 4 Kaiser-like (1912) + 4 König-like (1914) + 4 Nassau-like (1909)
+        III Squadron               Heavy      its orders         186,536 t  21.0 kn  3 Kaiser-like (1912) + 4 König-like (1914)
+        Fleet flagship             Heavy      its orders          29,872 t  21.0 kn  1 Kaiser-like (1912)
+        I Squadron                 Heavy      its orders         180,860 t  19.5 kn  4 Helgoland-like (1911) + 4 Nassau-like (1909)
+        II Squadron                Heavy      its orders          74,031 t  18.0 kn  1 Braunschweig-like pre-dreadnought (1905) + 5 Deutschland-like pre-dreadnought (1906)
+      4th Scouting Group           Scout      Scout OnTask        23,228 t  21.5 kn  2 Gazelle-like (1900) + 3 Stettin-like (1907)
+      Battle fleet torpedo boats (force) Flotilla   Screen OnTask       59,443 t  28.0 kn  1 Karlsruhe-like scout cruiser (1914) + 24 V1-like torpedo boat (1911) + 7 V25-like torpedo boat (1914)
+        Rostock                    Scout      its orders           8,751 t  28.0 kn  1 Karlsruhe-like scout cruiser (1914)
+        I Half-Flotilla            Flotilla   Screen OnTask        6,288 t  32.0 kn  4 V1-like torpedo boat (1911)
+        III Flotilla               Flotilla   Screen OnTask       12,964 t  33.5 kn  7 V25-like torpedo boat (1914)
+        V Flotilla                 Flotilla   Screen OnTask       17,292 t  32.0 kn  11 V1-like torpedo boat (1911)
+        VII Flotilla               Flotilla   Screen OnTask       14,148 t  32.0 kn  9 V1-like torpedo boat (1911)
+  five minutes after the first contact (1916-05-31 14:17:01.000), 1916-05-31 14:22:01.000:
+    Britain: the commander Battle
+      Battlecruiser Fleet (force)  Heavy      Intercept OnTask   235,510 t  25.8 kn  2 Indefatigable-like (1911) + 2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        1st Battlecruiser Squadron Heavy      its orders         176,030 t  28.0 kn  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        2nd Battlecruiser Squadron Heavy      its orders          59,480 t  25.8 kn  2 Indefatigable-like (1911)
+      5th Battle Squadron          Heavy      Cover OnTask       128,240 t  24.0 kn  4 Super-dreadnought (Queen Elizabeth-like, 1913)
+      Battlecruiser Fleet light cruisers (force) Scout      its orders          49,454 t  25.5 kn  4 Arethusa-like (1914) + 4 Birmingham-like Town (1914) + 3 Chatham-like Town (1912)
+        1st Light Cruiser Squadron Scout      its orders          21,552 t  28.5 kn  4 Arethusa-like (1914)
+        3rd Light Cruiser Squadron Scout      its orders          11,852 t  25.5 kn  2 Birmingham-like Town (1914) + 1 Chatham-like Town (1912)
+        2nd Light Cruiser Squadron Scout      its orders          16,050 t  25.5 kn  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      1st Flotilla                 Flotilla   Screen OnTask       14,001 t  25.0 kn  1 Boadicea-like scout (1909) + 9 Laforey-like L class destroyer (1913)
+      13th Flotilla                Flotilla   Screen OnTask       28,842 t  28.5 kn  1 Cambrian-like C class (1916) + 12 M class destroyer (1915)
+      9th and 10th Flotillas       Flotilla   Screen OnTask        7,290 t  29.0 kn  6 Laforey-like L class destroyer (1913)
+      Grand Fleet (force)          Heavy      GoTo OnTask        695,798 t  20.8 kn  1 Agincourt-like (1914) + 3 Bellerophon-like (1909) + 1 Canada-like (1915) + 2 Colossus-like (1911) + 1 Erin-like (1914) + 3 Iron Duke-like (1914) + 3 King George V-like (1912) + 1 Neptune-like (1911) + 4 Orion-like (1912) + 2 Revenge-like (1916) + 3 St Vincent-like (1910)
+        2nd Battle Squadron (force) Heavy      its orders         215,191 t  21.0 kn  1 Erin-like (1914) + 3 King George V-like (1912) + 4 Orion-like (1912)
+          1st Division             Heavy      its orders         108,055 t  21.0 kn  1 Erin-like (1914) + 3 King George V-like (1912)
+          2nd Division             Heavy      its orders         107,136 t  21.0 kn  4 Orion-like (1912)
+        4th Battle Squadron (force) Heavy      its orders         224,853 t  20.8 kn  3 Bellerophon-like (1909) + 1 Canada-like (1915) + 2 Iron Duke-like (1914) + 1 Revenge-like (1916) + 1 St Vincent-like (1910)
+          3rd Division             Heavy      its orders         112,519 t  20.8 kn  1 Bellerophon-like (1909) + 1 Canada-like (1915) + 1 Iron Duke-like (1914) + 1 Revenge-like (1916)
+          4th Division             Heavy      its orders         112,334 t  20.8 kn  2 Bellerophon-like (1909) + 1 Iron Duke-like (1914) + 1 St Vincent-like (1910)
+        1st Battle Squadron (force) Heavy      its orders         255,754 t  21.0 kn  1 Agincourt-like (1914) + 2 Colossus-like (1911) + 1 Iron Duke-like (1914) + 1 Neptune-like (1911) + 1 Revenge-like (1916) + 2 St Vincent-like (1910)
+          5th Division             Heavy      its orders         112,171 t  21.0 kn  1 Colossus-like (1911) + 1 Neptune-like (1911) + 2 St Vincent-like (1910)
+          6th Division             Heavy      its orders         143,583 t  21.0 kn  1 Agincourt-like (1914) + 1 Colossus-like (1911) + 1 Iron Duke-like (1914) + 1 Revenge-like (1916)
+      Cruiser screen (force)       Heavy      Scout OnTask       106,531 t  22.3 kn  2 Duke of Edinburgh-like (1906) + 3 Minotaur-like (1908) + 2 Warrior-like (1907)
+        2nd Cruiser Squadron       Heavy      its orders          48,157 t  22.8 kn  2 Minotaur-like (1908) + 1 Warrior-like (1907)
+        1st Cruiser Squadron       Heavy      its orders          58,374 t  22.3 kn  2 Duke of Edinburgh-like (1906) + 1 Minotaur-like (1908) + 1 Warrior-like (1907)
+      4th Light Cruiser Squadron   Scout      Scout OnTask        24,210 t  28.5 kn  5 Caroline-like C class (1914)
+      Attached cruisers, port      Scout      Scout OnTask         6,132 t  25.0 kn  2 Boadicea-like scout (1909)
+      Attached cruisers, starboard Scout      Scout OnTask         6,132 t  25.0 kn  2 Boadicea-like scout (1909)
+      4th Flotilla                 Flotilla   Screen OnTask       18,254 t  29.0 kn  13 Acasta-like K class destroyer (1912) + 2 Faulknor-like flotilla leader (1914)
+      11th Flotilla                Flotilla   Screen OnTask       34,364 t  28.5 kn  1 Cambrian-like C class (1916) + 1 Faulknor-like flotilla leader (1914) + 14 M class destroyer (1915)
+      12th Flotilla                Flotilla   Screen OnTask       31,044 t  31.0 kn  2 Faulknor-like flotilla leader (1914) + 14 M class destroyer (1915)
+      Fleet tenders                Flotilla   Screen OnTask        3,312 t  29.0 kn  1 Abdiel-like minelayer (1916) + 1 Laforey-like L class destroyer (1913)
+      3rd Battlecruiser Squadron (force) Heavy      Scout OnTask        72,051 t  25.5 kn  4 Acasta-like K class destroyer (1912) + 3 Invincible-like (echelon)
+        3rd Battlecruisers         Heavy      its orders          67,371 t  25.5 kn  3 Invincible-like (echelon)
+        3rd BCS destroyers (force) Flotilla   Screen OnTask        4,680 t  29.0 kn  4 Acasta-like K class destroyer (1912)
+          3rd BCS destroyers I     Flotilla   its orders           2,340 t  29.0 kn  2 Acasta-like K class destroyer (1912)
+          3rd BCS destroyers II    Flotilla   its orders           2,340 t  29.0 kn  2 Acasta-like K class destroyer (1912)
+      3rd BCS light cruisers       Scout      Scout OnTask         8,669 t  25.5 kn  1 Birmingham-like Town (1914) + 1 Cambrian-like C class (1916)
+      Yarmouth                     Scout      Scout OnTask         4,198 t  25.5 kn  1 Chatham-like Town (1912)
+      Engadine                     Auxiliary  Withdraw OnTask      1,402 t  21.5 kn  1 Engadine-like seaplane carrier (1911)
+      Hampshire                    Heavy      Join OnTask         12,183 t  22.0 kn  1 Devonshire-like (1905)
+    Germany: the commander Battle
+      1st Scouting Group           Heavy      Intercept OnTask   166,762 t  24.8 kn  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 1 Von der Tann-like (1910)
+      2nd Scouting Group           Scout      Scout OnTask        32,818 t  27.5 kn  2 Pillau-like (1914) + 2 Wiesbaden-like (1915)
+      Scouting torpedo boats (force) Flotilla   Screen OnTask       62,701 t  27.3 kn  4 B97-like large torpedo boat (1915) + 4 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 20 V25-like torpedo boat (1914)
+        Regensburg                 Scout      its orders           7,889 t  27.3 kn  1 Graudenz-like (1914)
+        II Flotilla                Flotilla   Screen OnTask       17,772 t  33.5 kn  4 B97-like large torpedo boat (1915) + 4 G101-like large torpedo boat (1914)
+        VI Flotilla                Flotilla   Screen OnTask       16,668 t  33.5 kn  9 V25-like torpedo boat (1914)
+        IX Flotilla                Flotilla   Screen OnTask       20,372 t  33.5 kn  11 V25-like torpedo boat (1914)
+      B109 and B110                Flotilla   its orders           5,050 t  36.0 kn  2 B97-like large torpedo boat (1915)
+      High Seas Fleet (force)      Heavy      GoTo OnTask        471,299 t  18.0 kn  1 Braunschweig-like pre-dreadnought (1905) + 5 Deutschland-like pre-dreadnought (1906) + 4 Helgoland-like (1911) + 4 Kaiser-like (1912) + 4 König-like (1914) + 4 Nassau-like (1909)
+        III Squadron               Heavy      its orders         186,536 t  21.0 kn  3 Kaiser-like (1912) + 4 König-like (1914)
+        Fleet flagship             Heavy      its orders          29,872 t  21.0 kn  1 Kaiser-like (1912)
+        I Squadron                 Heavy      its orders         180,860 t  19.5 kn  4 Helgoland-like (1911) + 4 Nassau-like (1909)
+        II Squadron                Heavy      its orders          74,031 t  18.0 kn  1 Braunschweig-like pre-dreadnought (1905) + 5 Deutschland-like pre-dreadnought (1906)
+      4th Scouting Group           Scout      Scout OnTask        23,228 t  21.5 kn  2 Gazelle-like (1900) + 3 Stettin-like (1907)
+      Battle fleet torpedo boats (force) Flotilla   Screen OnTask       59,443 t  28.0 kn  1 Karlsruhe-like scout cruiser (1914) + 24 V1-like torpedo boat (1911) + 7 V25-like torpedo boat (1914)
+        Rostock                    Scout      its orders           8,751 t  28.0 kn  1 Karlsruhe-like scout cruiser (1914)
+        I Half-Flotilla            Flotilla   Screen OnTask        6,288 t  32.0 kn  4 V1-like torpedo boat (1911)
+        III Flotilla               Flotilla   Screen OnTask       12,964 t  33.5 kn  7 V25-like torpedo boat (1914)
+        V Flotilla                 Flotilla   Screen OnTask       17,292 t  32.0 kn  11 V1-like torpedo boat (1911)
+        VII Flotilla               Flotilla   Screen OnTask       14,148 t  32.0 kn  9 V1-like torpedo boat (1911)
+

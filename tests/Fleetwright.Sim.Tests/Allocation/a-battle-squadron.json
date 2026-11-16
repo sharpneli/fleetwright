@@ -1,0 +1,21 @@
+// docs/battle/allocation.md's case: a battle squadron alone on passage, the enemy's squadron far off. What an admiral
+// would do: a battleship on each bow as a lookout, no screen (none to have).
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Allocation: a battle squadron alone",
+  "brief": "Four battleships on passage; the enemy's four some 150 km off.",
+  "place": "North Sea",
+  "start": "1916-05-31T08:00",
+  "seed": 1,
+  "sides": ["Britain", "Germany"],
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "1st Battle Squadron", "side": 0, "at": [57.5, 3.0], "course": 135, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "iron_duke", "names": ["Iron Duke", "Marlborough", "Benbow", "Emperor of India"] } ] },
+    { "name": "III Squadron", "side": 1, "at": [55.8, 6.0], "course": 315, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "konig", "names": ["König", "Grosser Kurfürst", "Markgraf", "Kronprinz"] } ] }
+  ]
+}

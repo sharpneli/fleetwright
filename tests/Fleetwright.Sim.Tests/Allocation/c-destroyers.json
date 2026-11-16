@@ -1,0 +1,25 @@
+// docs/battle/allocation.md's case: destroyers alone, two flotillas a side, some 60 km apart. What an admiral would do:
+// the destroyers are his main body, and fight as destroyers (guns at destroyers, the matchup's).
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Allocation: destroyers alone",
+  "brief": "Two flotillas a side, closing from 60 km.",
+  "place": "North Sea",
+  "start": "1916-05-31T08:00",
+  "seed": 3,
+  "sides": ["Britain", "Germany"],
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "12th Flotilla", "side": 0, "at": [56.8, 3.5], "course": 135, "kn": 18, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "m_class", "names": ["Marksman", "Maenad", "Marvel", "Mary Rose"] } ] },
+    { "name": "13th Flotilla", "side": 0, "at": [56.82, 3.45], "course": 135, "kn": 18, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "l_laforey", "names": ["Laforey", "Lance", "Landrail", "Lark"] } ] },
+    { "name": "VI Flotilla", "side": 1, "at": [56.5, 4.3], "course": 315, "kn": 18, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "v25", "names": ["V45", "V46", "V69", "S50"] } ] },
+    { "name": "IX Flotilla", "side": 1, "at": [56.48, 4.35], "course": 315, "kn": 18, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "g101", "names": ["G41", "G86", "G87", "V30"] } ] }
+  ]
+}

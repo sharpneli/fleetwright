@@ -111,7 +111,7 @@ The assessment is made again against what he holds (decision 2):
   - his cripples and stragglers, once he's beaten or breaking off: only the fast wing catches anyone.
 
   No reserve held back as a choice of its own: a wing that no choice repays already stays clear (the matchup declines),
-  and committing a reserve at the turning point is beyond a cheap best effort (proposed 2026-11-16, for the user).
+  and committing a reserve at the turning point is beyond a cheap best effort (approved by the user 2026-11-16).
 - **The line forms** when the main body fights with its guns against what's in front of it (in place of `BattleForce`'s
   two capital ships).
 - **The attack and the screen** as now, the attack by the matchup against his main body.
@@ -133,7 +133,7 @@ aims' kinds) reads her matchup instead.
 
 | Step | What | State |
 |---|---|---|
-| AL0 | **The bench:** `shipgen allocation SCENARIO`: each side's units, their measures and jobs at the start and at first contact; fixtures for the cases below | |
+| AL0 | **The bench:** `shipgen allocation SCENARIO`: each side's units, their measures and jobs at the start and at first contact; fixtures for the cases below | **done 2026-11-16** (below) |
 | AL1 | **What a unit brings:** strength, speed, attack, screening, eye, per unit at a think, from the matchup profiles | |
 | AL2 | **The jobs by task**, the table above | |
 | AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | |
@@ -142,6 +142,24 @@ aims' kinds) reads her matchup instead.
 | AL6 | **Regrouping** the worn-down squadrons | |
 | AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
+
+### AL0 The bench (built 2026-11-16)
+
+`shipgen allocation [SCENARIO...] [--minutes 240] [--no-land]`: every unit down each side's tree, its ships, tonnage and
+slowest speed, its role and task, at the start and five minutes after the first contact (the commanders' thinks on it).
+With no scenario, the cases below: three synthetic ones in `tests/Fleetwright.Sim.Tests/Allocation/` (a battle squadron
+alone; battle fleets, Britain's as the commander's top units, Germany's one force under its admiral; destroyers alone),
+then the prizes' war, the Yalu and the Jutland. The baseline, before any change: `docs/battle/allocation/al0-baseline.txt`.
+What it shows:
+
+- The battle squadron alone keeps its line on passage: no ship on a bow.
+- Battlecruisers are Heavy by their tonnage and join the line (Britain's 1st BCS; Germany's I Scouting Group stays in
+  the High Seas Fleet's line).
+- Destroyers alone are Heavy (the relative capital line), and the prizes' war's and Yalu's roles as found in BL6's
+  types pass: the cruisers' forces Heavy, their destroyers sent off to scout; Japan's Main Squadron a Scout; the
+  Beiyang Fleet's armoured cruisers and cruisers Flotillas, screening its ironclads.
+- At the Jutland the Cruiser screen (armoured cruisers) and Hampshire are Heavy, sent to scout only because the
+  scenario gave them that task.
 
 The cases the bench keeps (AL0), each with what an admiral would do:
 
@@ -158,5 +176,5 @@ The cases the bench keeps (AL0), each with what an admiral would do:
 ## Questions for the user
 
 1. ~~The intelligence before contact~~: good intelligence, the enemy's order of battle (decision 2).
-2. **The fast wing's choices** (the user: line, flank, screen; no reserve came to mind): the five more proposed under "At
-   contact" (his fast wing, his flotillas going in, beside our attack, across his way, the pursuit), and no reserve?
+2. ~~The fast wing's choices~~: the line, the flank, his screen and the five more under "At contact", no reserve
+   (approved 2026-11-16).

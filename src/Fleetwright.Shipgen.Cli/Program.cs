@@ -321,6 +321,8 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace"), SmokeSwitch(a)),
+                "allocation" => AllocationBench.Run(Root(a), a.Positional, Settings(a), a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"),
+                    D(a, "minutes", 240), !a.Has("no-land")),
                 "duel" => DuelCmd(a),
                 "coarse-parity" => CoarseParity.Run(Settings(a), Root(a), n => Class(a, n), new CoarseParity.Options(a.Get("panel", "standard")!,
                     a.Get("layer")?.Split(','), a.Get("tier", "both")!, a.Int("runs", 0), a.Int("seeds", 0), a.Get("out"), a.Get("fine-from"),

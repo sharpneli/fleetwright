@@ -1,0 +1,36 @@
+// docs/battle/allocation.md's case: battleships, battlecruisers, light cruisers and destroyers, each side's ships its
+// commander's top units (Britain) or one force under its admiral (Germany), steaming to meet some 130 km apart. What
+// an admiral would do: the battleships the line, the battlecruisers scouting ahead with the light cruisers, the
+// destroyers screening the line and sent in to attack once the lines engage.
+{
+  "scenario": 1,
+  "test": true,
+  "name": "Allocation: battle fleets",
+  "brief": "Two battle fleets with their battlecruisers, light cruisers and flotillas, closing from 130 km.",
+  "place": "North Sea",
+  "start": "1916-05-31T08:00",
+  "seed": 2,
+  "sides": ["Britain", "Germany"],
+  "aims": { "Britain": "destroy everyone", "Germany": "destroy everyone" },
+  "home": { "Britain": [56.3, -1.5], "Germany": [54.2, 7.6] },
+  "weather": { "visibility_km": 16, "wind_from": 225, "wind_kn": 8 },
+  "units": [
+    { "name": "2nd Battle Squadron", "side": 0, "at": [57.5, 3.0], "course": 135, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "king_george_v", "names": ["King George V", "Ajax", "Centurion", "Audacious"] } ] },
+    { "name": "4th Battle Squadron", "side": 0, "at": [57.5, 3.1], "course": 135, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "iron_duke", "names": ["Iron Duke", "Marlborough", "Benbow", "Emperor of India"] } ] },
+    { "name": "1st Battle Cruiser Squadron", "side": 0, "at": [57.45, 3.05], "course": 135, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "lion", "names": ["Lion", "Princess Royal"] }, { "design": "queen_mary", "names": ["Queen Mary"] }, { "design": "tiger_1914", "names": ["Tiger"] } ] },
+    { "name": "2nd Light Cruiser Squadron", "side": 0, "at": [57.4, 3.1], "course": 135, "kn": 15, "formation": "column", "spacing": 600,
+      "ships": [ { "design": "town_chatham", "names": ["Southampton", "Dublin"] }, { "design": "town_birmingham", "names": ["Birmingham", "Nottingham"] } ] },
+    { "name": "11th Flotilla", "side": 0, "at": [57.45, 2.95], "course": 135, "kn": 15, "formation": "column", "spacing": 400,
+      "ships": [ { "design": "m_class", "names": ["Marne", "Manners", "Michael", "Mons", "Mystic", "Moon", "Morning Star", "Mounsey"] } ] },
+    { "name": "High Seas Fleet", "side": 1, "at": [56.6, 4.9], "course": 315, "kn": 15, "formation": "column", "spacing": 3000,
+      "units": [
+        { "name": "III Squadron", "spacing": 600, "ships": [ { "design": "konig", "names": ["König", "Grosser Kurfürst", "Markgraf", "Kronprinz"] } ] },
+        { "name": "VI Division", "spacing": 600, "ships": [ { "design": "kaiser", "names": ["Kaiser", "Prinzregent Luitpold", "Kaiserin", "Friedrich der Grosse"] } ] },
+        { "name": "I Scouting Group", "spacing": 600, "ships": [ { "design": "derfflinger", "names": ["Lützow", "Derfflinger"] }, { "design": "seydlitz", "names": ["Seydlitz"] }, { "design": "moltke", "names": ["Moltke"] } ] },
+        { "name": "II Scouting Group", "spacing": 600, "ships": [ { "design": "graudenz", "names": ["Graudenz", "Regensburg"] }, { "design": "pillau", "names": ["Pillau", "Elbing"] } ] },
+        { "name": "II Flotilla", "spacing": 400, "ships": [ { "design": "v25", "names": ["V25", "V26", "V27", "V28"] }, { "design": "g101", "names": ["G101", "G102", "G103", "G104"] } ] } ] }
+  ]
+}
