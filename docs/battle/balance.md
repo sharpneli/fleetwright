@@ -871,6 +871,62 @@ and the two scores:
 All four were balanced (2026-11-09) on a side that gave its reach up when outmatched; BL6 rebalances them, with Tsushima's
 Russians given their reach for Vladivostok.
 
+## BL6 The scenarios rebalanced
+
+### BL6's baseline (2026-11-16, HEAD `547e743a`)
+
+Taken before any scenario knob moves, since the damage model changed after the last panel row (2026-11-13): one outside,
+E7's ricochet by research 16, DC10 the sea over a hole, the near field's tear sphere, water at an immune range, a held
+belt leaking by the shell's energy, the pooled gas network's reset. Everything in `docs/battle/bl6/baseline/`:
+`balance --seeds 8 --fc-runs 0`, `losses dogger-bank jutland --seeds 4`, and the early wave `scenario --play --seeds 8`
+each (about 30 min in all).
+
+**The panel**, lost a seed, against the last row (BL5's reach held, `bl5/hold-reach/`):
+
+| | 2026-11-13 | Baseline | Record |
+|---|---|---|---|
+| Dover Strait, Britain / Germany | 0.6 / 0.6 | 0.5 / 0.3 | 0 / 2 |
+| Coronel, Britain / Germany | 0.6 / 0.0 | 1.0 / 0.3 | 2 / 0 |
+| Cape Sarych, Russia / Ottomans | 2.5 / 0.5 | 2.1 / 0.4 | 0 / 0 |
+| The prizes' war, France / Italy | 1.5 / 1.6 | 1.9 / 2.5 | - |
+| Åland, Finland / Sweden | 6.4 / 3.1 | 7.8 / 2.1 | - |
+| Heligoland, Britain / Germany | 1.0 / 7.1 | 1.8 / 11.3 (5-24) | 0 / 4 |
+| Dogger Bank | 1.4 / 3.4 | 0.9 / 2.0 | 0 / 1 |
+| Tsushima, Russia / Japan | 2.4 / 1.1 | 2.8 / 2.4 | 7 / 0 |
+| Jutland | 18.0 / 45.3 | 13.8 / 40.0 | 14 / 11 |
+| Sides within 2x, of 14 | 6 | 7 | |
+| The record's loser lost more, of 44 | 25 | 22 | |
+
+- **Coronel and the Dogger Bank are in their bands**, the record's loser the loser in 5 of 8 each.
+- **Heligoland swung back up**: the British hits 318 → 1,081 a run, at 3.1 km for the heavy guns (CLOSE against 4-8);
+  one seed lost all 24 Germans. 8 seeds of a 68-ship melee are noisy, but the British closing is BL5's old finding
+  (who closes inside 1 km) come back.
+- **Tsushima is even**, not the record's rout: Japan's hits 2,151 → 734 a run; Russia's aim is still "destroy everyone".
+- **Jutland**: Britain in band, Germany still about 4x (seed 1916 lost 78, the others 42-49); magazines 1 % of losses.
+
+**The loss bench** (Jutland, beside BL3's baseline, which came before BL5's outmatched runs, so the drop is mostly
+BL5's): Britain 26.3 → 13.8 a seed (capital 5.5 → 1.8), Germany 45.5 → 40.0 (capital 9.5 → 4.8, destroyers 27.3 →
+23.5); heavy hits 2,450 → 1,602 a seed, magazines set off by a hit 15.8 → 10.4. The Dogger Bank: Germany 1.0 a seed
+(the capital ship, Blücher's part), Britain 0.3.
+
+**The early wave**, 8 seeds, against `bl5/hold-reach/` (the reach scenarios) or scenarios.md's 2026-11-09 balance:
+
+| Scenario | Before | Baseline |
+|---|---|---|
+| Pungdo, China reaching | 5 of 8 reach; lost 0.0 / 0.4 (Japan / China) | **2 of 8**; 0.0 / 2.1 |
+| The Yalu | 1.1 / 2.2 (Japan / China), score 0.18 / 0.17 | **0.1 / 1.9**, score 0.12 / 0.02 |
+| The Bosporus, Russia reaching | 7 of 8; 0.0 / 1.9 | 7 of 8; 0.0 / 2.1 |
+| Manila, Spain reaching | 3 of 8; 1.5 / 1.4 (Spain / US) | 4 of 8; 1.2 / 1.1 |
+| Port Arthur, Russia reaching | 1 of 8; 0.6 / 0.4 (Japan / Russia) | 3 of 8; 0.8 / 0.5 |
+| Conrad's war | 3.0 / 3.3 (A-H / Italy) | 2.4 / 3.1 |
+
+The Yalu has gone one-sided (Japan nearly never loses a ship, every game to the clock), and Pungdo's China reaches far less
+often; the rest within what 8 seeds can show. The Bosporus is too sure a thing for Russia either way.
+
+**For BL6** (the list it carries): the tempers against the 0.8 swing (the Dogger Bank first, now in band, so lightly);
+Tsushima's reach for Vladivostok; the reach scenarios (Pungdo, Port Arthur, the Bosporus); the Yalu; Heligoland's
+closing; Åland (Finland 7.8 of 10); then the coarse sync and the playtest.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -982,3 +1038,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-10 | (this commit) | BL5: outmatched runs, "no escape" gone at the commander's and the unit's level (`bl5/outmatched-runs/`) | 8 of 14 sides within 2x (5); the record's loser lost more in 21 of 44 (24); Heligoland 1.0 v 7.1, Dogger 0.6 v 0.8, Tsushima 2.8 v 2.1, Jutland 20.0 v 38.3 |
 | 2026-11-11 | (this commit) | BL5: the rearguard (stays when it buys time; duty for the aim's charges) and the aggression swing 0.8 (`bl5/rearguard-final/`) | 6 of 14 sides within 2x (8); the record's loser lost more in 25 of 44 (21); Heligoland 1.0 v 7.1, Dogger 1.4 v 3.4, Tsushima 2.4 v 1.1, Jutland 18.0 v 45.3; rearguards 0.4-0.8 a seed where they stay |
 | 2026-11-13 | (this commit) | BL5: a reach held to the end (doctrine's HoldReach), past the escort for the convoy (`bl5/hold-reach/`) | as the rearguard row but Åland 6.4 v 3.1; the reach scenarios moved (Pungdo 5 of 8 reach, Bosporus 7, Manila 3, Port Arthur 1): BL6's |
+| 2026-11-16 | `547e743a` | BL6's baseline after the damage changes of 11-13 to 11-15 (one outside, ricochet, DC10, tear sphere, belt leaks; `bl6/baseline/`) | 7 of 14 sides within 2x (6); the record's loser lost more in 22 of 44 (25); Coronel 1.0 v 0.3 (in), Heligoland 1.8 v 11.3, Dogger 0.9 v 2.0 (in), Tsushima 2.8 v 2.4, Jutland 13.8 v 40.0, Åland 7.8 v 2.1; capsized 55%, broke in two 25%, foundered 19%, magazine 1%; early wave: the Yalu one-sided (Japan 0.1 lost), Pungdo's reach 2 of 8 |
