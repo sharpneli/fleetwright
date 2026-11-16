@@ -13,7 +13,9 @@ what he's given. Not an LLM-tier mind: a cheap best effort, cascading down the c
    makes the squadrons). When squadrons are worn down in a scenario he may regroup them, so the fleet isn't a string of
    stragglers.
 2. **Contact changes the assessment.** The opening disposition is the admiral's decision on the intelligence he had
-   beforehand; once the enemy is held he judges against what he holds.
+   beforehand; once the enemy is held he judges against what he holds. **The intelligence is good** (the user: "knowing
+   the ships after all is just an accurate intel report in the end"): before contact he knows the enemy's order of
+   battle as the scenario has it, his ships and units but not where they are.
 3. **The task sets the need.** A unit on passage, defensive, doesn't spread into a search pattern; a search spreads as
    wide as the search needs.
 4. **The fast heavy ships are the admiral's call in battle:** join the line, flank the enemy rather than join the
@@ -98,8 +100,18 @@ The assessment is made again against what he holds (decision 2):
 
 - **The enemy's main body** is his strongest held group, by the matchup, not the one with a capital ship.
 - **The fast wing's choice** (decision 4): the line, if the line is outmatched without it; else where its strength does
-  the most for the least: flanking his line's van, or his scouts and screen (his screen gone opens his line to the
-  attack).
+  the most for the least, each choice an enemy group or a place valued by what the wing does there against what it
+  loses:
+  - his line's van, flanking it rather than joining the line;
+  - his scouts and screen (his screen gone opens his line to the attack);
+  - his fast wing, like against like, kept off our line (Beatty and Hipper; Kamimura and the Vladivostok cruisers);
+  - his flotillas going in, broken up before they reach our line;
+  - beside our own attack, drawing his secondaries and screen off our flotillas (Hipper's "death ride");
+  - across his way home or to his aim, when he's the one leaving (a Stop by the fast part of the fleet);
+  - his cripples and stragglers, once he's beaten or breaking off: only the fast wing catches anyone.
+
+  No reserve held back as a choice of its own: a wing that no choice repays already stays clear (the matchup declines),
+  and committing a reserve at the turning point is beyond a cheap best effort (proposed 2026-11-16, for the user).
 - **The line forms** when the main body fights with its guns against what's in front of it (in place of `BattleForce`'s
   two capital ships).
 - **The attack and the screen** as now, the attack by the matchup against his main body.
@@ -145,6 +157,6 @@ The cases the bench keeps (AL0), each with what an admiral would do:
 
 ## Questions for the user
 
-1. **The intelligence before contact** (decision 2): by default the enemy's order of battle as the scenario has it,
-   types and numbers but not where (each side knew roughly what the other had), unless the scenario says otherwise?
-2. **The fast wing's choices** are the line, the flank and the enemy's screen; anything else (a reserve held back)?
+1. ~~The intelligence before contact~~: good intelligence, the enemy's order of battle (decision 2).
+2. **The fast wing's choices** (the user: line, flank, screen; no reserve came to mind): the five more proposed under "At
+   contact" (his fast wing, his flotillas going in, beside our attack, across his way, the pursuit), and no reserve?
