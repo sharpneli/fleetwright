@@ -623,7 +623,7 @@ rework, with the fire-control computers by era, revisits these):
     range. A boat 8 km off still comes before a battleship beyond 4 km, a battleship at 1.5 km before a boat beyond
     4.5. A smaller type no longer takes the fire off the one held by itself: it must be nearer by `FireSwitchShare`
     after the weighing, an unknown counting as the held one's size at most. (The fleet destroyer, over 2,500 t, is
-    reported as a cruiser: `Sightings.TypeOf`);
+    reported as a cruiser: `Sightings.TypeOf`, by 2026-11-16 `ShipTypes`, relative to the ships at sea);
   - *what it can shoot first* (the user, 2026-10-27: "the secondary battery fixating on a target it can't shoot"): a
     battery prefers one it can fire on now (she bears, within its guns' reach; the reach for taking one is
     `FireReachShare` past it, to track before she's in it), then one it can train on, then one it can only track, and
@@ -1260,7 +1260,7 @@ What it settled, beyond the plan:
 - **A magazine rolls once a hit**, at `TorpedoMagazineChance` 0.05 (times the side's propellant): rolled per cell,
   a magazine in several cells went up from 19% of hits on QE. (Replaced 2026-10-20 by docs/battle/magazines.md V7.)
 - **A torpedo craft is a ship with no gun of 6" or more** (and torpedoes left), not the type: shipgen's "Fleet
-  Destroyer" is 2,770 t, a cruiser by `Sightings.TypeOf`.
+  Destroyer" is 2,770 t, a cruiser by `Sightings.TypeOf` (now `ShipTypes`: by her size against the ships at sea).
 - **A launch waits for its mount to train,** and the aim is solved again at the launch; a launch that no longer bears or
   has lost the target holds its fire.
 - **The dev's launch aims at the truth** (`Launch(..., truth: true)`): the flag is sent before any look is taken.

@@ -174,7 +174,7 @@ public sealed partial class AdmiralLayer
         groups.LineOffsets(g, line);
         int capitals = 0;
         foreach (var (ship, _, _) in line)
-            if (ctx.Ships.SlotOf(ship) is int slot and >= 0 && Sightings.TypeOf(ctx.Ships[slot].Handling.Class) == ShipType.Capital)
+            if (ctx.Ships.SlotOf(ship) is int slot and >= 0 && ctx.World.Types.Of(ctx.Ships[slot].Handling.Class) == ShipType.Capital)
                 capitals++;
         return capitals >= 2;
     }

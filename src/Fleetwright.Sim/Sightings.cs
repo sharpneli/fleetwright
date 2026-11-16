@@ -99,8 +99,9 @@ public sealed class Sightings
         }
     }
 
-    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ulong seed, Probes probes)
+    internal Sightings(SimSettings settings, Relations relations, Encounters encounters, SightReach reach, ShipTypes types, ulong seed, Probes probes)
     {
+        this.types = types;
         this.probes = probes;
         smokeLookProbe = probes.Register("Smoke looks");
         this.settings = settings;
@@ -968,7 +969,7 @@ public sealed class Sightings
             c.Level = ContactLevel.Type;
         if (c.Level >= ContactLevel.Type)
         {
-            c.Type = TypeOf(c.TakenFor >= 0 && Registry?.Get(c.TakenFor) is { } taken ? taken : ts.Handling.Class);
+            c.Type = types.Of(c.TakenFor >= 0 && Registry?.Get(c.TakenFor) is { } taken ? taken : ts.Handling.Class);
             if (c.Level >= ContactLevel.Class || margin >= SideMargin(lookNight.SkyCdM2))
                 c.Foe = true;   // her colours by day, her build in the dark: whose she is (docs/battle/night.md Q6, Q12e)
         }
@@ -1016,16 +1017,10 @@ public sealed class Sightings
         Math.Abs(a.Funnels - b.Funnels) + Math.Abs(a.Masts - b.Masts) + 0.5 * Math.Abs(a.MainMounts - b.MainMounts) +
         5 * Math.Abs(a.LengthM / Math.Max(b.LengthM, 1) - 1);
 
+    readonly ShipTypes types;
+
     /// <summary>Where the classes are, for what a contact's taken for (set by the world).</summary>
     internal ShipClassRegistry? Registry { get; set; }
-
-    /// <summary>What a class is reported as by type: a merchant (no main mounts), else by its full displacement.</summary>
-    public static ShipType TypeOf(ShipClass c) =>
-        c.Silhouette.MainMounts == 0 ? ShipType.Merchant
-        : c.Motion.FullDisplacementT >= 14_000 ? ShipType.Capital
-        : c.Motion.FullDisplacementT >= 2_500 ? ShipType.Cruiser
-        : c.Motion.FullDisplacementT >= 400 ? ShipType.Destroyer
-        : ShipType.Small;
 
     /// <summary>Contacts out of sight long enough forgotten: at each look, and at the hourly contact scan (so they age
     /// out with no encounter open).</summary>

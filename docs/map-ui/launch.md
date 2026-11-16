@@ -232,7 +232,7 @@ stay). A scenario file dropped on the screen joins the list under Opened and is 
   taken through `"from"`; the four shipped scenarios have them. The meta line is worked out: the date in local mean
   time by the longitude (the sun's, not a zone's: Tsushima reads 13:20 where the mockup has Japan's 13:40), the
   position, the weather in words, the next sunset (or sunrise) by the sun model, the end.
-- **The side cards' pips** (capital, cruiser, light, by `Sightings.TypeOf`) come once the side's classes are compiled,
+- **The side cards' pips** (capital, cruiser, light, by `ShipTypes`, against the scenario's ships) come once the side's classes are compiled,
   and only up to 24 ships (Jutland's sides show their counts alone, as the mockup's do).
 - **The opening** frames every ship of the top units on its station (`ScenarioLoader.Stations`, the placing's own)
   with half an hour's course; the coast is the 1:50M land brought into the view's cap (`CapRetraction`) and filled by

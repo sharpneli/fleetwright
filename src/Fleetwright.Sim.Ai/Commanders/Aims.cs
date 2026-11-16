@@ -196,7 +196,7 @@ public sealed class AimBook
         for (int slot = 0; slot < store.Slots; slot++)
             if (store.IsAlive(slot) && store[slot] is var x && !roster.ContainsKey(x.Entity))
             {
-                roster[x.Entity] = (x.Side, x.Handling.Class.Hydrostatics.DisplacementT, Sightings.TypeOf(x.Handling.Class) == ShipType.Merchant);
+                roster[x.Entity] = (x.Side, x.Handling.Class.Hydrostatics.DisplacementT, ShipTypes.IsMerchant(x.Handling.Class));
                 seen.Add(x.Entity);
             }
         long now = w.Time.Ms;
@@ -229,10 +229,10 @@ public sealed class AimBook
             for (int i = 0; i < Count(side); i++)
                 sides[side]![i].State = Read(w, side, i).State;
         for (int side = 0; side < sides.Length; side++)
-            wanted[side] = Count(side) > 0 ? WantedNow(store, side) : 0;
+            wanted[side] = Count(side) > 0 ? WantedNow(w, store, side) : 0;
     }
 
-    int WantedNow(ShipStore store, int side)
+    int WantedNow(World w, ShipStore store, int side)
     {
         if (Pursued(side) is not (int p and >= 0))
             return 0;
@@ -246,7 +246,7 @@ public sealed class AimBook
         if (e.Aim.Kind == AimKind.Reach)
             foreach (int ship in e.Ships)
                 if (!e.Arrived.Contains(ship) && store.SlotOf(ship) is int slot and >= 0 && Aims.Afloat(store, slot))
-                    bits |= 1 << (int)Sightings.TypeOf(store[slot].Handling.Class);
+                    bits |= 1 << (int)w.Types.Of(store[slot].Handling.Class);
         return bits;
     }
 
@@ -330,7 +330,7 @@ public sealed class AimBook
         }
         for (int slot = 0; slot < store.Slots; slot++)
             if (Aims.Afloat(store, slot) && store[slot] is var x && w.Relations.Hostile((byte)side, x.Side) &&
-                (!merchants || Sightings.TypeOf(x.Handling.Class) == ShipType.Merchant))
+                (!merchants || ShipTypes.IsMerchant(x.Handling.Class)))
                 afloat += x.Handling.Class.Hydrostatics.DisplacementT;
         return (lost, lost + afloat);
     }

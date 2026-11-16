@@ -225,16 +225,37 @@ runs 5-7, after its fix, and the Debug run had none.
   and once the force's admiral took its cruiser squadrons off the line as its screen only the two Dingyuans were counted:
   0.08 against Japan's whole fleet where the bench gives the fleet 1.1. Fixed: `CommanderLayer.AddTop` takes every ship
   down the tree (`AddMembers`), for the balance and for sending units against a group (balance.md "BL6").
-- [ ] **An 1890s fleet is all "flotilla".** Nothing before the dreadnought comes to `Sightings.TypeOf`'s 14,000 t capital
+- [x] **An 1890s fleet is all "flotilla".** Nothing before the dreadnought comes to `Sightings.TypeOf`'s 14,000 t capital
   line, so `Roles.Derived` finds no Heavy unit, and ships whose torpedoes are their better weapon against their own side's
   heaviest (most of a pre-dreadnought cruiser force) make the unit a Flotilla: the Yalu's Beiyang Fleet, two 10,000 t
-  ironclads at its head, reads Flotilla. A Flotilla isn't sent against a group as the heavy units are, it's sent in to
-  attack. The early wave plays even regardless (BL6); the capital line and the role want an era-free rule (no hard
-  switches), for the next AI pass.
+  ironclads at its head, reads Flotilla. Fixed 2026-11-16 (the user: "what constitutes a capital ship depended on an era
+  and is thus a relative measurement"): `ShipTypes` (`World.Types`) types a class against the warships placed in the
+  world, by their tonnage-weighted mean displacement (Σt²/Σt): capital from half of it, cruiser from a tenth, destroyer
+  from 1.6 % (`TypeCapitalShare`, `TypeCruiserShare`, `TypeDestroyerShare`); a torpedo's aim at a contact known by type
+  alone takes that type's ships at sea for its size. The Jutland's lines stay where they were bar the capital line (12,200
+  t: her pre-dreadnoughts and armoured cruisers in); Tsushima's battleships and Izumos, the Yalu's Dingyuans and Yoshinos,
+  the Bosporus's ironclads are capital ships now. What it moved: balance.md "The capital line made relative".
+- [ ] **The prizes' war no longer fights** (2026-11-16, after the relative capital line): its light cruisers are the
+  scenario's capital ships now, so each force reads Heavy, not the Flotilla its three destroyers made it (half its ships
+  boats); its admiral sends the destroyers (worked out Scout: their torpedoes aren't their better weapon against a light
+  cruiser) off to scout (`AdmiralLayer.Dispose`), and both commanders decline an even fight at first sight, every game
+  to the clock (0.0 / 0.1 lost, 8 seeds; 1.9 / 2.5 before). The old fight came from the misread role. A scenario matter
+  (its aims are "destroy everyone" both ways) or the commanders' bar between equals: for the user.
+- [ ] **A light-cruiser scenario's destroyers read as cruisers.** The relative cruiser line (a tenth of the mean) falls
+  at 610 t in the prizes' war, so its 1,850-2,500 t destroyers are reported as cruisers (as were the 2,500 t boats before
+  under the fixed line). A size ratio can't tell a destroyer among light cruisers from a light cruiser among dreadnoughts;
+  what makes a destroyer is her torpedoes being her weapon (the roles' boat test, `MatchupJudge.AttackerAgainst`), which
+  lives above `Fleetwright.Sim`. Not what stalls the prizes' war (tried: the cruiser line raised over its destroyers, still
+  no fight).
+- [ ] **The Yalu's Matsushimas fall under the capital line** (2,519 t in our model, history 4,278 t; the line 2,908 t), so
+  Ito's Main Squadron reads Scout beside Tsuboi's Heavy Flying Squadron. The design's weight, not the rule.
 - [ ] **The Bosporus hinges on the boats' attacks.** The Ottoman torpedo boats fire 1-2 torpedoes a game between nine of
   them (the "torpedo boats barely attack" item, the user's next session after the early wave); the landing's balance
   answers to the escort hardly at all (one Russian battleship lands as often as three). BL6 balanced it with two more
-  ironclads and three more boats; re-balance once the boats attack.
+  ironclads and three more boats; re-balance once the boats attack. **They attack now** (2026-11-16, the relative capital
+  line: the Russian ironclads are capital ships, so the flotilla attack has a line to go at): 10.2 torpedoes a game, the
+  Ottomans lose 8.2 of 16 (3.3 before), mostly boats, and Russia lands 15 of 16 (9). Fewer Russian battleships don't
+  answer it (two: 13 of 16, one: 12 of 16); the re-balance is the Ottoman side's.
 
 - [x] **A search line spread over the land** (found 2026-11-09 by the user playing Pungdo: Akitsushima "decided to
   stop before we even found the enemy"). The Stop side's search (aims.md A3) spread the Flying Squadron abreast 0.9 of

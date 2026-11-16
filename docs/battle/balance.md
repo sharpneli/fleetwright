@@ -542,7 +542,7 @@ him): a 5" destroyer at 7 km rates 0.36 against a dreadnought at 13 km 0.47 (the
 dangerous over an hour), so threat can't say the fleets' practice, which is a doctrine of roles. `FireOrderTests`: a
 super-dreadnought with a torpedo-boat destroyer 7 km off and a dreadnought 13 km: fighting to win, the main guns on the
 dreadnought and the secondaries on the boat; the boat coming at her, the main guns on the boat; sinking tonnage, on the
-nearest. (A 1940s fleet destroyer over 2,500 t is reported as a cruiser, `Sightings.TypeOf`: one step only.)
+nearest. (A 1940s fleet destroyer over 2,500 t is reported as a cruiser, `Sightings.TypeOf`: one step only; since 2026-11-16 the types are relative, `ShipTypes`.)
 
 **Measured** (the panel, `balance/bl5g.json`; ships lost a run, BL5e / BL5f / BL5g): the Dogger Bank 14.8 / 21.1 / 15.2;
 the Jutland 84.2 / 82.2 / 77.0 (the British 26.5, now within twice the record's 14); the Heligoland Bight 14.8 / 14.8 /
@@ -969,6 +969,33 @@ as three: the boats don't attack, bugs.md).
 **The panel after BL6** (`bl6/final/balance.txt`): 7 of 14 sides within about twice the record; the record's loser lost
 more in 27 of 44 seeds.
 
+### The capital line made relative (2026-11-16)
+
+The user: no hard cutoffs in the AI; what made a capital ship depended on the era, so it's measured against the ships in
+the scenario. `ShipTypes` (bugs.md "An 1890s fleet is all flotilla") types every class against the warships placed: their
+tonnage-weighted mean displacement, capital from half of it, cruiser from a tenth, destroyer from 1.6 %. Nothing tuned;
+everything in `docs/battle/bl6/types/` (the panel at 8 seeds, the early wave at 16), beside `bl6/final/`:
+
+| | BL6 final | Relative types |
+|---|---|---|
+| Dover Strait, Britain / Germany | 0.5 / 0.3 | 0.3 / 0.6 |
+| Coronel | 1.0 / 0.3 | 1.0 / 0.8 |
+| Cape Sarych, Russia | 1.8 | 2.4 |
+| The prizes' war, France / Italy | 1.9 / 2.5 | **0.0 / 0.1** (no fight) |
+| Åland, Finland / Sweden | 3.8 / 3.6 | 7.6 / 2.6 |
+| Heligoland | 1.6 / 8.1 | 4.8 / 10.5 |
+| Dogger Bank | 1.1 / 2.0 | the same |
+| Tsushima, Russia / Japan | 8.1 / 5.6 | 6.9 / 3.8 |
+| Jutland | 21.3 / 46.8 | 22.5 / 42.5 |
+| Sides within 2x, of 14 | 7 | 7 |
+| The record's loser lost more, of 44 | 27 | 25 |
+
+The early wave (16 seeds): the Yalu 0.3 / 1.9 lost (0.6 / 1.7), scores 0.11 / 0.04, China still retiring outmatched in
+11 of 16; Pungdo's China reaches 8 of 16 (7); **the Bosporus's Russia 15 of 16 (9)**: the Ottoman boats attack now
+(10.2 torpedoes a game, 0.4 before) and are lost doing it; Manila 7 / 5 of 16 (7 / 7); Port Arthur's Russia 6 of 16 (7);
+Conrad's war 2.4 / 2.0 (2.9 / 3.8). Two scenarios want the user: the prizes' war, which fought only because each
+cruiser-and-destroyer force read as one flotilla (bugs.md), and the Bosporus's re-balance now its boats attack.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -1082,3 +1109,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-13 | (this commit) | BL5: a reach held to the end (doctrine's HoldReach), past the escort for the convoy (`bl5/hold-reach/`) | as the rearguard row but Åland 6.4 v 3.1; the reach scenarios moved (Pungdo 5 of 8 reach, Bosporus 7, Manila 3, Port Arthur 1): BL6's |
 | 2026-11-16 | `547e743a` | BL6's baseline after the damage changes of 11-13 to 11-15 (one outside, ricochet, DC10, tear sphere, belt leaks; `bl6/baseline/`) | 7 of 14 sides within 2x (6); the record's loser lost more in 22 of 44 (25); Coronel 1.0 v 0.3 (in), Heligoland 1.8 v 11.3, Dogger 0.9 v 2.0 (in), Tsushima 2.8 v 2.4, Jutland 13.8 v 40.0, Åland 7.8 v 2.1; capsized 55%, broke in two 25%, foundered 19%, magazine 1%; early wave: the Yalu one-sided (Japan 0.1 lost), Pungdo's reach 2 of 8 |
 | 2026-11-16 | (this commit) | BL6: Tsushima's reach; the commander's balance by every ship of his units (the Yalu); the scenarios balanced by ship counts (Pungdo, Port Arthur, the Bosporus, Åland, Heligoland) (`bl6/final/`) | 7 of 14 sides within 2x (7); the record's loser lost more in 27 of 44 (22); Tsushima 8.1 v 5.6 (Russia in), Heligoland 1.6 v 8.1 of 16, Åland 3.8 of 13 v 3.6 of 8, Jutland 21.3 v 46.8; the early wave within 7-10 of 16 for each reach, the Yalu 0.10 v 0.09 |
+| 2026-11-16 | (this commit) | The capital line made relative (`ShipTypes`: half the warships' tonnage-weighted mean) (`bl6/types/`) | 7 of 14 sides within 2x (7); the record's loser lost more in 25 of 44 (27); the prizes' war no longer fights (0.0 v 0.1), Åland 7.6 v 2.6, Heligoland 4.8 v 10.5; the Bosporus's Russia lands 15 of 16, its boats attacking |

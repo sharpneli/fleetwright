@@ -1099,7 +1099,7 @@ moment a unit; or any two sides a layer builds), and the enemy held in groups in
 - **The scout** shadows what it's no match for.
 - **The flotilla's attack** taken up by doctrine (not ordered) is begun only if its matchup has it attacking at the bar;
   once begun it's seen through.
-- **The commander:** roles by capital ships (`Sightings.TypeOf`), the main body the most capital tonnage. Each think:
+- **The commander:** roles by capital ships (`ShipTypes`: half the tonnage-weighted mean displacement of the warships placed, or more; 2026-11-16), the main body the most capital tonnage. Each think:
   his side against all he holds (declined under the bar by his margin, since 2026-11-10 whatever his speed (BL5); accepted again over
   it); the held groups gravest first, each given those closing it and then the nearest free units not
   hopeless against it alone, until together they reach doctrine's `SeekRatio` (1: expected to win), else nobody

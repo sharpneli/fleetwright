@@ -2770,6 +2770,16 @@ public sealed record SimSettings
     /// displacement or more (the most numerous such class at sea): then she scouts. At the Jutland the boats run to 2,490 t
     /// (B97) against an M-class, the cruisers from 3,050 t; relative, so it holds in any era.</summary>
     public double RoleScoutSizeRatio { get; init; } = 1.5;
+    /// <summary>What a class is reported as by type (<c>ShipTypes</c>), against the world's warships, not an era's
+    /// tonnage: from these shares of their tonnage-weighted mean full displacement (Σt² / Σt over every ship placed) a
+    /// capital ship, a cruiser, a destroyer; under the last, a small craft. Set so the Jutland's lines fall where the old
+    /// fixed ones did (14,000, 2,500 and 400 t against her 24,300 t mean), bar the capital line, which comes down to her
+    /// pre-dreadnoughts and armoured cruisers (12,200 t); at Tsushima (11,500 t) it takes in the battleships and
+    /// Kamimura's cruisers, at the Yalu (5,800 t) the Dingyuans and Yoshinos, at Coronel the armoured cruisers alone.
+    /// Shares.</summary>
+    public double TypeCapitalShare { get; init; } = 0.5;
+    public double TypeCruiserShare { get; init; } = 0.1;
+    public double TypeDestroyerShare { get; init; } = 0.016;
     public double MatchupTorpedoFireMin { get; init; } = 2;
     /// <summary>Attackers running in and out zigzag: the defence's fire on them then hits this share as often
     /// (docs/battle/command.md 5.1a: a light cruiser running zigzag from a battleship at 14 km took no hits in four

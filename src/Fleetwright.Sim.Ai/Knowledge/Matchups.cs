@@ -139,7 +139,7 @@ public sealed class Matchups
             var ship = store[slot];
             var cls = ship.Handling.Class;
             var p = Profile(world, cls);
-            Tally(ship.Side * (Types + 1) + (int)Sightings.TypeOf(cls), p);
+            Tally(ship.Side * (Types + 1) + (int)world.Types.Of(cls), p);
             Tally(ship.Side * (Types + 1) + Types, p);
         }
         Volatile.Write(ref censusMs, world.Time.Ms);   // counted: read from here on

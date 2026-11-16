@@ -285,7 +285,7 @@ The user's ask: Sverige class against Väinämöinen class, the class a design s
   once he knows each squadron can outrun the Finns, so in 8 km he found them again and hunted them (Finland 5.9 v 1.8).
   In 6 km, bold: Finland 4.8 of 9, Sweden 2.9 of 7 (15,600 t, more than a Sverige), every seed a fight.
 - **Sizes:** the generator makes Sverige 10,600 t (history 7,100) and Väinämöinen 2,600 t (3,900); both read as
-  cruisers to the sim (`Sightings.TypeOf`: under 14,000 t full). The destroyers are about 3x history (Wrangel 1,470 t at
+  cruisers to the sim (`Sightings.TypeOf`: under 14,000 t full; since 2026-11-16 `ShipTypes` takes the Sverige for capital ships, against Åland's ships). The destroyers are about 3x history (Wrangel 1,470 t at
   32 kn, the boats 890 t at 28 kn), as in the destroyer crunch; 34 kn made Wrangel 1,850 t.
 
 Open:

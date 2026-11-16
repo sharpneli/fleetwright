@@ -50,9 +50,9 @@ static class LossBench
         if (spare == "home")
             return h => Shell(h) && ai.Captains.Of(h.Ship).Order == CaptainOrder.Home;
         if (spare == "boat-guns")
-            return h => Shell(h) && store.SlotOf(h.Shooter) is int s and >= 0 && Boat(Sightings.TypeOf(store[s].Handling.Class)) && store.SlotOf(h.Ship) is int t and >= 0 && !Boat(Sightings.TypeOf(store[t].Handling.Class));
+            return h => Shell(h) && store.SlotOf(h.Shooter) is int s and >= 0 && Boat(w.Types.Of(store[s].Handling.Class)) && store.SlotOf(h.Ship) is int t and >= 0 && !Boat(w.Types.Of(store[t].Handling.Class));
         if (spare == "screen")
-            return h => Shell(h) && store.SlotOf(h.Ship) is int t and >= 0 && Boat(Sightings.TypeOf(store[t].Handling.Class)) && w.Groups.UnitOf(h.Ship) is { } top && ai.Tasks.Of(Unit.Group(top.GroupId)).Kind == TaskKind.Screen;
+            return h => Shell(h) && store.SlotOf(h.Ship) is int t and >= 0 && Boat(w.Types.Of(store[t].Handling.Class)) && w.Groups.UnitOf(h.Ship) is { } top && ai.Tasks.Of(Unit.Group(top.GroupId)).Kind == TaskKind.Screen;
         if (spare.StartsWith("gap:", StringComparison.Ordinal))
         {
             double keep = 1 / double.Parse(spare[4..], Inv);
@@ -82,11 +82,11 @@ static class LossBench
         public bool Shell => Source is HitSource.Shell or HitSource.Coarse;
     }
 
-    sealed class Ship(int entity, int side, string name, ShipClass cls)
+    sealed class Ship(int entity, int side, string name, ShipClass cls, ShipType type)
     {
         public readonly int Entity = entity, Side = side;
         public readonly string Name = name, Class = cls.Name;
-        public readonly ShipType Type = Sightings.TypeOf(cls);
+        public readonly ShipType Type = type;
         public readonly double Tonnes = cls.Motion.FullDisplacementT;
         public readonly Packaging Packing = cls.Mounts.Length > 0 ? cls.Charges[cls.Mounts[0].Type].Packaging : default;
         public readonly List<Sample> Samples = [];
@@ -205,7 +205,7 @@ static class LossBench
                 return;
             var by = store[ss].Handling.Class;
             bool chief = by.Batteries[r.Battery].Chief;
-            string k = $"{Sightings.TypeOf(by),-9} {(chief ? "chief" : "other"),-5} at {Sightings.TypeOf(store[ts].Handling.Class),-9} {(ai.Captains.Of(r.Target).Order == CaptainOrder.Home ? "going home" : "fighting"),-10} {Band(r.TrueRangeM / 1000)}";
+            string k = $"{w.Types.Of(by),-9} {(chief ? "chief" : "other"),-5} at {w.Types.Of(store[ts].Handling.Class),-9} {(ai.Captains.Of(r.Target).Order == CaptainOrder.Home ? "going home" : "fighting"),-10} {Band(r.TrueRangeM / 1000)}";
             var (a, b) = tally.Fire.GetValueOrDefault(k);
             tally.Fire[k] = (a + r.Shells, b + r.Hits);
             var (order, _, _) = ai.Captains.Of(r.Shooter);
@@ -228,7 +228,7 @@ static class LossBench
                     continue;
                 var x = store[slot];
                 if (!ships.TryGetValue(x.Entity, out var ship))
-                    ships[x.Entity] = ship = new Ship(x.Entity, x.Side, start.ShipNames.GetValueOrDefault(x.Entity) ?? $"{x.Handling.Class.Name} #{x.Entity}", x.Handling.Class);
+                    ships[x.Entity] = ship = new Ship(x.Entity, x.Side, start.ShipNames.GetValueOrDefault(x.Entity) ?? $"{x.Handling.Class.Name} #{x.Entity}", x.Handling.Class, w.Types.Of(x.Handling.Class));
                 ship.At = x.Position;
                 if (Aims.Afloat(store, slot))
                     index.Add(slot, x.Position);
@@ -340,7 +340,7 @@ static class LossBench
             if (y.Side == x.Side)
             {
                 friendT += d <= NearM ? t : 0;
-                if (Sightings.TypeOf(y.Handling.Class) is ShipType.Capital or ShipType.Cruiser)
+                if (w.Types.Of(y.Handling.Class) is ShipType.Capital or ShipType.Cruiser)
                     ownHeavyM = Math.Min(ownHeavyM, d);
                 continue;
             }
@@ -348,7 +348,7 @@ static class LossBench
                 continue;
             enemyM = Math.Min(enemyM, d);
             enemyT += d <= NearM ? t : 0;
-            if (Sightings.TypeOf(y.Handling.Class) is ShipType.Capital or ShipType.Cruiser)
+            if (w.Types.Of(y.Handling.Class) is ShipType.Capital or ShipType.Cruiser)
                 heavyM = Math.Min(heavyM, d);
         }
         var (order, _, _) = ai.Captains.Of(x.Entity);

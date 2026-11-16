@@ -238,7 +238,7 @@ public sealed partial class CaptainLayer
     void Flee(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         if (cap.FleeMs != 0 || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || Conned(cap, own.Entity) || groups.InLine(own.Entity) ||
-            Sightings.TypeOf(own.Handling.Class) != ShipType.Merchant || own.Handling.Class.Launchers.Length > 0 || NearestWarship(ctx, own, out _) == 0)
+            !ShipTypes.IsMerchant(own.Handling.Class) || own.Handling.Class.Launchers.Length > 0 || NearestWarship(ctx, own, out _) == 0)
             return;
         (cap.FleeMs, cap.FleeBackDeg, cap.FleeBackKn) = (ctx.NowMs, own.CourseOrderDeg, own.SpeedOrderKn);
         Recount();

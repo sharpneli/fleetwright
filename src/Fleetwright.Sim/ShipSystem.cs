@@ -40,6 +40,7 @@ public sealed partial class ShipSystem : IWorldSystem
     readonly Relations relations;
     readonly Encounters encounters;
     readonly Sightings sightings;
+    readonly ShipTypes types;
     readonly List<int> used = [];   // the registry ids ships have been made of, in the order first used
     readonly Dictionary<int, Handling> handlings = [];
     readonly List<(int Ship, double AsternM, double AbeamM)> line = new(16), derailing = new(16), riders = new(16), turning = new(16);   // a unit's ships and stations, reused (one each: they nest)
@@ -49,9 +50,10 @@ public sealed partial class ShipSystem : IWorldSystem
     public ShipStore Store { get; }
 
     internal ShipSystem(SimSettings settings, ShipClassRegistry registry, Probes probes, Relations relations, Encounters encounters,
-        Sightings sightings)
+        Sightings sightings, ShipTypes types)
     {
         this.settings = settings;
+        this.types = types;
         this.relations = relations;
         this.encounters = encounters;
         this.sightings = sightings;
@@ -208,6 +210,7 @@ public sealed partial class ShipSystem : IWorldSystem
                 return;   // nowhere near the sea: no ship, the same on every replay
             int made = Store.Spawn(nextEntity++, c.B, h, p, Earth.Forward(p, c.X), c.Y * Handling.MsPerKnot, world.Time.Ms, (byte)c.Entity);
             SideCount((byte)c.Entity, +1);
+            types.Placed(h.Class);
             if (coarseMode)
                 ToCoarse(world, made);
             else

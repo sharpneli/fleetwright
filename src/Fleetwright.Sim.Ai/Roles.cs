@@ -90,7 +90,7 @@ public sealed class Roles(World world, Knowledge.MatchupJudge judge)
             return UnitRole.None;
         return capital ? UnitRole.Heavy
             : 2 * boats >= ships ? UnitRole.Flotilla
-            : Sightings.TypeOf(store[slot].Handling.Class) == ShipType.Merchant ? UnitRole.Auxiliary
+            : ShipTypes.IsMerchant(store[slot].Handling.Class) ? UnitRole.Auxiliary
             : UnitRole.Scout;
     }
 
@@ -118,7 +118,7 @@ public sealed class Roles(World world, Knowledge.MatchupJudge judge)
         var cls = store[m].Handling.Class;
         byte side = store[m].Side;
         ships++;
-        capital |= Sightings.TypeOf(cls) == ShipType.Capital;
+        capital |= world.Types.Of(cls) == ShipType.Capital;
         var p = judge.Matchups.Profile(world, cls);
         var (heaviest, typical) = References(side);
         if (judge.AttackerAgainst(world, p, heaviest ?? p, side) &&

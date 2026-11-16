@@ -115,8 +115,9 @@ public sealed class World
         Sea = new RollSea(new SeaSpectrum(SeaState.Of(weather.Here)));
         Reach = new SightReach(Settings);
         Encounters = new Encounters(Settings, Relations, Reach);
-        Sightings = new Sightings(Settings, Relations, Encounters, Reach, seed, Probes);
-        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings) { Reach = Reach };
+        Types = new ShipTypes(Settings);
+        Sightings = new Sightings(Settings, Relations, Encounters, Reach, Types, seed, Probes);
+        Ships = new ShipSystem(Settings, classes ?? new ShipClassRegistry(1), Probes, Relations, Encounters, Sightings, Types) { Reach = Reach };
         Sightings.Registry = Ships.Registry;
         Register(Ships);
         Groups = new GroupSystem { Store = Ships.Store };
@@ -210,6 +211,9 @@ public sealed class World
 
     /// <summary>Every navy's picture, and the looks that feed them (docs/battle/plan.md step 3.2d).</summary>
     public Sightings Sightings { get; }
+
+    /// <summary>What a class is reported as by type, against the ships in this world (capital ship, cruiser, ...).</summary>
+    public ShipTypes Types { get; }
 
     /// <summary>The lights at sea that light what's near them (docs/battle/night.md Q2), gathered at each look.</summary>
     public Lights Lights { get; } = new();

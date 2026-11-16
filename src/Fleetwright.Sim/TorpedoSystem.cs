@@ -451,15 +451,7 @@ public sealed class TorpedoSystem : IWorldSystem
             if (c.TakenFor >= 0 && ships.Registry.Get(c.TakenFor) is { } taken)
                 (length, draught) = (taken.Length, taken.Vertical.Draught);
             else
-                (length, draught) = c.Type switch
-                {
-                    ShipType.Capital => (180.0, 9.0),
-                    ShipType.Cruiser => (140.0, 6.0),
-                    ShipType.Destroyer => (85.0, 3.0),
-                    ShipType.Small => (40.0, 1.5),
-                    ShipType.Merchant => (120.0, 7.0),
-                    _ => (120.0, 4.0),
-                };
+                (length, draught) = world.Types.Typical(c.Type);   // the ships at sea reported as her type, on average
         }
         return (length, Math.Clamp(settings.TorpedoDepthShare * draught, settings.TorpedoDepthMinM, settings.TorpedoDepthMaxM));
     }

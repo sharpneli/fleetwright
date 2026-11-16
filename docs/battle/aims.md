@@ -62,7 +62,7 @@ weighted score.
   "aims": { "Germany": { "reach": "Mittelmeerdivision", "zone": { "at": [40.05, 26.2], "km": 15 }, "of": 1 } }
   ```
 - **Sink** (commerce raiding): sink, or make strike, a tonnage of an enemy's merchants (full load, as the results'
-  tonnes). The kind is the truth's `Sightings.TypeOf` (merchant), never how a ship was made. Optionally a hunting
+  tonnes). The kind is the truth's (`ShipTypes.IsMerchant`: no main battery), never how a ship was made. Optionally a hunting
   ground, a zone the raider knows to search. Scores the tonnage sunk over the target, at most 1: every merchant counts.
   Lost when the side has given up, or the enemy's merchants afloat can no longer make up the rest.
   ```json
@@ -230,7 +230,7 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
 ## A3, as built (2026-10-31)
 
 - **What a side wants sunk first** (`AimBook.Wanted`, at each update): for a Stop of a Reach, the kinds (as
-  `Sightings.TypeOf` reads a class) of the named ships still on their way, so a convoy's transports or a breaker; for
+  `ShipTypes.Of` reads a class) of the named ships still on their way, so a convoy's transports or a breaker; for
   a Sink, merchants (A4's raider reads the same); else none. A captain knows a ship by what his navy takes her for (the
   picture's type), never by her name.
 - **The commander** (`CommanderLayer`): an enemy group holding a wanted ship goes first in `Assign`, and a unit sent
@@ -273,7 +273,7 @@ Per `docs/ui-language.md`, drawn with `Ui/Pieces.cs`:
   them and her captain's guns go on them; a stronger warship and she declines by the balance as ever, making for home
   (her way home a Reach after the Sink: `Homes` already sends her to its zone).
 - **The merchants run** (`CaptainLayer.Flee`, `FleeThink`): a ship with no main battery and no torpedo tubes (what
-  she is: `Sightings.TypeOf` merchant), alone (not in a line: a convoy's admiral takes the line away), meeting an enemy
+  she is: `ShipTypes.IsMerchant`), alone (not in a line: a convoy's admiral takes the line away), meeting an enemy
   warship near (`FightCompareM`; a known foe not taken for a merchant, an unknown counting as one) flees by the
   cripple's way out (`Escape`: away from every enemy near, bent toward her home as they fall back) at flank speed,
   whatever her doctrine, instead of taking up Fight; her light guns fire at will as she goes. Once no warship's been

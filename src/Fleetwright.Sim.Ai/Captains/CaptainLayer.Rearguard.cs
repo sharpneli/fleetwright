@@ -131,7 +131,7 @@ public sealed partial class CaptainLayer
     bool Charge(ShipState sh, out bool aim)
     {
         aim = Book?.Reaching(sh.Side, sh.Entity) == true;
-        return aim || Sightings.TypeOf(sh.Handling.Class) == ShipType.Merchant;
+        return aim || ShipTypes.IsMerchant(sh.Handling.Class);
     }
 
     /// <summary>A group's ships in line, down its tree.</summary>

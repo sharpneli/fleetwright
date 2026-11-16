@@ -163,7 +163,7 @@ static class ScenarioPlay
                         var hk = (seed, r.Target);
                         if (!fightHits.TryGetValue(hk, out var list))
                             fightHits[hk] = list = [];
-                        list.Add(new FightHit(r.FiredMs, Sightings.TypeOf(w.Ships.Store[ss].Handling.Class),
+                        list.Add(new FightHit(r.FiredMs, w.Types.Of(w.Ships.Store[ss].Handling.Class),
                             w.Ships.Store[ss].Handling.Class.Motion.FullDisplacementT / Math.Max(her.Handling.Class.Motion.FullDisplacementT, 1),
                             r.TrueRangeM, r.Hits, way, answering, night));
                     }
@@ -265,7 +265,7 @@ static class ScenarioPlay
                                     noGunfire.Add(fc0);
                                     (noGunfireShips, noGunfireHits) = (noGunfireShips + 1, noGunfireHits + fc0.Hits);
                                 }
-                                FellOutWhy(w.Ships.Store[fo].Handling.Class, (Fleetwright.Sim.Ai.Captains.CaptainReason)fl.Count, fl.Ms,
+                                FellOutWhy(w.Types.Of(w.Ships.Store[fo].Handling.Class), (Fleetwright.Sim.Ai.Captains.CaptainReason)fl.Count, fl.Ms,
                                     fightHits.GetValueOrDefault((seed, fl.Entity)), fellWhy, fellBy);
                             }
                 });
@@ -408,11 +408,11 @@ static class ScenarioPlay
         static bool Boat(ShipType t) => t is ShipType.Destroyer or ShipType.Small;
 
         /// <summary>The nearest live ship of a kind to a point, on her side (own) or the other's, m.</summary>
-        static double Nearest(ShipStore store, Vec3d p, int side, bool own, Func<ShipType, bool> kind)
+        static double Nearest(ShipTypes types, ShipStore store, Vec3d p, int side, bool own, Func<ShipType, bool> kind)
         {
             double best = double.PositiveInfinity;
             for (int k = 0; k < store.Slots; k++)
-                if (store.IsAlive(k) && (store[k].Side == side) == own && kind(Sightings.TypeOf(store[k].Handling.Class)))
+                if (store.IsAlive(k) && (store[k].Side == side) == own && kind(types.Of(store[k].Handling.Class)))
                     best = Math.Min(best, (store[k].Position - p).Length);
             return best;
         }
@@ -426,7 +426,7 @@ static class ScenarioPlay
             seenGroups.Clear();
             for (int slot = 0; slot < store.Slots; slot++)
             {
-                if (!store.IsAlive(slot) || !Boat(Sightings.TypeOf(store[slot].Handling.Class)) || w.Groups.UnitOf(store[slot].Entity) is not { } g ||
+                if (!store.IsAlive(slot) || !Boat(w.Types.Of(store[slot].Handling.Class)) || w.Groups.UnitOf(store[slot].Entity) is not { } g ||
                     !seenGroups.Add(g.GroupId))
                     continue;
                 var (phase, target, _) = ai.Admirals.AttackOf(g.GroupId);
@@ -461,8 +461,8 @@ static class ScenarioPlay
                 }
                 if (phase is AttackPhase.Gain or AttackPhase.Run)
                 {
-                    run.MinHeavy = Math.Min(run.MinHeavy, Nearest(store, guide.Position, guide.Side, false, Heavy));
-                    run.MinBoat = Math.Min(run.MinBoat, Nearest(store, guide.Position, guide.Side, false, Boat));
+                    run.MinHeavy = Math.Min(run.MinHeavy, Nearest(w.Types, store, guide.Position, guide.Side, false, Heavy));
+                    run.MinBoat = Math.Min(run.MinBoat, Nearest(w.Types, store, guide.Position, guide.Side, false, Boat));
                 }
                 (run.Last, run.LastMs) = (phase, w.Time.Ms);
             }
@@ -479,7 +479,7 @@ static class ScenarioPlay
         {
             var store = w.Ships.Store;
             var her = store[slot];
-            if (!Boat(Sightings.TypeOf(her.Handling.Class)))
+            if (!Boat(w.Types.Of(her.Handling.Class)))
                 return;
             string way = "alone";
             if (w.Groups.UnitOf(her.Entity) is { } g)
@@ -491,9 +491,9 @@ static class ScenarioPlay
                 // whom her unit's guide fights, and what landed the hits
                 int foe = ai.Captains.FightEnemyOf(w.Groups.GuideShip(g));
                 if (foe != 0 && store.SlotOf(foe) is int fs and >= 0)
-                    way += $" / its guide fights a {Sightings.TypeOf(store[fs].Handling.Class)}";
+                    way += $" / its guide fights a {w.Types.Of(store[fs].Handling.Class)}";
                 var sc = store[shooter].Handling.Class;
-                way += $" / hit by a {Sightings.TypeOf(sc)}'s {(sc.Batteries[battery].Chief ? "chief" : "secondary")} guns";
+                way += $" / hit by a {w.Types.Of(sc)}'s {(sc.Batteries[battery].Chief ? "chief" : "secondary")} guns";
                 if (active.TryGetValue((seed, g.GroupId), out var run))
                     run.Hits[phase] += hits;
             }
@@ -503,9 +503,9 @@ static class ScenarioPlay
             if (!onBoats.TryGetValue(k, out var e))
                 onBoats[k] = e = (0, [], [], []);
             onBoats[k] = (e.Hits + hits, e.Own, e.Heavy, e.Boat);
-            e.Own.Add(Nearest(store, her.Position, her.Side, true, Heavy));
-            e.Heavy.Add(Nearest(store, her.Position, her.Side, false, Heavy));
-            e.Boat.Add(Nearest(store, her.Position, her.Side, false, Boat));
+            e.Own.Add(Nearest(w.Types, store, her.Position, her.Side, true, Heavy));
+            e.Heavy.Add(Nearest(w.Types, store, her.Position, her.Side, false, Heavy));
+            e.Boat.Add(Nearest(w.Types, store, her.Position, her.Side, false, Boat));
         }
 
         public void FellOut(World w, AiSystem ai, ulong seed, int slot)
@@ -561,10 +561,10 @@ static class ScenarioPlay
 
     /// <summary>A ship fallen out, into the fall-out breakdown: who landed most of her hits (by type and weight against
     /// hers), the hits' median range, and what she was doing when they began.</summary>
-    static void FellOutWhy(ShipClass cls, Fleetwright.Sim.Ai.Captains.CaptainReason reason, long ms, List<FightHit>? hits,
+    static void FellOutWhy(ShipType type, Fleetwright.Sim.Ai.Captains.CaptainReason reason, long ms, List<FightHit>? hits,
         SortedDictionary<string, (int Ships, long Hits, double Minutes)> why, SortedDictionary<string, (int Ships, long Hits, double Minutes)> by)
     {
-        string her = Sightings.TypeOf(cls).ToString();
+        string her = type.ToString();
         if (hits == null || hits.Count == 0)
         {
             Add(why, $"{her} {reason}: no gunfire hits (torpedoes, a collision, or the sea)", 0, 0);

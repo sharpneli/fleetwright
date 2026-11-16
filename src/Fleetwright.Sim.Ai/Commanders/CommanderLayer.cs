@@ -354,7 +354,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 {
                     var cls = store[m].Handling.Class;
                     tonnage += cls.Motion.FullDisplacementT;
-                    if (Sightings.TypeOf(cls) == ShipType.Capital)
+                    if (ctx.World.Types.Of(cls) == ShipType.Capital)
                         capital += cls.Motion.FullDisplacementT;
                     if (Book.Reaching(gs, ship))
                         reaching++;
@@ -367,7 +367,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (!store.IsAlive(slot) || groups.Of(store[slot].Entity) != null)
                 continue;
             var cls = store[slot].Handling.Class;
-            bool capital = Sightings.TypeOf(cls) == ShipType.Capital;
+            bool capital = ctx.World.Types.Of(cls) == ShipType.Capital;
             var role = Captains!.OwnCall(store[slot].Entity) ? UnitRole.None   // fallen out or a rearguard: the captain's
                 : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,

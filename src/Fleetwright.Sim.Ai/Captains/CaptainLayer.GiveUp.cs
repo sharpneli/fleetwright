@@ -134,7 +134,7 @@ public sealed partial class CaptainLayer
     {
         var cls = own.Handling.Class;
         var combat = ctx.Ships.Combat;
-        if (Sightings.TypeOf(cls) != ShipType.Merchant && fit.MainGunsShare > s.GiveUpGunsShare && !Spent(cls, combat, slot))
+        if (!ShipTypes.IsMerchant(cls) && fit.MainGunsShare > s.GiveUpGunsShare && !Spent(cls, combat, slot))
             return false;
         var k = combat.Condition(slot);
         for (int l = 0; l < cls.Launchers.Length; l++)
