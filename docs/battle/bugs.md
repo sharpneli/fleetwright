@@ -255,7 +255,8 @@ runs 5-7, after its fix, and the Debug run had none.
   ironclads and three more boats; re-balance once the boats attack. **They attack now** (2026-11-16, the relative capital
   line: the Russian ironclads are capital ships, so the flotilla attack has a line to go at): 10.2 torpedoes a game, the
   Ottomans lose 8.2 of 16 (3.3 before), mostly boats, and Russia lands 15 of 16 (9). Fewer Russian battleships don't
-  answer it (two: 13 of 16, one: 12 of 16); the re-balance is the Ottoman side's.
+  answer it (two: 13 of 16, one: 12 of 16); the re-balance is the Ottoman side's. With the allocation (allocation.md AL3, the Ottoman
+  ironclads a line their boats screen and attack from) Russia lands 10 of 16 again: no re-balance needed for now.
 
 - [x] **A search line spread over the land** (found 2026-11-09 by the user playing Pungdo: Akitsushima "decided to
   stop before we even found the enemy"). The Stop side's search (aims.md A3) spread the Flying Squadron abreast 0.9 of

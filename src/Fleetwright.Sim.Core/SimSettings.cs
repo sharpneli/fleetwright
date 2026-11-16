@@ -2765,11 +2765,21 @@ public sealed record SimSettings
     /// (and so picks the range) by more than MatchupSpeedMarginKn. A side's share lost is never taken under MatchupFloor,
     /// so a ratio of two small numbers stays finite. Minutes, knots, a share.</summary>
     public double MatchupFightMin { get; init; } = 30;
-    /// <summary>A unit's worked-out role (docs/battle/admirals-orders.md O7c): a ship whose torpedoes are her better weapon
-    /// against her side's heaviest class is a boat (toward a flotilla) unless she's this many times the typical boat's
-    /// displacement or more (the most numerous such class at sea): then she scouts. At the Jutland the boats run to 2,490 t
-    /// (B97) against an M-class, the cruisers from 3,050 t; relative, so it holds in any era.</summary>
+    /// <summary>A boat (docs/battle/admirals-orders.md O7c, allocation.md AL1): an attacker (her torpedoes her better weapon
+    /// against the enemy's main body) under this many times the typical boat's displacement (the most numerous class among
+    /// both sides' attackers); a unit half of whose ships are is a boat, and never scouts. At the Jutland the boats run to
+    /// 2,490 t (B97) against an M-class, the cruisers from 3,050 t; relative, so it holds in any era.</summary>
     public double RoleScoutSizeRatio { get; init; } = 1.5;
+    /// <summary>An admiral's allocation (docs/battle/allocation.md "The allocation"): a unit is strong, a match for the line,
+    /// from AllocationLineShare of his strongest unit's strength; of the strong, those within AllocationSpareKn of the
+    /// slowest's speed are the line, the faster what he can send ahead (and a scout must be that much faster than the line
+    /// to get ahead of it); a task that wants scouts ahead of its main body has AllocationScouts of them (ahead and off
+    /// either bow, Dispositions' bearings). He thinks it over every AllocationPeriodMs, and whenever his units change.
+    /// [EST], an admiral's judgement: a share, knots, units, ms.</summary>
+    public double AllocationLineShare { get; init; } = 0.5;
+    public double AllocationSpareKn { get; init; } = 1.5;
+    public int AllocationScouts { get; init; } = 3;
+    public int AllocationPeriodMs { get; init; } = 60_000;
     /// <summary>What a class is reported as by type (<c>ShipTypes</c>), against the world's warships, not an era's
     /// tonnage: from these shares of their tonnage-weighted mean full displacement (Σt² / Σt over every ship placed) a
     /// capital ship, a cruiser, a destroyer; under the last, a small craft. Set so the Jutland's lines fall where the old

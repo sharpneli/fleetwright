@@ -53,7 +53,8 @@ public sealed class MatchupProfile
     static int made;
     /// <summary>Its number among every profile made (dense among a world's, made together): where a gun keeps its table
     /// against it (<see cref="MatchupGun.Against"/>).</summary>
-    internal int Number { get; } = Interlocked.Increment(ref made);
+    /// <summary>The profile's number in this process, from 1 (tables by profile; a cache's key).</summary>
+    public int Number { get; } = Interlocked.Increment(ref made);
     /// <summary>The chief guns' reach (<see cref="BatteryRow.Chief"/>: the heaviest of them), m; 0 without any.</summary>
     public double MainReachM { get; }
 

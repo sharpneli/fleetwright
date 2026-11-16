@@ -176,6 +176,8 @@ Decision 2: the screen's place is its admiral's judgement, not a fixed geometry.
 
 Decision 4: the player says what a squadron is for.
 
+- *Since 2026-11-16 the roles are allocated, not worked out unit by unit: each admiral fills the jobs his task needs
+  from the units he has (`docs/battle/allocation.md` AL1-AL3); the rest of this section is how it began.*
 - **`UnitRole`** (`Sim.Ai/Roles.cs`, moved from the commander): battle line (`Heavy`), scouting, screening (new),
   torpedo flotilla, auxiliary. **Worked out** from the unit's line when nobody set it, as the commander did before
   (capital ships: battle line; torpedo craft, half its ships or more: flotilla; a guide with no main battery: auxiliary;

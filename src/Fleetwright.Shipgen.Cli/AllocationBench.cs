@@ -17,6 +17,9 @@ static class AllocationBench
 {
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+    /// <summary>Each strength's gunfight shown (<c>--explain</c>).</summary>
+    public static bool Explain;
+
     public static int Run(string root, IReadOnlyList<string> paths, SimSettings settings, string landPath, double minutes, bool land)
     {
         string repo = Path.GetFullPath(Path.Combine(root, ".."));
@@ -129,7 +132,11 @@ static class AllocationBench
         string role = ai.Roles.Of(u) + (ai.Roles.IsSet(u) ? " (set)" : "");
         string ships = string.Join(" + ", kinds.Select(p => $"{p.Value} {p.Key}"));
         string pad = new(' ', 2 * depth);
-        Console.WriteLine(string.Format(Inv, "{0}{1,-" + Math.Max(4, 34 - 2 * depth) + "} {2,-10} {3,-18} {4,7:#,0} t {5,5:0.0} kn  {6}",
-            pad, name, role, kind == Sim.Ai.Tasks.TaskKind.None ? "its orders" : $"{kind} {state}", tons, slots.Count > 0 ? kn : 0, ships));
+        var m = ai.Measures.Of(u);
+        string measures = string.Format(Inv, "str {0,8:#,0} q {1,4:0.00} {2,5:0.0} kn {3} scr {4,5:0.00} sct {5,5:0.00}", m.StrengthT, m.Quality, m.SpeedKn, m.Attacker ? "att" : "   ", m.Screening, m.Scouting);
+        if (Explain && ai.Measures.Explain(u) is var x)
+            measures += string.Format(Inv, " [{0,6:0} m, lost {1:0.0000} v {2:0.0000}]", x.RangeM, x.LostA, x.LostB);
+        Console.WriteLine(string.Format(Inv, "{0}{1,-" + Math.Max(4, 34 - 2 * depth) + "} {2,-10} {3,-18} {4,7:#,0} t  {5}  {6}",
+            pad, name, role, kind == Sim.Ai.Tasks.TaskKind.None ? "its orders" : $"{kind} {state}", tons, measures, ships));
     }
 }

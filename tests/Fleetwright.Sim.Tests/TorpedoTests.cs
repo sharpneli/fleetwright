@@ -284,45 +284,55 @@ public class TorpedoTests(ITestOutputHelper output)
         output.WriteLine($"seed {seed}");
         warm += 60;
         w.AdvanceTo(s.Start + warm * 1000);
+        // the attack played out once untimed, then its replay timed: every path it takes (a gas run's first steps among them)
+        // has run once in this process, and a path's first run may allocate (the JIT, a static's first use), play mustn't
+        long end = warm + 34 * 60;
+        w.AdvanceTo(s.Start + end * 1000);
+        var r = new World(s.Start, seed, Settings, w.Ships.Registry);
+        _ = new AiSystem(r);
+        var log = w.CommandLog;
+        int next = 0;
+        void ReplayTo(long ms)
+        {
+            for (; next < log.Count && log[next].At.Ms <= ms; next++)
+            {
+                r.AdvanceTo(log[next].At);
+                r.Apply(log[next].Command);
+            }
+            r.AdvanceTo(new WorldTime(ms));
+        }
+        ReplayTo((s.Start + warm * 1000).Ms);
         // nothing a second, but in the seconds a ship goes or falls out of her group (one-off events may allocate: the
         // user, 2026-10-14; falling out, docs/battle/command.md 5.1a)
         long allocated = 0;
         int Grouped()
         {
             int n = 0;
-            for (int k = 0; k < w.Groups.Count; k++)
-                n += w.Groups[k].Members.Count;
+            for (int k = 0; k < r.Groups.Count; k++)
+                n += r.Groups[k].Members.Count;
             return n;
         }
         int Afloat()
         {
             int n = 0;
-            for (int slot = 0; slot < w.Ships.Store.Count; slot++)
-                n += w.Ships.Store.Combat.Condition(slot).Status == ShipStatus.Afloat ? 1 : 0;
+            for (int slot = 0; slot < r.Ships.Store.Count; slot++)
+                n += r.Ships.Store.Combat.Condition(slot).Status == ShipStatus.Afloat ? 1 : 0;
             return n;
         }
-        for (long t = warm; t < warm + 34 * 60; t++)
+        for (long t = warm; t < end; t++)
         {
-            int ships = w.Ships.Store.Count, grouped = Grouped(), afloat = Afloat();
+            int ships = r.Ships.Store.Count, grouped = Grouped(), afloat = Afloat();
             long networks = GasNetwork.Made;
             long before = GC.GetAllocatedBytesForCurrentThread();
-            w.AdvanceTo(s.Start + (t + 1) * 1000);
+            ReplayTo((s.Start + (t + 1) * 1000).Ms);
             long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
             // a ship lost is one going, from the moment she's lost; more of a class burning at once than ever grows its gas pool, once
-            if (w.Ships.Store.Count == ships && Grouped() == grouped && Afloat() == afloat && GasNetwork.Made == networks)
+            if (r.Ships.Store.Count == ships && Grouped() == grouped && Afloat() == afloat && GasNetwork.Made == networks)
                 allocated += bytes;
         }
         output.WriteLine($"first torpedoes at {(warm - 60) / 60.0:F1} min; torpedoes fired {w.Torpedoes.Fired}, hits {w.Torpedoes.Hits}; {allocated} bytes in 34 minutes");
         Assert.Equal(0, allocated);
-
-        var r = new World(s.Start, seed, Settings, w.Ships.Registry);
-        _ = new AiSystem(r);
-        foreach (var c in w.CommandLog)
-        {
-            r.AdvanceTo(c.At);
-            r.Apply(c.Command);
-        }
-        r.AdvanceTo(w.Time);
+        ReplayTo(w.Time.Ms);
         Assert.Equal(w.ComputeHash(), r.ComputeHash());
     }
 

@@ -174,7 +174,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public byte Side;
         public int Slot;            // its guide's
         public UnitRole Role;
-        public double TonnageT, CapitalT;   // its ships', and its capital ships'
+        public double TonnageT;     // its ships'
+        public bool Main;           // its side's main body by the allocation (docs/battle/allocation.md AL3)
         public int Group;           // the enemy group it's sent after at this think (-1: none)
         public int Reaching;        // its ships reaching for its side's pursued Reach (docs/battle/aims.md A2)
     }
@@ -346,20 +347,17 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (g.Parent != 0)
                 continue;
             groups.LineOffsets(g, line);
-            double tonnage = 0, capital = 0;
+            double tonnage = 0;
             int reaching = 0;
             byte gs = store[slot].Side;
             foreach (var (ship, _, _) in line)
                 if (store.SlotOf(ship) is int m and >= 0)
                 {
-                    var cls = store[m].Handling.Class;
-                    tonnage += cls.Motion.FullDisplacementT;
-                    if (ctx.World.Types.Of(cls) == ShipType.Capital)
-                        capital += cls.Motion.FullDisplacementT;
+                    tonnage += store[m].Handling.Class.Motion.FullDisplacementT;
                     if (Book.Reaching(gs, ship))
                         reaching++;
                 }
-            tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = gs, Slot = slot, TonnageT = tonnage, CapitalT = capital,
+            tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = gs, Slot = slot, TonnageT = tonnage, Main = Roles.IsMain(Unit.Group(g.GroupId)),
                 Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1, Reaching = reaching });
         }
         for (int slot = 0; slot < store.Slots; slot++)
@@ -367,11 +365,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (!store.IsAlive(slot) || groups.Of(store[slot].Entity) != null)
                 continue;
             var cls = store[slot].Handling.Class;
-            bool capital = ctx.World.Types.Of(cls) == ShipType.Capital;
             var role = Captains!.OwnCall(store[slot].Entity) ? UnitRole.None   // fallen out or a rearguard: the captain's
                 : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,
-                CapitalT = capital ? cls.Motion.FullDisplacementT : 0, Role = role, Group = -1,
+                Main = Roles.IsMain(Unit.Ship(store[slot].Entity)), Role = role, Group = -1,
                 Reaching = Book.Reaching(store[slot].Side, store[slot].Entity) ? 1 : 0 });
         }
     }
@@ -380,9 +377,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// of his units go after which group, how he sees the battle; then each of his units by its role.</summary>
     void Command(in AiContext ctx, SideState s, byte side, int player)
     {
-        // the main body: the most capital ships' tonnage, else the biggest (torpedo craft and screens only if there's
-        // nothing else); while his side reaches for a zone, the unit with the most ships reaching, a convoy's auxiliaries
-        // too (docs/battle/aims.md A2): what the rest support
+        // the main body: the allocation's (docs/battle/allocation.md AL3: the strongest of his line), else the biggest
+        // (flotillas and screens only if there's nothing else); while his side reaches for a zone, the unit with the most
+        // ships reaching, a convoy's auxiliaries too (docs/battle/aims.md A2): what the rest support
         int pursued = Book.Pursued(side);
         Zone? zone = pursued >= 0 && Book[side, pursued].Kind == AimKind.Reach ? Book[side, pursued].Zone : null;
         (cur, hunt, wanted) = (s, Book.SearchZone(side), Book.Wanted(side));
@@ -528,7 +525,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     static bool Bigger(in Top a, in Top b) =>
         Attending(a.Role) != Attending(b.Role) ? Attending(b.Role)
-        : a.CapitalT != b.CapitalT ? a.CapitalT > b.CapitalT
+        : a.Main != b.Main ? a.Main
         : a.TonnageT > b.TonnageT;
 
     /// <summary>Whether a role keeps a unit with the others (a flotilla, a screen): never the main body while there's

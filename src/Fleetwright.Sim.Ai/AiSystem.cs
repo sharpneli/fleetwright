@@ -43,6 +43,9 @@ public sealed class AiSystem : IWorldSystem
     /// <summary>What each unit is for (docs/battle/admirals-orders.md O6).</summary>
     public Roles Roles { get; }
 
+    /// <summary>What each unit brings to its admiral's allocation (docs/battle/allocation.md AL1).</summary>
+    public ForceMeasures Measures { get; }
+
     /// <summary>Who can fight whom (docs/battle/command.md 5.1g): the judgements every layer asks (not world state).</summary>
     public MatchupJudge Judge { get; }
 
@@ -79,7 +82,8 @@ public sealed class AiSystem : IWorldSystem
         {
             Judge = Judge, TrailPoints = world.Settings.FollowTrackPoints, Store = world.Ships.Store, Book = Aims,
         };
-        Roles = new Roles(world, Judge);
+        Measures = new ForceMeasures(world, Judge, Doctrine);
+        Roles = new Roles(world, Measures, Doctrine);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge, Roles = Roles };
         Captains.Admirals = Admirals;
         Tactical = new TacticalPicture(Seen, Judge.Matchups);
@@ -89,6 +93,7 @@ public sealed class AiSystem : IWorldSystem
         Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
         Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Book = Aims };
         (Admirals.Attacks, Admirals.Commanders) = (Attacks, Commanders);
+        (Roles.Tasks, Roles.Commanders, Roles.Book) = (Tasks, Commanders, Aims);
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];
         tickGen = new int[layers.Length];
@@ -465,6 +470,7 @@ public sealed class AiSystem : IWorldSystem
         if (e.Generation != tickGen[layer])
             return;   // replaced by a sooner one
         nextTick[layer] = -1;
+        Roles.Refresh(world.Time.Ms);   // the admirals' allocation, thought over when due (docs/battle/allocation.md AL3)
         try
         {
             layers[layer].Think(Thinking(world, (int)e.A));

@@ -321,7 +321,7 @@ public static class Program
                     double.Parse(a.Get("at", "10")!, System.Globalization.CultureInfo.InvariantCulture), !a.Has("no-land"), a.Has("replay"),
                     a.Get("watch")?.Split(',').Select(int.Parse).ToArray(),
                     double.Parse(a.Get("speed", "0")!, System.Globalization.CultureInfo.InvariantCulture), a.Has("fire-trace"), SmokeSwitch(a)),
-                "allocation" => AllocationBench.Run(Root(a), a.Positional, Settings(a), a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"),
+                "allocation" when (AllocationBench.Explain = a.Has("explain")) is var _ => AllocationBench.Run(Root(a), a.Positional, Settings(a), a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"),
                     D(a, "minutes", 240), !a.Has("no-land")),
                 "duel" => DuelCmd(a),
                 "coarse-parity" => CoarseParity.Run(Settings(a), Root(a), n => Class(a, n), new CoarseParity.Options(a.Get("panel", "standard")!,
@@ -459,7 +459,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes" or "--anchors")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes" or "--anchors" or "--explain")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

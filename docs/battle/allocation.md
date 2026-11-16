@@ -134,9 +134,9 @@ aims' kinds) reads her matchup instead.
 | Step | What | State |
 |---|---|---|
 | AL0 | **The bench:** `shipgen allocation SCENARIO`: each side's units, their measures and jobs at the start and at first contact; fixtures for the cases below | **done 2026-11-16** (below) |
-| AL1 | **What a unit brings:** strength, speed, attack, screening, eye, per unit at a think, from the matchup profiles | |
-| AL2 | **The jobs by task**, the table above | |
-| AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | |
+| AL1 | **What a unit brings:** strength, speed, attack, screening, eye, per unit at a think, from the matchup profiles | **done 2026-11-16** (eye with AL4) |
+| AL2 | **The jobs by task**, the table above | **done 2026-11-16** (scouts, the scouting force's match, the screen) |
+| AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | **done 2026-11-16**, with the force admirals' members (AL4's pass) |
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | |
 | AL6 | **Regrouping** the worn-down squadrons | |
@@ -172,6 +172,87 @@ The cases the bench keeps (AL0), each with what an admiral would do:
 - The Jutland's Grand Fleet: the battleships the line; the battlecruisers and Hood's squadron scouting ahead, the
   armoured cruisers a scouting line; the light cruisers and destroyers screening, the destroyers sent in to attack
   (`research/jutland-1400-dispositions.md` for the record's dispositions).
+
+### AL1 What a unit brings (built 2026-11-16)
+
+`ForceMeasures` (`AiSystem.Measures`; the bench's columns), each unit's figures against the enemy as his side knows him:
+good intelligence, his order of battle as it is (decision 2); with no enemy, the side's own fleet (a reference as rough
+as the old one, a side's own heaviest class). The side's references are reckoned from squadrons and ships in none,
+whatever forces gather them (a fleet's twenty-four battleships in one force would hide its line otherwise):
+
+- **Strength:** a gunfight against as much tonnage of the enemy's mix as the unit's own, at a fifth, two, three and four
+  fifths of the longest main guns' reach between them (the ranges come from the guns, so it holds in any era), the share
+  of his it puts out over all four against the share of its own it loses, times its tonnage. Two tries went first: the
+  matchup's judgement at the range the enemy picks made a ratio of two near-nothings of a fast enemy keeping out of a
+  slow line's reach (the Yalu's Dingyuans worth a quarter of China's cruisers), and its style let his torpedo attack
+  count against a line (the screen's to answer). The torpedo threat stays out of a line's worth.
+- **Quality** (strength a tonne) and **strength a ship** (quality at the tonnage-weighted mean size of its ships, Σt²/Σt):
+  what one of its ships is worth in the line whatever the unit's size.
+- **Speed:** its slowest ship's, as she is now.
+- **Attacker:** its torpedoes beat its guns against his main body, in half its tonnage or more (a battlecruiser squadron
+  with its destroyers isn't one).
+- **Boat:** an attacker half of whose ships are under `RoleScoutSizeRatio` (1.5) times the typical boat's size (the most
+  numerous class among both sides' attackers): the old relative rule (O7c), kept. A light cruiser and a destroyer are
+  alike against a battleship and alike in every fight the matchup weighs; her size is what sets the cruiser apart.
+  Germany's light cruisers fare a tenth as well as Britain's against the other's mix, and by their fighting alone they
+  were boats.
+- **Screening** and **scouting:** the same gunfight against as much of his attackers, or of his scouts (his squadrons
+  faster than his line), as its own.
+
+### AL2-AL3 The jobs and the allocation (built 2026-11-16)
+
+`Roles` allocates each admiral's units: the side's top units by its commander's task (`SideNeeds`: on passage, a Reach
+pursued, or withdrawing, a screen; else the approach, three scouts, a scouting force a match for his and a screen), a
+force's members by the force's task (`ForceNeeds`: closing, scouting or on its orders, three scouts and a screen;
+searching, attacking or screening, nothing; on passage, a screen). One pass (`Roles.Allocate`):
+
+1. No main battery: kept back.
+2. **The line:** of the armed units that aren't attackers (all, if every one is), the strong (strength a ship at
+   `AllocationLineShare` 0.5 of the best or more) within `AllocationSpareKn` (1.5 kn) of the slowest strong one's
+   speed; the strongest is the main body (`Roles.IsMain`, the commander's main body now).
+3. **Scouts:** the strong with speed to spare, always (the scouting force, the fast wing); then for the task's
+   `AllocationScouts` positions the units at least the margin faster than the line that aren't boats, best against his
+   scouts first (his line, if he has none), and more while the scouting force is no match for his (doctrine's bar).
+4. **The rest:** attackers to the flotillas; a match for his attackers and able to keep station, to the screen when the
+   task wants one; else with the line.
+
+Thought over at the AI's thinks only, every `AllocationPeriodMs` (60 s, the commander's own period) and whenever the
+squadrons change (a hash of their parents and members), never when the map asks: a replay allocates alike. Hashed.
+**Its cost:** about 50 ms a rethink at the Jutland (every squadron's figures against the enemy's mix, four gunfights
+each); every 10 s that made a Jutland seed 8.5 minutes, every 60 s 5 (5.9 before AL1, another battle). An exact cache of
+the figures (direct-mapped, keyed by each side's classes, counts and condition) spares the rethinks where nothing
+changed, before contact; in battle a ship's every change of state counts. Left for the workers (W15) if it shows. The tests' roles all hold as they
+were written (battleships Heavy, light cruisers scouting, destroyers screening, a flotilla its light cruisers lead sent
+in whole); the zero-garbage tests too, after one fix to a test: the flotilla attack's now runs to its first gas (a
+burst's in game time), whose first steps in a process allocate 32 bytes (the runtime's first run of the solver's loop:
+a second run in the same process allocates nothing), so its allocation check is on the attack's replay, every path having
+run once.
+
+The bench now (`docs/battle/allocation/al3.txt`):
+
+- **Battle fleets:** Britain's battleships the line, the battlecruisers and light cruisers scouting, the destroyers a
+  flotilla; Germany's High Seas Fleet the same inside its force (I and II Scouting Groups scouting, the flotilla screening).
+- **Destroyers alone:** the slower flotilla the line, the faster scouting (the strong with speed to spare); Germany's two
+  of a speed both the line.
+- **The prizes' war:** each force's cruisers its line, its destroyers scouting ahead (not attackers against cruisers,
+  and the task wants scouts).
+- **The Yalu:** Japan's Flying Squadron is so much the stronger a ship (3.5 a tonne against the Main Squadron's 1.2)
+  that the Main Squadron isn't strong beside it: both Japan's line. China's ironclads and cruisers its line, the armoured
+  cruisers a flotilla (boats beside the ironclads' sizes).
+- **The Jutland:** Britain's Grand Fleet the main body; the Battlecruiser Fleet, the 5th Battle Squadron, Hood's
+  squadron, the armoured cruisers' screen, Yarmouth and the Battlecruiser Fleet's light cruisers scouting; the
+  destroyers and the other light cruisers flotillas; Hampshire screening. Germany's High Seas Fleet the main body,
+  Hipper's I and the II Scouting Group scouting, the torpedo boats flotillas.
+- **The battle squadron alone** keeps all four in its line: its lookouts on the bows are AL4's.
+
+**What it moved** (`docs/battle/allocation/al3/`: the panel at 8 seeds, the early wave at 16, beside balance.md's
+"The capital line made relative"): 9 of 14 sides within about twice the record (7); the record's loser lost more in 24 of
+44 (25). Heligoland comes into its band (Britain 0.1, Germany 2.8 of 16, record 0 and 4; 4.8 and 10.5), the Jutland's
+Britain stays in it (14.0), Germany's 49.0 is where it was (about 4x, BL3's volume of fire); the Dogger Bank's Germany
+5.6 (2.0; record 1). The early wave: the Bosporus's Russia lands 10 of 16 (15: its boats attack as before, the
+Ottomans' ironclads now a line), Åland 8 of 16 each way (Finland's aims 5 of 16), Pungdo's China 8 of 16, Port Arthur's
+Russia 5 of 16; the Yalu and Conrad's war as they were. The prizes' war still doesn't fight (0.0 / 0.3): each force's
+cruisers its line, its destroyers scouting ahead, both commanders declining an even fight (bugs.md). The panel 627 s (701).
 
 ## Questions for the user
 
