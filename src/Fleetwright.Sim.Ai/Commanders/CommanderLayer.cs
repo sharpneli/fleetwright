@@ -772,11 +772,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return best;
     }
 
-    /// <summary>A top unit's ships into a side of a matchup, exactly.</summary>
+    /// <summary>A top unit's ships into a side of a matchup, exactly: every ship down its tree, in its line or not. A
+    /// force's admiral takes squadrons off the line as its screen, and they fight with it (balance.md BL6: the Yalu's
+    /// Beiyang Fleet judged by its two ironclads alone, its five cruisers screening, declined at 0.08 against 1.1).</summary>
     void AddTop(in AiContext ctx, in Top t, MatchupSide into)
     {
         if (t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { } g)
-            Judge.AddGroup(ctx.World, g, into);
+            Judge.AddMembers(ctx.World, g, into);
         else
             into.AddOwn(ctx.World, Judge.Matchups, t.Slot);
     }

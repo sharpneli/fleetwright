@@ -1,0 +1,901 @@
+--- aland seed 1921: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +143 min: Point-blank brawl
+    first struck +91; out of the fight +139 (OutSteering); shell hits 168 (heavy 22, medium 72, light 74), 57 after she was out, 133 in the last 30 min; torpedoes 0 (water 0%), near misses 10; last struck 0.1 min before the end
+    when first struck: Course, task Intercept; 12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.0 km, heavy 5.5 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 39303 t, friends 10854 t
+    T-30: Route, task Withdraw                                 15.0 kn, speed 100%, guns 100%, water   0% (19 t, holes 25.7 m², pumps 100%), list  0.0, GM  0.84, fire 21 MW; enemy 4.4 km, heavy 4.4 km
+    T-25: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (26 t, holes 25.7 m², pumps 100%), list  0.0, GM  0.79, fire 20 MW; enemy 3.7 km, heavy 3.7 km
+    T-20: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (29 t, holes 25.7 m², pumps 100%), list  0.0, GM  0.77, firing, fire 20 MW; enemy 2.9 km, heavy 2.9 km | next 5 min: 15 Cruiser at 2.2 km
+    T-15: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (32 t, holes 27.4 m², pumps 100%), list  0.0, GM  0.75, firing, fire 21 MW; enemy 2.2 km, heavy 2.2 km | next 5 min: 14 Cruiser at 1.9 km
+    T-10: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (38 t, holes 29.6 m², pumps 100%), list  0.1, GM  0.70, firing, fire 22 MW; enemy 2.9 km, heavy 2.9 km | next 5 min: 34 Cruiser at 0.8 km
+    T- 5: Route, task Withdraw                                 13.6 kn, speed 100%, guns 100%, water   1% (46 t, holes 30.0 m², pumps 100%), list  0.2, GM  0.63, fire 30 MW; enemy 0.8 km, heavy 0.8 km | next 5 min: 70 Cruiser at 1.5 km
+    T- 0: Home (OutSteering), out of her line                  11.1 kn, speed   0%, guns  50%, water  14% (652 t, holes 85.2 m², pumps 100%), list 15.7, GM  0.11, steering Engines, dark, fire 46 MW; enemy 2.7 km, heavy 2.7 km
+
+--- aland seed 1921: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +114 min: Cripple finished off
+    first struck +95; out of the fight +99 (OutGuns); shell hits 108 (heavy 34, medium 57, light 17), 59 after she was out, 108 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.2 min before the end
+    when first struck: Station, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 1.9 km, heavy 3.4 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 8858 t
+    T-30: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 11.6 km, heavy 13.1 km
+    T-25: Course, task Intercept                               13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.8 km, heavy 8.0 km
+    T-20: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 1.9 km, heavy 3.4 km | next 5 min: 49 Cruiser at 1.8 km, 4 Destroyer at 2.1 km
+    T-15: Home (OutGuns), out of her line                       8.5 kn, speed 100%, guns   0%, water   0% (0 t, holes 66.0 m², pumps 100%), list  0.0, GM  0.83, fire 4 MW; enemy 1.8 km, heavy 1.8 km | next 5 min: 41 Cruiser at 2.6 km
+    T-10: Home (OutGuns), out of her line                       5.1 kn, speed   0%, guns   0%, water  45% (2073 t, holes 122.0 m², pumps 100%), list  6.4, GM  0.37, steering Jammed, dark, fire 8 MW; enemy 3.5 km, heavy 3.5 km | next 5 min: 7 Cruiser at 3.7 km
+    T- 5: Home (OutGuns), out of her line                       3.8 kn, speed   0%, guns   0%, water  54% (2498 t, holes 123.5 m², pumps 100%), list  0.8, GM  0.46, steering Jammed, dark, fire 12 MW; enemy 2.3 km, heavy 2.3 km | next 5 min: 7 Cruiser at 0.3 km
+    T- 0: Home (OutGuns), out of her line                       3.1 kn, speed   0%, guns   0%, water  63% (2912 t, holes 126.6 m², pumps 100%), list  7.6, GM  0.17, steering Jammed, dark, fire 36 MW; enemy 0.3 km, heavy 0.3 km
+
+--- aland seed 1921: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +103 min: Point-blank brawl
+    first struck +95; out of the fight +100 (OutGuns); shell hits 64 (heavy 17, medium 19, light 28), 14 after she was out, 64 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 0.2 min before the end
+    when first struck: Station, task Intercept; 13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 2.4 km, heavy 3.7 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 8858 t
+    T-30: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.0 km, heavy 10.2 km
+    T-25: Station, task Intercept                              11.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 12.7 km, heavy 14.5 km
+    T-20: Station, task Intercept                              13.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 13.5 km, heavy 16.4 km
+    T-15: Station, task Intercept                              13.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.6 km, heavy 11.3 km
+    T-10: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.3 km, heavy 6.4 km | next 5 min: 10 Destroyer at 2.1 km, 4 Cruiser at 2.0 km
+    T- 5: Station, task Withdraw                               10.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 2.1 km, heavy 2.3 km | next 5 min: 50 Cruiser at 2.5 km
+    T- 0: Home (OutGuns), out of her line                       9.2 kn, speed   0%, guns   0%, water  52% (2380 t, holes 60.1 m², pumps 100%), list 16.5, GM -0.03, steering Lost, dark, fire 3 MW; enemy 2.7 km, heavy 2.7 km
+
+--- aland seed 1921: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Abandoned at +54 min: Cripple finished off
+    first struck +44; out of the fight +48 (OutSteering); shell hits 24 (heavy 8, medium 8, light 8), 16 after she was out, 24 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 4.3 min before the end
+    when first struck: Station, task Screen;  9.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.7 km, heavy 4.7 km, own heavy 3.6 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +54, went under +55
+    T-30: Station, task Screen                                 10.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.8 km, heavy 10.8 km
+    T-25: Station, task Screen                                  8.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.7 km, heavy 10.7 km
+    T-20: Station, task Screen                                 25.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.6 km, heavy 11.6 km
+    T-15: Station, task Screen                                 26.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.0 km, heavy 8.0 km | next 5 min: 1 Cruiser at 4.6 km
+    T-10: Station, task Screen                                  9.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.7 km, heavy 4.7 km | next 5 min: 19 Cruiser at 4.6 km
+    T- 5: Home (OutSteering), out of her line                   8.8 kn, speed   0%, guns  50%, water   4% (85 t, holes 67.2 m², pumps 0%), list  4.1, GM -0.07, steering Engines, dark, firing; enemy 4.4 km, heavy 4.4 km | next 5 min: 4 Cruiser at 5.1 km
+    T- 0: Home (OutSteering), out of her line                   4.3 kn, speed   0%, guns   0%, water  17% (369 t, holes 68.1 m², pumps 0%), list 17.3, GM -0.19, steering Engines, dark; enemy 5.1 km, heavy 5.7 km
+
+--- aland seed 1921: Tuisku (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +74 min: Cripple finished off
+    first struck +52; out of the fight +58 (OutSpeed); shell hits 242 (heavy 2, medium 4, light 236), 236 after she was out, 242 in the last 30 min; torpedoes 0 (water 0%), near misses 15; last struck 0.2 min before the end
+    when first struck: Station, task Screen; 19.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.8 km, heavy 4.8 km, own heavy 3.9 km, visibility 6.0 km; within 10 km enemy 46718 t, friends 15470 t
+    T-30: Station, task Screen                                 10.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.8 km, heavy 4.8 km
+    T-25: Station, task Screen                                 10.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.6 km, heavy 4.6 km | next 5 min: 1 Cruiser at 4.9 km
+    T-20: Station, task Screen                                 11.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.6 km | next 5 min: 5 Cruiser at 4.6 km
+    T-15: Home (OutSpeed), out of her line                      7.4 kn, speed   0%, guns 100%, water   0% (3 t, holes 5.2 m², pumps 0%), list  0.0, GM  0.62, steering Jammed, dark, firing; enemy 4.5 km, heavy 4.5 km | next 5 min: 32 Destroyer at 2.9 km
+    T-10: Home (OutSpeed), out of her line                      3.1 kn, speed   0%, guns  50%, water   0% (5 t, holes 9.5 m², pumps 0%), list  0.0, GM  0.62, steering Engines, dark, firing, fire 5 MW; enemy 2.3 km, heavy 5.4 km | next 5 min: 72 Destroyer at 1.0 km
+    T- 5: Home (OutSpeed), out of her line                      2.1 kn, speed   0%, guns  50%, water   1% (13 t, holes 13.1 m², pumps 0%), list  0.0, GM  0.48, steering Engines, dark, firing, fire 30 MW; enemy 0.9 km, heavy 4.6 km | next 5 min: 132 Destroyer at 2.0 km
+    T- 0: Home (OutSpeed), out of her line                      1.5 kn, speed   0%, guns   0%, water  30% (663 t, holes 25.1 m², pumps 0%), list 16.4, GM -0.31, steering Engines, dark, fire 42 MW; enemy 2.5 km, heavy 5.8 km
+
+--- aland seed 1921: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +59 min: Fair fight
+    first struck +54; out of the fight +56 (OutGuns); shell hits 13 (heavy 7, medium 3, light 3), 0 after she was out, 13 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 3.5 min before the end
+    when first struck: Station, task Screen; 12.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.7 km, own heavy 4.2 km, visibility 6.0 km; within 10 km enemy 43839 t, friends 15470 t
+    T-30: Station, task Screen                                  8.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.3 km, heavy 10.3 km
+    T-25: Station, task Screen                                 25.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.2 km, heavy 11.2 km
+    T-20: Station, task Screen                                 26.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.6 km, heavy 8.6 km
+    T-15: Station, task Screen                                 11.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.0 km, heavy 5.0 km
+    T-10: Station, task Screen                                 12.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.9 km, heavy 4.9 km
+    T- 5: Station, task Screen                                 12.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.7 km | next 5 min: 10 Cruiser at 4.7 km, 3 Destroyer at 4.6 km
+    T- 0: Home (OutGuns), out of her line                       6.0 kn, speed   0%, guns   0%, water  40% (894 t, holes 50.6 m², pumps 12%), list 17.7, GM -0.07, dark; enemy 4.2 km, heavy 5.5 km
+
+--- aland seed 1921: Hugin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +94 min: Fair fight
+    first struck +90; out of the fight +91 (OutSpeed); shell hits 41 (heavy 13, medium 0, light 28), 31 after she was out, 41 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.4 min before the end
+    when first struck: Station, task Screen; 30.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.2 km, heavy 5.2 km, own heavy 2.6 km, visibility 6.0 km; within 10 km enemy 10480 t, friends 37646 t
+    T-30: Station, task Intercept                              20.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 3.5 km, heavy 8.4 km
+    T-25: Station, task Intercept                               9.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 1.2 km, heavy 7.7 km
+    T-20: Station, task Intercept                              16.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 2.4 km, heavy 10.5 km
+    T-15: Station, task Screen                                 27.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 15.3 km, heavy 15.3 km
+    T-10: Station, task Screen                                 30.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 13.1 km, heavy 13.1 km
+    T- 5: Station, task Screen                                 30.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.5 km, heavy 6.5 km | next 5 min: 41 Cruiser at 3.1 km
+    T- 0: Home (OutSpeed), out of her line                      7.2 kn, speed   0%, guns   0%, water  46% (1452 t, holes 29.5 m², pumps 0%), list 13.4, GM -0.55, steering Lost, dark, firing; enemy 2.5 km, heavy 2.5 km
+
+--- aland seed 1921: Munin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Foundered / Abandoned at +119 min: Flooding ran away
+    first struck +92; out of the fight +96 (OutSpeed); shell hits 28 (heavy 12, medium 0, light 16), 8 after she was out, 28 in the last 30 min; torpedoes 0 (water 0%), near misses 6; last struck 20.0 min before the end
+    when first struck: Station, task Screen; 22.4 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 3.3 km, heavy 3.3 km, own heavy 2.6 km, visibility 6.0 km; within 10 km enemy 10480 t, friends 37646 t
+    given up +119, went under +121
+    T-30: Station, task Screen                                 30.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.9 km, heavy 6.9 km | next 5 min: 8 Cruiser at 3.0 km
+    T-25: Station, task Screen                                 15.5 kn, speed  69%, guns  75%, water   0% (15 t, holes 11.5 m², pumps 28%), list  0.1, GM  0.68, firing; enemy 1.9 km, heavy 1.9 km | next 5 min: 20 Cruiser at 2.1 km
+    T-20: Home (OutSpeed), out of her line                      7.1 kn, speed   0%, guns  50%, water   3% (109 t, holes 12.4 m², pumps 0%), list  0.0, GM  0.21, steering Jammed, dark; enemy 2.5 km, heavy 2.5 km
+    T-15: Home (OutSpeed), out of her line                      4.5 kn, speed   0%, guns  50%, water   7% (223 t, holes 13.6 m², pumps 0%), list  0.1, GM -0.02, steering Jammed, dark; enemy 4.4 km, heavy 4.4 km
+    T-10: Home (OutSpeed), out of her line                      3.4 kn, speed   0%, guns  50%, water  13% (413 t, holes 13.6 m², pumps 0%), list  0.1, GM  0.01, steering Jammed, dark, fire 2 MW; enemy 5.2 km, heavy 5.2 km
+    T- 5: Home (OutSpeed), out of her line                      2.8 kn, speed   0%, guns  50%, water  26% (825 t, holes 13.6 m², pumps 0%), list 16.8, GM -0.19, steering Jammed, dark, fire 2 MW; enemy 5.2 km, heavy 5.2 km
+    T- 0: Home (OutSpeed), out of her line                      2.3 kn, speed   0%, guns  50%, water  69% (2190 t, holes 13.6 m², pumps 0%), list 13.9, GM -0.07, steering Jammed, dark; enemy 10.4 km, heavy 10.4 km
+
+--- aland seed 1922: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +83 min: Point-blank brawl
+    first struck +81; out of the fight +NaN; shell hits 26 (heavy 18, medium 2, light 6), 0 after she was out, 26 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.2 min before the end
+    when first struck: Course, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.7 km, heavy 3.7 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 12850 t
+    T-30: Fight band, task Search                              12.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.6 km, heavy 7.6 km
+    T-25: Fight band, task Search                              12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.8 km, heavy 6.8 km
+    T-20: Fight finishing, task Search                         11.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.8 km, heavy 10.1 km
+    T-15: Fight band, task Intercept                           13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.2 km, heavy 11.9 km
+    T-10: Course, task Intercept                               12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.7 km, heavy 10.3 km
+    T- 5: Course, task Intercept                               12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.0 km, heavy 6.0 km | next 5 min: 26 Cruiser at 2.9 km
+    T- 0: Course, task Withdraw                                12.9 kn, speed 100%, guns 100%, water   4% (166 t, holes 61.5 m², pumps 100%), list  3.0, GM -0.29; enemy 2.4 km, heavy 2.4 km
+
+--- aland seed 1922: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +88 min: Fair fight
+    first struck +79; out of the fight +86 (OutList); shell hits 42 (heavy 5, medium 10, light 27), 0 after she was out, 42 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 4.0 min before the end
+    when first struck: Station, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 5.9 km, heavy 5.9 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 13848 t
+    T-30: Station, task Search                                 13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.4 km, heavy 6.4 km
+    T-25: Station, task Search                                 11.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.7 km, heavy 9.7 km
+    T-20: Station, task Intercept                              13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.8 km, heavy 12.3 km
+    T-15: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.9 km, heavy 10.8 km
+    T-10: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 6.6 km, heavy 6.6 km | next 5 min: 11 Cruiser at 3.4 km, 6 Destroyer at 4.1 km
+    T- 5: Course, task Withdraw                                12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 5.2 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 2.9 km, heavy 2.9 km | next 5 min: 16 Cruiser at 3.1 km, 9 Destroyer at 4.0 km
+    T- 0: Home (OutList), out of her line                      11.8 kn, speed  77%, guns 100%, water  25% (1172 t, holes 18.1 m², pumps 100%), list 19.4, GM -0.07, firing, fire 4 MW; enemy 3.1 km, heavy 3.1 km
+
+--- aland seed 1922: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +101 min: Fed in piecemeal
+    first struck +81; out of the fight +99 (OutList); shell hits 32 (heavy 11, medium 2, light 19), 8 after she was out, 32 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 0.1 min before the end
+    when first struck: Station, task Intercept; 13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.9 km, heavy 4.9 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 12850 t
+    given up +101, went under +105
+    T-30: Station, task Intercept                              12.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.9 km, heavy 12.9 km
+    T-25: Station, task Intercept                              13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 8.3 km, heavy 8.7 km | next 5 min: 1 Cruiser at 5.3 km
+    T-20: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.9 km, heavy 4.9 km | next 5 min: 12 Destroyer at 4.3 km, 6 Cruiser at 3.0 km
+    T-15: Station, task Withdraw                                8.9 kn, speed 100%, guns  50%, water   0% (9 t, holes 7.1 m², pumps 100%), list  0.0, GM  0.52, firing; enemy 2.5 km, heavy 2.5 km
+    T-10: Course, task Withdraw                                12.9 kn, speed 100%, guns  50%, water   3% (137 t, holes 7.1 m², pumps 100%), list  0.4, GM  0.16, firing; enemy 5.2 km, heavy 5.2 km
+    T- 5: Course, task Withdraw                                13.0 kn, speed 100%, guns  50%, water  12% (566 t, holes 7.1 m², pumps 100%), list  7.9, GM  0.07, firing; enemy 4.9 km, heavy 4.9 km | next 5 min: 7 Destroyer at 3.5 km, 6 Cruiser at 4.4 km
+    T- 0: Home (OutList), out of her line                      14.3 kn, speed  99%, guns  50%, water  19% (898 t, holes 7.8 m², pumps 100%), list 16.4, GM -0.03; enemy 3.3 km, heavy 3.5 km
+
+--- aland seed 1922: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +100 min: Fed in piecemeal
+    first struck +85; out of the fight +96 (OutGuns); shell hits 18 (heavy 7, medium 7, light 4), 6 after she was out, 18 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 0.1 min before the end
+    when first struck: Station, task Withdraw; 10.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.0 km, heavy 3.0 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 7236 t
+    given up +100, went under +104
+    T-30: Station, task Intercept                              13.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 11.7 km, heavy 13.6 km
+    T-25: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 9.3 km, heavy 10.2 km
+    T-20: Station, task Intercept                              13.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.3 km, heavy 6.3 km
+    T-15: Station, task Withdraw                               10.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.0 km, heavy 3.0 km | next 5 min: 8 Cruiser at 4.0 km
+    T-10: Station, task Withdraw                               11.2 kn, speed  83%, guns  50%, water   1% (25 t, holes 1.6 m², pumps 100%), list  0.1, GM  0.28, firing; enemy 4.5 km, heavy 4.5 km
+    T- 5: Station, task Withdraw                               11.5 kn, speed  83%, guns  50%, water   2% (90 t, holes 1.6 m², pumps 100%), list  8.3, GM  0.18; enemy 5.2 km, heavy 5.2 km | next 5 min: 9 Cruiser at 4.3 km, 1 Destroyer at 4.2 km
+    T- 0: Home (OutGuns), out of her line                      12.4 kn, speed  83%, guns   0%, water   9% (437 t, holes 10.5 m², pumps 100%), list 14.6, GM  0.19, firing; enemy 3.4 km, heavy 3.9 km
+
+--- aland seed 1922: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +102 min: Flooding ran away
+    first struck +47; out of the fight +54 (OutSpeed); shell hits 118 (heavy 8, medium 5, light 105), 104 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 40.1 min before the end
+    when first struck: Station, task Screen; 22.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.8 km, heavy 4.8 km, own heavy 3.6 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +102, went under +109
+    T-30: Home (OutSpeed), out of her line                      2.1 kn, speed   0%, guns   0%, water   8% (169 t, holes 31.9 m², pumps 0%), list  0.0, GM  0.38, steering Engines, dark, fire 45 MW; enemy 9.1 km, heavy 12.0 km
+    T-25: Home (OutSpeed), out of her line                      1.8 kn, speed   0%, guns   0%, water   9% (192 t, holes 31.9 m², pumps 0%), list  0.0, GM  0.28, steering Engines, dark, fire 45 MW; enemy 8.6 km, heavy 10.5 km
+    T-20: Home (OutSpeed), out of her line                      1.6 kn, speed   0%, guns   0%, water  10% (211 t, holes 31.9 m², pumps 0%), list  0.0, GM  0.20, steering Engines, dark, fire 45 MW; enemy 9.6 km, heavy 9.6 km
+    T-15: Home (OutSpeed), out of her line                      1.4 kn, speed   0%, guns   0%, water  10% (228 t, holes 31.9 m², pumps 0%), list  0.0, GM  0.12, steering Engines, dark, fire 45 MW; enemy 9.4 km, heavy 9.4 km
+    T-10: Home (OutSpeed), out of her line                      1.2 kn, speed   0%, guns   0%, water  11% (246 t, holes 31.9 m², pumps 0%), list  0.0, GM  0.05, steering Engines, dark, fire 45 MW; enemy 9.5 km, heavy 9.5 km
+    T- 5: Home (OutSpeed), out of her line                      1.1 kn, speed   0%, guns   0%, water  12% (271 t, holes 31.9 m², pumps 0%), list  3.7, GM -0.02, steering Engines, dark, fire 39 MW; enemy 6.6 km, heavy 6.6 km
+    T- 0: Home (OutSpeed), out of her line                      1.0 kn, speed   0%, guns   0%, water  22% (495 t, holes 31.9 m², pumps 0%), list 13.8, GM -0.12, steering Engines, dark, fire 39 MW; enemy 3.5 km, heavy 3.7 km
+
+--- aland seed 1922: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Abandoned at +82 min: Flooding ran away
+    first struck +75; out of the fight +77 (OutSpeed); shell hits 12 (heavy 1, medium 0, light 11), 0 after she was out, 12 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 5.7 min before the end
+    when first struck: Station, task Screen; 16.2 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 4.4 km, heavy 7.1 km, own heavy 3.9 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 15470 t
+    given up +82, went under +115
+    T-30: Station, task Screen                                 14.4 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 5.0 km, heavy 6.2 km
+    T-25: Station, task Screen                                 14.0 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.7 km, heavy 6.5 km
+    T-20: Station, task Screen                                 25.3 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 6.1 km, heavy 7.6 km
+    T-15: Station, task Screen                                 17.8 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 7.4 km, heavy 11.2 km
+    T-10: Station, task Screen                                 26.0 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 7.2 km, heavy 10.2 km | next 5 min: 11 Destroyer at 3.7 km, 1 Cruiser at 6.5 km
+    T- 5: Home (OutSpeed), out of her line                     14.3 kn, speed   0%, guns 100%, water  10% (214 t, holes 13.6 m², pumps 81%), list  7.3, GM -0.07, dark, firing; enemy 3.7 km, heavy 6.1 km
+    T- 0: Home (OutSpeed), out of her line                      5.2 kn, speed   0%, guns  50%, water  31% (693 t, holes 13.6 m², pumps 67%), list 19.7, GM -0.17, dark, firing; enemy 5.6 km, heavy 6.7 km
+
+--- aland seed 1922: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Sunk at +81 min: Point-blank brawl
+    first struck +77; out of the fight +77 (OutSpeed); shell hits 39 (heavy 6, medium 29, light 4), 38 after she was out, 39 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 0.2 min before the end
+    when first struck: Station, task Screen; 18.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 3.1 km, heavy 3.1 km, own heavy 4.1 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 14472 t
+    T-30: Station, task Screen                                 17.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.8 km, heavy 7.8 km
+    T-25: Station (Combing), task Screen                       14.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.1 km, heavy 5.1 km
+    T-20: Station, task Screen                                  8.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.4 km, heavy 6.4 km
+    T-15: Station, task Screen                                 26.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.8 km, heavy 7.8 km
+    T-10: Station, task Screen                                 16.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.9 km, heavy 7.6 km
+    T- 5: Station, task Screen                                 17.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.0 km, heavy 4.0 km | next 5 min: 39 Cruiser at 1.4 km
+    T- 0: Home (OutSpeed), out of her line                      5.7 kn, speed   0%, guns  50%, water  71% (1564 t, holes 29.2 m², pumps 0%), list 18.6, GM  0.14, steering Lost, dark, firing; enemy 0.9 km, heavy 0.9 km
+
+--- aland seed 1922: Puhuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +90 min: Cripple finished off
+    first struck +57; out of the fight +59 (OutSpeed); shell hits 34 (heavy 12, medium 22, light 0), 31 after she was out, 31 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 0.4 min before the end
+    when first struck: Station, task Screen; 14.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 5.2 km, heavy 5.2 km, own heavy 4.2 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 15470 t
+    T-30: Home (OutSpeed), out of her line                     10.0 kn, speed   0%, guns 100%, water   0% (0 t, holes 3.2 m², pumps 12%), list  0.0, GM  0.62, firing; enemy 5.8 km, heavy 5.8 km
+    T-25: Home (OutSpeed), out of her line                      4.5 kn, speed   0%, guns 100%, water   0% (2 t, holes 3.2 m², pumps 12%), list  0.0, GM  0.62; enemy 8.9 km, heavy 8.9 km
+    T-20: Home (OutSpeed), out of her line                      3.3 kn, speed   0%, guns 100%, water   0% (3 t, holes 3.2 m², pumps 9%), list  0.0, GM  0.63; enemy 11.2 km, heavy 11.2 km
+    T-15: Home (OutSpeed), out of her line                      2.7 kn, speed   0%, guns 100%, water   0% (5 t, holes 3.2 m², pumps 9%), list  0.0, GM  0.63; enemy 8.6 km, heavy 8.6 km
+    T-10: Home (OutSpeed), out of her line                      2.2 kn, speed   0%, guns   0%, water   0% (6 t, holes 3.2 m², pumps 9%), list  0.0, GM  0.63; enemy 5.9 km, heavy 5.9 km | next 5 min: 3 Cruiser at 3.1 km
+    T- 5: Home (OutSpeed), out of her line                      1.9 kn, speed   0%, guns  50%, water   0% (9 t, holes 7.3 m², pumps 9%), list  0.0, GM  0.62; enemy 3.1 km, heavy 3.1 km | next 5 min: 28 Cruiser at 1.1 km
+    T- 0: Home (OutSpeed), out of her line                      1.6 kn, speed   0%, guns  50%, water  12% (276 t, holes 59.7 m², pumps 0%), list  0.0, GM  0.16, steering Jammed, dark, firing; enemy 0.8 km, heavy 0.8 km
+
+--- aland seed 1922: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +82 min: Point-blank brawl
+    first struck +57; out of the fight +77 (OutSpeed); shell hits 29 (heavy 4, medium 23, light 2), 20 after she was out, 29 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 13.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.6 km, own heavy 3.9 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 15470 t
+    T-30: Station, task Screen                                 13.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.5 km, heavy 7.5 km | next 5 min: 3 Cruiser at 5.0 km
+    T-25: Station, task Screen                                 13.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.6 km
+    T-20: Station, task Screen                                 16.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.8 km, heavy 6.8 km
+    T-15: Station, task Screen                                 26.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.1 km, heavy 8.1 km
+    T-10: Station, task Screen                                 18.9 kn, speed  98%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.8 km, heavy 7.0 km | next 5 min: 6 Cruiser at 3.3 km
+    T- 5: Station, task Screen                                 18.1 kn, speed  98%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 3.3 km, heavy 3.3 km | next 5 min: 20 Cruiser at 1.3 km
+    T- 0: Home (OutSpeed), out of her line                      5.2 kn, speed   0%, guns   0%, water   5% (107 t, holes 24.0 m², pumps 0%), list  0.1, GM  0.22, steering Jammed, dark; enemy 1.3 km, heavy 1.3 km
+
+--- aland seed 1922: Munin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Foundered / Sunk at +573 min: Flooding ran away
+    first struck +80; out of the fight +86 (OutList); shell hits 6 (heavy 6, medium 0, light 0), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 491.7 min before the end
+    when first struck: Station, task Intercept; 27.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 4.6 km, heavy 6.1 km, own heavy 4.5 km, visibility 6.0 km; within 10 km enemy 15470 t, friends 39303 t
+    T-30: Home (Home), out of her line                          1.0 kn, speed   0%, guns  50%, water  56% (1783 t, holes 19.5 m², pumps 0%), list  9.7, GM  0.19, steering Engines, dark; enemy -, heavy -
+    T-25: Home (Home), out of her line                          1.0 kn, speed   0%, guns  50%, water  57% (1795 t, holes 19.5 m², pumps 0%), list  9.8, GM  0.19, steering Engines, dark; enemy -, heavy -
+    T-20: Home (Home), out of her line                          0.9 kn, speed   0%, guns  50%, water  57% (1808 t, holes 19.5 m², pumps 0%), list  9.5, GM  0.18, steering Engines, dark; enemy -, heavy -
+    T-15: Home (Home), out of her line                          0.9 kn, speed   0%, guns  50%, water  57% (1822 t, holes 19.5 m², pumps 0%), list  8.9, GM  0.17, steering Engines, dark; enemy -, heavy -
+    T-10: Home (Home), out of her line                          0.8 kn, speed   0%, guns  50%, water  58% (1840 t, holes 19.5 m², pumps 0%), list  6.7, GM  0.15, steering Engines, dark; enemy -, heavy -
+    T- 5: Home (Home), out of her line                          0.8 kn, speed   0%, guns  50%, water  62% (1967 t, holes 19.5 m², pumps 0%), list  0.0, GM  0.12, steering Engines, dark; enemy -, heavy -
+    T- 0: Home (Home), out of her line                          0.7 kn, speed   0%, guns  50%, water  84% (2668 t, holes 19.5 m², pumps 0%), list  0.0, GM  0.05, steering Engines, dark; enemy -, heavy -
+
+--- aland seed 1923: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +312 min: Fed in piecemeal
+    first struck +292; out of the fight +NaN; shell hits 41 (heavy 12, medium 17, light 12), 0 after she was out, 41 in the last 30 min; torpedoes 0 (water 0%), near misses 7; last struck 6.0 min before the end
+    when first struck: Course, task Withdraw;  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.4 km, heavy 4.4 km, own heavy -, visibility 6.0 km; within 10 km enemy 34332 t, friends 998 t
+    given up +312, went under +314
+    T-30: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.6 km, heavy 10.6 km
+    T-25: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.4 km, heavy 7.4 km | next 5 min: 1 Cruiser at 3.9 km
+    T-20: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.4 km, heavy 4.4 km | next 5 min: 11 Cruiser at 4.7 km
+    T-15: Course, task Withdraw                                 0.0 kn, speed 100%, guns  50%, water   2% (100 t, holes 1.7 m², pumps 100%), list  0.0, GM  0.81, firing; enemy 5.7 km, heavy 5.7 km | next 5 min: 8 Cruiser at 4.2 km
+    T-10: Course, task Withdraw                                 0.0 kn, speed 100%, guns  50%, water   4% (207 t, holes 2.6 m², pumps 100%), list  0.1, GM  0.81, firing, fire 3 MW; enemy 4.2 km, heavy 4.2 km | next 5 min: 21 Cruiser at 4.2 km
+    T- 5: Home (Home), out of her line                          9.7 kn, speed 100%, guns   0%, water   7% (326 t, holes 12.2 m², pumps 100%), list  3.9, GM  0.46, firing, fire 12 MW; enemy 5.2 km, heavy 5.2 km
+    T- 0: Home (Home), out of her line                          0.0 kn, speed 100%, guns   0%, water  22% (1003 t, holes 12.2 m², pumps 100%), list 10.1, GM  0.28, fire 3 MW; enemy 6.8 km, heavy 6.8 km
+
+--- aland seed 1923: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +99 min: Cripple finished off
+    first struck +80; out of the fight +91 (OutSteering); shell hits 219 (heavy 38, medium 67, light 114), 155 after she was out, 219 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.0 min before the end
+    when first struck: Station, task Search;  8.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.3 km, heavy 4.4 km, own heavy 0.3 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 11852 t
+    T-30: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.9 km, heavy 9.9 km
+    T-25: Station, task Search                                 14.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.0 km, heavy 8.3 km
+    T-20: Station, task Search                                  8.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.3 km, heavy 4.9 km | next 5 min: 16 Cruiser at 4.0 km
+    T-15: Station, task Withdraw                               13.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 4.6 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 2.6 km, heavy 2.6 km | next 5 min: 22 Cruiser at 1.9 km
+    T-10: Station, task Withdraw                               15.2 kn, speed 100%, guns  50%, water   0% (0 t, holes 21.7 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 1.7 km, heavy 1.7 km | next 5 min: 136 Cruiser at 1.5 km
+    T- 5: Home (OutSteering), out of her line                  13.8 kn, speed  83%, guns   0%, water   0% (13 t, holes 68.2 m², pumps 100%), list  0.0, GM  0.50, steering Engines, fire 93 MW; enemy 1.4 km, heavy 1.4 km | next 5 min: 31 Destroyer at 1.8 km, 14 Cruiser at 1.4 km
+    T- 0: Home (OutSteering), out of her line                   8.9 kn, speed   0%, guns   0%, water  52% (2380 t, holes 121.5 m², pumps 100%), list 11.5, GM  0.11, steering Engines, dark, fire 22 MW; enemy 1.5 km, heavy 1.5 km
+
+--- aland seed 1923: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +89 min: Point-blank brawl
+    first struck +78; out of the fight +87 (OutSpeed); shell hits 184 (heavy 18, medium 78, light 88), 56 after she was out, 184 in the last 30 min; torpedoes 0 (water 0%), near misses 11; last struck 0.1 min before the end
+    when first struck: Station, task Search; 14.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 3.5 km, heavy 5.5 km, own heavy 0.2 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 11852 t
+    T-30: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.3 km, heavy 7.8 km
+    T-25: Course, task Search                                  13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 6.2 km, heavy 8.6 km
+    T-20: Station, task Search                                 15.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.0 km, heavy 10.6 km
+    T-15: Station, task Search                                 14.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.3 km, heavy 7.8 km | next 5 min: 6 Cruiser at 4.1 km
+    T-10: Station, task Search                                 14.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 3.0 km, heavy 4.1 km | next 5 min: 75 Cruiser at 2.4 km
+    T- 5: Station, task Withdraw                               12.4 kn, speed  83%, guns 100%, water   1% (51 t, holes 28.6 m², pumps 100%), list  0.0, GM  0.84, firing, fire 2 MW; enemy 2.0 km, heavy 2.0 km | next 5 min: 103 Cruiser at 1.2 km
+    T- 0: Home (OutSpeed), out of her line                      7.5 kn, speed   0%, guns  50%, water  25% (1162 t, holes 57.7 m², pumps 100%), list 21.9, GM -0.14, dark, fire 50 MW; enemy 1.2 km, heavy 1.2 km
+
+--- aland seed 1923: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +85 min: Fed in piecemeal
+    first struck +78; out of the fight +NaN; shell hits 23 (heavy 6, medium 14, light 3), 0 after she was out, 23 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 2.9 min before the end
+    when first struck: Station, task Search; 14.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.7 km, heavy 5.5 km, own heavy 0.3 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 11852 t
+    T-30: Station, task Search                                 15.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.0 km, heavy 10.0 km
+    T-25: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.7 km, heavy 8.4 km
+    T-20: Course, task Search                                  12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 6.5 km, heavy 8.9 km
+    T-15: Station, task Search                                 15.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.2 km, heavy 10.7 km
+    T-10: Station, task Search                                 14.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.5 km, heavy 7.8 km | next 5 min: 8 Cruiser at 4.1 km
+    T- 5: Station, task Search                                 14.1 kn, speed 100%, guns 100%, water   0% (20 t, holes 13.9 m², pumps 100%), list  0.0, GM  0.84, firing; enemy 3.2 km, heavy 4.1 km | next 5 min: 15 Cruiser at 2.9 km
+    T- 0: Station, task Withdraw                               14.7 kn, speed 100%, guns 100%, water  13% (606 t, holes 19.4 m², pumps 100%), list 11.4, GM -0.00, firing; enemy 2.0 km, heavy 2.0 km
+
+--- aland seed 1923: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +158 min: Cripple finished off
+    first struck +55; out of the fight +71 (OutGuns); shell hits 211 (heavy 33, medium 75, light 103), 172 after she was out, 172 in the last 30 min; torpedoes 0 (water 0%), near misses 22; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 18.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.5 km, heavy 6.0 km, own heavy 4.0 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +158, went under +160
+    T-30: Home (OutGuns), out of her line                      11.6 kn, speed  51%, guns   0%, water   8% (185 t, holes 1.5 m², pumps 8%), list  8.6, GM -0.02, fire 2 MW; enemy 6.0 km, heavy 10.6 km
+    T-25: Home (OutGuns), out of her line                      13.4 kn, speed  51%, guns   0%, water   9% (193 t, holes 1.5 m², pumps 8%), list  8.5, GM -0.03, fire 2 MW; enemy 5.7 km, heavy 5.7 km | next 5 min: 3 Cruiser at 3.3 km
+    T-20: Home (OutGuns), out of her line                      10.5 kn, speed   0%, guns   0%, water   9% (200 t, holes 3.9 m², pumps 5%), list  8.4, GM -0.03, dark, fire 10 MW; enemy 3.3 km, heavy 3.3 km | next 5 min: 35 Cruiser at 3.7 km
+    T-15: Home (OutGuns), out of her line                       5.0 kn, speed   0%, guns   0%, water   9% (204 t, holes 34.7 m², pumps 0%), list  8.5, GM -0.03, steering Engines, dark, fire 25 MW; enemy 3.9 km, heavy 3.9 km | next 5 min: 18 Cruiser at 4.6 km
+    T-10: Home (OutGuns), out of her line                       3.3 kn, speed   0%, guns   0%, water  10% (214 t, holes 36.6 m², pumps 0%), list  9.1, GM -0.03, steering Engines, dark, fire 38 MW; enemy 4.9 km, heavy 4.9 km | next 5 min: 46 Cruiser at 3.4 km
+    T- 5: Home (OutGuns), out of her line                       2.7 kn, speed   0%, guns   0%, water  11% (251 t, holes 56.7 m², pumps 0%), list 14.7, GM -0.10, steering Engines, dark, fire 51 MW; enemy 2.8 km, heavy 2.8 km | next 5 min: 70 Cruiser at 1.2 km
+    T- 0: Home (OutGuns), out of her line                       2.2 kn, speed   0%, guns   0%, water  19% (426 t, holes 84.6 m², pumps 0%), list 18.7, GM -0.18, steering Engines, dark, fire 61 MW; enemy 0.8 km, heavy 0.8 km
+
+--- aland seed 1923: Tuisku (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +193 min: Cripple finished off
+    first struck +45; out of the fight +46 (OutSpeed); shell hits 74 (heavy 19, medium 32, light 23), 69 after she was out, 69 in the last 30 min; torpedoes 0 (water 0%), near misses 11; last struck 0.1 min before the end
+    when first struck: Station, task Screen;  9.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.4 km, heavy 4.4 km, own heavy 3.7 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    T-30: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns 100%, water   3% (72 t, holes 1.4 m², pumps 44%), list  0.0, GM  0.02; enemy 11.8 km, heavy 17.2 km
+    T-25: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns 100%, water   3% (72 t, holes 1.4 m², pumps 44%), list  0.0, GM  0.01; enemy 10.9 km, heavy 14.1 km
+    T-20: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns 100%, water   3% (71 t, holes 1.4 m², pumps 44%), list  0.0, GM  0.01; enemy 10.3 km, heavy 11.1 km
+    T-15: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns 100%, water   3% (70 t, holes 1.4 m², pumps 44%), list  0.0, GM  0.04; enemy 8.5 km, heavy 8.5 km
+    T-10: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns 100%, water   3% (69 t, holes 1.4 m², pumps 44%), list  0.0, GM  0.07; enemy 5.4 km, heavy 5.4 km | next 5 min: 21 Cruiser at 3.0 km
+    T- 5: Home (OutSpeed), out of her line                      0.3 kn, speed   0%, guns   0%, water   3% (68 t, holes 2.6 m², pumps 25%), list  0.0, GM  0.10, firing; enemy 2.5 km, heavy 2.5 km | next 5 min: 48 Cruiser at 3.4 km
+    T- 0: Home (OutSpeed), out of her line                      0.3 kn, speed   0%, guns   0%, water  32% (703 t, holes 11.4 m², pumps 0%), list 21.9, GM -0.38, steering Jammed, dark; enemy 2.9 km, heavy 2.9 km
+
+--- aland seed 1923: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +109 min: Cripple finished off
+    first struck +55; out of the fight +70 (OutSteering); shell hits 37 (heavy 11, medium 13, light 13), 28 after she was out, 28 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 0.1 min before the end
+    when first struck: Station, task Screen; 24.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.3 km, heavy 6.4 km, own heavy 2.8 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +109, went under +109
+    T-30: Home (OutSteering), out of her line                   4.4 kn, speed   0%, guns  50%, water  23% (516 t, holes 3.9 m², pumps 83%), list  8.5, GM -0.03, steering Jammed, dark; enemy 8.7 km, heavy 12.3 km
+    T-25: Home (OutSteering), out of her line                   3.3 kn, speed   0%, guns  50%, water  24% (540 t, holes 3.9 m², pumps 83%), list  8.6, GM -0.03, steering Jammed, dark; enemy 9.7 km, heavy 9.7 km
+    T-20: Home (OutSteering), out of her line                   2.7 kn, speed   0%, guns   0%, water  25% (564 t, holes 3.9 m², pumps 83%), list  9.7, GM -0.04, steering Jammed, dark; enemy 7.3 km, heavy 7.3 km
+    T-15: Home (OutSteering), out of her line                   2.2 kn, speed   0%, guns  50%, water  26% (568 t, holes 3.9 m², pumps 83%), list  8.9, GM -0.06, steering Jammed, dark, firing; enemy 4.9 km, heavy 5.8 km
+    T-10: Home (OutSteering), out of her line                   1.9 kn, speed   0%, guns  50%, water  26% (586 t, holes 3.9 m², pumps 83%), list  9.5, GM -0.04, steering Jammed, dark, firing; enemy 3.5 km, heavy 6.1 km
+    T- 5: Home (OutSteering), out of her line                   1.6 kn, speed   0%, guns  50%, water  27% (603 t, holes 3.9 m², pumps 83%), list 10.6, GM -0.06, steering Jammed, dark; enemy 5.3 km, heavy 5.6 km | next 5 min: 28 Cruiser at 4.0 km
+    T- 0: Home (OutSteering), out of her line                   1.5 kn, speed   0%, guns  50%, water  51% (1135 t, holes 12.1 m², pumps 0%), list 24.1, GM -0.24, steering Jammed, dark, firing; enemy 3.6 km, heavy 3.6 km
+
+--- aland seed 1923: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +63 min: Fed in piecemeal
+    first struck +60; out of the fight +61 (OutSpeed); shell hits 62 (heavy 6, medium 8, light 48), 34 after she was out, 62 in the last 30 min; torpedoes 0 (water 0%), near misses 7; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 19.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.2 km, heavy 4.2 km, own heavy 3.1 km, visibility 6.0 km; within 10 km enemy 49597 t, friends 15470 t
+    T-30: Station, task Screen                                 10.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 16.0 km, heavy 16.0 km
+    T-25: Station, task Screen                                 26.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 13.6 km, heavy 13.6 km
+    T-20: Station, task Screen                                 24.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.4 km, heavy 10.4 km
+    T-15: Station, task Screen                                 18.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.1 km, heavy 11.1 km
+    T-10: Station, task Screen                                 25.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 9.6 km, heavy 9.6 km
+    T- 5: Station, task Screen                                 24.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.0 km, heavy 5.0 km | next 5 min: 48 Destroyer at 2.7 km, 14 Cruiser at 3.6 km
+    T- 0: Home (OutSpeed), out of her line                      5.7 kn, speed   0%, guns   0%, water  32% (714 t, holes 34.2 m², pumps 12%), list 15.4, GM -0.11, dark; enemy 2.7 km, heavy 4.2 km
+
+--- aland seed 1923: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +91 min: Cripple finished off
+    first struck +67; out of the fight +84 (OutSpeed); shell hits 149 (heavy 4, medium 61, light 84), 133 after she was out, 149 in the last 30 min; torpedoes 0 (water 0%), near misses 9; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 16.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 2.3 km, heavy 6.9 km, own heavy 3.3 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 14472 t
+    T-30: Station, task Screen                                 14.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 3.3 km, heavy 4.1 km
+    T-25: Station, task Screen                                 17.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 2.4 km, heavy 6.1 km | next 5 min: 14 Destroyer at 2.4 km
+    T-20: Station, task Screen                                 11.7 kn, speed  76%, guns 100%, water   0% (0 t, holes 0.7 m², pumps 43%), list  0.0, GM  0.62, firing; enemy 2.8 km, heavy 9.3 km
+    T-15: Station, task Screen                                  6.0 kn, speed  76%, guns 100%, water   0% (0 t, holes 0.7 m², pumps 43%), list  0.0, GM  0.62; enemy 3.7 km, heavy 7.3 km
+    T-10: Station, task Screen                                  4.2 kn, speed  76%, guns 100%, water   0% (0 t, holes 0.7 m², pumps 36%), list  0.0, GM  0.62, firing; enemy 4.8 km, heavy 4.8 km | next 5 min: 9 Cruiser at 3.1 km
+    T- 5: Home (OutSpeed), out of her line                      7.4 kn, speed   0%, guns 100%, water   0% (11 t, holes 3.8 m², pumps 12%), list  0.0, GM  0.34, dark, firing; enemy 3.1 km, heavy 3.1 km | next 5 min: 126 Cruiser at 1.4 km
+    T- 0: Home (OutSpeed), out of her line                      4.6 kn, speed   0%, guns   0%, water  17% (373 t, holes 46.4 m², pumps 0%), list 15.5, GM -1.05, steering Engines, dark; enemy 0.9 km, heavy 0.9 km
+
+--- aland seed 1923: Hugin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +81 min: Cripple finished off
+    first struck +60; out of the fight +63 (OutSpeed); shell hits 131 (heavy 12, medium 0, light 119), 115 after she was out, 131 in the last 30 min; torpedoes 0 (water 0%), near misses 12; last struck 1.2 min before the end
+    when first struck: Course, task Intercept; 30.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 4.1 km, heavy 5.8 km, own heavy 4.3 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 50819 t
+    T-30: Station, task Intercept                              21.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 7.6 km, heavy 11.5 km
+    T-25: Course, task Intercept                               15.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 4.0 km, heavy 7.7 km | next 5 min: 3 Cruiser at 4.8 km, 2 Destroyer at 2.7 km
+    T-20: Station, task Intercept                              29.4 kn, speed  88%, guns 100%, water   2% (72 t, holes 1.3 m², pumps 67%), list  0.0, GM  0.33, firing; enemy 2.7 km, heavy 4.8 km | next 5 min: 20 Destroyer at 2.8 km
+    T-15: Home (OutSpeed), out of her line                      7.5 kn, speed   0%, guns 100%, water   9% (270 t, holes 2.8 m², pumps 23%), list  0.0, GM  0.57, firing; enemy 2.2 km, heavy 5.7 km | next 5 min: 53 Destroyer at 2.4 km
+    T-10: Home (OutSpeed), out of her line                      4.9 kn, speed   0%, guns   0%, water  11% (355 t, holes 7.9 m², pumps 0%), list  0.0, GM  0.42, steering Engines, dark, fire 2 MW; enemy 2.8 km, heavy 4.6 km | next 5 min: 21 Cruiser at 3.8 km
+    T- 5: Home (OutSpeed), out of her line                      3.7 kn, speed   0%, guns   0%, water  17% (543 t, holes 34.6 m², pumps 0%), list  0.0, GM  0.31, steering Engines, dark, fire 21 MW; enemy 3.4 km, heavy 3.4 km | next 5 min: 32 Cruiser at 3.3 km
+    T- 0: Home (OutSpeed), out of her line                      3.0 kn, speed   0%, guns   0%, water  44% (1380 t, holes 39.9 m², pumps 0%), list 22.1, GM -0.40, steering Engines, dark, fire 26 MW; enemy 2.7 km, heavy 2.7 km
+
+--- aland seed 1923: Munin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +75 min: Cripple finished off
+    first struck +57; out of the fight +57 (OutSpeed); shell hits 105 (heavy 18, medium 0, light 87), 102 after she was out, 105 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.0 min before the end
+    when first struck: Course, task Intercept; 15.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 3.9 km, heavy 7.7 km, own heavy 5.2 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 50819 t
+    T-30: Station, task None                                   11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 8.4 km, heavy 12.0 km
+    T-25: Station, task Intercept                              10.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 8.9 km, heavy 12.3 km
+    T-20: Course, task Intercept                               17.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.5 km, heavy 9.5 km | next 5 min: 4 Destroyer at 3.7 km
+    T-15: Home (OutSpeed), out of her line                      7.8 kn, speed   0%, guns 100%, water   1% (21 t, holes 0.2 m², pumps 100%), list  0.0, GM  0.47, firing; enemy 3.6 km, heavy 6.8 km | next 5 min: 2 Destroyer at 2.3 km
+    T-10: Home (OutSpeed), out of her line                      5.0 kn, speed   0%, guns 100%, water   2% (78 t, holes 0.3 m², pumps 100%), list  0.0, GM  0.49, firing; enemy 2.1 km, heavy 5.7 km | next 5 min: 42 Destroyer at 2.8 km, 4 Cruiser at 4.9 km
+    T- 5: Home (OutSpeed), out of her line                      3.8 kn, speed   0%, guns   0%, water   5% (146 t, holes 3.7 m², pumps 0%), list  0.0, GM  0.36, steering Engines, dark; enemy 2.8 km, heavy 4.7 km | next 5 min: 34 Destroyer at 3.6 km, 19 Cruiser at 4.6 km
+    T- 0: Home (OutSpeed), out of her line                      3.0 kn, speed   0%, guns   0%, water  32% (1031 t, holes 59.7 m², pumps 0%), list  5.9, GM -0.62, steering Engines, dark, fire 12 MW; enemy 3.4 km, heavy 4.2 km
+
+--- aland seed 1924: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +150 min: Flooding ran away
+    first struck +97; out of the fight +101 (OutSteering); shell hits 23 (heavy 5, medium 9, light 9), 4 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 47.5 min before the end
+    when first struck: Station, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.9 km, heavy 4.9 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 9856 t
+    given up +150, went under +150
+    T-30: Home (OutSteering), out of her line                  12.5 kn, speed  83%, guns 100%, water   5% (232 t, holes 1.5 m², pumps 100%), list  1.3, GM  0.77, steering Engines, fire 12 MW; enemy 4.8 km, heavy 4.8 km
+    T-25: Home (OutSteering), out of her line                  12.4 kn, speed  83%, guns 100%, water   7% (320 t, holes 1.5 m², pumps 100%), list  6.8, GM  0.25, steering Engines, fire 12 MW; enemy 6.3 km, heavy 6.3 km
+    T-20: Home (OutSteering), out of her line                  12.0 kn, speed  83%, guns 100%, water   9% (426 t, holes 1.5 m², pumps 100%), list  6.2, GM  0.30, steering Engines, fire 12 MW; enemy 8.0 km, heavy 8.0 km
+    T-15: Home (OutSteering), out of her line                  12.0 kn, speed  83%, guns 100%, water  12% (562 t, holes 1.5 m², pumps 100%), list  6.2, GM  0.35, steering Engines, fire 12 MW; enemy 7.1 km, heavy 7.1 km
+    T-10: Home (OutSteering), out of her line                  12.2 kn, speed  83%, guns 100%, water  15% (714 t, holes 1.5 m², pumps 100%), list  3.5, GM  0.81, steering Engines, fire 12 MW; enemy 5.1 km, heavy 6.3 km
+    T- 5: Home (OutSteering), out of her line                  12.0 kn, speed  83%, guns 100%, water  19% (898 t, holes 1.5 m², pumps 100%), list  5.6, GM  0.02, steering Engines, firing, fire 12 MW; enemy 3.2 km, heavy 4.8 km
+    T- 0: Home (OutSteering), out of her line                  11.9 kn, speed  83%, guns 100%, water  25% (1142 t, holes 1.5 m², pumps 100%), list 20.7, GM -0.22, steering Engines, firing, fire 7 MW; enemy 3.7 km, heavy 3.7 km
+
+--- aland seed 1924: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +241 min: Flooding ran away
+    first struck +98; out of the fight +145 (OutGuns); shell hits 73 (heavy 22, medium 31, light 20), 61 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 59.5 min before the end
+    when first struck: Station, task Intercept; 13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.2 km, heavy 5.2 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 8858 t
+    T-30: Home (Home), out of her line                          1.6 kn, speed   0%, guns   0%, water  22% (1010 t, holes 20.5 m², pumps 100%), list 17.6, GM  0.17, dark, fire 16 MW; enemy 9.2 km, heavy 17.0 km
+    T-25: Home (Home), out of her line                          1.4 kn, speed   0%, guns   0%, water  23% (1073 t, holes 20.5 m², pumps 100%), list 17.3, GM  0.20, dark, fire 16 MW; enemy 8.2 km, heavy 16.9 km
+    T-20: Home (Home), out of her line                          1.2 kn, speed   0%, guns   0%, water  25% (1166 t, holes 20.5 m², pumps 100%), list 16.3, GM  0.26, dark, fire 15 MW; enemy 6.7 km, heavy 16.6 km
+    T-15: Home (Home), out of her line                          1.1 kn, speed   0%, guns   0%, water  27% (1261 t, holes 20.5 m², pumps 100%), list 15.9, GM  0.27, dark, fire 15 MW; enemy 5.2 km, heavy 16.9 km
+    T-10: Home (Home), out of her line                          1.1 kn, speed   0%, guns   0%, water  28% (1285 t, holes 20.4 m², pumps 100%), list 17.6, GM  0.24, dark, fire 16 MW; enemy 3.7 km, heavy 18.3 km
+    T- 5: Home (Home), out of her line                          1.0 kn, speed   0%, guns   0%, water  29% (1354 t, holes 20.4 m², pumps 100%), list 18.6, GM  0.20, dark, fire 16 MW; enemy 2.2 km, heavy 18.2 km
+    T- 0: Home (Home), out of her line                          0.9 kn, speed   0%, guns   0%, water  38% (1741 t, holes 20.4 m², pumps 100%), list 19.5, GM -0.09, dark, fire 15 MW; enemy 1.0 km, heavy 17.0 km
+
+--- aland seed 1924: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +180 min: Cripple finished off
+    first struck +140; out of the fight +151 (OutSteering); shell hits 209 (heavy 27, medium 119, light 63), 122 after she was out, 140 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 2.5 min before the end
+    when first struck: Station, task Withdraw; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.4 km, heavy 5.3 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 7860 t
+    given up +180, went under +193
+    T-30: Course, task Withdraw                                14.3 kn, speed  92%, guns 100%, water   0% (2 t, holes 4.4 m², pumps 100%), list  0.0, GM  0.83, firing, fire 3 MW; enemy 2.7 km, heavy 2.7 km | next 5 min: 33 Cruiser at 2.4 km, 1 Destroyer at 3.3 km
+    T-25: Home (OutSteering), out of her line                  14.1 kn, speed  92%, guns 100%, water   1% (26 t, holes 12.6 m², pumps 100%), list  0.0, GM  0.56, steering Engines, fire 8 MW; enemy 1.9 km, heavy 1.9 km | next 5 min: 55 Cruiser at 0.4 km
+    T-20: Home (Home), out of her line                          9.1 kn, speed  92%, guns  50%, water   2% (88 t, holes 25.3 m², pumps 100%), list  0.8, GM  0.46, steering Engines, fire 91 MW; enemy 0.2 km, heavy 0.2 km | next 5 min: 37 Cruiser at 1.5 km
+    T-15: Home (Home), out of her line                         14.0 kn, speed  92%, guns  50%, water   4% (173 t, holes 31.2 m², pumps 100%), list  2.9, GM  0.32, steering Engines, fire 44 MW; enemy 1.5 km, heavy 1.5 km
+    T-10: Home (Home), out of her line                          5.4 kn, speed  92%, guns  50%, water   6% (300 t, holes 31.8 m², pumps 100%), list  4.1, GM  0.42, steering Engines, fire 61 MW; enemy 5.3 km, heavy 5.3 km
+    T- 5: Home (Home), out of her line                         13.4 kn, speed  92%, guns  50%, water  11% (511 t, holes 31.8 m², pumps 100%), list  6.8, GM  0.24, steering Engines, fire 54 MW; enemy 2.6 km, heavy 2.6 km | next 5 min: 14 Cruiser at 1.7 km
+    T- 0: Home (Home), out of her line                         13.5 kn, speed  92%, guns  50%, water  16% (760 t, holes 32.7 m², pumps 100%), list 14.3, GM  0.04, steering Engines, fire 56 MW; enemy 1.4 km, heavy 1.4 km
+
+--- aland seed 1924: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +155 min: Flooding ran away
+    first struck +50; out of the fight +52 (OutSpeed); shell hits 6 (heavy 6, medium 0, light 0), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 103.1 min before the end
+    when first struck: Station, task Screen;  7.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.6 km, heavy 5.6 km, own heavy 2.7 km, visibility 6.0 km; within 10 km enemy 46718 t, friends 15470 t
+    given up +155, went under +454
+    T-30: Home (OutSpeed), out of her line                      0.7 kn, speed   0%, guns  50%, water  20% (451 t, holes 14.1 m², pumps 43%), list 17.1, GM -0.23, steering Jammed, dark; enemy 8.8 km, heavy 11.6 km
+    T-25: Home (OutSpeed), out of her line                      0.7 kn, speed   0%, guns  50%, water  21% (459 t, holes 14.1 m², pumps 43%), list 18.1, GM -0.23, steering Jammed, dark; enemy 9.5 km, heavy 13.5 km
+    T-20: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns  50%, water  21% (468 t, holes 14.1 m², pumps 43%), list 17.9, GM -0.19, steering Jammed, dark; enemy 9.6 km, heavy 12.8 km
+    T-15: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns  50%, water  22% (477 t, holes 14.1 m², pumps 43%), list 13.9, GM -0.09, steering Jammed, dark; enemy 9.8 km, heavy 12.8 km
+    T-10: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns  50%, water  22% (483 t, holes 14.1 m², pumps 43%), list 16.3, GM -0.11, steering Jammed, dark; enemy 9.9 km, heavy 13.1 km
+    T- 5: Home (OutSpeed), out of her line                      0.5 kn, speed   0%, guns  50%, water  22% (492 t, holes 14.1 m², pumps 43%), list 17.4, GM -0.13, steering Jammed, dark; enemy 10.0 km, heavy 13.1 km
+    T- 0: Home (OutSpeed), out of her line                      0.5 kn, speed   0%, guns  50%, water  23% (502 t, holes 14.1 m², pumps 43%), list 18.3, GM -0.18, steering Jammed, dark; enemy 10.1 km, heavy 12.4 km
+
+--- aland seed 1924: Tuisku (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Abandoned at +77 min: Cripple finished off
+    first struck +45; out of the fight +65 (OutSpeed); shell hits 139 (heavy 6, medium 2, light 131), 133 after she was out, 136 in the last 30 min; torpedoes 0 (water 0%), near misses 12; last struck 0.7 min before the end
+    when first struck: Station, task Screen;  8.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.5 km, heavy 4.5 km, own heavy 3.7 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +77, went under +90
+    T-30: Station, task Screen                                  6.9 kn, speed  83%, guns 100%, water   0% (0 t, holes 1.7 m², pumps 67%), list  0.0, GM  0.62, firing; enemy 4.6 km, heavy 4.6 km
+    T-25: Station, task Screen                                  6.6 kn, speed  83%, guns 100%, water   0% (0 t, holes 1.7 m², pumps 67%), list  0.0, GM  0.62, firing; enemy 5.5 km, heavy 5.5 km | next 5 min: 1 Cruiser at 5.0 km
+    T-20: Station, task Screen                                 12.6 kn, speed  83%, guns  50%, water  12% (264 t, holes 12.6 m², pumps 67%), list  0.0, GM  0.22; enemy 5.5 km, heavy 5.5 km
+    T-15: Station, task Screen                                 20.8 kn, speed  79%, guns  50%, water  21% (469 t, holes 12.6 m², pumps 51%), list  0.0, GM  0.08; enemy 5.6 km, heavy 6.0 km | next 5 min: 6 Cruiser at 4.4 km
+    T-10: Home (OutSpeed), out of her line                      8.2 kn, speed   0%, guns   0%, water  17% (366 t, holes 16.0 m², pumps 0%), list  0.0, GM  0.27, steering Jammed, dark, firing; enemy 4.3 km, heavy 4.3 km | next 5 min: 52 Destroyer at 3.6 km
+    T- 5: Home (OutSpeed), out of her line                      4.0 kn, speed   0%, guns   0%, water  17% (386 t, holes 17.6 m², pumps 0%), list  5.7, GM -0.02, steering Engines, dark, fire 3 MW; enemy 3.4 km, heavy 6.9 km | next 5 min: 77 Destroyer at 3.6 km
+    T- 0: Home (OutSpeed), out of her line                      2.7 kn, speed   0%, guns   0%, water  31% (683 t, holes 26.0 m², pumps 0%), list  9.4, GM -0.02, steering Engines, dark, fire 12 MW; enemy 3.5 km, heavy 9.7 km
+
+--- aland seed 1924: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +120 min: Cripple finished off
+    first struck +69; out of the fight +97 (OutSpeed); shell hits 60 (heavy 14, medium 42, light 4), 49 after she was out, 59 in the last 30 min; torpedoes 0 (water 0%), near misses 10; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 23.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.4 km, heavy 5.3 km, own heavy 3.0 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 15470 t
+    T-30: Fight finishing, task Screen                         15.3 kn, speed  57%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 13%), list  0.0, GM  0.62; enemy 6.0 km, heavy 6.4 km | next 5 min: 3 Cruiser at 4.5 km, 1 Destroyer at 4.7 km
+    T-25: Station, task Screen                                 16.0 kn, speed  57%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 13%), list  0.0, GM  0.62, firing; enemy 4.7 km, heavy 4.7 km | next 5 min: 9 Cruiser at 4.1 km
+    T-20: Home (OutSpeed), out of her line                      5.2 kn, speed   0%, guns   0%, water   1% (12 t, holes 1.3 m², pumps 13%), list  0.0, GM  0.55, dark, firing, fire 2 MW; enemy 4.4 km, heavy 4.4 km
+    T-15: Home (OutSpeed), out of her line                      3.7 kn, speed   0%, guns   0%, water   1% (15 t, holes 1.3 m², pumps 13%), list  0.0, GM  0.48, dark, fire 3 MW; enemy 6.6 km, heavy 6.9 km
+    T-10: Home (OutSpeed), out of her line                      2.9 kn, speed   0%, guns   0%, water   1% (16 t, holes 1.3 m², pumps 17%), list  0.0, GM  0.43, dark, fire 3 MW; enemy 6.0 km, heavy 6.0 km
+    T- 5: Home (OutSpeed), out of her line                      2.4 kn, speed   0%, guns   0%, water   1% (18 t, holes 1.3 m², pumps 17%), list  0.0, GM  0.39, dark, fire 3 MW; enemy 3.5 km, heavy 3.5 km | next 5 min: 46 Cruiser at 0.9 km
+    T- 0: Home (OutSpeed), out of her line                      2.0 kn, speed   0%, guns   0%, water   6% (127 t, holes 13.3 m², pumps 8%), list  0.0, GM -0.19, dark, fire 6 MW; enemy 0.9 km, heavy 0.9 km
+
+--- aland seed 1924: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Abandoned at +86 min: Flooding ran away
+    first struck +66; out of the fight +70 (OutSteering); shell hits 1 (heavy 1, medium 0, light 0), 0 after she was out, 1 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 20.0 min before the end
+    when first struck: Station, task Screen; 17.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.2 km, heavy 5.2 km, own heavy 4.0 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 14472 t
+    given up +86, went under +102
+    T-30: Station, task Screen                                 13.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 6.2 km, heavy 6.2 km
+    T-25: Station, task Screen                                 18.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.2 km, heavy 8.2 km | next 5 min: 1 Cruiser at 4.7 km
+    T-20: Station, task Screen                                 17.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.2 km, heavy 5.2 km
+    T-15: Home (OutSteering), out of her line                  16.2 kn, speed  69%, guns  50%, water  12% (269 t, holes 10.7 m², pumps 100%), list  7.0, GM -0.52, steering Jammed; enemy 7.3 km, heavy 7.3 km
+    T-10: Home (OutSteering), out of her line                  17.5 kn, speed  69%, guns  50%, water  11% (248 t, holes 10.7 m², pumps 100%), list 14.5, GM -0.04, steering Jammed; enemy 7.7 km, heavy 8.4 km
+    T- 5: Home (OutSteering), out of her line                  17.4 kn, speed  69%, guns  50%, water  21% (456 t, holes 10.7 m², pumps 100%), list  9.9, GM -0.31, steering Jammed; enemy 6.0 km, heavy 6.5 km
+    T- 0: Home (OutSteering), out of her line                  15.7 kn, speed  69%, guns  50%, water  28% (620 t, holes 10.7 m², pumps 100%), list 15.8, GM -0.11, steering Jammed, firing; enemy 5.7 km, heavy 5.7 km
+
+--- aland seed 1924: Sverige (Sverige-like (1917), Cruiser, 11444 t, Sweden): Foundered / Abandoned at +412 min: Flooding ran away
+    first struck +49; out of the fight +NaN; shell hits 120 (heavy 24, medium 0, light 96), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 245.3 min before the end
+    when first struck: Fight band, task Intercept; 19.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  1.27; enemy 5.5 km, heavy 8.3 km, own heavy 0.7 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 41032 t
+    given up +412, went under +499
+    T-30: Station, task Scout                                  11.1 kn, speed  86%, guns 100%, water  15% (2138 t, holes 9.3 m², pumps 57%), list  2.4, GM  0.66, fire 9 MW; enemy 57.0 km, heavy 57.0 km
+    T-25: Station, task Scout                                  11.0 kn, speed  86%, guns 100%, water  17% (2307 t, holes 9.3 m², pumps 57%), list  3.4, GM  0.75, fire 9 MW; enemy 58.7 km, heavy 58.7 km
+    T-20: Station, task Scout                                  11.1 kn, speed  86%, guns 100%, water  18% (2523 t, holes 9.1 m², pumps 57%), list  3.9, GM  0.66, fire 9 MW; enemy 60.3 km, heavy 60.3 km
+    T-15: Station, task Scout                                  11.0 kn, speed  86%, guns 100%, water  20% (2835 t, holes 9.1 m², pumps 57%), list  1.8, GM  0.55, fire 9 MW; enemy 62.0 km, heavy 62.0 km
+    T-10: Station, task Scout                                  11.1 kn, speed  86%, guns 100%, water  24% (3293 t, holes 9.1 m², pumps 57%), list  5.7, GM  0.42, fire 7 MW; enemy 63.7 km, heavy 63.7 km
+    T- 5: Station, task Scout                                  11.0 kn, speed  86%, guns 100%, water  30% (4172 t, holes 9.1 m², pumps 57%), list  5.5, GM  0.47, fire 4 MW; enemy 65.4 km, heavy 65.4 km
+    T- 0: Station, task Scout                                  10.8 kn, speed  86%, guns 100%, water  37% (5126 t, holes 9.1 m², pumps 57%), list 14.1, GM  0.21, fire 2 MW; enemy 67.1 km, heavy 67.1 km
+
+--- aland seed 1924: Hugin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): None / Abandoned at +645 min: Flooding ran away
+    first struck +95; out of the fight +146 (OutSpeed); shell hits 19 (heavy 2, medium 0, light 17), 3 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 498.1 min before the end
+    when first struck: Station, task Intercept; 13.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 4.7 km, heavy 5.0 km, own heavy 0.4 km, visibility 6.0 km; within 10 km enemy 12476 t, friends 39303 t
+    T-30: Home (Home), out of her line                          0.8 kn, speed  52%, guns  50%, water  23% (743 t, holes 3.9 m², pumps 9%), list  5.4, GM -0.01; enemy 57.5 km, heavy 57.5 km
+    T-25: Home (Home), out of her line                          0.0 kn, speed  52%, guns  50%, water  24% (749 t, holes 3.9 m², pumps 9%), list  5.5, GM -0.01; enemy 57.5 km, heavy 57.5 km
+    T-20: Home (Home), out of her line                          0.0 kn, speed  52%, guns  50%, water  24% (757 t, holes 3.9 m², pumps 9%), list  4.4, GM -0.00; enemy 57.5 km, heavy 57.5 km
+    T-15: Home (Home), out of her line                          0.0 kn, speed  52%, guns  50%, water  24% (769 t, holes 3.9 m², pumps 9%), list  2.5, GM -0.00; enemy 57.5 km, heavy 57.5 km
+    T-10: Home (Home), out of her line                          0.0 kn, speed  52%, guns  50%, water  25% (805 t, holes 3.9 m², pumps 9%), list  1.1, GM  0.00; enemy 57.5 km, heavy 57.5 km
+    T- 5: Home (Home), out of her line                          0.0 kn, speed  45%, guns  50%, water  29% (918 t, holes 3.9 m², pumps 6%), list  8.1, GM -0.03; enemy 57.5 km, heavy 57.5 km
+    T- 0: Home (Home), out of her line                          0.0 kn, speed   0%, guns  50%, water  41% (1301 t, holes 3.9 m², pumps 0%), list 12.1, GM -0.06, steering Engines, dark; enemy 57.5 km, heavy 57.5 km
+
+--- aland seed 1925: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Scuttled at +185 min: Cripple finished off
+    first struck +120; out of the fight +120 (OutGuns); shell hits 90 (heavy 18, medium 2, light 70), 86 after she was out, 85 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 6.7 min before the end
+    when first struck: Course, task Withdraw; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.7 km, heavy 3.7 km, own heavy 0.7 km, visibility 6.0 km; within 10 km enemy 35989 t, friends 7236 t
+    given up +185, went under +195
+    T-30: Home (OutGuns), out of her line                      10.6 kn, speed  83%, guns   0%, water   8% (371 t, holes 2.9 m², pumps 100%), list  3.8, GM  0.66; enemy 6.7 km, heavy 7.7 km
+    T-25: Home (OutGuns), out of her line                      11.9 kn, speed  83%, guns   0%, water   9% (398 t, holes 2.9 m², pumps 100%), list  3.1, GM  0.71, steering Jammed; enemy 6.6 km, heavy 6.6 km | next 5 min: 6 Cruiser at 4.3 km
+    T-20: Home (OutGuns), out of her line                      12.0 kn, speed  83%, guns   0%, water   9% (418 t, holes 3.4 m², pumps 100%), list  2.8, GM  0.74, steering Jammed, firing; enemy 3.2 km, heavy 3.2 km | next 5 min: 1 Cruiser at 3.9 km
+    T-15: Home (OutGuns), out of her line                      12.0 kn, speed  83%, guns   0%, water  10% (459 t, holes 3.8 m², pumps 100%), list  2.6, GM  0.74, steering Jammed, firing; enemy 3.8 km, heavy 3.8 km | next 5 min: 46 Cruiser at 3.5 km, 23 Destroyer at 3.1 km
+    T-10: Home (OutGuns), out of her line                      11.9 kn, speed  83%, guns   0%, water  11% (510 t, holes 6.7 m², pumps 100%), list  3.1, GM  0.60, steering Jammed; enemy 2.7 km, heavy 3.5 km | next 5 min: 6 Destroyer at 3.6 km, 3 Cruiser at 4.0 km
+    T- 5: Home (OutGuns), out of her line                      11.9 kn, speed  83%, guns   0%, water  13% (579 t, holes 8.3 m², pumps 100%), list  5.1, GM  0.39, steering Jammed, fire 5 MW; enemy 4.2 km, heavy 6.1 km
+    T- 0: Home (OutGuns), out of her line                      11.8 kn, speed  83%, guns   0%, water  15% (671 t, holes 8.3 m², pumps 100%), list  7.0, GM  0.31, steering Jammed, fire 5 MW; enemy 5.9 km, heavy 8.7 km
+
+--- aland seed 1925: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +172 min: Flooding ran away
+    first struck +92; out of the fight +133 (OutSteering); shell hits 22 (heavy 7, medium 6, light 9), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 50.1 min before the end
+    when first struck: Station, task Intercept; 12.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.4 km, heavy 4.4 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 47940 t, friends 11852 t
+    given up +172, went under +174
+    T-30: Home (OutSteering), out of her line                  12.6 kn, speed  83%, guns  50%, water   4% (193 t, holes 11.0 m², pumps 100%), list  1.4, GM  0.15, steering Engines; enemy 7.2 km, heavy 7.7 km
+    T-25: Home (OutSteering), out of her line                  11.5 kn, speed  83%, guns  50%, water   5% (237 t, holes 10.9 m², pumps 100%), list  5.2, GM  0.22, steering Engines; enemy 5.5 km, heavy 7.6 km
+    T-20: Home (OutSteering), out of her line                  12.5 kn, speed  83%, guns  50%, water   6% (281 t, holes 10.9 m², pumps 100%), list  5.7, GM  0.24, steering Engines; enemy 6.6 km, heavy 8.7 km
+    T-15: Home (OutSteering), out of her line                  12.1 kn, speed  83%, guns  50%, water   7% (333 t, holes 10.9 m², pumps 100%), list  6.9, GM  0.24, steering Engines; enemy 5.8 km, heavy 8.8 km
+    T-10: Home (OutSteering), out of her line                  12.3 kn, speed  83%, guns  50%, water   9% (407 t, holes 10.9 m², pumps 100%), list  8.0, GM  0.23, steering Engines; enemy 6.6 km, heavy 7.7 km
+    T- 5: Home (OutSteering), out of her line                  12.3 kn, speed  83%, guns  50%, water  11% (521 t, holes 10.9 m², pumps 100%), list 11.0, GM  0.19, steering Engines; enemy 8.0 km, heavy 8.0 km
+    T- 0: Home (OutSteering), out of her line                  12.2 kn, speed  83%, guns  50%, water  17% (791 t, holes 10.9 m², pumps 100%), list 20.1, GM -0.03, steering Engines; enemy 9.5 km, heavy 9.5 km
+
+--- aland seed 1925: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +173 min: Fed in piecemeal
+    first struck +93; out of the fight +172 (OutList); shell hits 48 (heavy 18, medium 22, light 8), 0 after she was out, 1 in the last 30 min; torpedoes 0 (water 0%), near misses 7; last struck 13.2 min before the end
+    when first struck: Station, task Intercept; 12.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.1 km, heavy 4.1 km, own heavy 0.5 km, visibility 6.0 km; within 10 km enemy 47940 t, friends 11852 t
+    given up +173, went under +173
+    T-30: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (69 t, holes 29.7 m², pumps 100%), list  1.2, GM  0.36, firing, fire 2 MW; enemy 7.1 km, heavy 7.8 km
+    T-25: Course, task Withdraw                                13.0 kn, speed 100%, guns 100%, water   1% (69 t, holes 29.7 m², pumps 100%), list  1.7, GM  0.36, fire 2 MW; enemy 5.1 km, heavy 7.3 km
+    T-20: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   1% (64 t, holes 29.7 m², pumps 100%), list  2.1, GM  0.35, fire 2 MW; enemy 6.8 km, heavy 8.6 km
+    T-15: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   2% (69 t, holes 29.7 m², pumps 100%), list  2.1, GM  0.34, fire 2 MW; enemy 5.1 km, heavy 8.1 km | next 5 min: 1 Merchant at 4.8 km
+    T-10: Course, task Withdraw                                14.8 kn, speed 100%, guns 100%, water   3% (121 t, holes 29.5 m², pumps 100%), list  2.3, GM  0.35, fire 2 MW; enemy 5.5 km, heavy 7.9 km
+    T- 5: Course, task Withdraw                                15.0 kn, speed 100%, guns 100%, water   4% (204 t, holes 29.5 m², pumps 100%), list  5.1, GM  0.30, fire 2 MW; enemy 7.1 km, heavy 7.9 km
+    T- 0: Home (OutList), out of her line                      14.7 kn, speed  99%, guns 100%, water  15% (694 t, holes 29.5 m², pumps 100%), list 22.2, GM -0.20; enemy 8.6 km, heavy 9.3 km
+
+--- aland seed 1925: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Abandoned at +116 min: Cripple finished off
+    first struck +94; out of the fight +107 (OutSpeed); shell hits 68 (heavy 22, medium 36, light 10), 37 after she was out, 68 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.0 min before the end
+    when first struck: Station, task Intercept; 12.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.8 km, heavy 3.8 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 47940 t, friends 11852 t
+    given up +116, went under +116
+    T-30: Station, task Intercept                              13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 10.0 km, heavy 10.0 km
+    T-25: Station, task Intercept                              12.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.0 km, heavy 7.0 km | next 5 min: 9 Cruiser at 3.0 km
+    T-20: Station, task Intercept                              13.3 kn, speed 100%, guns  50%, water   9% (428 t, holes 4.9 m², pumps 100%), list  1.4, GM  0.15; enemy 3.0 km, heavy 3.0 km | next 5 min: 17 Cruiser at 3.3 km
+    T-15: Station, task Withdraw                               13.1 kn, speed  92%, guns  50%, water  25% (1136 t, holes 37.4 m², pumps 100%), list  0.9, GM  0.09, fire 3 MW; enemy 3.5 km, heavy 3.5 km | next 5 min: 5 Cruiser at 4.0 km
+    T-10: Station, task Withdraw                               13.0 kn, speed  92%, guns  50%, water  29% (1359 t, holes 41.9 m², pumps 100%), list  8.2, GM  0.17, dark, fire 12 MW; enemy 4.1 km, heavy 4.1 km
+    T- 5: Home (OutSpeed), out of her line                      6.8 kn, speed   0%, guns  50%, water  33% (1530 t, holes 41.9 m², pumps 100%), list 10.7, GM  0.15, dark, fire 20 MW; enemy 4.4 km, heavy 4.4 km | next 5 min: 37 Cruiser at 3.1 km
+    T- 0: Home (OutSpeed), out of her line                      3.9 kn, speed   0%, guns  50%, water  44% (2007 t, holes 44.5 m², pumps 100%), list 16.6, GM  0.15, dark, firing, fire 17 MW; enemy 2.5 km, heavy 2.5 km
+
+--- aland seed 1925: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Sunk at +718 min: Flooding ran away
+    first struck +93; out of the fight +94 (OutGuns); shell hits 28 (heavy 18, medium 7, light 3), 22 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 6; last struck 484.8 min before the end
+    when first struck: Station, task Screen; 18.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.1 km, heavy 5.1 km, own heavy 2.9 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 13474 t
+    T-30: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  79% (1753 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.37, steering Engines, dark; enemy 9.9 km, heavy -
+    T-25: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  80% (1774 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.39, steering Engines, dark; enemy 9.9 km, heavy -
+    T-20: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  81% (1792 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.39, steering Engines, dark; enemy 9.9 km, heavy -
+    T-15: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  82% (1813 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.42, steering Engines, dark; enemy 9.9 km, heavy -
+    T-10: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  83% (1833 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.43, steering Engines, dark; enemy 9.9 km, heavy -
+    T- 5: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  84% (1854 t, holes 9.7 m², pumps 0%), list  0.0, GM  0.44, steering Engines, dark; enemy 9.9 km, heavy -
+    T- 0: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  85% (1880 t, holes 7.6 m², pumps 0%), list  0.0, GM  0.49, steering Engines, dark; enemy 9.9 km, heavy -
+
+--- aland seed 1925: Puhuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +160 min: Flooding ran away
+    first struck +91; out of the fight +98 (OutGuns); shell hits 16 (heavy 1, medium 9, light 6), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 62.3 min before the end
+    when first struck: Station, task Screen; 13.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.9 km, heavy 6.3 km, own heavy 3.6 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 13474 t
+    T-30: Home (OutGuns), out of her line                      19.2 kn, speed  79%, guns   0%, water   9% (201 t, holes 26.6 m², pumps 41%), list  0.6, GM  0.38, fire 14 MW; enemy 13.6 km, heavy 13.6 km
+    T-25: Home (OutGuns), out of her line                      19.2 kn, speed  81%, guns   0%, water   9% (208 t, holes 26.6 m², pumps 45%), list  0.7, GM  0.35, fire 13 MW; enemy 13.8 km, heavy 13.8 km
+    T-20: Home (OutGuns), out of her line                      19.2 kn, speed  81%, guns   0%, water  10% (215 t, holes 26.6 m², pumps 45%), list  0.6, GM  0.32, fire 13 MW; enemy 13.7 km, heavy 13.7 km
+    T-15: Home (OutGuns), out of her line                      19.2 kn, speed  81%, guns   0%, water  10% (221 t, holes 26.6 m², pumps 45%), list  0.6, GM  0.28, fire 13 MW; enemy 13.5 km, heavy 13.5 km
+    T-10: Home (OutGuns), out of her line                      19.2 kn, speed  81%, guns   0%, water  10% (229 t, holes 26.6 m², pumps 45%), list  0.7, GM  0.23, fire 13 MW; enemy 10.8 km, heavy 10.8 km
+    T- 5: Home (OutGuns), out of her line                      15.8 kn, speed   0%, guns   0%, water  42% (930 t, holes 26.6 m², pumps 0%), list 18.2, GM -0.17, steering Lost, dark, fire 16 MW; enemy 7.5 km, heavy 7.5 km
+    T- 0: Home (OutGuns), out of her line                       5.4 kn, speed   0%, guns   0%, water  80% (1766 t, holes 29.6 m², pumps 0%), list  2.8, GM  0.01, steering Engines, dark, fire 15 MW; enemy 9.0 km, heavy 9.0 km
+
+--- aland seed 1925: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +97 min: Fed in piecemeal
+    first struck +96; out of the fight +97 (OutSpeed); shell hits 11 (heavy 6, medium 5, light 0), 2 after she was out, 11 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 23.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 3.9 km, heavy 3.9 km, own heavy 2.1 km, visibility 6.0 km; within 10 km enemy 50819 t, friends 13474 t
+    T-30: Station, task Screen                                  7.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.3 km, heavy 6.3 km
+    T-25: Station, task Screen                                 18.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.0 km, heavy 7.0 km
+    T-20: Station, task Screen                                 16.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 9.5 km, heavy 9.5 km
+    T-15: Station, task Screen                                 26.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.2 km, heavy 10.7 km
+    T-10: Station, task Screen                                 26.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.3 km, heavy 9.8 km
+    T- 5: Station, task Screen                                 18.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.4 km, heavy 5.7 km | next 5 min: 11 Cruiser at 3.8 km
+    T- 0: Home (OutSpeed), out of her line                     13.8 kn, speed   0%, guns  50%, water  21% (468 t, holes 41.6 m², pumps 0%), list  4.4, GM -0.15, steering Jammed, dark, firing; enemy 3.5 km, heavy 3.5 km
+
+--- aland seed 1925: Sverige (Sverige-like (1917), Cruiser, 11444 t, Sweden): Foundered / Abandoned at +211 min: Flooding ran away
+    first struck +48; out of the fight +116 (OutGuns); shell hits 160 (heavy 28, medium 0, light 132), 4 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 95.0 min before the end
+    when first struck: Fight band, task Intercept; 20.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  1.27; enemy 5.5 km, heavy 8.3 km, own heavy 0.7 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 41032 t
+    given up +211, went under +215
+    T-30: Home (OutGuns), out of her line                      15.0 kn, speed  74%, guns   0%, water  48% (6763 t, holes 15.2 m², pumps 37%), list  8.1, GM  1.87, steering Engines, dark, fire 54 MW; enemy 18.5 km, heavy 18.6 km
+    T-25: Home (OutGuns), out of her line                      10.5 kn, speed  74%, guns   0%, water  65% (9069 t, holes 15.2 m², pumps 37%), list  5.3, GM  0.99, steering Engines, dark, fire 50 MW; enemy 20.0 km, heavy -
+    T-20: Home (OutGuns), out of her line                       7.7 kn, speed  74%, guns   0%, water  72% (10072 t, holes 15.2 m², pumps 37%), list  1.7, GM  1.31, steering Engines, dark, fire 48 MW; enemy 21.1 km, heavy -
+    T-15: Home (OutGuns), out of her line                       7.1 kn, speed  74%, guns   0%, water  75% (10433 t, holes 15.2 m², pumps 37%), list  0.9, GM  1.24, steering Engines, dark, fire 46 MW; enemy 22.1 km, heavy -
+    T-10: Home (OutGuns), out of her line                       6.8 kn, speed  74%, guns   0%, water  78% (10866 t, holes 15.2 m², pumps 37%), list  0.0, GM  1.01, steering Engines, dark, fire 45 MW; enemy 23.0 km, heavy -
+    T- 5: Home (OutGuns), out of her line                       5.8 kn, speed   0%, guns   0%, water  82% (11406 t, holes 15.2 m², pumps 0%), list  1.0, GM  0.67, steering Engines, dark, fire 51 MW; enemy 23.9 km, heavy -
+    T- 0: Home (OutGuns), out of her line                       4.8 kn, speed   0%, guns   0%, water  87% (12131 t, holes 15.2 m², pumps 0%), list  4.1, GM  0.80, steering Engines, dark, fire 47 MW; enemy 24.6 km, heavy -
+
+--- aland seed 1925: Wrangel (Wrangel-like (1917), Destroyer, 1657 t, Sweden): BrokeInTwo / Abandoned at +82 min: Flooding ran away
+    first struck +62; out of the fight +67 (OutSteering); shell hits 11 (heavy 11, medium 0, light 0), 0 after she was out, 11 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 15.6 min before the end
+    when first struck: Course, task Intercept; 19.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 3.8 km, heavy 6.8 km, own heavy 4.2 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 50819 t
+    given up +82, went under +91
+    T-30: Course, task Intercept                               20.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.4 km, heavy 9.8 km
+    T-25: Course, task Intercept                               19.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.2 km, heavy 9.1 km | next 5 min: 1 Cruiser at 7.3 km
+    T-20: Course, task Intercept                               19.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 3.8 km, heavy 6.8 km | next 5 min: 10 Cruiser at 7.1 km
+    T-15: Home (OutSteering), out of her line                  17.5 kn, speed   0%, guns 100%, water   3% (110 t, holes 20.5 m², pumps 23%), list  0.0, GM  0.54, steering Lost, dark; enemy 6.2 km, heavy 7.4 km
+    T-10: Home (OutSteering), out of her line                   6.6 kn, speed   0%, guns  75%, water   8% (261 t, holes 20.5 m², pumps 23%), list  0.1, GM  0.39, steering Lost, dark, fire 4 MW; enemy 7.3 km, heavy 8.4 km
+    T- 5: Home (OutSteering), out of her line                   4.6 kn, speed   0%, guns  50%, water  15% (480 t, holes 20.5 m², pumps 15%), list  4.6, GM  0.12, steering Lost, dark, fire 9 MW; enemy 7.5 km, heavy 8.5 km
+    T- 0: Home (OutSteering), out of her line                   3.6 kn, speed   0%, guns   0%, water  22% (701 t, holes 20.5 m², pumps 15%), list 15.9, GM  0.06, steering Lost, dark, fire 11 MW; enemy 6.4 km, heavy 6.7 km
+
+--- aland seed 1926: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +114 min: Cripple finished off
+    first struck +106; out of the fight +108 (OutGuns); shell hits 28 (heavy 4, medium 15, light 9), 9 after she was out, 28 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 5.2 min before the end
+    when first struck: Station, task Search; 13.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.9 km, heavy 3.9 km, own heavy 3.1 km, visibility 6.0 km; within 10 km enemy 37646 t, friends 9856 t
+    T-30: Route, task Search                                   13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.7 km, heavy 11.1 km
+    T-25: Route, task Search                                   12.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 8.2 km, heavy 10.5 km
+    T-20: Station, task Search                                 15.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 8.5 km, heavy 9.5 km
+    T-15: Course, task Search                                  12.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.7 km, heavy 8.5 km
+    T-10: Station, task Search                                 13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.7 km, heavy 4.7 km | next 5 min: 28 Cruiser at 3.0 km
+    T- 5: Home (OutGuns), out of her line                      13.4 kn, speed 100%, guns   0%, water  11% (492 t, holes 13.6 m², pumps 100%), list  0.9, GM  0.22, fire 8 MW; enemy 3.0 km, heavy 3.0 km
+    T- 0: Home (OutGuns), out of her line                      12.9 kn, speed  83%, guns   0%, water  32% (1479 t, holes 13.6 m², pumps 100%), list 22.6, GM -0.41, fire 3 MW; enemy 5.8 km, heavy 5.8 km
+
+--- aland seed 1926: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +151 min: Flooding ran away
+    first struck +86; out of the fight +149 (OutList); shell hits 100 (heavy 5, medium 3, light 92), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 54.1 min before the end
+    when first struck: Station, task Search; 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.3 km, heavy 5.3 km, own heavy 0.2 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 12850 t
+    given up +151, went under +153
+    T-30: Route, task Withdraw                                 12.3 kn, speed 100%, guns  50%, water   3% (124 t, holes 11.3 m², pumps 100%), list  0.0, GM  0.13, fire 40 MW; enemy 5.5 km, heavy 13.0 km
+    T-25: Course, task Withdraw                                12.7 kn, speed 100%, guns  50%, water   3% (152 t, holes 11.3 m², pumps 100%), list  2.7, GM  0.06, fire 40 MW; enemy 5.1 km, heavy 13.7 km
+    T-20: Course, task Withdraw                                11.6 kn, speed 100%, guns  50%, water   4% (182 t, holes 11.3 m², pumps 100%), list  4.5, GM  0.05, fire 40 MW; enemy 5.5 km, heavy 12.6 km
+    T-15: Route, task Withdraw                                 12.7 kn, speed 100%, guns  50%, water   5% (212 t, holes 11.3 m², pumps 100%), list  5.7, GM  0.05, fire 40 MW; enemy 5.3 km, heavy 10.9 km
+    T-10: Course, task Withdraw                                11.8 kn, speed 100%, guns  50%, water   5% (239 t, holes 11.3 m², pumps 100%), list  6.8, GM  0.06, fire 40 MW; enemy 5.4 km, heavy 9.6 km
+    T- 5: Course, task Withdraw                                11.8 kn, speed 100%, guns  50%, water   7% (321 t, holes 11.3 m², pumps 100%), list  9.7, GM  0.20, fire 38 MW; enemy 5.0 km, heavy 6.6 km
+    T- 0: Home (OutList), out of her line                       9.4 kn, speed 100%, guns  50%, water  13% (590 t, holes 11.3 m², pumps 100%), list 15.5, GM  0.09, fire 32 MW; enemy 5.6 km, heavy 6.7 km
+
+--- aland seed 1926: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +107 min: Fed in piecemeal
+    first struck +89; out of the fight +NaN; shell hits 143 (heavy 19, medium 41, light 83), 0 after she was out, 143 in the last 30 min; torpedoes 0 (water 0%), near misses 6; last struck 0.1 min before the end
+    when first struck: Station, task Search; 14.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.8 km, heavy 4.8 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 40960 t, friends 12850 t
+    T-30: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 7.6 km, heavy 9.4 km
+    T-25: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 6.5 km, heavy 8.4 km
+    T-20: Station, task Search                                 15.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.1 km, heavy 5.1 km | next 5 min: 2 Cruiser at 5.6 km
+    T-15: Course, task Search                                  11.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.4 km, heavy 4.8 km | next 5 min: 5 Cruiser at 4.5 km
+    T-10: Course, task Search                                   8.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 14.6 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.1 km, heavy 4.6 km | next 5 min: 41 Destroyer at 3.0 km, 3 Cruiser at 3.7 km
+    T- 5: Route, task Search                                    7.2 kn, speed 100%, guns 100%, water   0% (2 t, holes 15.7 m², pumps 100%), list  0.0, GM  0.83, firing, fire 8 MW; enemy 3.3 km, heavy 3.4 km | next 5 min: 78 Cruiser at 3.0 km, 14 Destroyer at 3.7 km
+    T- 0: Route, task Search                                    7.6 kn, speed  83%, guns  50%, water  51% (2371 t, holes 32.0 m², pumps 100%), list  7.9, GM -1.08, fire 15 MW; enemy 2.6 km, heavy 2.6 km
+
+--- aland seed 1926: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Sunk at +138 min: Cripple finished off
+    first struck +75; out of the fight +116 (OutGuns); shell hits 103 (heavy 16, medium 51, light 36), 91 after she was out, 96 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.7 min before the end
+    when first struck: Station, task Screen; 15.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 3.6 km, heavy 12.2 km, own heavy 4.2 km, visibility 6.0 km; within 10 km enemy 18144 t, friends 15470 t
+    T-30: Station, task Screen                                  9.6 kn, speed  86%, guns  50%, water   0% (0 t, holes 0.7 m², pumps 57%), list  0.0, GM  0.62; enemy 5.5 km, heavy 9.5 km
+    T-25: Station, task Screen                                 24.0 kn, speed  86%, guns  50%, water   0% (0 t, holes 0.7 m², pumps 57%), list  0.0, GM  0.62; enemy 6.3 km, heavy 6.6 km | next 5 min: 11 Cruiser at 4.8 km
+    T-20: Home (OutGuns), out of her line                       9.9 kn, speed   0%, guns   0%, water   0% (0 t, holes 1.3 m², pumps 12%), list  0.0, GM  0.62, dark; enemy 5.1 km, heavy 5.1 km
+    T-15: Home (OutGuns), out of her line                       4.0 kn, speed   0%, guns   0%, water   0% (0 t, holes 1.3 m², pumps 12%), list  0.0, GM  0.62, dark; enemy 6.5 km, heavy 6.5 km
+    T-10: Home (OutGuns), out of her line                       2.8 kn, speed   0%, guns   0%, water   0% (0 t, holes 1.3 m², pumps 6%), list  0.0, GM  0.62, dark; enemy 4.7 km, heavy 4.7 km | next 5 min: 49 Cruiser at 3.9 km
+    T- 5: Home (OutGuns), out of her line                       2.2 kn, speed   0%, guns   0%, water   7% (159 t, holes 18.6 m², pumps 6%), list  0.0, GM  0.03, dark, fire 11 MW; enemy 2.9 km, heavy 2.9 km | next 5 min: 36 Cruiser at 2.5 km
+    T- 0: Home (OutGuns), out of her line                       1.9 kn, speed   0%, guns   0%, water  83% (1840 t, holes 28.6 m², pumps 0%), list  0.8, GM  0.17, steering Engines, dark, fire 8 MW; enemy 2.4 km, heavy 2.4 km
+
+--- aland seed 1926: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +255 min: Flooding ran away
+    first struck +73; out of the fight +74 (OutSpeed); shell hits 85 (heavy 3, medium 20, light 62), 60 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 69.4 min before the end
+    when first struck: Station, task Screen; 10.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 3.1 km, heavy 5.2 km, own heavy 3.4 km, visibility 6.0 km; within 10 km enemy 46718 t, friends 15470 t
+    T-30: Home (OutSpeed), out of her line                      0.2 kn, speed   0%, guns   0%, water  20% (443 t, holes 17.5 m², pumps 0%), list 14.8, GM  0.00, steering Engines, dark, fire 12 MW; enemy 5.7 km, heavy 13.7 km
+    T-25: Home (OutSpeed), out of her line                      0.2 kn, speed   0%, guns   0%, water  27% (592 t, holes 17.5 m², pumps 0%), list 17.8, GM -0.16, steering Engines, dark, fire 7 MW; enemy 5.7 km, heavy 15.4 km
+    T-20: Home (OutSpeed), out of her line                      0.1 kn, speed   0%, guns   0%, water  23% (515 t, holes 17.5 m², pumps 0%), list 14.2, GM -0.09, steering Engines, dark, fire 5 MW; enemy 5.6 km, heavy 16.8 km
+    T-15: Home (OutSpeed), out of her line                      0.1 kn, speed   0%, guns   0%, water  24% (521 t, holes 17.5 m², pumps 0%), list 14.5, GM -0.08, steering Engines, dark, fire 7 MW; enemy 5.6 km, heavy 17.6 km
+    T-10: Home (OutSpeed), out of her line                      0.1 kn, speed   0%, guns   0%, water  27% (591 t, holes 17.5 m², pumps 0%), list 12.6, GM -0.04, steering Engines, dark, fire 4 MW; enemy 5.6 km, heavy 18.5 km
+    T- 5: Home (OutSpeed), out of her line                      0.0 kn, speed   0%, guns   0%, water  29% (633 t, holes 17.5 m², pumps 0%), list 17.2, GM -0.10, steering Engines, dark, fire 3 MW; enemy 5.5 km, heavy 19.3 km
+    T- 0: Home (OutSpeed), out of her line                      0.0 kn, speed   0%, guns   0%, water  66% (1450 t, holes 17.5 m², pumps 0%), list 18.8, GM -0.23, steering Engines, dark, fire 2 MW; enemy 5.5 km, heavy 20.1 km
+
+--- aland seed 1926: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +107 min: Fed in piecemeal
+    first struck +73; out of the fight +103 (OutSteering); shell hits 29 (heavy 3, medium 11, light 15), 26 after she was out, 28 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 14.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.0 km, heavy 6.8 km, own heavy 2.5 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    T-30: Station (Combing), task Screen                       19.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.1 km, heavy 7.1 km
+    T-25: Station, task Screen                                 19.4 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.9 km, heavy 9.7 km
+    T-20: Station, task Screen                                 11.4 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.4 km, heavy 11.1 km
+    T-15: Station, task Screen                                 25.8 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 10.2 km, heavy 11.9 km
+    T-10: Station, task Screen                                 27.7 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 6.8 km, heavy 9.1 km
+    T- 5: Station, task Screen                                 14.3 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 96%), list  0.0, GM  0.62; enemy 5.3 km, heavy 5.5 km | next 5 min: 28 Cruiser at 3.1 km
+    T- 0: Home (OutSteering), out of her line                   6.6 kn, speed   0%, guns  50%, water   9% (208 t, holes 30.9 m², pumps 0%), list  3.1, GM -0.25, steering Engines, dark, firing; enemy 2.8 km, heavy 2.8 km
+
+--- aland seed 1926: Wachtmeister (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Foundered / Abandoned at +495 min: Flooding ran away
+    first struck +70; out of the fight +98 (OutGuns); shell hits 17 (heavy 2, medium 0, light 15), 7 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 0; last struck 352.3 min before the end
+    when first struck: Station, task Intercept; 25.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.2 km, heavy 7.4 km, own heavy 4.6 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 50819 t
+    given up +495, went under +495
+    T-30: Home (OutGuns), out of her line                       3.8 kn, speed  79%, guns   0%, water  48% (1520 t, holes 15.7 m², pumps 42%), list  5.9, GM -0.00, dark; enemy 31.3 km, heavy -
+    T-25: Home (OutGuns), out of her line                       3.6 kn, speed  79%, guns   0%, water  48% (1532 t, holes 15.7 m², pumps 42%), list  4.6, GM -0.06, dark; enemy 31.8 km, heavy -
+    T-20: Home (OutGuns), out of her line                       3.4 kn, speed  75%, guns   0%, water  50% (1597 t, holes 15.7 m², pumps 35%), list  5.0, GM  0.00, dark; enemy 32.3 km, heavy -
+    T-15: Home (OutGuns), out of her line                       3.3 kn, speed  75%, guns   0%, water  51% (1613 t, holes 15.7 m², pumps 35%), list  6.8, GM -0.01, dark; enemy 32.8 km, heavy -
+    T-10: Home (OutGuns), out of her line                       3.2 kn, speed  75%, guns   0%, water  52% (1658 t, holes 15.7 m², pumps 35%), list  9.1, GM -0.04, dark; enemy 33.3 km, heavy -
+    T- 5: Home (OutGuns), out of her line                       3.1 kn, speed  55%, guns   0%, water  73% (2306 t, holes 15.7 m², pumps 16%), list 21.8, GM -0.17, dark; enemy 33.7 km, heavy -
+    T- 0: Home (OutGuns), out of her line                       3.1 kn, speed  60%, guns   0%, water  84% (2664 t, holes 15.7 m², pumps 16%), list  0.2, GM  0.14, dark; enemy 34.2 km, heavy -
+
+--- aland seed 1926: Munin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Foundered / Abandoned at +139 min: Flooding ran away
+    first struck +71; out of the fight +97 (OutSpeed); shell hits 27 (heavy 7, medium 0, light 20), 0 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 42.4 min before the end
+    when first struck: Station, task Intercept; 25.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 4.3 km, heavy 6.8 km, own heavy 5.0 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 50819 t
+    given up +139, went under +161
+    T-30: Home (OutSpeed), out of her line                     15.4 kn, speed  54%, guns  75%, water   6% (200 t, holes 25.4 m², pumps 10%), list  8.8, GM -0.03, fire 22 MW; enemy 7.9 km, heavy 7.9 km
+    T-25: Home (OutSpeed), out of her line                     11.8 kn, speed  42%, guns   0%, water   9% (289 t, holes 25.4 m², pumps 10%), list  7.7, GM -0.02, fire 27 MW; enemy 8.0 km, heavy 8.0 km
+    T-20: Home (OutSpeed), out of her line                     11.5 kn, speed  42%, guns  50%, water  11% (364 t, holes 25.4 m², pumps 10%), list  7.3, GM -0.01, fire 28 MW; enemy 5.8 km, heavy 5.8 km
+    T-15: Home (OutSpeed), out of her line                     10.4 kn, speed  42%, guns  75%, water  14% (432 t, holes 25.4 m², pumps 4%), list  4.0, GM  0.03, fire 34 MW; enemy 5.0 km, heavy 5.0 km
+    T-10: Home (OutSpeed), out of her line                      8.1 kn, speed   0%, guns  75%, water  32% (1006 t, holes 25.4 m², pumps 0%), list 10.3, GM -0.02, steering Engines, dark, fire 32 MW; enemy 5.6 km, heavy 5.6 km
+    T- 5: Home (OutSpeed), out of her line                      4.2 kn, speed   0%, guns  25%, water  36% (1151 t, holes 25.4 m², pumps 0%), list 12.9, GM -0.13, steering Engines, dark, firing, fire 26 MW; enemy 5.1 km, heavy 5.1 km
+    T- 0: Home (OutSpeed), out of her line                      3.1 kn, speed   0%, guns  25%, water  40% (1271 t, holes 25.4 m², pumps 0%), list 14.8, GM -0.09, steering Engines, dark, fire 24 MW; enemy 5.7 km, heavy 5.7 km
+
+--- aland seed 1927: Väinämöinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Abandoned at +151 min: Flooding ran away
+    first struck +136; out of the fight +138 (OutSteering); shell hits 10 (heavy 4, medium 4, light 2), 0 after she was out, 10 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 13.0 min before the end
+    when first struck: Fight band, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.9 km, heavy 3.9 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 35989 t, friends 9856 t
+    given up +151, went under +187
+    T-30: Fight finishing, task Search                         13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.6 km, heavy 11.8 km
+    T-25: Fight finishing, task Search                         12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.6 km, heavy 8.8 km
+    T-20: Fight band, task Intercept                           12.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.6 km, heavy 5.6 km | next 5 min: 1 Cruiser at 3.7 km
+    T-15: Fight band, task Intercept                           13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.9 km, heavy 3.9 km | next 5 min: 9 Cruiser at 4.1 km
+    T-10: Home (OutSteering), out of her line                  12.4 kn, speed  83%, guns  50%, water   8% (392 t, holes 9.6 m², pumps 100%), list  0.1, GM  0.64, steering Engines, firing; enemy 4.2 km, heavy 4.2 km
+    T- 5: Home (OutSteering), out of her line                  12.2 kn, speed  83%, guns  50%, water  14% (629 t, holes 9.6 m², pumps 100%), list  4.0, GM -0.21, steering Engines, firing; enemy 6.2 km, heavy 6.2 km
+    T- 0: Home (OutSteering), out of her line                  12.0 kn, speed  83%, guns  50%, water  23% (1066 t, holes 9.6 m², pumps 100%), list 19.6, GM -0.19, steering Engines; enemy 7.9 km, heavy 7.9 km
+
+--- aland seed 1927: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +201 min: Point-blank brawl
+    first struck +131; out of the fight +197 (OutList); shell hits 179 (heavy 9, medium 42, light 128), 36 after she was out, 177 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.0 min before the end
+    when first struck: Station, task Intercept; 12.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.9 km, heavy 4.9 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 10854 t
+    T-30: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 1.9 m², pumps 100%), list  0.0, GM  0.83; enemy 8.8 km, heavy 8.8 km
+    T-25: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 1.9 m², pumps 100%), list  0.0, GM  0.83; enemy 7.3 km, heavy 7.3 km
+    T-20: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 1.9 m², pumps 100%), list  0.0, GM  0.83; enemy 6.3 km, heavy 6.3 km
+    T-15: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 1.9 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.6 km, heavy 4.6 km | next 5 min: 63 Cruiser at 2.6 km
+    T-10: Course, task Withdraw                                 0.0 kn, speed 100%, guns 100%, water   0% (7 t, holes 3.3 m², pumps 100%), list  0.0, GM  0.69; enemy 2.3 km, heavy 2.3 km | next 5 min: 78 Cruiser at 3.1 km
+    T- 5: Course, task Withdraw                                 0.0 kn, speed  69%, guns  50%, water   4% (163 t, holes 28.8 m², pumps 100%), list  9.8, GM  0.05, dark, fire 30 MW; enemy 2.7 km, heavy 2.7 km | next 5 min: 36 Destroyer at 2.4 km
+    T- 0: Home (OutList), out of her line                       3.9 kn, speed   0%, guns  50%, water  22% (1035 t, holes 29.1 m², pumps 100%), list 21.4, GM  0.03, dark, fire 52 MW; enemy 2.2 km, heavy 2.2 km
+
+--- aland seed 1927: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +195 min: Point-blank brawl
+    first struck +130; out of the fight +193 (OutSpeed); shell hits 104 (heavy 25, medium 59, light 20), 6 after she was out, 65 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 1.2 min before the end
+    when first struck: Station, task Intercept; 12.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.6 km, heavy 5.6 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 11852 t
+    T-30: Station, task Withdraw                                4.9 kn, speed 100%, guns 100%, water   0% (13 t, holes 29.7 m², pumps 100%), list  0.0, GM  0.84; enemy 11.5 km, heavy 11.5 km
+    T-25: Station, task Withdraw                                3.7 kn, speed 100%, guns 100%, water   0% (18 t, holes 29.7 m², pumps 100%), list  0.0, GM  0.85; enemy 9.5 km, heavy 9.5 km
+    T-20: Station, task Withdraw                                3.1 kn, speed 100%, guns 100%, water   0% (22 t, holes 29.7 m², pumps 100%), list  0.0, GM  0.85; enemy 7.8 km, heavy 7.8 km
+    T-15: Station, task Withdraw                                2.6 kn, speed 100%, guns 100%, water   1% (24 t, holes 29.7 m², pumps 100%), list  0.0, GM  0.85, firing; enemy 6.2 km, heavy 6.2 km
+    T-10: Station, task Withdraw                                2.2 kn, speed 100%, guns 100%, water   1% (26 t, holes 29.7 m², pumps 100%), list  0.0, GM  0.86, firing; enemy 5.0 km, heavy 5.0 km | next 5 min: 9 Cruiser at 2.1 km
+    T- 5: Station, task Withdraw                                2.0 kn, speed 100%, guns 100%, water   1% (49 t, holes 30.1 m², pumps 100%), list  4.4, GM  0.10; enemy 2.1 km, heavy 2.1 km | next 5 min: 56 Cruiser at 1.1 km
+    T- 0: Home (OutSpeed), out of her line                      1.8 kn, speed   0%, guns   0%, water  56% (2571 t, holes 86.2 m², pumps 100%), list 17.9, GM  0.13, steering Lost, dark; enemy 1.5 km, heavy 1.5 km
+
+--- aland seed 1927: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Sunk at +135 min: Fair fight
+    first struck +132; out of the fight +135 (OutList); shell hits 43 (heavy 5, medium 26, light 12), 2 after she was out, 43 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 0.1 min before the end
+    when first struck: Station, task Intercept; 12.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.0 km, heavy 5.0 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 11852 t
+    T-30: Station, task Search                                 12.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.8 km, heavy 11.2 km
+    T-25: Station, task Search                                 12.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.8 km, heavy 12.2 km
+    T-20: Station, task Search                                 12.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.7 km, heavy 12.9 km
+    T-15: Station, task Search                                 12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.7 km, heavy 11.2 km
+    T-10: Station, task Search                                 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.6 km, heavy 8.8 km
+    T- 5: Station, task Intercept                              12.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 5.7 km, heavy 5.7 km | next 5 min: 43 Cruiser at 3.1 km
+    T- 0: Home (OutList), out of her line                       7.9 kn, speed   0%, guns 100%, water  11% (495 t, holes 19.4 m², pumps 100%), list 19.1, GM -0.28, dark, fire 4 MW; enemy 2.4 km, heavy 2.4 km
+
+--- aland seed 1927: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +179 min: Cripple finished off
+    first struck +49; out of the fight +64 (OutSteering); shell hits 79 (heavy 4, medium 3, light 72), 67 after she was out, 10 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 6.6 min before the end
+    when first struck: Station (Combing), task Screen; 21.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.9 km, heavy 4.9 km, own heavy 3.8 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    given up +179, went under +181
+    T-30: Home (OutSteering), out of her line                   0.7 kn, speed   0%, guns   0%, water   2% (35 t, holes 7.9 m², pumps 0%), list  4.7, GM -0.10, steering Engines, dark, fire 4 MW; enemy 3.0 km, heavy 16.8 km | next 5 min: 4 Merchant at 3.2 km
+    T-25: Home (OutSteering), out of her line                   0.6 kn, speed   0%, guns   0%, water   2% (36 t, holes 8.2 m², pumps 0%), list  4.4, GM  0.01, steering Engines, dark, fire 3 MW; enemy 2.9 km, heavy 19.5 km
+    T-20: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns   0%, water   2% (37 t, holes 8.2 m², pumps 0%), list  5.4, GM  0.08, steering Engines, dark, fire 2 MW; enemy 4.7 km, heavy 22.4 km
+    T-15: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns   0%, water   2% (38 t, holes 8.2 m², pumps 0%), list  6.6, GM  0.14, steering Engines, dark, fire 2 MW; enemy 6.1 km, heavy 25.2 km
+    T-10: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns   0%, water   2% (39 t, holes 8.2 m², pumps 0%), list  5.5, GM -0.20, steering Engines, dark, fire 2 MW; enemy 4.5 km, heavy 26.3 km | next 5 min: 6 Merchant at 4.3 km
+    T- 5: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns   0%, water   2% (54 t, holes 8.9 m², pumps 0%), list 10.3, GM  0.04, steering Engines, dark, fire 2 MW; enemy 4.2 km, heavy 27.0 km
+    T- 0: Home (OutSteering), out of her line                   0.4 kn, speed   0%, guns   0%, water  15% (341 t, holes 8.9 m², pumps 0%), list 15.9, GM -0.06, steering Engines, dark, fire 2 MW; enemy 4.5 km, heavy 27.9 km
+
+--- aland seed 1927: Tuisku (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +134 min: Cripple finished off
+    first struck +45; out of the fight +62 (OutSteering); shell hits 93 (heavy 4, medium 10, light 79), 75 after she was out, 17 in the last 30 min; torpedoes 0 (water 0%), near misses 8; last struck 0.0 min before the end
+    when first struck: Station, task Screen;  9.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.4 km, heavy 4.4 km, own heavy 3.8 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    T-30: Home (OutSteering), out of her line                   0.6 kn, speed   0%, guns   0%, water  15% (322 t, holes 8.1 m², pumps 0%), list 12.0, GM -0.06, steering Jammed, dark, fire 16 MW; enemy 5.0 km, heavy 9.2 km
+    T-25: Home (OutSteering), out of her line                   0.6 kn, speed   0%, guns   0%, water  15% (334 t, holes 8.1 m², pumps 0%), list 12.9, GM -0.08, steering Jammed, dark, fire 16 MW; enemy 5.1 km, heavy 8.2 km
+    T-20: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns   0%, water  16% (349 t, holes 8.1 m², pumps 0%), list 13.3, GM -0.08, steering Jammed, dark, fire 16 MW; enemy 5.3 km, heavy 7.0 km
+    T-15: Home (OutSteering), out of her line                   0.5 kn, speed   0%, guns  50%, water  17% (371 t, holes 8.1 m², pumps 0%), list 14.0, GM -0.09, steering Jammed, dark, fire 20 MW; enemy 5.4 km, heavy 5.5 km
+    T-10: Home (OutSteering), out of her line                   0.4 kn, speed   0%, guns  50%, water  19% (416 t, holes 8.1 m², pumps 0%), list 14.4, GM -0.09, steering Jammed, dark, fire 18 MW; enemy 3.9 km, heavy 3.9 km
+    T- 5: Home (OutSteering), out of her line                   0.4 kn, speed   0%, guns  50%, water  22% (494 t, holes 8.1 m², pumps 0%), list 12.9, GM -0.08, steering Jammed, dark, fire 10 MW; enemy 3.8 km, heavy 3.8 km | next 5 min: 17 Cruiser at 4.5 km
+    T- 0: Home (OutSteering), out of her line                   0.4 kn, speed   0%, guns   0%, water  45% (1006 t, holes 13.4 m², pumps 0%), list 20.3, GM -0.30, steering Jammed, dark, fire 5 MW; enemy 3.8 km, heavy 4.5 km
+
+--- aland seed 1927: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Abandoned at +420 min: Flooding ran away
+    first struck +56; out of the fight +62 (OutGuns); shell hits 139 (heavy 3, medium 0, light 136), 109 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 100.4 min before the end
+    when first struck: Station, task Screen; 10.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.4 km, heavy 5.5 km, own heavy 4.0 km, visibility 6.0 km; within 10 km enemy 43839 t, friends 15470 t
+    given up +420, went under +420
+    T-30: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  19% (417 t, holes 11.6 m², pumps 0%), list  7.7, GM -0.02, steering Engines, dark, fire 11 MW; enemy 3.7 km, heavy 15.4 km
+    T-25: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  19% (423 t, holes 11.6 m², pumps 0%), list  7.7, GM -0.02, steering Engines, dark, fire 10 MW; enemy 3.6 km, heavy 15.5 km
+    T-20: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  20% (433 t, holes 11.6 m², pumps 0%), list  7.4, GM -0.02, steering Engines, dark, fire 10 MW; enemy 3.6 km, heavy 15.9 km
+    T-15: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  20% (446 t, holes 11.6 m², pumps 0%), list  6.9, GM -0.01, steering Engines, dark, fire 9 MW; enemy 3.6 km, heavy 15.8 km
+    T-10: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  24% (525 t, holes 11.6 m², pumps 0%), list  3.3, GM  0.03, steering Engines, dark, fire 6 MW; enemy 3.5 km, heavy 16.0 km
+    T- 5: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  32% (713 t, holes 11.6 m², pumps 0%), list 13.8, GM -0.08, steering Engines, dark, fire 6 MW; enemy 3.5 km, heavy 16.2 km
+    T- 0: Home (OutGuns), out of her line                       0.0 kn, speed   0%, guns   0%, water  84% (1857 t, holes 11.6 m², pumps 0%), list  0.6, GM  0.11, steering Engines, dark, fire 4 MW; enemy 3.4 km, heavy 15.7 km
+
+--- aland seed 1927: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +200 min: Point-blank brawl
+    first struck +188; out of the fight +196 (OutSteering); shell hits 81 (heavy 3, medium 43, light 35), 59 after she was out, 81 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 0.1 min before the end
+    when first struck: Station, task Screen;  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.3 km, heavy 4.3 km, own heavy 1.5 km, visibility 6.0 km; within 10 km enemy 24545 t, friends 6238 t
+    T-30: Station, task Screen                                  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.5 km, heavy 11.5 km
+    T-25: Station, task Screen                                  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 9.2 km, heavy 9.2 km
+    T-20: Station, task Screen                                  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.1 km, heavy 7.1 km
+    T-15: Station, task Screen                                  0.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.0 km, heavy 6.0 km | next 5 min: 11 Cruiser at 3.7 km
+    T-10: Station, task Screen                                  0.0 kn, speed  85%, guns 100%, water   0% (0 t, holes 8.6 m², pumps 58%), list  0.0, GM  0.62, firing; enemy 3.2 km, heavy 3.2 km | next 5 min: 3 Cruiser at 3.9 km
+    T- 5: Station, task Screen                                  0.0 kn, speed  71%, guns 100%, water   0% (1 t, holes 10.1 m², pumps 47%), list  0.0, GM  0.62, firing; enemy 2.1 km, heavy 2.1 km | next 5 min: 67 Cruiser at 2.5 km
+    T- 0: Home (OutSteering), out of her line                   0.0 kn, speed   0%, guns   0%, water  25% (558 t, holes 35.4 m², pumps 0%), list 19.8, GM -0.71, steering Engines, dark; enemy 2.0 km, heavy 2.0 km
+
+--- aland seed 1927: Puhuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Sunk at +204 min: Cripple finished off
+    first struck +187; out of the fight +188 (OutSpeed); shell hits 74 (heavy 3, medium 51, light 20), 67 after she was out, 74 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 2.7 min before the end
+    when first struck: Station, task Screen;  0.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.4 km, heavy 5.4 km, own heavy 1.5 km, visibility 6.0 km; within 10 km enemy 24545 t, friends 6238 t
+    T-30: Station, task Screen                                  0.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 9.5 km, heavy 9.5 km
+    T-25: Station, task Screen                                  0.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.4 km, heavy 7.4 km
+    T-20: Station, task Screen                                  0.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.5 km, heavy 6.5 km | next 5 min: 7 Cruiser at 4.2 km
+    T-15: Home (OutSpeed), out of her line                      0.5 kn, speed   0%, guns  50%, water   0% (0 t, holes 2.2 m², pumps 35%), list  0.0, GM  0.62, dark, firing; enemy 3.7 km, heavy 3.7 km | next 5 min: 17 Cruiser at 1.9 km
+    T-10: Home (OutSpeed), out of her line                      0.5 kn, speed   0%, guns  50%, water   0% (0 t, holes 5.8 m², pumps 0%), list  0.0, GM  0.62, steering Lost, dark, firing; enemy 1.9 km, heavy 1.9 km | next 5 min: 32 Cruiser at 2.6 km
+    T- 5: Home (OutSpeed), out of her line                      0.5 kn, speed   0%, guns   0%, water   3% (60 t, holes 24.3 m², pumps 0%), list  0.0, GM  0.59, steering Engines, dark; enemy 2.3 km, heavy 2.3 km | next 5 min: 18 Cruiser at 2.2 km
+    T- 0: Home (OutSpeed), out of her line                      0.4 kn, speed   0%, guns   0%, water  20% (448 t, holes 31.4 m², pumps 0%), list  8.8, GM -0.66, steering Engines, dark, fire 42 MW; enemy 1.4 km, heavy 2.8 km
+
+--- aland seed 1927: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +134 min: Flooding ran away
+    first struck +129; out of the fight +129 (OutSpeed); shell hits 2 (heavy 2, medium 0, light 0), 0 after she was out, 2 in the last 30 min; torpedoes 1 (water 0%), near misses 0; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 18.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.5 km, heavy 5.5 km, own heavy 3.1 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 13474 t
+    T-30: Station, task Screen                                  7.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 1.7 km, heavy 15.2 km
+    T-25: Station, task Screen                                  7.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 2.6 km, heavy 14.8 km
+    T-20: Station, task Screen                                  7.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 3.2 km, heavy 13.7 km
+    T-15: Station, task Screen                                  8.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 3.7 km, heavy 11.4 km
+    T-10: Station, task Screen                                  9.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.0 km, heavy 8.3 km | next 5 min: 2 Cruiser at 5.6 km
+    T- 5: Home (OutSpeed), out of her line                     15.8 kn, speed   0%, guns  50%, water   6% (123 t, holes 6.3 m², pumps 67%), list  0.0, GM  0.58, steering Lost; enemy 5.0 km, heavy 5.0 km | next 5 min:  +1 torpedoes
+    T- 0: Home (OutSpeed), out of her line                      5.7 kn, speed   0%, guns  50%, water   8% (179 t, holes 6.3 m², pumps 67%), list  0.8, GM -0.01, steering Lost; enemy 4.2 km, heavy 4.2 km
+
+--- aland seed 1927: Sverige (Sverige-like (1917), Cruiser, 11444 t, Sweden): Capsized / Abandoned at +160 min: Stayed too long
+    first struck +130; out of the fight +158 (OutList); shell hits 139 (heavy 27, medium 0, light 112), 0 after she was out, 138 in the last 30 min; torpedoes 0 (water 0%), near misses 8; last struck 16.6 min before the end
+    when first struck: Course, task Intercept; 20.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  1.27, firing; enemy 4.9 km, heavy 6.2 km, own heavy 0.7 km, visibility 6.0 km; within 10 km enemy 15470 t, friends 24545 t
+    given up +160, went under +185
+    T-30: Course, task Intercept                               20.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  1.27, firing; enemy 4.9 km, heavy 6.2 km | next 5 min: 62 Cruiser at 4.2 km
+    T-25: Course, task Intercept                               20.5 kn, speed  91%, guns 100%, water   5% (699 t, holes 44.6 m², pumps 70%), list  0.1, GM  0.98, firing; enemy 3.1 km, heavy 3.1 km | next 5 min: 63 Cruiser at 3.6 km
+    T-20: Course, task Intercept                               20.5 kn, speed  91%, guns 100%, water  10% (1410 t, holes 46.3 m², pumps 70%), list  0.3, GM  0.70, firing, fire 6 MW; enemy 2.8 km, heavy 2.8 km | next 5 min: 13 Cruiser at 4.2 km
+    T-15: Course, task Intercept                               20.4 kn, speed  91%, guns 100%, water  13% (1764 t, holes 46.3 m², pumps 70%), list  0.5, GM  0.65, fire 37 MW; enemy 4.8 km, heavy 4.8 km
+    T-10: Course, task Intercept                               18.4 kn, speed  91%, guns 100%, water  17% (2343 t, holes 46.3 m², pumps 47%), list  1.0, GM  0.60, dark, fire 45 MW; enemy 7.7 km, heavy 7.7 km
+    T- 5: Course, task Intercept                               18.0 kn, speed  91%, guns 100%, water  22% (3017 t, holes 46.3 m², pumps 47%), list  5.2, GM  0.53, dark, fire 38 MW; enemy 10.9 km, heavy 10.9 km
+    T- 0: Home (OutList), out of her line                      12.6 kn, speed  88%, guns 100%, water  29% (4112 t, holes 46.3 m², pumps 47%), list 13.7, GM  0.21, dark, fire 27 MW; enemy 14.2 km, heavy 14.2 km
+
+--- aland seed 1927: Wrangel (Wrangel-like (1917), Destroyer, 1657 t, Sweden): BrokeInTwo / Struck at +73 min: Cripple finished off
+    first struck +55; out of the fight +59 (OutSpeed); shell hits 46 (heavy 3, medium 0, light 43), 26 after she was out, 46 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 0.6 min before the end
+    when first struck: Course, task Intercept; 11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 4.7 km, heavy 8.4 km, own heavy 5.9 km, visibility 6.0 km; within 10 km enemy 13474 t, friends 50819 t
+    given up +73, went under +92
+    T-30: Course, task None                                    11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 8.5 km, heavy 11.6 km
+    T-25: Course, task None                                    11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.4 km, heavy 10.1 km
+    T-20: Course, task Intercept                               11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 4.8 km, heavy 8.9 km | next 5 min: 12 Destroyer at 4.3 km
+    T-15: Course (Combing), task Intercept                     11.2 kn, speed  83%, guns 100%, water   0% (5 t, holes 1.4 m², pumps 100%), list  0.0, GM  0.67, firing; enemy 4.1 km, heavy 8.0 km | next 5 min: 12 Destroyer at 3.2 km, 3 Cruiser at 6.9 km
+    T-10: Home (OutSpeed), out of her line                      8.4 kn, speed   0%, guns   0%, water   4% (123 t, holes 8.6 m², pumps 35%), list  0.0, GM  0.72, dark; enemy 3.0 km, heavy 6.3 km | next 5 min: 4 Destroyer at 2.5 km
+    T- 5: Home (OutSpeed), out of her line                      4.3 kn, speed   0%, guns   0%, water   4% (140 t, holes 8.7 m², pumps 35%), list  0.0, GM  0.67, dark; enemy 2.4 km, heavy 7.4 km | next 5 min: 15 Destroyer at 2.7 km
+    T- 0: Home (OutSpeed), out of her line                      3.1 kn, speed   0%, guns   0%, water   5% (159 t, holes 9.3 m², pumps 11%), list  0.0, GM  0.62, dark; enemy 3.0 km, heavy 9.4 km
+
+--- aland seed 1927: Wachtmeister (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +126 min: Cripple finished off
+    first struck +62; out of the fight +65 (OutSpeed); shell hits 174 (heavy 10, medium 0, light 164), 163 after she was out, 33 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 17.2 min before the end
+    when first struck: Course, task Intercept; 20.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69, firing; enemy 2.8 km, heavy 6.3 km, own heavy 6.6 km, visibility 6.0 km; within 10 km enemy 16468 t, friends 42182 t
+    T-30: Home (OutSpeed), out of her line                      2.0 kn, speed   0%, guns   0%, water   9% (299 t, holes 28.3 m², pumps 0%), list  9.0, GM -0.02, steering Lost, dark, fire 22 MW; enemy 1.8 km, heavy 5.4 km | next 5 min: 20 Destroyer at 1.5 km
+    T-25: Home (OutSpeed), out of her line                      1.8 kn, speed   0%, guns   0%, water  10% (325 t, holes 30.8 m², pumps 0%), list 11.6, GM -0.05, steering Lost, dark, fire 33 MW; enemy 1.5 km, heavy 4.6 km | next 5 min: 10 Destroyer at 1.7 km, 1 Cruiser at 4.7 km
+    T-20: Home (OutSpeed), out of her line                      1.6 kn, speed   0%, guns   0%, water  11% (349 t, holes 36.4 m², pumps 0%), list 13.6, GM -0.08, steering Lost, dark, fire 34 MW; enemy 2.1 km, heavy 4.7 km | next 5 min: 2 Destroyer at 3.1 km
+    T-15: Home (OutSpeed), out of her line                      1.4 kn, speed   0%, guns   0%, water  12% (384 t, holes 36.4 m², pumps 0%), list 15.1, GM -0.10, steering Lost, dark, fire 34 MW; enemy 2.8 km, heavy 4.6 km
+    T-10: Home (OutSpeed), out of her line                      1.3 kn, speed   0%, guns   0%, water  14% (448 t, holes 36.4 m², pumps 0%), list 15.4, GM -0.11, steering Lost, dark, fire 44 MW; enemy 3.4 km, heavy 4.6 km
+    T- 5: Home (OutSpeed), out of her line                      1.2 kn, speed   0%, guns   0%, water  18% (584 t, holes 36.4 m², pumps 0%), list 17.8, GM -0.15, steering Lost, dark, fire 44 MW; enemy 3.8 km, heavy 4.6 km
+    T- 0: Home (OutSpeed), out of her line                      1.1 kn, speed   0%, guns   0%, water  30% (950 t, holes 36.4 m², pumps 0%), list 20.4, GM -0.26, steering Lost, dark, fire 41 MW; enemy 4.1 km, heavy 4.6 km
+
+--- aland seed 1928: Ilmarinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +188 min: Cripple finished off
+    first struck +118; out of the fight +168 (OutSteering); shell hits 37 (heavy 14, medium 12, light 11), 3 after she was out, 19 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 9.2 min before the end
+    when first struck: Course, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.6 km, heavy 8.7 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 24617 t, friends 5240 t
+    given up +188, went under +190
+    T-30: Course, task Intercept                               13.0 kn, speed 100%, guns  50%, water   0% (0 t, holes 1.4 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 2.1 km, heavy 2.1 km | next 5 min: 7 Cruiser at 3.5 km
+    T-25: Course, task Withdraw                                13.5 kn, speed 100%, guns  50%, water   1% (33 t, holes 2.8 m², pumps 100%), list  0.0, GM  0.82; enemy 3.4 km, heavy 3.6 km | next 5 min: 9 Cruiser at 4.5 km
+    T-20: Home (OutSteering), out of her line                  13.7 kn, speed  92%, guns  50%, water   2% (109 t, holes 5.2 m², pumps 100%), list  0.0, GM  0.87, steering Lost, firing, fire 10 MW; enemy 2.7 km, heavy 5.4 km
+    T-15: Home (OutSteering), out of her line                  13.9 kn, speed  92%, guns  50%, water   5% (209 t, holes 5.2 m², pumps 100%), list  0.1, GM  0.92, steering Engines, fire 3 MW; enemy 4.9 km, heavy 4.9 km | next 5 min: 1 Cruiser at 4.9 km
+    T-10: Home (OutSteering), out of her line                  13.4 kn, speed  92%, guns  50%, water   6% (265 t, holes 5.2 m², pumps 100%), list  0.6, GM  0.76, steering Engines, fire 3 MW; enemy 4.6 km, heavy 4.6 km | next 5 min: 2 Cruiser at 5.4 km
+    T- 5: Home (OutSteering), out of her line                  13.5 kn, speed  92%, guns  50%, water   7% (323 t, holes 5.4 m², pumps 100%), list  3.4, GM  0.40, steering Engines, fire 3 MW; enemy 6.2 km, heavy 6.2 km
+    T- 0: Home (OutSteering), out of her line                  13.6 kn, speed  92%, guns  50%, water  16% (743 t, holes 5.4 m², pumps 100%), list 14.8, GM  0.14, steering Engines, firing, fire 3 MW; enemy 5.2 km, heavy 5.2 km
+
+--- aland seed 1928: Lemminkäinen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Foundered / Sunk at +161 min: Point-blank brawl
+    first struck +77; out of the fight +157 (OutSteering); shell hits 54 (heavy 3, medium 29, light 22), 41 after she was out, 49 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.0 min before the end
+    when first struck: Station, task Intercept; 13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.9 km, heavy 6.6 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 39303 t, friends 8858 t
+    T-30: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 0.8 km, heavy 6.8 km
+    T-25: Station, task Intercept                              12.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 1.0 km, heavy 8.0 km
+    T-20: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 2.8 km, heavy 9.9 km
+    T-15: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.7 km, heavy 11.8 km
+    T-10: Station, task Intercept                              13.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 5.2 km, heavy 9.3 km | next 5 min: 3 Cruiser at 3.8 km
+    T- 5: Station, task Intercept                              13.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.4 km, heavy 4.6 km | next 5 min: 46 Cruiser at 2.7 km
+    T- 0: Home (OutSteering), out of her line                   6.7 kn, speed   0%, guns  50%, water  38% (1743 t, holes 41.0 m², pumps 100%), list 11.1, GM  0.25, steering Jammed, dark, fire 17 MW; enemy 2.7 km, heavy 2.7 km
+
+--- aland seed 1928: Joukahainen (Väinämöinen-like (1921), Cruiser, 2620 t, Finland): Capsized / Abandoned at +172 min: Cripple finished off
+    first struck +78; out of the fight +163 (OutSteering); shell hits 53 (heavy 23, medium 24, light 6), 7 after she was out, 46 in the last 30 min; torpedoes 0 (water 0%), near misses 8; last struck 7.4 min before the end
+    when first struck: Station, task Intercept; 13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 3.2 km, heavy 6.3 km, own heavy 0.6 km, visibility 6.0 km; within 10 km enemy 39303 t, friends 8858 t
+    given up +172, went under +178
+    T-30: Station, task Intercept                              13.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 2.0 m², pumps 100%), list  0.0, GM  0.83; enemy 2.6 km, heavy 9.7 km
+    T-25: Station, task Intercept                              12.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 2.0 m², pumps 100%), list  0.0, GM  0.83; enemy 4.5 km, heavy 11.7 km
+    T-20: Station, task Intercept                              13.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 2.0 m², pumps 100%), list  0.0, GM  0.83; enemy 5.4 km, heavy 9.0 km
+    T-15: Station, task Intercept                              13.2 kn, speed 100%, guns 100%, water   0% (0 t, holes 2.0 m², pumps 100%), list  0.0, GM  0.83, firing; enemy 4.4 km, heavy 4.4 km | next 5 min: 31 Cruiser at 2.4 km
+    T-10: Station, task Withdraw                               14.7 kn, speed 100%, guns  50%, water   0% (6 t, holes 7.9 m², pumps 100%), list  0.0, GM  0.79, firing; enemy 2.2 km, heavy 2.2 km | next 5 min: 15 Cruiser at 2.8 km
+    T- 5: Home (OutSteering), out of her line                  13.3 kn, speed  92%, guns   0%, water   4% (198 t, holes 14.2 m², pumps 100%), list  3.8, GM  0.42, steering Engines, fire 8 MW; enemy 3.1 km, heavy 4.2 km
+    T- 0: Home (OutSteering), out of her line                  11.5 kn, speed   0%, guns   0%, water  15% (710 t, holes 14.2 m², pumps 100%), list 18.2, GM -0.05, steering Engines, fire 12 MW; enemy 6.9 km, heavy 6.9 km
+
+--- aland seed 1928: Tuima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Foundered / Sunk at +65 min: Cripple finished off
+    first struck +45; out of the fight +52 (OutSteering); shell hits 21 (heavy 5, medium 13, light 3), 10 after she was out, 21 in the last 30 min; torpedoes 0 (water 0%), near misses 2; last struck 11.8 min before the end
+    when first struck: Station, task Screen; 11.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.5 km, heavy 4.5 km, own heavy 3.7 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    T-30: Station, task Screen                                 25.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.6 km, heavy 11.6 km
+    T-25: Station, task Screen                                 26.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 8.0 km, heavy 8.0 km
+    T-20: Station, task Screen                                 11.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.5 km, heavy 4.5 km | next 5 min: 3 Cruiser at 4.5 km
+    T-15: Station, task Screen                                  8.2 kn, speed 100%, guns  50%, water   0% (0 t, holes 1.8 m², pumps 100%), list  0.0, GM  0.62; enemy 5.3 km, heavy 5.3 km | next 5 min: 18 Cruiser at 5.0 km
+    T-10: Home (OutSteering), out of her line                  14.3 kn, speed   0%, guns   0%, water  76% (1676 t, holes 38.0 m², pumps 0%), list 16.5, GM  0.11, steering Engines, dark; enemy 5.4 km, heavy 5.4 km
+    T- 5: Home (OutSteering), out of her line                   5.6 kn, speed   0%, guns   0%, water  81% (1797 t, holes 38.0 m², pumps 0%), list  0.2, GM  0.06, steering Engines, dark; enemy 6.1 km, heavy 8.2 km
+    T- 0: Home (OutSteering), out of her line                   3.9 kn, speed   0%, guns   0%, water  82% (1810 t, holes 38.0 m², pumps 0%), list  3.2, GM -0.02, steering Engines, dark; enemy 5.8 km, heavy 11.5 km
+
+--- aland seed 1928: Pyry (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +51 min: Fed in piecemeal
+    first struck +50; out of the fight +NaN; shell hits 5 (heavy 4, medium 1, light 0), 0 after she was out, 5 in the last 30 min; torpedoes 0 (water 0%), near misses 5; last struck 0.3 min before the end
+    when first struck: Station, task Screen; 11.5 kn, speed  90%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 83%), list  0.0, GM  0.62, firing; enemy 4.8 km, heavy 4.8 km, own heavy 4.0 km, visibility 6.0 km; within 10 km enemy 52476 t, friends 15470 t
+    T-30: Station, task Screen                                 13.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.1 km, heavy 11.1 km
+    T-25: Station, task Screen                                  9.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.4 km, heavy 10.4 km
+    T-20: Station, task Screen                                  8.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.3 km, heavy 10.3 km
+    T-15: Station, task Screen                                 25.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 11.5 km, heavy 11.5 km
+    T-10: Station, task Screen                                 26.4 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.8 km, heavy 7.8 km
+    T- 5: Station, task Screen                                 11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.7 km, heavy 4.7 km | next 5 min: 5 Cruiser at 4.9 km
+    T- 0: Station, task Screen                                 11.5 kn, speed  90%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 83%), list  0.0, GM  0.62, firing; enemy 4.8 km, heavy 4.8 km
+
+--- aland seed 1928: Viima (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +93 min: Cripple finished off
+    first struck +67; out of the fight +68 (OutSpeed); shell hits 34 (heavy 5, medium 16, light 13), 22 after she was out, 34 in the last 30 min; torpedoes 0 (water 0%), near misses 4; last struck 0.5 min before the end
+    when first struck: Station, task Screen; 17.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 3.9 km, heavy 3.9 km, own heavy 4.7 km, visibility 6.0 km; within 10 km enemy 39303 t, friends 12476 t
+    T-30: Station, task Screen                                 18.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.4 km, heavy 5.4 km | next 5 min: 18 Cruiser at 3.6 km
+    T-25: Home (OutSpeed), out of her line                      9.1 kn, speed   0%, guns 100%, water   0% (1 t, holes 23.6 m², pumps 28%), list  0.0, GM  0.60, firing; enemy 2.9 km, heavy 2.9 km | next 5 min: 11 Cruiser at 3.3 km
+    T-20: Home (OutSpeed), out of her line                      4.2 kn, speed   0%, guns   0%, water   3% (67 t, holes 35.3 m², pumps 0%), list  0.0, GM  0.21, steering Engines, dark; enemy 3.8 km, heavy 3.8 km
+    T-15: Home (OutSpeed), out of her line                      3.1 kn, speed   0%, guns   0%, water   4% (84 t, holes 35.3 m², pumps 0%), list  0.0, GM  0.13, steering Engines, dark; enemy 4.0 km, heavy 4.0 km
+    T-10: Home (OutSpeed), out of her line                      2.5 kn, speed   0%, guns   0%, water   5% (105 t, holes 35.3 m², pumps 0%), list  0.0, GM  0.08, steering Engines, dark; enemy 5.1 km, heavy 6.3 km
+    T- 5: Home (OutSpeed), out of her line                      2.1 kn, speed   0%, guns   0%, water   6% (131 t, holes 35.3 m², pumps 0%), list  0.0, GM  0.08, steering Engines, dark; enemy 5.2 km, heavy 5.2 km | next 5 min: 5 Cruiser at 4.7 km
+    T- 0: Home (OutSpeed), out of her line                      1.7 kn, speed   0%, guns   0%, water  19% (412 t, holes 52.2 m², pumps 0%), list  2.9, GM -0.80, steering Engines, dark; enemy 4.7 km, heavy 4.7 km
+
+--- aland seed 1928: Puhuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): BrokeInTwo / Sunk at +70 min: Point-blank brawl
+    first struck +66; out of the fight +69 (OutSpeed); shell hits 20 (heavy 7, medium 6, light 7), 14 after she was out, 20 in the last 30 min; torpedoes 0 (water 0%), near misses 1; last struck 0.0 min before the end
+    when first struck: Station, task Screen; 17.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 4.3 km, heavy 4.3 km, own heavy 4.4 km, visibility 6.0 km; within 10 km enemy 39303 t, friends 12476 t
+    T-30: Station, task Screen                                 26.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 12.5 km, heavy 12.5 km
+    T-25: Station, task Screen                                 17.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.1 km, heavy 10.1 km
+    T-20: Station, task Screen                                 18.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.6 km, heavy 7.6 km
+    T-15: Station, task Screen                                  8.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 6.2 km, heavy 6.2 km
+    T-10: Station, task Screen                                 17.9 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 5.9 km, heavy 5.9 km
+    T- 5: Station, task Screen                                 16.1 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 4.9 km, heavy 4.9 km | next 5 min: 20 Cruiser at 2.1 km
+    T- 0: Home (OutSpeed), out of her line                      7.1 kn, speed   0%, guns 100%, water  10% (211 t, holes 31.0 m², pumps 33%), list  5.0, GM -0.49, dark, firing; enemy 2.1 km, heavy 2.1 km
+
+--- aland seed 1928: Vihuri (Finnish torpedo boat (1921), Destroyer, 998 t, Finland): Capsized / Abandoned at +75 min: Cripple finished off
+    first struck +61; out of the fight +68 (OutGuns); shell hits 6 (heavy 1, medium 5, light 0), 1 after she was out, 6 in the last 30 min; torpedoes 0 (water 0%), near misses 3; last struck 6.9 min before the end
+    when first struck: Station, task Screen; 18.2 kn, speed  90%, guns 100%, water   0% (0 t, holes 0.1 m², pumps 71%), list  0.0, GM  0.62; enemy 6.0 km, heavy 6.0 km, own heavy 3.7 km, visibility 6.0 km; within 10 km enemy 34332 t, friends 13474 t
+    given up +75, went under +96
+    T-30: Station, task Screen                                 17.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 10.3 km, heavy 10.3 km
+    T-25: Station, task Screen                                 18.7 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62; enemy 7.9 km, heavy 7.9 km
+    T-20: Station, task Screen                                  8.3 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.62, firing; enemy 5.9 km, heavy 5.9 km
+    T-15: Station, task Screen                                 18.2 kn, speed  90%, guns 100%, water   0% (0 t, holes 0.1 m², pumps 71%), list  0.0, GM  0.62; enemy 6.0 km, heavy 6.0 km | next 5 min: 1 Cruiser at 6.0 km
+    T-10: Station, task Screen                                 16.8 kn, speed  69%, guns  50%, water   6% (123 t, holes 0.5 m², pumps 71%), list  0.0, GM  0.53; enemy 5.3 km, heavy 5.3 km | next 5 min: 5 Cruiser at 3.4 km
+    T- 5: Home (OutGuns), out of her line                      18.6 kn, speed  68%, guns   0%, water   7% (163 t, holes 1.8 m², pumps 41%), list  4.1, GM -0.08; enemy 3.6 km, heavy 3.6 km
+    T- 0: Home (OutGuns), out of her line                      14.6 kn, speed  57%, guns   0%, water  34% (745 t, holes 1.8 m², pumps 13%), list 16.7, GM -0.12, steering Lost; enemy 6.8 km, heavy 6.8 km
+
+--- aland seed 1928: Wachtmeister (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Foundered / Sunk at +171 min: Flooding ran away
+    first struck +73; out of the fight +74 (OutSpeed); shell hits 60 (heavy 15, medium 0, light 45), 58 after she was out, 0 in the last 30 min; torpedoes 0 (water 0%), near misses 9; last struck 40.4 min before the end
+    when first struck: Station, task Screen; 29.6 kn, speed 100%, guns  75%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.2 km, heavy 6.2 km, own heavy 7.4 km, visibility 6.0 km; within 10 km enemy 12476 t, friends 50819 t
+    T-30: Home (OutSpeed), out of her line                      0.9 kn, speed   0%, guns   0%, water  19% (601 t, holes 18.1 m², pumps 0%), list  8.7, GM -0.02, steering Engines, dark, fire 24 MW; enemy 2.3 km, heavy 2.3 km
+    T-25: Home (OutSpeed), out of her line                      0.8 kn, speed   0%, guns   0%, water  20% (647 t, holes 18.1 m², pumps 0%), list 10.2, GM -0.04, steering Engines, dark, fire 24 MW; enemy 4.1 km, heavy 4.1 km
+    T-20: Home (OutSpeed), out of her line                      0.8 kn, speed   0%, guns   0%, water  22% (684 t, holes 18.1 m², pumps 0%), list 11.8, GM -0.06, steering Engines, dark, fire 24 MW; enemy 4.9 km, heavy 4.9 km
+    T-15: Home (OutSpeed), out of her line                      0.7 kn, speed   0%, guns   0%, water  23% (739 t, holes 18.1 m², pumps 0%), list 11.8, GM -0.05, steering Engines, dark, fire 27 MW; enemy 4.4 km, heavy 4.4 km
+    T-10: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns   0%, water  27% (853 t, holes 18.1 m², pumps 0%), list 10.2, GM -0.03, steering Engines, dark, fire 28 MW; enemy 4.6 km, heavy 4.6 km
+    T- 5: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns   0%, water  37% (1183 t, holes 18.1 m², pumps 0%), list 11.1, GM -0.04, steering Engines, dark, fire 21 MW; enemy 2.6 km, heavy 2.6 km
+    T- 0: Home (OutSpeed), out of her line                      0.6 kn, speed   0%, guns   0%, water  76% (2411 t, holes 18.1 m², pumps 0%), list 18.0, GM -0.14, steering Engines, dark, fire 13 MW; enemy 2.9 km, heavy 2.9 km
+
+--- aland seed 1928: Hugin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +79 min: Fair fight
+    first struck +74; out of the fight +77 (OutSpeed); shell hits 23 (heavy 4, medium 0, light 19), 13 after she was out, 23 in the last 30 min; torpedoes 0 (water 0%), near misses 8; last struck 0.5 min before the end
+    when first struck: Station, task Screen; 30.0 kn, speed  99%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.7 km, heavy 5.7 km, own heavy 7.7 km, visibility 6.0 km; within 10 km enemy 12476 t, friends 47940 t
+    T-30: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.5 km, heavy 10.5 km
+    T-25: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 7.2 km, heavy 10.0 km
+    T-20: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.8 km, heavy 10.0 km
+    T-15: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.3 km, heavy 9.2 km
+    T-10: Course, task Intercept                               19.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 7.7 km, heavy 7.7 km
+    T- 5: Station, task Screen                                 30.8 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.6 km, heavy 6.6 km | next 5 min: 23 Cruiser at 3.2 km
+    T- 0: Home (OutSpeed), out of her line                     10.3 kn, speed   0%, guns  75%, water   5% (160 t, holes 11.7 m², pumps 12%), list  7.1, GM -0.08, dark, firing; enemy 3.2 km, heavy 3.2 km
+
+--- aland seed 1928: Munin (Wrangel-like (1917), Destroyer, 1657 t, Sweden): Capsized / Sunk at +89 min: Cripple finished off
+    first struck +75; out of the fight +78 (OutSpeed); shell hits 70 (heavy 21, medium 0, light 49), 53 after she was out, 70 in the last 30 min; torpedoes 0 (water 0%), near misses 16; last struck 4.3 min before the end
+    when first struck: Station, task Screen; 30.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 5.1 km, heavy 5.1 km, own heavy 7.7 km, visibility 6.0 km; within 10 km enemy 12476 t, friends 45061 t
+    T-30: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 7.1 km, heavy 10.3 km
+    T-25: Station, task Intercept                              11.0 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 6.5 km, heavy 9.6 km
+    T-20: Course, task Intercept                               19.6 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 8.1 km, heavy 8.1 km
+    T-15: Station, task Screen                                 31.5 kn, speed 100%, guns 100%, water   0% (0 t, holes 0.0 m², pumps 100%), list  0.0, GM  0.69; enemy 7.0 km, heavy 7.0 km | next 5 min: 27 Cruiser at 3.6 km
+    T-10: Home (OutSpeed), out of her line                     14.2 kn, speed   0%, guns  25%, water   3% (98 t, holes 12.6 m², pumps 0%), list  0.0, GM  0.64, steering Jammed, dark, firing; enemy 3.3 km, heavy 3.3 km | next 5 min: 41 Cruiser at 4.1 km
+    T- 5: Home (OutSpeed), out of her line                      4.8 kn, speed   0%, guns   0%, water   7% (208 t, holes 18.3 m², pumps 0%), list  0.0, GM  0.11, steering Engines, dark, fire 6 MW; enemy 4.8 km, heavy 4.8 km | next 5 min: 2 Cruiser at 5.6 km
+    T- 0: Home (OutSpeed), out of her line                      3.6 kn, speed   0%, guns   0%, water  25% (806 t, holes 23.5 m², pumps 0%), list 11.3, GM -0.14, steering Engines, dark, fire 16 MW; enemy 5.7 km, heavy 5.7 km
+

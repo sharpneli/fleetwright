@@ -31,10 +31,13 @@
   // CUF §5: Oryol); nothing is known of the Japanese practice
   "doctrine": { "Russia": { "preset": "russia-1904", "ManCasemates": "torpedo craft", "ManOpenGuns": "torpedo craft" }, "Japan": { "preset": "default", "StrikeColours": 0.1, "Scuttle": 0.5 } },
   "player": "Russia",
-  // the end (docs/battle/command.md 5.0): the day and the night, to Nebogatov's surrender the next forenoon. History's aims
-  // (Russia through to Vladivostok) wait for "reach"; v0 has one aim
+  // the end (docs/battle/command.md 5.0): the day and the night, to Nebogatov's surrender the next forenoon
   "until": "1905-05-28T02:00",
-  "aims": { "Russia": "destroy everyone", "Japan": "destroy everyone" },
+  // history's aims (docs/battle/aims.md): Russia through to Vladivostok, here three of the battle line out into the open Sea
+  // of Japan, some 200 km up her course (the scenario's night is too short for Vladivostok itself); Japan to stop her
+  "aims": {
+    "Russia": { "reach": "Second Pacific Squadron", "zone": { "at": [35.7, 130.8], "km": 30, "name": "the open Sea of Japan" }, "of": 3 },
+    "Japan": { "stop": "Russia" } },
   // where ships out of the fight go (docs/battle/command.md 5.1a): off Vladivostok, and off Sasebo
   "home": { "Russia": [42.6, 132.0], "Japan": [33.0, 129.4] },
   "crews": { "Russia": "average" },

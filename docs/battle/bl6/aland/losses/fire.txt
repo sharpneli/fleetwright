@@ -1,0 +1,869 @@
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	4	3
+aland	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	208	29
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	8	1
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	1
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	0
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	12	2
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	59	2
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	18	5
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	80	19
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	52	1
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	12	2
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	36	5
+aland	1921	Cruiser   other at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	30	2
+aland	1921	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	12	0
+aland	1921	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	12	0
+aland	1921	Destroyer chief at Cruiser   fighting     4-6 km | Home	9	0
+aland	1921	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	47	9
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	21	1
+aland	1921	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	57	8
+aland	1921	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	27	3
+aland	1921	Destroyer chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	31	1
+aland	1921	Cruiser   other at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	7	2
+aland	1921	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	4	2
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	64	7
+aland	1921	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	26	4
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	16	4
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	14	0
+aland	1921	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	48	0
+aland	1921	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	3	0
+aland	1921	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	4	1
+aland	1921	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	18	2
+aland	1921	Destroyer chief at Destroyer fighting     4-6 km | Home	41	5
+aland	1921	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	12	0
+aland	1921	Destroyer chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	69	28
+aland	1921	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	51	4
+aland	1921	Destroyer chief at Destroyer fighting     2-4 km | Home	17	4
+aland	1921	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	148	37
+aland	1921	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	4	0
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	22	1
+aland	1921	Destroyer chief at Cruiser   fighting     2-4 km | Fight away / task Screen / admiral Screen	6	2
+aland	1921	Cruiser   other at Destroyer fighting     2-4 km | Fight band / task Intercept / admiral Fight	8	0
+aland	1921	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	8	1
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Search / admiral Fight	4	0
+aland	1921	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task Intercept / admiral Fight	4	1
+aland	1921	Destroyer chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Fight	10	3
+aland	1921	Destroyer chief at Destroyer fighting     0-2 km | Home	1	0
+aland	1921	Destroyer chief at Destroyer going home   0-2 km | Home	14	7
+aland	1921	Destroyer chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Fight	234	154
+aland	1921	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	8	0
+aland	1921	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	22	3
+aland	1921	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Course	2	0
+aland	1921	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	4	0
+aland	1921	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	16	1
+aland	1921	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	8	4
+aland	1921	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	28	2
+aland	1921	Destroyer chief at Cruiser   fighting     2-4 km | Home	23	10
+aland	1921	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	16	2
+aland	1921	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	84	18
+aland	1921	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	8	5
+aland	1921	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	4	0
+aland	1921	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	12	4
+aland	1921	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	4	0
+aland	1921	Cruiser   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	22	4
+aland	1921	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	22	5
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	6	0
+aland	1921	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	12	0
+aland	1921	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	76	26
+aland	1921	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	18	10
+aland	1921	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	2	0
+aland	1921	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	8	2
+aland	1921	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	86	16
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	2	0
+aland	1921	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	37	3
+aland	1921	Cruiser   other at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	12	4
+aland	1921	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	4	4
+aland	1921	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	14	9
+aland	1921	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	70	42
+aland	1921	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	14	8
+aland	1921	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	48	35
+aland	1921	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	24	13
+aland	1921	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	4	4
+aland	1921	Destroyer chief at Cruiser   fighting     0-2 km | Home	6	3
+aland	1921	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	16	3
+aland	1921	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	8	8
+aland	1921	Cruiser   chief at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	14	9
+aland	1921	Cruiser   other at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	59	25
+aland	1921	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	172	48
+aland	1921	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	36	18
+aland	1921	Cruiser   other at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	53	29
+aland	1921	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	64	17
+aland	1921	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	30	12
+aland	1921	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	8	7
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	18	0
+aland	1921	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	2	0
+aland	1921	Cruiser   other at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	2	0
+aland	1921	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	30	3
+aland	1921	Destroyer chief at Cruiser   going home   4-6 km | Home	6	0
+aland	1921	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	10	0
+aland	1921	Cruiser   other at Cruiser   fighting     4-6 km | Home	32	7
+aland	1921	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	6	4
+aland	1921	Cruiser   other at Cruiser   fighting     2-4 km | Home	20	4
+aland	1921	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	2	2
+aland	1921	Cruiser   other at Cruiser   fighting     0-2 km | Home	12	5
+aland	1921	Cruiser   other at Cruiser   going home   4-6 km | Home	2	0
+aland	1921	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	2	2
+aland	1921	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	2	2
+aland	1921	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	6	5
+aland	1921	Cruiser   other at Merchant  fighting     4-6 km | Home	68	7
+aland	1921	Merchant  chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Route	469	32
+aland	1921	Cruiser   other at Merchant  going home   4-6 km | Home	2	0
+aland	1921	Merchant  chief at Cruiser   going home   4-6 km | Home	146	11
+aland	1921	Merchant  chief at Cruiser   going home   4-6 km | Route / task Withdraw / admiral Route	267	20
+aland	1921	Merchant  chief at Cruiser   going home   2-4 km | Route / task Withdraw / admiral Route	66	3
+aland	1921	Merchant  chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Route	4	0
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	12	0
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	8	3
+aland	1922	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	86	12
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	123	2
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	8	1
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	4	0
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	8	0
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	5	0
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	28	9
+aland	1922	Cruiser   other at Destroyer fighting     2-4 km | Station / task None / admiral Fight	17	1
+aland	1922	Cruiser   chief at Destroyer fighting     2-4 km | Station / task None / admiral Fight	8	4
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	0
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Course / task None / admiral Fight	2	0
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	47	4
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	12	5
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	16	3
+aland	1922	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	10	0
+aland	1922	Cruiser   other at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	9	1
+aland	1922	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	8	0
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	16	1
+aland	1922	Destroyer chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	4	0
+aland	1922	Destroyer chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	254	33
+aland	1922	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	183	17
+aland	1922	Destroyer chief at Destroyer fighting     2-4 km | Home	6	1
+aland	1922	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	181	44
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Intercept / admiral Fight	4	0
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	16	0
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	6	0
+aland	1922	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	4	0
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	69	3
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	8	2
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	16	1
+aland	1922	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	13	0
+aland	1922	Destroyer chief at Destroyer fighting     2-4 km | Fight away / task Screen / admiral Screen	4	1
+aland	1922	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	58	15
+aland	1922	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	34	4
+aland	1922	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	44	8
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	24	0
+aland	1922	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	12	1
+aland	1922	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	58	12
+aland	1922	Destroyer chief at Cruiser   fighting     2-4 km | Home	35	19
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	6	0
+aland	1922	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	2	0
+aland	1922	Destroyer chief at Destroyer fighting     4-6 km | Home	29	3
+aland	1922	Destroyer chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	4	0
+aland	1922	Destroyer chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	6	0
+aland	1922	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	34	5
+aland	1922	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	10	0
+aland	1922	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	13	0
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	19	1
+aland	1922	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	3	0
+aland	1922	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Course	20	1
+aland	1922	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	20	1
+aland	1922	Destroyer chief at Cruiser   fighting     0-2 km | Home	29	21
+aland	1922	Cruiser   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	86	61
+aland	1922	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	14	3
+aland	1922	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	22	15
+aland	1922	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	36	7
+aland	1922	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	9	2
+aland	1922	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	69	2
+aland	1922	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	8	2
+aland	1922	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	26	8
+aland	1922	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	136	47
+aland	1922	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	38	20
+aland	1922	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	6	0
+aland	1922	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	4	1
+aland	1922	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	30	7
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	30	3
+aland	1922	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	4	4
+aland	1922	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	105	16
+aland	1922	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	27	5
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	6	0
+aland	1922	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	6	3
+aland	1922	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	10	3
+aland	1922	Destroyer chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	5	0
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	4	0
+aland	1922	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	64	47
+aland	1922	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	10	9
+aland	1922	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	6	3
+aland	1922	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	2	0
+aland	1922	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	12	3
+aland	1922	Cruiser   other at Cruiser   fighting     2-4 km | Home	12	7
+aland	1922	Cruiser   other at Destroyer fighting     4-6 km | Home	20	1
+aland	1922	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	10	4
+aland	1922	Cruiser   other at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	8	4
+aland	1922	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	2	0
+aland	1922	Destroyer chief at Cruiser   going home   4-6 km | Station / task Screen / admiral Screen	17	1
+aland	1922	Cruiser   other at Cruiser   fighting     4-6 km | Home	18	1
+aland	1922	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	8	0
+aland	1922	Cruiser   other at Destroyer fighting     2-4 km | Home	8	1
+aland	1922	Destroyer chief at Cruiser   going home   2-4 km | Station / task Screen / admiral Screen	21	5
+aland	1922	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	2	0
+aland	1922	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	2	0
+aland	1922	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	81	16
+aland	1922	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	4	0
+aland	1922	Cruiser   other at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	45	22
+aland	1922	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	94	70
+aland	1922	Cruiser   other at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	10	6
+aland	1922	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	6	4
+aland	1922	Cruiser   chief at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	10	4
+aland	1922	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	2	0
+aland	1922	Destroyer chief at Destroyer going home   4-6 km | Home	6	1
+aland	1922	Destroyer chief at Cruiser   fighting     4-6 km | Home	6	0
+aland	1922	Destroyer chief at Cruiser   fighting    6-10 km | Home	8	0
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	8	0
+aland	1923	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	98	11
+aland	1923	Cruiser   other at Destroyer fighting     4-6 km | Course / task None / admiral Fight	13	2
+aland	1923	Cruiser   chief at Destroyer fighting     4-6 km | Course / task None / admiral Fight	4	0
+aland	1923	Destroyer chief at Cruiser   fighting     4-6 km | Home	55	2
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Course / task None / admiral Fight	6	2
+aland	1923	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	22	3
+aland	1923	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	64	0
+aland	1923	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	4	0
+aland	1923	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	5	0
+aland	1923	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	57	14
+aland	1923	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	41	14
+aland	1923	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	6	1
+aland	1923	Destroyer chief at Destroyer fighting     4-6 km | Home	53	3
+aland	1923	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	428	129
+aland	1923	Cruiser   chief at Destroyer fighting    6-10 km | Route / task Search / admiral Route	4	0
+aland	1923	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Route	16	0
+aland	1923	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	10	1
+aland	1923	Cruiser   chief at Destroyer fighting     4-6 km | Route / task Search / admiral Route	4	1
+aland	1923	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Search / admiral Route	8	0
+aland	1923	Destroyer chief at Destroyer fighting     2-4 km | Home	188	46
+aland	1923	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	43	6
+aland	1923	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	4	0
+aland	1923	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	15	4
+aland	1923	Merchant  chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	26	1
+aland	1923	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	8	1
+aland	1923	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	167	26
+aland	1923	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	377	80
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	117	9
+aland	1923	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	90	14
+aland	1923	Merchant  chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	13	4
+aland	1923	Merchant  chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	21	0
+aland	1923	Merchant  chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	8	1
+aland	1923	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Route	14	2
+aland	1923	Destroyer chief at Merchant  fighting     2-4 km | Station / task Screen / admiral Screen	6	1
+aland	1923	Destroyer chief at Destroyer going home   2-4 km | Home	37	14
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Course / task Search / admiral Route	2	0
+aland	1923	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	10	3
+aland	1923	Cruiser   chief at Destroyer going home   4-6 km | Station / task Search / admiral Route	66	18
+aland	1923	Cruiser   chief at Destroyer going home   4-6 km | Route / task Search / admiral Route	22	8
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Station / task Search / admiral Route	56	3
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Route / task Search / admiral Route	18	2
+aland	1923	Cruiser   chief at Destroyer going home   2-4 km | Station / task Search / admiral Route	8	0
+aland	1923	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Route	142	43
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Route	28	4
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	2	0
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	4	0
+aland	1923	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	8	2
+aland	1923	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Route	28	7
+aland	1923	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	14	3
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	135	12
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Route	10	0
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	27	5
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	165	67
+aland	1923	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	10	3
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	82	18
+aland	1923	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	16	6
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Route	2	1
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Route / task Search / admiral Route	4	0
+aland	1923	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Route	4	0
+aland	1923	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	86	18
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	55	23
+aland	1923	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	4	0
+aland	1923	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	3	2
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	140	25
+aland	1923	Destroyer chief at Cruiser   fighting     2-4 km | Home	39	13
+aland	1923	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	112	51
+aland	1923	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	10	6
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Home	2	0
+aland	1923	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	74	15
+aland	1923	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	378	59
+aland	1923	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	88	0
+aland	1923	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	18	14
+aland	1923	Cruiser   other at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	170	116
+aland	1923	Cruiser   chief at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	32	24
+aland	1923	Cruiser   chief at Cruiser   fighting     0-2 km | Home	2	2
+aland	1923	Cruiser   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	161	98
+aland	1923	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	25	9
+aland	1923	Cruiser   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	4	0
+aland	1923	Cruiser   other at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	29	8
+aland	1923	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	18	9
+aland	1923	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	13	2
+aland	1923	Cruiser   other at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	69	28
+aland	1923	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	2	2
+aland	1923	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	18	12
+aland	1923	Merchant  chief at Destroyer going home  6-10 km | Course / task Withdraw / admiral Course	39	0
+aland	1923	Merchant  chief at Destroyer going home  6-10 km | Station / task Withdraw / admiral Course	61	0
+aland	1923	Destroyer chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	14	0
+aland	1923	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	10	2
+aland	1923	Destroyer chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	44	17
+aland	1923	Destroyer chief at Cruiser   going home   2-4 km | Home	5	1
+aland	1923	Destroyer chief at Cruiser   going home   0-2 km | Home	21	13
+aland	1923	Cruiser   other at Destroyer going home  6-10 km | Course / task Withdraw / admiral Course	4	0
+aland	1923	Destroyer chief at Destroyer going home   4-6 km | Home	9	0
+aland	1923	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	22	3
+aland	1923	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	40	7
+aland	1923	Cruiser   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	3	0
+aland	1923	Cruiser   chief at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	8	5
+aland	1923	Cruiser   other at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	15	5
+aland	1923	Cruiser   other at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	48	35
+aland	1923	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	12	11
+aland	1923	Cruiser   chief at Destroyer going home  6-10 km | Station / task Scout / admiral Station	4	0
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Station / task Scout / admiral Station	41	3
+aland	1923	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	16	3
+aland	1923	Cruiser   other at Destroyer going home   2-4 km | Station / task Scout / admiral Station	183	46
+aland	1923	Cruiser   chief at Destroyer going home   2-4 km | Station / task Scout / admiral Station	70	16
+aland	1923	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	42	9
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	223	50
+aland	1923	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Course	4	0
+aland	1923	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	18	6
+aland	1923	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	4	2
+aland	1923	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	12	2
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	6	1
+aland	1923	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	4	1
+aland	1923	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	14	4
+aland	1923	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	47	7
+aland	1923	Cruiser   other at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	8	2
+aland	1923	Cruiser   other at Cruiser   fighting     4-6 km | Home	14	1
+aland	1923	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Route	3	1
+aland	1923	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	2	0
+aland	1924	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	238	22
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	43	3
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	72	2
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	24	3
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	20	3
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	40	5
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	12	2
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task None / admiral Fight	4	2
+aland	1924	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	24	4
+aland	1924	Destroyer chief at Cruiser   fighting     4-6 km | Home	18	2
+aland	1924	Destroyer chief at Cruiser   fighting    6-10 km | Station / task Screen / admiral Screen	4	0
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	12	0
+aland	1924	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Fight	4	1
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	4	0
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	12	0
+aland	1924	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	11	1
+aland	1924	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	4	0
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	10	0
+aland	1924	Destroyer chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	5	0
+aland	1924	Destroyer chief at Destroyer fighting     4-6 km | Home	6	0
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	12	1
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	20	0
+aland	1924	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	36	2
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	8	1
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	26	2
+aland	1924	Destroyer chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	303	74
+aland	1924	Destroyer chief at Destroyer fighting     4-6 km | Fight away / task Screen / admiral Screen	9	0
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	10	4
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Fight	4	0
+aland	1924	Destroyer chief at Destroyer going home   2-4 km | Home	85	15
+aland	1924	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	104	18
+aland	1924	Destroyer chief at Destroyer going home   4-6 km | Home	48	9
+aland	1924	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	4	0
+aland	1924	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Course	2	0
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	20	3
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	20	2
+aland	1924	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Course	22	1
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	34	6
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	24	3
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	5	0
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	77	3
+aland	1924	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	232	12
+aland	1924	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	100	15
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	38	1
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	92	30
+aland	1924	Cruiser   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	82	33
+aland	1924	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	122	5
+aland	1924	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	52	3
+aland	1924	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	12	2
+aland	1924	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	12	0
+aland	1924	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	114	19
+aland	1924	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	34	0
+aland	1924	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	6	3
+aland	1924	Cruiser   other at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	15	1
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Home	36	2
+aland	1924	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	175	29
+aland	1924	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	26	2
+aland	1924	Destroyer chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	45	3
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	60	20
+aland	1924	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	50	7
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	6	0
+aland	1924	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	306	41
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Home	2	0
+aland	1924	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	6	3
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Home	12	3
+aland	1924	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	31	6
+aland	1924	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	8	1
+aland	1924	Cruiser   other at Cruiser   fighting     4-6 km | Home	60	7
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	6	2
+aland	1924	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	6	1
+aland	1924	Cruiser   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	41	33
+aland	1924	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	8	4
+aland	1924	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	2	0
+aland	1924	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	2	0
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	12	1
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	50	2
+aland	1924	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	16	2
+aland	1924	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	2	0
+aland	1924	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	79	23
+aland	1924	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	24	6
+aland	1924	Cruiser   other at Destroyer fighting     2-4 km | Home	20	1
+aland	1924	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	47	17
+aland	1924	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	2	0
+aland	1924	Cruiser   chief at Destroyer fighting     2-4 km | Home	2	0
+aland	1924	Destroyer chief at Cruiser   going home   2-4 km | Station / task Screen / admiral Screen	11	1
+aland	1924	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	42	13
+aland	1924	Cruiser   other at Destroyer going home   2-4 km | Home	14	0
+aland	1924	Destroyer chief at Cruiser   going home   2-4 km | Home	8	0
+aland	1924	Cruiser   other at Destroyer going home   0-2 km | Course / task Withdraw / admiral Course	4	3
+aland	1924	Destroyer chief at Cruiser   fighting     0-2 km | Home	9	7
+aland	1924	Cruiser   other at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	2	1
+aland	1924	Destroyer chief at Cruiser   fighting     2-4 km | Home	19	2
+aland	1924	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	6	2
+aland	1924	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	139	51
+aland	1924	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	18	5
+aland	1924	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	10	0
+aland	1924	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	2	0
+aland	1924	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	6	1
+aland	1924	Cruiser   other at Destroyer going home   4-6 km | Home	4	0
+aland	1924	Cruiser   chief at Cruiser   fighting     2-4 km | Home	2	0
+aland	1924	Cruiser   other at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	64	48
+aland	1924	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	118	18
+aland	1924	Cruiser   chief at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	18	16
+aland	1924	Cruiser   chief at Cruiser   fighting     0-2 km | Home	4	4
+aland	1924	Cruiser   other at Cruiser   fighting     2-4 km | Home	48	33
+aland	1924	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	18	8
+aland	1924	Cruiser   other at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	62	39
+aland	1924	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	18	11
+aland	1925	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	155	12
+aland	1925	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	0
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	4	0
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	12	0
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	10	2
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	80	4
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	28	5
+aland	1925	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	12	5
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	2	0
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	64	4
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Fight	4	2
+aland	1925	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	24	1
+aland	1925	Destroyer chief at Destroyer fighting     4-6 km | Home	24	0
+aland	1925	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	100	4
+aland	1925	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	6	1
+aland	1925	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	8	0
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	58	11
+aland	1925	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	5	0
+aland	1925	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	47	6
+aland	1925	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	3	0
+aland	1925	Destroyer chief at Cruiser   fighting    6-10 km | Station / task Screen / admiral Screen	2	1
+aland	1925	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Fight	13	2
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Search / admiral Fight	4	0
+aland	1925	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Fight	15	0
+aland	1925	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	80	0
+aland	1925	Destroyer chief at Destroyer going home  6-10 km | Station / task Screen / admiral Screen	2	0
+aland	1925	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	6	0
+aland	1925	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	40	26
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	14	1
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	8	0
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	4	0
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	24	3
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Course	8	0
+aland	1925	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	40	1
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	8	3
+aland	1925	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Fight	8	0
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	62	13
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	21	5
+aland	1925	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	43	0
+aland	1925	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	9	2
+aland	1925	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	6	3
+aland	1925	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	20	1
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	20	1
+aland	1925	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	4	2
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	22	1
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	35	6
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	50	8
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	164	50
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	30	25
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	40	5
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	4	4
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	12	1
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	4	4
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Fight away / task Intercept / admiral Fight	14	13
+aland	1925	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	36	8
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Fight away / task Intercept / admiral Fight	4	4
+aland	1925	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	14	1
+aland	1925	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	8	2
+aland	1925	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	3	2
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	130	36
+aland	1925	Destroyer chief at Cruiser   fighting     2-4 km | Home	15	7
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	104	24
+aland	1925	Cruiser   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	8	0
+aland	1925	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	10	2
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	22	17
+aland	1925	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	8	5
+aland	1925	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	9	1
+aland	1925	Destroyer chief at Cruiser   fighting     4-6 km | Home	1	0
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	48	15
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	128	25
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	26	12
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	94	33
+aland	1925	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	2	0
+aland	1925	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	18	4
+aland	1925	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	10	3
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	2	0
+aland	1925	Cruiser   other at Cruiser   fighting     2-4 km | Home	44	23
+aland	1925	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	164	63
+aland	1925	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	24	10
+aland	1925	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	14	2
+aland	1925	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	10	4
+aland	1925	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	15	7
+aland	1925	Cruiser   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	10	0
+aland	1925	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	6	4
+aland	1925	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	6	2
+aland	1925	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	4	0
+aland	1925	Cruiser   other at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	12	0
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	28	0
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	42	0
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Home	38	7
+aland	1925	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	14	2
+aland	1925	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	4	0
+aland	1925	Cruiser   other at Cruiser   fighting    6-10 km | Home	8	2
+aland	1925	Cruiser   chief at Merchant  fighting    6-10 km | Course / task Withdraw / admiral Course	2	0
+aland	1925	Merchant  chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	11	0
+aland	1925	Merchant  chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	33	1
+aland	1925	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	6	0
+aland	1925	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Intercept / admiral Course	4	1
+aland	1925	Cruiser   other at Merchant  fighting     4-6 km | Course / task Withdraw / admiral Course	2	2
+aland	1925	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	16	3
+aland	1925	Cruiser   other at Destroyer fighting     4-6 km | Home	8	0
+aland	1925	Destroyer chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	12	0
+aland	1925	Destroyer chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	151	26
+aland	1925	Cruiser   other at Destroyer fighting     2-4 km | Home	4	2
+aland	1925	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	1	0
+aland	1925	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	62	11
+aland	1925	Cruiser   other at Destroyer going home   4-6 km | Station / task Scout / admiral Station	100	5
+aland	1926	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	128	19
+aland	1926	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	66	6
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	8	1
+aland	1926	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	8	0
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	26	2
+aland	1926	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	10	0
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	12	2
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	8	2
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	64	10
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	16	1
+aland	1926	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	16	0
+aland	1926	Destroyer chief at Destroyer fighting    6-10 km | Station / task Screen / admiral Screen	4	0
+aland	1926	Cruiser   chief at Destroyer fighting    6-10 km | Route / task Search / admiral Route	10	0
+aland	1926	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Route	40	3
+aland	1926	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	77	0
+aland	1926	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	51	8
+aland	1926	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Fight	126	15
+aland	1926	Merchant  chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	15	2
+aland	1926	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	95	4
+aland	1926	Merchant  chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	49	0
+aland	1926	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	100	32
+aland	1926	Destroyer chief at Destroyer fighting     2-4 km | Home	18	3
+aland	1926	Destroyer chief at Merchant  fighting     2-4 km | Station / task Screen / admiral Screen	147	42
+aland	1926	Merchant  chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	105	17
+aland	1926	Destroyer chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	40	2
+aland	1926	Destroyer chief at Destroyer fighting     4-6 km | Home	16	3
+aland	1926	Merchant  chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	42	2
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Search / admiral Route	18	2
+aland	1926	Destroyer chief at Merchant  fighting     4-6 km | Station / task Screen / admiral Screen	48	5
+aland	1926	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Route	12	4
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Route	70	21
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	24	2
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	135	9
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	12	0
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	96	8
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Route	46	7
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	6	0
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	29	1
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Course / task Search / admiral Route	16	0
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Search / admiral Route	2	0
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Station / task Search / admiral Route	18	2
+aland	1926	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	47	10
+aland	1926	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	419	130
+aland	1926	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Route	36	12
+aland	1926	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Route	30	5
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Search / admiral Route	30	0
+aland	1926	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Route	4	2
+aland	1926	Destroyer chief at Cruiser   fighting     2-4 km | Home	49	15
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Course / task Search / admiral Route	6	0
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Route	2	0
+aland	1926	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Search / admiral Route	2	0
+aland	1926	Merchant  chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	3	0
+aland	1926	Merchant  chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	34	2
+aland	1926	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Intercept / admiral Fight	4	0
+aland	1926	Cruiser   other at Destroyer fighting     2-4 km | Route / task Search / admiral Route	6	1
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Route / task Search / admiral Route	2	0
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Route / task Search / admiral Route	4	2
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	188	68
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	28	1
+aland	1926	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	36	15
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Fight band / task Intercept / admiral Fight	112	24
+aland	1926	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Intercept / admiral Fight	6	2
+aland	1926	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Route	26	4
+aland	1926	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Route	4	3
+aland	1926	Destroyer chief at Merchant  fighting     2-4 km | Home	2	0
+aland	1926	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Fight	30	9
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   other at Cruiser   going home   2-4 km | Fight finishing / task Intercept / admiral Fight	6	1
+aland	1926	Cruiser   other at Cruiser   going home   2-4 km | Fight band / task Intercept / admiral Fight	11	2
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Home	2	0
+aland	1926	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Fight	4	1
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	6	0
+aland	1926	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	10	1
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Fight finishing / task Intercept / admiral Fight	8	0
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	14	0
+aland	1926	Cruiser   chief at Destroyer going home   2-4 km | Fight finishing / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	7	1
+aland	1926	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	2	0
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	13	4
+aland	1926	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Fight	4	0
+aland	1926	Destroyer chief at Cruiser   fighting     4-6 km | Home	16	1
+aland	1926	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	22	2
+aland	1926	Cruiser   chief at Destroyer going home  6-10 km | Course / task Intercept / admiral Fight	4	0
+aland	1926	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	57	12
+aland	1926	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	8	1
+aland	1926	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	67	7
+aland	1926	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	30	7
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	141	36
+aland	1926	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	16	3
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	123	15
+aland	1926	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	30	8
+aland	1926	Cruiser   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	14	2
+aland	1926	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Course	20	4
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	4	1
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	4	2
+aland	1926	Cruiser   chief at Destroyer going home  6-10 km | Course / task Withdraw / admiral Course	2	0
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	8	1
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	4	1
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	192	37
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	150	37
+aland	1926	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	26	17
+aland	1926	Cruiser   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	10	1
+aland	1926	Cruiser   other at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	36	2
+aland	1926	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	26	7
+aland	1926	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	7	0
+aland	1926	Cruiser   other at Destroyer going home   2-4 km | Home	31	15
+aland	1926	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	4	3
+aland	1926	Cruiser   chief at Cruiser   going home   4-6 km | Route / task Withdraw / admiral Route	2	0
+aland	1926	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	6	2
+aland	1926	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	40	0
+aland	1926	Destroyer chief at Destroyer going home   4-6 km | Home	12	0
+aland	1926	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	6	1
+aland	1926	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	24	3
+aland	1926	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	4	3
+aland	1926	Cruiser   other at Merchant  fighting     4-6 km | Course / task Withdraw / admiral Course	40	2
+aland	1926	Cruiser   other at Merchant  fighting     2-4 km | Course / task Withdraw / admiral Course	18	1
+aland	1926	Cruiser   other at Merchant  going home   2-4 km | Course / task Withdraw / admiral Course	164	17
+aland	1926	Cruiser   other at Merchant  going home   4-6 km | Course / task Withdraw / admiral Course	242	8
+aland	1926	Cruiser   chief at Merchant  going home   2-4 km | Course / task Withdraw / admiral Course	2	1
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	8	0
+aland	1927	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	363	56
+aland	1927	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	5	2
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	3
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	4	0
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	4	0
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	4	1
+aland	1927	Cruiser   other at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	52	4
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	12	4
+aland	1927	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	67	0
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	8	0
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	4	0
+aland	1927	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	125	16
+aland	1927	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	45	15
+aland	1927	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Fight	60	15
+aland	1927	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	66	16
+aland	1927	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	38	3
+aland	1927	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Fight	4	0
+aland	1927	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	567	173
+aland	1927	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Search / admiral Fight	4	0
+aland	1927	Destroyer chief at Destroyer fighting     2-4 km | Home	58	14
+aland	1927	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	22	0
+aland	1927	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	18	0
+aland	1927	Destroyer chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Screen	8	1
+aland	1927	Cruiser   chief at Destroyer going home  6-10 km | Course / task Search / admiral Fight	6	1
+aland	1927	Destroyer chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Screen	11	2
+aland	1927	Destroyer chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	92	33
+aland	1927	Destroyer chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Fight	2	2
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Search / admiral Fight	2	1
+aland	1927	Destroyer chief at Destroyer going home   0-2 km | Home	44	21
+aland	1927	Cruiser   chief at Destroyer going home   4-6 km | Station / task Search / admiral Fight	10	1
+aland	1927	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	69	28
+aland	1927	Destroyer chief at Destroyer going home   2-4 km | Home	135	44
+aland	1927	Destroyer chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	10	2
+aland	1927	Destroyer chief at Destroyer fighting     4-6 km | Home	14	1
+aland	1927	Destroyer chief at Destroyer going home   4-6 km | Home	85	13
+aland	1927	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	144	20
+aland	1927	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task Search / admiral Fight	16	6
+aland	1927	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	49	33
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	2	1
+aland	1927	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	2	1
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	2	0
+aland	1927	Destroyer chief at Cruiser   fighting     4-6 km | Home	30	2
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	36	7
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	28	12
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	8	3
+aland	1927	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	4	0
+aland	1927	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	14	2
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	66	7
+aland	1927	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	71	14
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	20	0
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	84	36
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	34	3
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	50	4
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	8	3
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	121	40
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	24	9
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	49	10
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	10	2
+aland	1927	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	2	1
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	20	10
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	36	26
+aland	1927	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	14	9
+aland	1927	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	4	1
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	4	3
+aland	1927	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	2	0
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Fight away / task Intercept / admiral Fight	4	0
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Fight away / task Search / admiral Fight	8	7
+aland	1927	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	20	3
+aland	1927	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	4	1
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Home	12	3
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	2	2
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	36	14
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Home	34	8
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	30	12
+aland	1927	Destroyer chief at Cruiser   fighting    6-10 km | Station / task Screen / admiral Screen	41	1
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	8	4
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	96	2
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	4	1
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	2	0
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	20	1
+aland	1927	Merchant  chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	40	11
+aland	1927	Merchant  chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	18	5
+aland	1927	Merchant  chief at Destroyer going home   4-6 km | Course / task Withdraw / admiral Course	34	5
+aland	1927	Merchant  chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	17	0
+aland	1927	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	6	0
+aland	1927	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	4	0
+aland	1927	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Scout / admiral Station	38	9
+aland	1927	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Station	12	4
+aland	1927	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Scout / admiral Station	268	128
+aland	1927	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Scout / admiral Station	22	9
+aland	1927	Cruiser   other at Destroyer fighting     4-6 km | Station / task Scout / admiral Station	44	9
+aland	1927	Destroyer chief at Cruiser   fighting     2-4 km | Home	29	9
+aland	1927	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	58	29
+aland	1927	Cruiser   other at Destroyer fighting     2-4 km | Station / task Scout / admiral Station	39	12
+aland	1927	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Scout / admiral Station	55	39
+aland	1927	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Scout / admiral Station	8	8
+aland	1927	Cruiser   other at Cruiser   going home   0-2 km | Station / task Scout / admiral Station	7	5
+aland	1927	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Scout / admiral Station	4	4
+aland	1927	Cruiser   other at Destroyer going home   0-2 km | Station / task Scout / admiral Station	31	25
+aland	1927	Cruiser   other at Destroyer going home   2-4 km | Station / task Scout / admiral Station	213	78
+aland	1927	Cruiser   chief at Destroyer going home   2-4 km | Station / task Scout / admiral Station	6	3
+aland	1927	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Scout / admiral Station	2	2
+aland	1927	Destroyer chief at Cruiser   going home   2-4 km | Station / task Scout / admiral Station	58	36
+aland	1927	Cruiser   other at Destroyer going home   4-6 km | Station / task Scout / admiral Station	1	0
+aland	1927	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	26	3
+aland	1928	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task None / admiral Fight	28	7
+aland	1928	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	111	9
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Station / task None / admiral Fight	13	2
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	4	0
+aland	1928	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight	72	7
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	34	11
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	26	2
+aland	1928	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	34	5
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	21	3
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	8	2
+aland	1928	Destroyer chief at Cruiser   fighting     4-6 km | Home	33	3
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	45	6
+aland	1928	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	36	4
+aland	1928	Cruiser   chief at Destroyer fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	32	0
+aland	1928	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Intercept / admiral Fight	8	0
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	15	3
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	12	1
+aland	1928	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Fight	27	3
+aland	1928	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Fight	6	3
+aland	1928	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	12	3
+aland	1928	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Course	52	1
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	104	33
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	4	0
+aland	1928	Destroyer chief at Cruiser   fighting     2-4 km | Home	71	27
+aland	1928	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	24	0
+aland	1928	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	10	5
+aland	1928	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	10	0
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	9	2
+aland	1928	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Course	4	0
+aland	1928	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	50	5
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	24	4
+aland	1928	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	16	1
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	32	2
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	20	0
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	24	7
+aland	1928	Cruiser   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	22	2
+aland	1928	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	50	2
+aland	1928	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	8	0
+aland	1928	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	12	4
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	122	37
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	108	31
+aland	1928	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	20	7
+aland	1928	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	12	3
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Home	6	0
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	104	9
+aland	1928	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	76	10
+aland	1928	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	102	12
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	28	12
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	40	7
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	70	6
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Home	40	0
+aland	1928	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	20	3
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	8	0
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	4	1
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	38	0
+aland	1928	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	4	1
+aland	1928	Cruiser   other at Cruiser   fighting    6-10 km | Home	8	3
+aland	1928	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	4	0
+aland	1928	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	36	2
+aland	1928	Cruiser   other at Destroyer fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	25	6
+aland	1928	Cruiser   chief at Destroyer going home  6-10 km | Course / task Intercept / admiral Course	8	3
+aland	1928	Cruiser   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	12	11
+aland	1928	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	4	0
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	79	8
+aland	1928	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	27	13
+aland	1928	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	24	12
+aland	1928	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	114	34
+aland	1928	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	102	40
+aland	1928	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	2	0
+aland	1928	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	16	3
+aland	1928	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	26	5
+aland	1928	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	20	6
+aland	1928	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	16	8
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	4	1
+aland	1928	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	4	0
+aland	1928	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	11	4
+aland	1928	Cruiser   other at Cruiser   fighting     2-4 km | Home	6	2
+aland	1928	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	1	0
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	6	0
+aland	1928	Cruiser   other at Destroyer going home   2-4 km | Home	2	0
+aland	1928	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	16	3
+aland	1928	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Intercept / admiral Course	2	0

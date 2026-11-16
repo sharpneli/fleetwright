@@ -1,0 +1,123 @@
+Heligoland Bight: 64 ships, 2 sides, from 1914-08-28 06:50:00.000 until 1914-08-28 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1914: time    at 15:00 (+8:10)  Britain lost 7/44 (10356 t), score 0.94   Germany lost 19/20 (57870 t), score 0.04   (foundered 6, capsized 13, broke in two 7)   1dc6b7f70238506d   (36.2 s)
+           main guns: 7 fell out for them, main mounts out 16 of 21 (16 of 21 guns): guns out 9, gunhouse destroyed 5, gunhouse out of action 2
+                      at the end, 38 ships afloat: main mounts out 14 of 132 (14 of 152 guns): gunhouse destroyed 5, guns out 5, magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 9 ship-wide (9 by a hit's shock, 0 by near misses), 5 ships blacked out
+           shells: 5896 fired, 4 at ships seen done for
+           Britain      done? home (gave up); 0 of 37 afloat home, 37 not (37 in an encounter, 4 stopped, 4 dead in the water, the farthest 431 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 70 km)
+  seed   1915: time    at 15:00 (+8:10)  Britain lost 2/44 (2430 t), score 0.97   Germany lost 19/20 (60088 t), score 0.01   (foundered 1, capsized 13, broke in two 7)   2d2e5317fae5adaa   (41.8 s)
+           main guns: 16 fell out for them, main mounts out 35 of 47 (35 of 47 guns): guns out 25, gunhouse out of action 6, gunhouse destroyed 3, magazine spent (its race) 1
+                      at the end, 43 ships afloat: main mounts out 17 of 150 (18 of 170 guns): gunhouse destroyed 5, gunhouse out of action 5, magazine flooded by the sea 4, guns out 3
+           blackouts: 6 ship-wide (6 by a hit's shock, 0 by near misses), 2 ships blacked out
+           shells: 5927 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 42 afloat home, 42 not (42 in an encounter, 8 stopped, 8 dead in the water, the farthest 386 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 1 stopped, 0 dead in the water, the farthest 72 km)
+  seed   1916: time    at 15:00 (+8:10)  Britain lost 2/44 (5413 t), score 0.54   Germany lost 15/20 (33086 t), score 0.02   (foundered 4, capsized 9, broke in two 4)   8218ba44a27c3f05   (31.9 s)
+           main guns: 10 fell out for them, main mounts out 23 of 30 (23 of 30 guns): guns out 16, gunhouse out of action 4, gunhouse destroyed 2, magazine flooded by the sea 1
+                      at the end, 47 ships afloat: main mounts out 11 of 155 (11 of 175 guns): gunhouse out of action 4, magazine flooded by the sea 3, guns out 3, gunhouse destroyed 1
+           blackouts: 8 ship-wide (8 by a hit's shock, 0 by near misses), 3 ships blacked out
+           shells: 4180 fired, 13 at ships seen done for
+           Britain      done? home (gave up); 1 of 42 afloat home, 41 not (41 in an encounter, 3 stopped, 3 dead in the water, the farthest 326 km)
+           Germany      done? retiring (broken off); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 224 km)
+  seed   1917: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.42   Germany lost 7/20 (25856 t), score 0.00   (foundered 1, capsized 4, broke in two 2)   29ed0f2b1ab24d68   (22.4 s)
+           main guns: 6 fell out for them, main mounts out 14 of 16 (14 of 16 guns): guns out 10, magazine flooded by the sea 2, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 57 ships afloat: main mounts out 1 of 187 (1 of 207 guns): gunhouse destroyed 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 1235 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 18 of 44 afloat home, 26 not (26 in an encounter, 0 stopped, 0 dead in the water, the farthest 364 km)
+           Germany      done? retiring (broken off); 8 of 13 afloat home, 5 not (5 in an encounter, 1 stopped, 0 dead in the water, the farthest 173 km)
+  seed   1918: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.20   Germany lost 8/20 (12576 t), score 0.00   (foundered 1, capsized 7)   cb183ea0c02a9e9e   (20.5 s)
+           main guns: 4 fell out for them, main mounts out 9 of 12 (9 of 12 guns): guns out 6, gunhouse out of action 2, magazine flooded by the sea 1
+                      at the end, 56 ships afloat: main mounts out 2 of 181 (2 of 201 guns): gunhouse destroyed 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2124 fired, 6 at ships seen done for
+           Britain      done? lost (lost contact); 1 of 44 afloat home, 43 not (43 in an encounter, 1 stopped, 1 dead in the water, the farthest 293 km)
+           Germany      done? retiring (outmatched); 12 of 12 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1919: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.20   Germany lost 5/20 (12296 t), score 0.00   (capsized 4, broke in two 1)   40cbdf24661a9504   (22.5 s)
+           main guns: 5 fell out for them, main mounts out 9 of 14 (9 of 14 guns): magazine flooded by the sea 3, gunhouse out of action 3, guns out 2, gunhouse destroyed 1
+                      at the end, 59 ships afloat: main mounts out 2 of 192 (2 of 212 guns): gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2071 fired, 11 at ships seen done for
+           Britain      done? home (gave up); 38 of 44 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 364 km)
+           Germany      done? retiring (outmatched); 8 of 15 afloat home, 7 not (7 in an encounter, 2 stopped, 0 dead in the water, the farthest 149 km)
+  seed   1920: time    at 15:00 (+8:10)  Britain lost 5/44 (6075 t), score 0.45   Germany lost 14/20 (27870 t), score 0.02   (foundered 1, capsized 16, broke in two 2)   8888420dfda4c836   (30.1 s)
+           main guns: 6 fell out for them, main mounts out 16 of 20 (16 of 20 guns): guns out 7, gunhouse out of action 6, magazine flooded by the sea 2, gunhouse destroyed 1
+                      at the end, 45 ships afloat: main mounts out 17 of 150 (17 of 170 guns): magazine flooded by the sea 10, gunhouse out of action 5, gunhouse destroyed 2
+           blackouts: 4 ship-wide (4 by a hit's shock, 0 by near misses), 4 ships blacked out
+           shells: 4908 fired, 96 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 39 afloat home, 39 not (39 in an encounter, 6 stopped, 6 dead in the water, the farthest 334 km)
+           Germany      done? retiring (broken off); 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 65 km)
+  seed   1921: time    at 15:00 (+8:10)  Britain lost 1/44 (1215 t), score 0.10   Germany lost 4/20 (6288 t), score 0.00   (capsized 4, broke in two 1)   6e951bc5c873f474   (22.1 s)
+           main guns: 7 fell out for them, main mounts out 17 of 21 (17 of 21 guns): guns out 10, gunhouse destroyed 4, gunhouse out of action 3
+                      at the end, 59 ships afloat: main mounts out 3 of 190 (3 of 210 guns): gunhouse destroyed 2, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1628 fired, 32 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 43 afloat home, 43 not (43 in an encounter, 0 stopped, 0 dead in the water, the farthest 242 km)
+           Germany      done? retiring (outmatched); 16 of 16 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1922: time    at 15:00 (+8:10)  Britain lost 1/44 (3066 t), score 0.74   Germany lost 16/20 (45866 t), score 0.01   (foundered 2, capsized 10, broke in two 5)   acf1c27f6b51fccc   (30.8 s)
+           main guns: 8 fell out for them, main mounts out 20 of 26 (20 of 26 guns): guns out 15, gunhouse destroyed 3, gunhouse out of action 2
+                      at the end, 47 ships afloat: main mounts out 22 of 157 (22 of 177 guns): gunhouse destroyed 10, gunhouse out of action 6, magazine flooded by the sea 4, guns out 2
+           blackouts: 5 ship-wide (5 by a hit's shock, 0 by near misses), 4 ships blacked out
+           shells: 5613 fired, 6 at ships seen done for
+           Britain      done? home (gave up); 1 of 43 afloat home, 42 not (42 in an encounter, 3 stopped, 2 dead in the water, the farthest 345 km)
+           Germany      done? retiring (broken off); 2 of 4 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 80 km)
+  seed   1923: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.05   Germany lost 2/20 (3144 t), score 0.00   (capsized 2)   6a631c50081edd06   (21.2 s)
+           main guns: 1 fell out for them, main mounts out 3 of 3 (3 of 3 guns): guns out 3
+                      at the end, 62 ships afloat: main mounts out 1 of 199 (1 of 219 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 370 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 38 of 44 afloat home, 6 not (6 in an encounter, 2 stopped, 0 dead in the water, the farthest 364 km)
+           Germany      done? retiring (outmatched); 12 of 18 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 254 km)
+  seed   1924: done    at 12:41 (+5:51)  Britain lost 0/44 (0 t), score 0.05   Germany lost 2/20 (3144 t), score 0.00   (capsized 2)   c84be07ef04d643f   (16.6 s)
+           main guns: 2 fell out for them, main mounts out 5 of 6 (5 of 6 guns): guns out 4, gunhouse out of action 1
+                      at the end, 62 ships afloat: main mounts out 1 of 199 (1 of 219 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 741 fired, 0 at ships seen done for
+  seed   1925: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.37   Germany lost 5/20 (22712 t), score 0.00   (foundered 2, capsized 2, broke in two 1)   376f15998ca5773f   (24.9 s)
+           main guns: 1 fell out for them, main mounts out 2 of 3 (2 of 3 guns): gunhouse destroyed 1, guns out 1
+                      at the end, 59 ships afloat: main mounts out 5 of 193 (5 of 213 guns): magazine flooded by the sea 3, magazine flooded by order 2
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 1496 fired, 47 at ships seen done for
+           Britain      done? home (gave up); 39 of 44 afloat home, 5 not (5 in an encounter, 1 stopped, 1 dead in the water, the farthest 363 km)
+           Germany      done? retiring (broken off); 10 of 15 afloat home, 5 not (5 in an encounter, 1 stopped, 0 dead in the water, the farthest 87 km)
+  seed   1926: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.26   Germany lost 8/20 (16220 t), score 0.00   (foundered 1, capsized 6, broke in two 1)   e47765f7ae6b75ba   (23.0 s)
+           main guns: 4 fell out for them, main mounts out 10 of 12 (10 of 12 guns): guns out 6, gunhouse destroyed 3, magazine flooded by the sea 1
+                      at the end, 56 ships afloat: main mounts out 7 of 182 (8 of 202 guns): magazine flooded by the sea 4, magazine flooded by order 3
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1604 fired, 8 at ships seen done for
+           Britain      done? home (gave up); 15 of 44 afloat home, 29 not (29 in an encounter, 1 stopped, 1 dead in the water, the farthest 364 km)
+           Germany      done? retiring (outmatched); 8 of 12 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 157 km)
+  seed   1927: time    at 15:00 (+8:10)  Britain lost 1/44 (1215 t), score 0.24   Germany lost 8/20 (14794 t), score 0.00   (foundered 2, capsized 5, broke in two 2)   6cb29bc537a4ae2a   (39.2 s)
+           main guns: 6 fell out for them, main mounts out 14 of 18 (14 of 18 guns): gunhouse out of action 5, gunhouse destroyed 4, guns out 4, magazine spent (its race) 1
+                      at the end, 55 ships afloat: main mounts out 5 of 179 (5 of 199 guns): gunhouse destroyed 2, gunhouse out of action 2, magazine flooded by the sea 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 2950 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 43 afloat home, 43 not (43 in an encounter, 2 stopped, 1 dead in the water, the farthest 332 km)
+           Germany      done? retiring (outmatched); 8 of 12 afloat home, 4 not (4 in an encounter, 1 stopped, 0 dead in the water, the farthest 104 km)
+  seed   1928: time    at 15:00 (+8:10)  Britain lost 0/44 (0 t), score 0.25   Germany lost 5/20 (15148 t), score 0.00   (magazine 1, capsized 1, broke in two 3)   8f7ad4b64425efa1   (22.8 s)
+           main guns: 1 fell out for them, main mounts out 2 of 3 (2 of 3 guns): gunhouse out of action 2
+                      at the end, 59 ships afloat: main mounts out 1 of 192 (1 of 212 guns): gunhouse out of action 1
+           blackouts: 3 ship-wide (3 by a hit's shock, 0 by near misses), 3 ships blacked out
+           shells: 996 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 33 of 44 afloat home, 11 not (11 in an encounter, 0 stopped, 0 dead in the water, the farthest 364 km)
+           Germany      done? home (gave up); 9 of 15 afloat home, 6 not (6 in an encounter, 1 stopped, 0 dead in the water, the farthest 156 km)
+  seed   1929: time    at 15:00 (+8:10)  Britain lost 12/44 (14580 t), score 0.80   Germany lost 16/20 (49510 t), score 0.06   (magazine 1, foundered 5, capsized 15, broke in two 7)   4edac981c4d65581   (34.8 s)
+           main guns: 12 fell out for them, main mounts out 32 of 38 (32 of 38 guns): guns out 24, gunhouse destroyed 5, gunhouse out of action 2, magazine flooded by the sea 1
+                      at the end, 36 ships afloat: main mounts out 15 of 127 (15 of 147 guns): magazine flooded by the sea 7, gunhouse destroyed 6, guns out 2
+           blackouts: 5 ship-wide (5 by a hit's shock, 0 by near misses), 2 ships blacked out
+           shells: 6359 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 32 afloat home, 32 not (32 in an encounter, 5 stopped, 6 dead in the water, the farthest 350 km)
+           Germany      done? retiring (broken off); 2 of 4 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 100 km)
+
+over 16 seeds:
+  ended time     15 times, after 8:10 on average
+  ended done      1 times, after 5:51 on average
+  Britain      lost 1.9 of 44 ships (from 0 to 12), 2772 t; made 845 hits, fired 113.8 torpedoes; aims met 0 times, score 0.41
+  Germany      lost 9.6 of 20 ships (from 2 to 19), 25404 t; made 239 hits, fired 29.3 torpedoes; aims met 0 times, score 0.01
+over 16 seeds:
+  main guns: 96 fell out for them, main mounts out 227 of 290 (227 of 290 guns): guns out 142, gunhouse out of action 39, gunhouse destroyed 33, magazine flooded by the sea 11, magazine spent (its race) 2
+             at the end, 840 ships afloat: main mounts out 124 of 2765 (126 of 3085 guns): magazine flooded by the sea 38, gunhouse destroyed 36, gunhouse out of action 30, guns out 15, magazine flooded by order 5
+  blackouts: 43 ship-wide (43 by a hit's shock, 0 by near misses), 26 ships blacked out
+  shells: 48098 fired, 223 at ships seen done for

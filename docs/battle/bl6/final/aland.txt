@@ -1,0 +1,115 @@
+The battle for Åland, 1921: 21 ships, 2 sides, from 1921-06-28 04:00:00.000 until 1921-06-28 16:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1921: done    at 13:29 (+9:29)  Finland lost 2/13 (1996 t), aims met, score 1.00   Sweden lost 4/8 (10294 t), score 0.00   (foundered 2, capsized 2, broke in two 1)   57bebab42c6ce03d   (23.8 s)
+           main guns: 6 fell out for them, main mounts out 9 of 12 (9 of 12 guns): guns out 5, gunhouse destroyed 3, magazine flooded by the sea 1
+                      at the end, 16 ships afloat: main mounts out 11 of 33 (12 of 45 guns): magazine flooded by the sea 8, gunhouse destroyed 2, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3565 fired, 4 at ships seen done for
+  seed   1922: done    at 08:53 (+4:53)  Finland lost 4/13 (3992 t), score 0.00   Sweden lost 3/8 (24545 t), aims met, score 1.00   (foundered 1, capsized 3, broke in two 1)   d0c26da52cbc70d1   (17.7 s)
+           main guns: 3 fell out for them, main mounts out 5 of 6 (7 of 8 guns): magazine spent (its race) 2, guns out 2, gunhouse destroyed 1
+                      at the end, 16 ships afloat: main mounts out 8 of 30 (12 of 42 guns): magazine flooded by order 3, magazine flooded by the sea 2, gunhouse destroyed 1, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3371 fired, 11 at ships seen done for
+  seed   1923: time    at 16:00 (+12:00)  Finland lost 4/13 (3992 t), aims met, score 1.00   Sweden lost 3/8 (8637 t), score 0.00   (foundered 5, capsized 1, broke in two 1)   b7737092641ce471   (15.1 s)
+           main guns: 4 fell out for them, main mounts out 6 of 7 (6 of 7 guns): gunhouse destroyed 2, guns out 2, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 14 ships afloat: main mounts out 1 of 31 (1 of 43 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1654 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 7 of 9 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 12 km)
+           Sweden       done? home (aims decided); 5 of 5 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1924: time    at 16:00 (+12:00)  Finland lost 7/13 (8608 t), score 0.00   Sweden lost 2/8 (22888 t), aims met, score 1.00   (foundered 1, capsized 7, broke in two 1)   138a0fc30c8a4f52   (20.6 s)
+           main guns: 7 fell out for them, main mounts out 14 of 16 (18 of 20 guns): guns out 5, gunhouse out of action 3, magazine flooded by the sea 2, gunhouse destroyed 2, magazine flooded by order 1, magazine put out by a hit 1
+                      at the end, 12 ships afloat: main mounts out 7 of 24 (7 of 30 guns): magazine flooded by the sea 6, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4628 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 6 of 6 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Sweden       done? home (aims decided); 3 of 6 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 81 km)
+  seed   1925: time    at 16:00 (+12:00)  Finland lost 2/13 (1996 t), aims met, score 1.00   Sweden lost 5/8 (22960 t), score 0.00   (foundered 3, capsized 4)   cf9fa91e31275e09   (20.3 s)
+           main guns: 4 fell out for them, main mounts out 7 of 8 (9 of 10 guns): guns out 4, magazine spent (its race) 2, magazine flooded by order 1
+                      at the end, 14 ships afloat: main mounts out 7 of 32 (8 of 42 guns): magazine flooded by the sea 3, gunhouse destroyed 2, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4452 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 7 of 11 afloat home, 4 not (4 in an encounter, 4 stopped, 2 dead in the water, the farthest 29 km)
+           Sweden       done? home (aims decided); 2 of 3 afloat home, 1 not (1 in an encounter, 1 stopped, 1 dead in the water, the farthest 63 km)
+  seed   1926: done    at 11:52 (+7:52)  Finland lost 8/13 (12850 t), score 0.00   Sweden lost 3/8 (25767 t), aims met, score 1.00   (foundered 2, capsized 7)   37cabf1a4d7b653d   (24.4 s)
+           main guns: 10 fell out for them, main mounts out 17 of 21 (19 of 23 guns): magazine flooded by the sea 7, guns out 6, magazine flooded by order 1, magazine spent (its race) 1, magazine put out by a hit 1, gunhouse out of action 1
+                      at the end, 12 ships afloat: main mounts out 14 of 25 (16 of 29 guns): magazine flooded by the sea 9, guns out 3, magazine put out by a hit 1, gunhouse destroyed 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 4340 fired, 52 at ships seen done for
+  seed   1927: time    at 16:00 (+12:00)  Finland lost 1/13 (998 t), aims met, score 1.00   Sweden lost 6/8 (14830 t), score 0.00   (foundered 2, capsized 4, broke in two 1)   602b23d7eac5e791   (16.9 s)
+           main guns: 8 fell out for them, main mounts out 11 of 15 (11 of 15 guns): guns out 8, magazine flooded by order 1, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 14 ships afloat: main mounts out 6 of 28 (8 of 40 guns): magazine flooded by the sea 2, gunhouse out of action 2, magazine flooded by order 1, jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2709 fired, 9 at ships seen done for
+           Finland      done? home (aims decided); 10 of 12 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 16 km)
+           Sweden       done? home (aims decided); 2 of 2 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1928: time    at 16:00 (+12:00)  Finland lost 2/13 (1996 t), score 0.00   Sweden lost 3/8 (24545 t), aims met, score 1.00   (foundered 3, capsized 2)   5fdef98af6351296   (23.3 s)
+           main guns: 4 fell out for them, main mounts out 9 of 10 (13 of 14 guns): guns out 5, magazine spent (its race) 2, barbette out 1, down: a crew stunned 1
+                      at the end, 16 ships afloat: main mounts out 0 of 30 (0 of 38 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 5197 fired, 4 at ships seen done for
+           Finland      done? home (aims decided); 8 of 11 afloat home, 3 not (3 in an encounter, 3 stopped, 1 dead in the water, the farthest 23 km)
+           Sweden       done? home (aims decided); 2 of 5 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 82 km)
+  seed   1929: done    at 09:32 (+5:32)  Finland lost 7/13 (10230 t), aims met, score 1.00   Sweden lost 3/8 (17202 t), score 0.00   (foundered 2, capsized 6, broke in two 2)   cd50916c92644d26   (12.1 s)
+           main guns: 6 fell out for them, main mounts out 14 of 15 (16 of 17 guns): guns out 12, magazine flooded by order 1, magazine spent (its race) 1
+                      at the end, 11 ships afloat: main mounts out 5 of 24 (5 of 30 guns): magazine flooded by the sea 4, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2844 fired, 0 at ships seen done for
+  seed   1930: time    at 16:00 (+12:00)  Finland lost 10/13 (16468 t), score 0.00   Sweden lost 0/8 (0 t), aims met, score 1.00   (foundered 1, capsized 7, broke in two 2)   32fffae547522999   (25.9 s)
+           main guns: 4 fell out for them, main mounts out 9 of 10 (9 of 10 guns): guns out 7, magazine flooded by the sea 1, gunhouse destroyed 1
+                      at the end, 11 ships afloat: main mounts out 6 of 22 (7 of 26 guns): magazine flooded by the sea 4, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3079 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Sweden       done? home (aims decided); 2 of 8 afloat home, 6 not (6 in an encounter, 5 stopped, 0 dead in the water, the farthest 160 km)
+  seed   1931: time    at 16:00 (+12:00)  Finland lost 10/13 (14846 t), score 0.00   Sweden lost 3/8 (14758 t), aims met, score 1.00   (foundered 2, capsized 5, broke in two 6)   1c21a1de4dc032a4   (19.4 s)
+           main guns: 5 fell out for them, main mounts out 9 of 10 (13 of 14 guns): magazine spent (its race) 2, gunhouse out of action 2, barbette out 2, guns out 2, gunhouse destroyed 1
+                      at the end, 8 ships afloat: main mounts out 4 of 12 (5 of 16 guns): magazine flooded by the sea 2, gunhouse destroyed 1, barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4167 fired, 29 at ships seen done for
+           Finland      done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Sweden       done? home (aims decided); 3 of 5 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 80 km)
+  seed   1932: time    at 16:00 (+12:00)  Finland lost 4/13 (3992 t), score 0.00   Sweden lost 2/8 (22888 t), aims met, score 1.00   (foundered 2, broke in two 4)   0828f54cce010bc0   (25.7 s)
+           main guns: 8 fell out for them, main mounts out 17 of 18 (21 of 22 guns): guns out 7, magazine flooded by the sea 4, magazine spent (its race) 4, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 15 ships afloat: main mounts out 4 of 30 (4 of 38 guns): magazine flooded by the sea 2, guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4691 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 7 of 9 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 16 km)
+           Sweden       done? home (aims decided); 2 of 6 afloat home, 4 not (4 in an encounter, 4 stopped, 1 dead in the water, the farthest 82 km)
+  seed   1933: done    at 10:03 (+6:03)  Finland lost 8/13 (11228 t), score 0.00   Sweden lost 2/8 (22888 t), aims met, score 1.00   (foundered 3, capsized 4, broke in two 1)   2dbfd35b269191e0   (18.6 s)
+           main guns: 6 fell out for them, main mounts out 8 of 12 (12 of 16 guns): guns out 4, gunhouse out of action 2, barbette out 2
+                      at the end, 13 ships afloat: main mounts out 9 of 26 (14 of 32 guns): magazine flooded by the sea 3, magazine flooded by order 2, guns out 2, gunhouse out of action 1, barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3574 fired, 10 at ships seen done for
+  seed   1934: time    at 16:00 (+12:00)  Finland lost 7/13 (6986 t), score 0.00   Sweden lost 2/8 (22888 t), aims met, score 1.00   (foundered 2, capsized 4, broke in two 3)   c9e1bfc1e9fd4c93   (18.9 s)
+           main guns: 5 fell out for them, main mounts out 10 of 14 (10 of 14 guns): gunhouse destroyed 3, gunhouse out of action 3, guns out 3, magazine spent (its race) 1
+                      at the end, 12 ships afloat: main mounts out 6 of 24 (7 of 32 guns): magazine flooded by the sea 3, gunhouse destroyed 2, gunhouse out of action 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 3807 fired, 5 at ships seen done for
+           Finland      done? home (aims decided); 6 of 6 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Sweden       done? home (aims decided); 4 of 6 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 75 km)
+  seed   1935: time    at 16:00 (+12:00)  Finland lost 5/13 (4990 t), aims met, score 1.00   Sweden lost 4/8 (11516 t), score 0.00   (foundered 3, capsized 2, broke in two 3)   73c0268506fc07c1   (17.2 s)
+           main guns: 3 fell out for them, main mounts out 6 of 10 (6 of 10 guns): guns out 6
+                      at the end, 13 ships afloat: main mounts out 3 of 30 (3 of 42 guns): magazine flooded by the sea 2, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3908 fired, 0 at ships seen done for
+           Finland      done? home (aims decided); 5 of 8 afloat home, 3 not (3 in an encounter, 3 stopped, 1 dead in the water, the farthest 21 km)
+           Sweden       done? home (aims decided); 4 of 4 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1936: time    at 16:00 (+12:00)  Finland lost 5/13 (6612 t), score 0.00   Sweden lost 3/8 (24545 t), aims met, score 1.00   (foundered 5, capsized 3)   9b7869046a4d88cd   (25.6 s)
+           main guns: 9 fell out for them, main mounts out 19 of 20 (25 of 26 guns): guns out 8, magazine spent (its race) 3, gunhouse destroyed 3, magazine flooded by order 1, magazine flooded by the sea 1, magazine put out by a hit 1, gunhouse out of action 1, barbette out 1
+                      at the end, 13 ships afloat: main mounts out 7 of 24 (9 of 30 guns): magazine flooded by order 2, magazine flooded by the sea 2, magazine spent (its race) 1, magazine put out by a hit 1, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4296 fired, 2 at ships seen done for
+           Finland      done? home (aims decided); 5 of 8 afloat home, 3 not (3 in an encounter, 3 stopped, 1 dead in the water, the farthest 28 km)
+           Sweden       done? home (aims decided); 2 of 5 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 80 km)
+
+over 16 seeds:
+  ended time     11 times, after 12:00 on average
+  ended done      5 times, after 6:45 on average
+  Finland      lost 5.4 of 13 ships (from 1 to 10), 6986 t; made 580 hits, fired 24.8 torpedoes; aims met 6 times, score 0.38
+  Sweden       lost 3.0 of 8 ships (from 0 to 6), 18197 t; made 282 hits, fired 12.2 torpedoes; aims met 10 times, score 0.63
+over 16 seeds:
+  main guns: 92 fell out for them, main mounts out 170 of 204 (204 of 238 guns): guns out 86, magazine flooded by the sea 18, magazine spent (its race) 18, gunhouse destroyed 17, gunhouse out of action 15, magazine flooded by order 6, barbette out 6, magazine put out by a hit 3, down: a crew stunned 1
+             at the end, 210 ships afloat: main mounts out 98 of 425 (118 of 555 guns): magazine flooded by the sea 52, gunhouse destroyed 13, guns out 10, gunhouse out of action 9, magazine flooded by order 8, magazine put out by a hit 2, barbette out 2, magazine spent (its race) 1, jammed 1
+  blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 2 ships blacked out
+  shells: 60282 fired, 126 at ships seen done for

@@ -927,6 +927,48 @@ often; the rest within what 8 seeds can show. The Bosporus is too sure a thing f
 Tsushima's reach for Vladivostok; the reach scenarios (Pungdo, Port Arthur, the Bosporus); the Yalu; Heligoland's
 closing; Åland (Finland 7.8 of 10); then the coarse sync and the playtest.
 
+### BL6: the scenarios balanced by their forces (2026-11-16)
+
+**The rule (the user, 2026-11-16):** "For scenarios merely inspired by history we can just tweak the ship counts to give
+a roughly even result. It is preferable to do that instead of tweaking some random captain timidness values." A first
+pass that set Ding's temper, Pungdo's crews and the Bosporus's stay was taken back; the knobs below are ship counts, and
+one AI bug the Yalu found. Every run in `docs/battle/bl6/` (`counts/`, `counts2/` the variants; `final/` the files as
+committed: the panel at 8 seeds, the early wave and Åland at 16).
+
+**Tsushima: history's aim.** Russia reaches for the open Sea of Japan (three of the battle line into a 30 km zone some
+200 km up her course; Vladivostok itself is beyond the scenario's night), Japan stops her. Russia 8.1 lost a seed (in the
+record's 7), Japan 5.6 (HIGH against 0), the record's loser losing more in 8 of 8, Russia's aim met 4 of 8. Japan's losses
+are mostly slow deaths (`bl6/tsushima/losses.txt`): her cruisers founder some 105 min after their last hit, the enemy 21 km
+off, 62 hits a ship (twice Mikasa's) and waterline holes in a 2 m swell (DC10's sea over a hole, after the last row):
+the gunnery volume again, not a knob. Japan's tempers and Russia's crews (tried) only traded Japan's losses for Russia's aim.
+
+**The Yalu: an AI bug, no change to the scenario.** China declined at first sight in 16 of 16 seeds at a confidence of
+0.08, where `shipgen matchup` gives the Beiyang Fleet 1.1 against Japan's: the commander's balance counted his top units by
+their line, and the force's admiral had taken its five cruisers off it as its screen (bugs.md "A commander judged his side
+by its battle line alone"; `CommanderLayer.AddTop` now every ship down the tree). Ship counts hadn't moved it (9 Chinese
+against 8: still 0.08). Fixed, Japan 0.6 / China 1.7 lost, scores 0.10 / 0.09, every game to the clock. The panel with the
+fix: the record's loser lost more in 27 of 44 (22); the Jutland 21.3 / 46.8 (13.8 / 40.0, four seeds' spread); the rest
+within their noise. Found on the way, for the next AI pass: an 1890s fleet reads as a Flotilla (bugs.md).
+
+**The counts** (16 seeds unless said):
+
+| Scenario | Before (with the fix) | Change | After |
+|---|---|---|---|
+| Pungdo | China in 4 of 16, scores 0.75 / 0.25 | a fourth Chinese escort (Caojiang, Guangyi's sister) | 7 of 16, 0.56 / 0.44 |
+| Port Arthur | Russia in 4 of 16, 0.66 / 0.34 | three Japanese boats, not four | 7 of 16, 0.45 / 0.55 |
+| The Bosporus | Russia lands 15 of 16 | four Ottoman ironclads (Osmaniye, Avnillah), nine boats | 9 of 16, 0.61 / 0.39 |
+| Åland (8 → 16 seeds) | Sweden lands 7 of 8; Finland 8.1 of 10 lost, Sweden 2.3 of 11 | Sweden two Sverige and two destroyers, Finland nine boats | 10 of 16, 0.38 / 0.63; Finland 5.4 of 13, Sweden 3.0 of 8 |
+| Heligoland (the panel) | Germany 11.3 of 24 (a rout in 3 of 16) | the two patrol flotillas four boats each, not eight | 8.1 of 16 (record 4), Britain 1.6 |
+
+Not changed: Manila (7 of 16 each), Conrad's war (2.9 / 3.8), the prizes' war, Coronel and the Dogger Bank (in band), the
+Dover Strait (0.5 / 0.3), Cape Sarych (Russia 1.8, mostly cruisers, to Goeben's side 0.4: a fight with a winner), the
+Jutland (Germany 4x: the volume of fire, BL3's finding). Tried and dropped: fewer British destroyers at Heligoland (the
+Germans' losses are boats run down as cripples, whoever's there); the Bosporus's Russian battleships (one lands as often
+as three: the boats don't attack, bugs.md).
+
+**The panel after BL6** (`bl6/final/balance.txt`): 7 of 14 sides within about twice the record; the record's loser lost
+more in 27 of 44 seeds.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -1039,3 +1081,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-11 | (this commit) | BL5: the rearguard (stays when it buys time; duty for the aim's charges) and the aggression swing 0.8 (`bl5/rearguard-final/`) | 6 of 14 sides within 2x (8); the record's loser lost more in 25 of 44 (21); Heligoland 1.0 v 7.1, Dogger 1.4 v 3.4, Tsushima 2.4 v 1.1, Jutland 18.0 v 45.3; rearguards 0.4-0.8 a seed where they stay |
 | 2026-11-13 | (this commit) | BL5: a reach held to the end (doctrine's HoldReach), past the escort for the convoy (`bl5/hold-reach/`) | as the rearguard row but Åland 6.4 v 3.1; the reach scenarios moved (Pungdo 5 of 8 reach, Bosporus 7, Manila 3, Port Arthur 1): BL6's |
 | 2026-11-16 | `547e743a` | BL6's baseline after the damage changes of 11-13 to 11-15 (one outside, ricochet, DC10, tear sphere, belt leaks; `bl6/baseline/`) | 7 of 14 sides within 2x (6); the record's loser lost more in 22 of 44 (25); Coronel 1.0 v 0.3 (in), Heligoland 1.8 v 11.3, Dogger 0.9 v 2.0 (in), Tsushima 2.8 v 2.4, Jutland 13.8 v 40.0, Åland 7.8 v 2.1; capsized 55%, broke in two 25%, foundered 19%, magazine 1%; early wave: the Yalu one-sided (Japan 0.1 lost), Pungdo's reach 2 of 8 |
+| 2026-11-16 | (this commit) | BL6: Tsushima's reach; the commander's balance by every ship of his units (the Yalu); the scenarios balanced by ship counts (Pungdo, Port Arthur, the Bosporus, Åland, Heligoland) (`bl6/final/`) | 7 of 14 sides within 2x (7); the record's loser lost more in 27 of 44 (22); Tsushima 8.1 v 5.6 (Russia in), Heligoland 1.6 v 8.1 of 16, Åland 3.8 of 13 v 3.6 of 8, Jutland 21.3 v 46.8; the early wave within 7-10 of 16 for each reach, the Yalu 0.10 v 0.09 |

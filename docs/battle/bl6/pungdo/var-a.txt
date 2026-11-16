@@ -1,0 +1,68 @@
+Pungdo, 1894: 7 ships, 2 sides, from 1894-07-24 23:15:00.000 until 1894-07-25 05:15:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1894: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 1/4 (2653 t), aims met, score 1.00   (capsized 1)   68bfe55e63e47657   (10.5 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 6 ships afloat: main mounts out 0 of 11 (0 of 12 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 854 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 81 km)
+           China        done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1895: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 1.00   China lost 3/4 (5290 t), score 0.00   (foundered 1, capsized 2)   93c0a22e303e0ecf   (9.1 s)
+           main guns: 1 fell out for them, main mounts out 1 of 2 (2 of 3 guns): barbette out 1
+                      at the end, 4 ships afloat: main mounts out 3 of 7 (3 of 7 guns): magazine flooded by order 1, magazine spent (its race) 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2287 fired, 0 at ships seen done for
+           Japan        done? battle; 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 84 km)
+           China        done? contact; 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 5 km)
+  seed   1896: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 3/4 (5290 t), aims met, score 1.00   (foundered 1, capsized 1)   e531918468d58ce7   (11.0 s)
+           main guns: 2 fell out for them, main mounts out 2 of 4 (3 of 6 guns): magazine spent (its race) 1, gunhouse out of action 1
+                      at the end, 5 ships afloat: main mounts out 3 of 9 (3 of 9 guns): magazine flooded by the sea 2, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2730 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 68 km)
+           China        done? home (aims decided); 1 of 1 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1897: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 3/4 (5290 t), aims met, score 1.00   (foundered 1, capsized 2)   b8fac9306693f6b5   (8.1 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (4 of 5 guns): gunhouse out of action 2, magazine flooded by the sea 1
+                      at the end, 4 ships afloat: main mounts out 0 of 7 (0 of 7 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1646 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 94 km)
+           China        done? home (aims decided); 1 of 1 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1898: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 1/4 (1636 t), aims met, score 1.00   (capsized 1)   ca54411bca433f14   (12.5 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (4 of 5 guns): magazine spent (its race) 2, barbette out 1
+                      at the end, 6 ships afloat: main mounts out 3 of 11 (4 of 12 guns): magazine spent (its race) 2, magazine flooded by order 1
+           blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 1714 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 94 km)
+           China        done? home (aims decided); 2 of 3 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 20 km)
+  seed   1899: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 3/4 (5290 t), aims met, score 1.00   (foundered 1, capsized 2)   ef0ea1354187d08f   (8.3 s)
+           main guns: 3 fell out for them, main mounts out 4 of 6 (6 of 8 guns): gunhouse out of action 2, barbette out 2
+                      at the end, 4 ships afloat: main mounts out 1 of 7 (1 of 7 guns): barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1222 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 105 km)
+           China        done? home (aims decided); 1 of 1 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1900: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 1/4 (1001 t), aims met, score 1.00   (capsized 1)   69de20b43b559005   (10.8 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (3 of 3 guns): gunhouse destroyed 1, guns out 1
+                      at the end, 6 ships afloat: main mounts out 3 of 11 (4 of 13 guns): magazine flooded by the sea 1, magazine spent (its race) 1, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1188 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 94 km)
+           China        done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1901: time    at 05:15 (+6:00)  Japan lost 0/3 (0 t), score 0.00   China lost 1/4 (2653 t), aims met, score 1.00   (foundered 1)   839cbd45fca353af   (10.8 s)
+           main guns: 2 fell out for them, main mounts out 2 of 4 (4 of 6 guns): magazine spent (its race) 1, gunhouse destroyed 1
+                      at the end, 6 ships afloat: main mounts out 4 of 11 (5 of 12 guns): magazine flooded by the sea 2, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2594 fired, 0 at ships seen done for
+           Japan        done? home (aims decided); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 40 km)
+           China        done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+
+over 8 seeds:
+  ended time      8 times, after 6:00 on average
+  Japan        lost 0.0 of 3 ships (from 0 to 0), 0 t; made 86 hits, fired 1.5 torpedoes; aims met 0 times, score 0.13
+  China        lost 2.0 of 4 ships (from 1 to 3), 3638 t; made 24 hits, fired 0.5 torpedoes; aims met 7 times, score 0.88
+over 8 seeds:
+  main guns: 13 fell out for them, main mounts out 17 of 26 (26 of 36 guns): gunhouse out of action 5, magazine spent (its race) 4, barbette out 4, gunhouse destroyed 2, magazine flooded by the sea 1, guns out 1
+             at the end, 41 ships afloat: main mounts out 17 of 74 (20 of 79 guns): magazine flooded by the sea 5, magazine spent (its race) 4, gunhouse destroyed 3, magazine flooded by order 2, gunhouse out of action 2, barbette out 1
+  blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 1 ships blacked out
+  shells: 14235 fired, 0 at ships seen done for

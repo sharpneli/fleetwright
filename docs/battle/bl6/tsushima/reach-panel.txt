@@ -1,0 +1,27 @@
+the balance panel (docs/battle/balance.md): 1 scenarios, 8 seeds each (the Jutland 4), the fine tier, the AI on every side
+  playing 1 scenarios (8 plays) on 32 threads...
+
+Tsushima (8 seeds; ended quiet 4, done 4; 10.3 h on average); the record: of the file's 13: six battleships sunk and Buyny scuttled; Oryol and Bedovy taken, which the sim doesn't do
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Russia              13     8.1     7-10       7     in        1374   21.5%           0.0
+  Japan               14     5.6      3-9       0   HIGH        1185   31.6%           0.1
+  the record's loser lost more in 8 of 8 seeds
+  how they went: capsized 72%, foundered 24%, broke in two 4%; given up: taken 0, struck 3, scuttled 1, abandoned 69
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Russia        light (under 120 mm)        2830  27.0%  fired at  3.2 km (2.0-4.2), hits at 1.8 km
+      by range: 0-2 km 24% of shells at 64.2%, 2-4 km 46% of shells at 22.0%, 4-6 km 27% of shells at 5.2%, 6-10 km 3% of shells at 1.9%
+    Russia        medium (120-200 mm)         2634  13.5%  fired at  6.4 km (4.4-7.7), hits at 2.8 km
+      by range: 0-2 km 7% of shells at 74.5%, 2-4 km 14% of shells at 27.1%, 4-6 km 20% of shells at 8.3%, 6-10 km 59% of shells at 5.0%
+    Russia        heavy (200 mm and over)      818  16.3%  fired at  6.9 km (3.9-9.1), hits at 2.8 km
+      by range: 0-2 km 6% of shells at 81.0%, 2-4 km 20% of shells at 33.8%, 4-6 km 17% of shells at 14.0%, 6-10 km 44% of shells at 3.8%, 10-15 km 13% of shells at 2.0%
+    Japan         light (under 120 mm)         788  41.2%  fired at  2.3 km (1.3-3.5), hits at 1.2 km
+      by range: 0-2 km 38% of shells at 76.7%, 2-4 km 42% of shells at 26.7%, 4-6 km 18% of shells at 2.7%, 6-10 km 2% of shells at 1.9%
+    Japan         medium (120-200 mm)         1430  35.1%  fired at  3.5 km (2.3-4.9), hits at 2.3 km
+      by range: 0-2 km 19% of shells at 75.8%, 2-4 km 41% of shells at 41.1%, 4-6 km 28% of shells at 13.8%, 6-10 km 12% of shells at 1.9%
+    Japan         heavy (200 mm and over)     1379  22.5%  fired at  6.2 km (3.8-8.2), hits at 2.7 km
+      by range: 0-2 km 10% of shells at 81.2%, 2-4 km 17% of shells at 50.6%, 4-6 km 20% of shells at 18.6%, 6-10 km 50% of shells at 4.5%, 10-15 km 3% of shells at 0.6%
+  the heavy guns' fire, every side: median 6.4 km against the record's 3-7 km [EST]: in
+
+the scenarios: 1 of 2 sides within about twice the record; the record's loser lost more in 8 of 8 seeds; how ships went, all together: capsized 72%, foundered 24%, broke in two 4%; given up: taken 0, struck 3, scuttled 1, abandoned 69
+
+time: 49 s

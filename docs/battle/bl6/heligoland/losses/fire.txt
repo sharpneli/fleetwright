@@ -1,0 +1,696 @@
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	79	6
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Run	2	0
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Fire	40	0
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Fire	10	0
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task None / admiral Fight	50	17
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Patrol / admiral Fight / attack Away	2	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	50	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Course / task Patrol / admiral Fight / attack Away	8	0
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Away	59	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Home	15	1
+heligoland-bight	1914	Destroyer chief at Destroyer going home   4-6 km | Station / task None / admiral Fight	33	3
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task None / admiral Fight	26	5
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Away	12	0
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Home	3	0
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	59	18
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Gain	2	1
+heligoland-bight	1914	Destroyer chief at Destroyer going home   2-4 km | Station / task None / admiral Fight	376	117
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   2-4 km | Fight finishing / task None / admiral Fight	14	3
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     2-4 km | Home	31	1
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Station / task Patrol / admiral Route	18	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     2-4 km | Course / task Patrol / admiral Route	14	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     2-4 km | Station / task None / admiral Fight	13	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     0-2 km | Station / task None / admiral Fight	27	17
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     0-2 km | Course / task Patrol / admiral Route	8	1
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task None / admiral Fight	29	13
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     0-2 km | Course / task Withdraw / admiral Course	2	0
+heligoland-bight	1914	Destroyer chief at Destroyer going home   0-2 km | Station / task None / admiral Fight	105	59
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     0-2 km | Home	6	2
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     2-4 km | Home	4	1
+heligoland-bight	1914	Destroyer chief at Destroyer going home   2-4 km | Home	4	0
+heligoland-bight	1914	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	450	120
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	85	17
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	22	1
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	151	55
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	101	57
+heligoland-bight	1914	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	106	58
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Screen / admiral Screen	6	0
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	57	4
+heligoland-bight	1914	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	164	11
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	12	1
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	6	0
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	54	24
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	25	20
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	107	0
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	25	2
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	35	1
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	14	1
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	40	13
+heligoland-bight	1914	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	19	2
+heligoland-bight	1914	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	12	3
+heligoland-bight	1914	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	34	2
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	73	59
+heligoland-bight	1914	Cruiser   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	6	3
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	70	7
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Fire	12	0
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task None / admiral Fight	11	2
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Fire	16	0
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task None / admiral Fight	14	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Patrol / admiral Fight / attack Away	12	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Home	23	2
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Away	19	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Away	14	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	13	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Away	82	6
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight	2	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Run	16	0
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Run	15	0
+heligoland-bight	1915	Destroyer chief at Destroyer going home   4-6 km | Station / task None / admiral Fight	22	0
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task None / admiral Fight	4	0
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	12	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Station / task None / admiral Fight	32	1
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     2-4 km | Fight finishing / task None / admiral Fight	2	0
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     2-4 km | Course / task None / admiral Fight	4	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Course / task None / admiral Fight	3	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Station / task Patrol / admiral Fight / attack Away	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Course / task Patrol / admiral Fight / attack Away	8	1
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     2-4 km | Station / task None / admiral Fight	4	3
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Station / task Patrol / admiral Fight	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer going home   2-4 km | Station / task None / admiral Fight	310	114
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Home	66	8
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	12	1
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   2-4 km | Station / task None / admiral Fight	3	0
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Station / task None / admiral Fight	3	0
+heligoland-bight	1915	Destroyer chief at Destroyer going home   2-4 km | Course / task None / admiral Fight	36	1
+heligoland-bight	1915	Destroyer chief at Destroyer going home   4-6 km | Course / task None / admiral Fight	19	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Fight band / task None / admiral Fight	6	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	3	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Course / task Patrol / admiral Fight / attack Gain	7	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Course / task Patrol / admiral Route	56	3
+heligoland-bight	1915	Destroyer chief at Destroyer going home   2-4 km | Fight finishing / task None / admiral Fight	3	0
+heligoland-bight	1915	Destroyer chief at Destroyer going home   0-2 km | Station / task None / admiral Fight	57	38
+heligoland-bight	1915	Destroyer chief at Destroyer going home   0-2 km | Course / task None / admiral Fight	7	7
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Course / task None / admiral Fight	66	8
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Home	24	1
+heligoland-bight	1915	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	62	12
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	3	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	5	0
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	46	7
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	32	17
+heligoland-bight	1915	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	492	113
+heligoland-bight	1915	Destroyer chief at Destroyer fighting     0-2 km | Home	21	16
+heligoland-bight	1915	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	256	178
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	79	73
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	36	17
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	16	6
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	29	8
+heligoland-bight	1915	Destroyer chief at Cruiser   fighting     0-2 km | Home	3	3
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   0-2 km | Home	8	7
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   2-4 km | Home	9	5
+heligoland-bight	1915	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	2	0
+heligoland-bight	1915	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	15	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	14	3
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task None / admiral Fight	8	3
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Home	126	8
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Away	4	0
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task None / admiral Fight	8	3
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	21	3
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Gain	10	0
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task Screen / admiral Fight	8	0
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     2-4 km | Home	285	96
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Fight finishing / task Screen / admiral Fight	30	4
+heligoland-bight	1916	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	50	6
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	564	196
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Fight	25	8
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	36	9
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	8	1
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	43	13
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight / attack Fire	33	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Screen / admiral Fight	11	5
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Course / task Screen / admiral Fight	1	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight / attack Away	2	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Station / task Scout / admiral Shadow	20	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Home	74	6
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Station / task Scout / admiral Shadow	65	4
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Course / task Screen / admiral Fight	3	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Home	104	8
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	53	20
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Course / task Scout / admiral Shadow	59	10
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Course / task Scout / admiral Shadow	22	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	306	78
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	69	37
+heligoland-bight	1916	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	92	65
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     0-2 km | Home	16	10
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	4	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Course / task Scout / admiral Shadow	9	1
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	10	1
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Home	87	10
+heligoland-bight	1916	Destroyer chief at Destroyer going home   0-2 km | Home	22	20
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Station / task Scout / admiral Shadow	1	1
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Scout / admiral Shadow	4	1
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	75	64
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     2-4 km | Shadow / task Scout / admiral Shadow	22	8
+heligoland-bight	1916	Destroyer chief at Cruiser   going home   2-4 km | Shadow / task Scout / admiral Shadow	9	8
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Home	11	7
+heligoland-bight	1916	Destroyer chief at Cruiser   going home   2-4 km | Home	76	19
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Home	55	21
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Shadow	8	2
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	12	2
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Shadow / task Scout / admiral Shadow	6	0
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Shadow	2	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Shadow	12	1
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Shadow	12	1
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Fight	5	0
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Fight	19	0
+heligoland-bight	1916	Cruiser   chief at Cruiser   fighting     4-6 km | Home	10	0
+heligoland-bight	1916	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Screen / admiral Fight	12	0
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Fight band / task Screen / admiral Fight	4	0
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Fight	63	30
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     0-2 km | Home	41	34
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Fight	9	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	3	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	5	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	1	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	4	2
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Fight	2	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	2	1
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	29	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Intercept / admiral Fight	4	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	70	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   4-6 km | Home	35	1
+heligoland-bight	1916	Capital   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	4	2
+heligoland-bight	1916	Destroyer chief at Capital   fighting     4-6 km | Home	1	0
+heligoland-bight	1916	Destroyer chief at Capital   fighting     2-4 km | Home	28	10
+heligoland-bight	1916	Capital   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	4	1
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Route	64	7
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Route	29	4
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Route	76	31
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Route	137	11
+heligoland-bight	1916	Cruiser   other at Destroyer going home   2-4 km | Course / task Withdraw / admiral Route	86	22
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	189	79
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Route	69	29
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Route	32	7
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Route	65	3
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Route	28	3
+heligoland-bight	1916	Cruiser   other at Destroyer going home   4-6 km | Route	13	0
+heligoland-bight	1916	Cruiser   other at Destroyer going home   2-4 km | Route	421	155
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	15	3
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Route	84	10
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Route	181	75
+heligoland-bight	1916	Cruiser   other at Destroyer going home   0-2 km | Course / task Withdraw / admiral Route	15	6
+heligoland-bight	1916	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	4	4
+heligoland-bight	1916	Destroyer chief at Cruiser   going home   2-4 km | Station / task Screen / admiral Screen	178	107
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Home	18	1
+heligoland-bight	1916	Destroyer chief at Cruiser   going home   0-2 km | Station / task Screen / admiral Screen	189	145
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     0-2 km | Home	3	3
+heligoland-bight	1916	Destroyer chief at Cruiser   going home   0-2 km | Home	28	22
+heligoland-bight	1916	Cruiser   other at Destroyer going home   2-4 km | Home	61	5
+heligoland-bight	1916	Cruiser   other at Destroyer going home   4-6 km | Home	8	0
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Route / task Withdraw / admiral Route	24	18
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight band	12	0
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Fight band	27	0
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing	7	0
+heligoland-bight	1916	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	60	11
+heligoland-bight	1916	Capital   other at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	88	32
+heligoland-bight	1916	Capital   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	32	14
+heligoland-bight	1916	Capital   other at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	12	5
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   0-2 km | Route / task Withdraw / admiral Route	1	1
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	71	1
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	81	25
+heligoland-bight	1916	Capital   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	8	1
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	24	6
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Station / task Scout / admiral Station	149	39
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   2-4 km | Course / task Screen / admiral Screen	2	0
+heligoland-bight	1916	Destroyer chief at Capital   fighting     4-6 km | Station / task Withdraw / admiral Route	4	0
+heligoland-bight	1916	Capital   chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	18	8
+heligoland-bight	1916	Destroyer chief at Capital   fighting     2-4 km | Station / task Withdraw / admiral Route	47	15
+heligoland-bight	1916	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	16	15
+heligoland-bight	1916	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	4	2
+heligoland-bight	1916	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	8	3
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	16	15
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Scout / admiral Station	3	1
+heligoland-bight	1916	Capital   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	32	15
+heligoland-bight	1916	Destroyer chief at Capital   fighting     4-6 km | Route / task Withdraw / admiral Route	25	2
+heligoland-bight	1916	Destroyer chief at Capital   fighting     2-4 km | Route / task Withdraw / admiral Route	1	0
+heligoland-bight	1916	Cruiser   other at Capital   fighting     4-6 km | Route	62	20
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     4-6 km | Route	89	28
+heligoland-bight	1916	Capital   other at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	39	2
+heligoland-bight	1916	Cruiser   chief at Capital   fighting    6-10 km | Route / task Withdraw / admiral Route	3	0
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     4-6 km | Route / task Withdraw / admiral Route	23	13
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Fight away	16	0
+heligoland-bight	1916	Capital   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	4	1
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Fight away	15	0
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     4-6 km | Course / task Withdraw / admiral Route	38	20
+heligoland-bight	1916	Capital   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	28	8
+heligoland-bight	1916	Cruiser   other at Capital   fighting     4-6 km | Course / task Withdraw / admiral Route	80	22
+heligoland-bight	1916	Capital   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	72	43
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Fight band	10	0
+heligoland-bight	1916	Capital   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	40	29
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     4-6 km | Home	13	0
+heligoland-bight	1916	Cruiser   chief at Destroyer fighting     2-4 km | Fight band	1	0
+heligoland-bight	1916	Capital   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	40	38
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     4-6 km | Home	21	2
+heligoland-bight	1916	Capital   chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	22	20
+heligoland-bight	1916	Cruiser   other at Destroyer fighting     2-4 km | Fight away	20	4
+heligoland-bight	1916	Cruiser   other at Destroyer going home   2-4 km | Fight away	28	8
+heligoland-bight	1916	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Route	6	0
+heligoland-bight	1916	Cruiser   other at Capital   fighting     2-4 km | Route	20	8
+heligoland-bight	1916	Capital   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	2	0
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     2-4 km | Route	14	12
+heligoland-bight	1916	Cruiser   other at Capital   fighting     4-6 km | Home	4	0
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     4-6 km | Home	21	3
+heligoland-bight	1916	Cruiser   other at Capital   fighting     2-4 km | Home	33	5
+heligoland-bight	1916	Capital   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	56	38
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     2-4 km | Home	16	9
+heligoland-bight	1916	Capital   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	62	33
+heligoland-bight	1916	Cruiser   other at Destroyer going home   4-6 km | Fight away	10	0
+heligoland-bight	1916	Capital   chief at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	12	12
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     0-2 km | Home	32	32
+heligoland-bight	1916	Capital   other at Cruiser   going home   0-2 km | Station / task Intercept / admiral Course	12	11
+heligoland-bight	1916	Capital   chief at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	16	4
+heligoland-bight	1916	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	6	3
+heligoland-bight	1916	Capital   other at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	78	65
+heligoland-bight	1916	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Screen / admiral Screen	4	0
+heligoland-bight	1916	Capital   chief at Cruiser   going home   0-2 km | Course / task Intercept / admiral Course	50	46
+heligoland-bight	1916	Cruiser   chief at Capital   fighting    6-10 km | Station / task Withdraw / admiral Route	1	0
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     4-6 km | Station / task Withdraw / admiral Route	7	3
+heligoland-bight	1916	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Screen / admiral Screen	117	79
+heligoland-bight	1916	Cruiser   other at Cruiser   fighting     2-4 km | Home	9	1
+heligoland-bight	1916	Cruiser   chief at Capital   fighting    6-10 km | Home	6	1
+heligoland-bight	1916	Cruiser   other at Capital   fighting     2-4 km | Course / task Withdraw / admiral Route	188	95
+heligoland-bight	1916	Capital   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	14	2
+heligoland-bight	1916	Capital   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	18	10
+heligoland-bight	1916	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Screen / admiral Screen	40	33
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     2-4 km | Course / task Withdraw / admiral Route	52	29
+heligoland-bight	1916	Cruiser   other at Capital   fighting     0-2 km | Course / task Withdraw / admiral Route	1	1
+heligoland-bight	1916	Capital   other at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	1	1
+heligoland-bight	1916	Capital   chief at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	4	4
+heligoland-bight	1916	Capital   other at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	2	0
+heligoland-bight	1916	Capital   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	10	0
+heligoland-bight	1916	Cruiser   other at Capital   fighting     0-2 km | Home	1	1
+heligoland-bight	1916	Capital   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	8	0
+heligoland-bight	1916	Cruiser   other at Capital   fighting     4-6 km | Route / task Withdraw / admiral Route	28	1
+heligoland-bight	1916	Cruiser   other at Capital   fighting     2-4 km | Route / task Withdraw / admiral Route	58	17
+heligoland-bight	1916	Cruiser   chief at Capital   fighting     2-4 km | Route / task Withdraw / admiral Route	25	22
+heligoland-bight	1916	Capital   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	6	2
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	50	2
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Fire	10	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task None / admiral Fight	13	5
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Fire	4	0
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Patrol / admiral Fight / attack Away	1	0
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Away	21	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Away	40	3
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Home	40	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Screen / admiral Fight	104	2
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Route	1	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Screen / admiral Fight	5	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Fight finishing / task Screen / admiral Fight	8	1
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Course / task Screen / admiral Fight	9	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Screen / admiral Fight	13	3
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Fight	8	2
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Course / task Screen / admiral Fight	3	0
+heligoland-bight	1917	Destroyer chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	4	0
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Fight	40	7
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Home	90	12
+heligoland-bight	1917	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	42	8
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	78	46
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	50	12
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	8	0
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Route / task Patrol / admiral Route	21	1
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	35	8
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Scout / admiral Shadow	9	2
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Station / task Scout / admiral Shadow	12	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	10	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Route	16	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Scout / admiral Shadow	9	2
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Course / task Scout / admiral Shadow	12	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Home	41	11
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Screen / admiral Fight	15	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	14	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     0-2 km | Home	22	13
+heligoland-bight	1917	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	2	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	134	25
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Fight	77	26
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Fight	18	3
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Fight	44	7
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Fight	40	5
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	44	1
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	56	2
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Fight	14	2
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Fight	4	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	8	0
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	4	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	16	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	36	8
+heligoland-bight	1917	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	7	1
+heligoland-bight	1917	Destroyer chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	3	0
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	8	3
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	11	4
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	2	1
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Fight	6	2
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	67	14
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	2	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Fight	17	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Fight	21	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	161	24
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Fight	24	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Fight	20	0
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	323	127
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Fight	14	1
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Fight	32	2
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Fight	3	0
+heligoland-bight	1917	Destroyer chief at Cruiser   going home   2-4 km | Station / task Screen / admiral Screen	318	156
+heligoland-bight	1917	Destroyer chief at Cruiser   going home   4-6 km | Station / task Screen / admiral Screen	93	27
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     2-4 km | Home	1	0
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     4-6 km | Fight attacking	26	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Home	3	1
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Home	1	0
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Fight attacking	20	5
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     2-4 km | Fight attacking	18	4
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Fight attacking	15	4
+heligoland-bight	1917	Destroyer chief at Cruiser   going home   0-2 km | Station / task Screen / admiral Screen	355	293
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	222	193
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     0-2 km | Home	17	11
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Route / task Withdraw / admiral Route	5	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Route / task Withdraw / admiral Route	4	1
+heligoland-bight	1917	Destroyer chief at Cruiser   going home   0-2 km | Home	4	4
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     2-4 km | Route / task Withdraw / admiral Route	15	0
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	76	71
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	39	11
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	111	21
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	124	67
+heligoland-bight	1917	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	513	206
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Scout / admiral Station	231	80
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Scout / admiral Station	173	40
+heligoland-bight	1917	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	33	10
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Run / task Withdraw / admiral Run	12	0
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Scout / admiral Station	48	30
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Screen / admiral Screen	58	17
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     4-6 km | Run / task Withdraw / admiral Run	8	0
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	36	25
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Run	12	1
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   4-6 km | Course / task Scout / admiral Station	6	4
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Course	18	0
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Run	3	1
+heligoland-bight	1917	Destroyer chief at Cruiser   fighting     4-6 km | Route / task Withdraw / admiral Route	36	5
+heligoland-bight	1917	Capital   other at Destroyer going home   2-4 km | Fight finishing / task Intercept / admiral Fight	4	0
+heligoland-bight	1917	Capital   chief at Destroyer going home   2-4 km | Fight finishing / task Intercept / admiral Fight	4	2
+heligoland-bight	1917	Cruiser   other at Destroyer going home   4-6 km | Course	18	0
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Course	27	1
+heligoland-bight	1917	Cruiser   other at Destroyer going home   2-4 km | Course	40	11
+heligoland-bight	1917	Capital   other at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	2	0
+heligoland-bight	1917	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	12	0
+heligoland-bight	1917	Capital   chief at Destroyer going home   4-6 km | Fight finishing / task Intercept / admiral Fight	4	3
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	96	37
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Route	2	0
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   2-4 km | Station / task Scout / admiral Station	20	14
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	77	10
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     4-6 km | Route	33	10
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     4-6 km | Route	40	0
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   0-2 km | Station / task Scout / admiral Station	12	12
+heligoland-bight	1917	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	210	140
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Station	14	6
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     4-6 km | Home	3	0
+heligoland-bight	1917	Destroyer chief at Destroyer going home   2-4 km | Home	11	2
+heligoland-bight	1917	Destroyer chief at Destroyer going home   0-2 km | Home	5	5
+heligoland-bight	1917	Cruiser   other at Destroyer going home   4-6 km | Fight band	34	8
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Fight band	9	1
+heligoland-bight	1917	Cruiser   chief at Destroyer going home   4-6 km | Fight away	10	0
+heligoland-bight	1917	Cruiser   other at Destroyer going home   4-6 km | Fight away	14	1
+heligoland-bight	1917	Capital   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Course	4	2
+heligoland-bight	1917	Cruiser   other at Destroyer fighting     4-6 km | Fight band	43	1
+heligoland-bight	1917	Cruiser   chief at Destroyer fighting     4-6 km | Fight band	14	1
+heligoland-bight	1917	Capital   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	16	2
+heligoland-bight	1917	Capital   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	8	2
+heligoland-bight	1917	Capital   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	2	0
+heligoland-bight	1917	Capital   other at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	8	5
+heligoland-bight	1917	Capital   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	6	5
+heligoland-bight	1917	Capital   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	2	1
+heligoland-bight	1917	Destroyer chief at Capital   fighting     4-6 km | Home	5	1
+heligoland-bight	1917	Destroyer chief at Capital   fighting    6-10 km | Home	1	0
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     4-6 km | Fight away	34	4
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     4-6 km | Fight away	9	3
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     2-4 km | Fight away	45	1
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     2-4 km | Fight away	16	8
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     0-2 km | Fight away	6	4
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     0-2 km | Fight away	6	4
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Screen / admiral Screen	28	23
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     0-2 km | Home	12	6
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     0-2 km | Home	10	9
+heligoland-bight	1917	Cruiser   chief at Cruiser   going home   0-2 km | Home	336	330
+heligoland-bight	1917	Cruiser   other at Cruiser   going home   0-2 km | Home	88	79
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing	2	0
+heligoland-bight	1917	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Scout / admiral Station	15	6
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     2-4 km | Home	6	0
+heligoland-bight	1917	Cruiser   other at Cruiser   fighting     4-6 km | Home	3	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	14	2
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task None / admiral Fight	15	7
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Patrol / admiral Fight / attack Run	18	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Run	5	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Fight / attack Run	13	1
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Fight finishing / task None / admiral Fight	2	2
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Patrol / admiral Run	2	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Run	1	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Patrol / admiral Route	31	5
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Station / task None / admiral Fight	1	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Route	37	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	24	0
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task None / admiral Fight	4	3
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Home	24	4
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Course / task Patrol / admiral Route	59	1
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Station / task None / admiral Fight	36	3
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting    6-10 km | Course / task Patrol / admiral Route	1	0
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Home	37	1
+heligoland-bight	1918	Destroyer chief at Destroyer going home   4-6 km | Station / task None / admiral Fight	30	4
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task None / admiral Fight	9	4
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Station / task Patrol / admiral Route	22	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Route	16	0
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Course / task Patrol / admiral Route	8	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Fight finishing / task Screen / admiral Fight	7	1
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Fight	19	3
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	105	28
+heligoland-bight	1918	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	357	108
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Home	37	7
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Fight	81	27
+heligoland-bight	1918	Destroyer chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	75	27
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	3	0
+heligoland-bight	1918	Destroyer chief at Destroyer going home   4-6 km | Course / task Screen / admiral Fight	9	3
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   4-6 km | Course / task Screen / admiral Fight	5	1
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Station / task Patrol / admiral Route	8	0
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	6	0
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	16	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	15	0
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	3	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Screen / admiral Fight	2	0
+heligoland-bight	1918	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	87	42
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     0-2 km | Home	5	3
+heligoland-bight	1918	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	17	0
+heligoland-bight	1918	Destroyer chief at Destroyer going home   0-2 km | Home	15	9
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	103	2
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	29	4
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	243	61
+heligoland-bight	1918	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	262	55
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	50	47
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	28	1
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	27	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	53	2
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	49	7
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	40	8
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	190	51
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	13	0
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	79	14
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Home	2	0
+heligoland-bight	1918	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	128	7
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	63	12
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	64	21
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	18	2
+heligoland-bight	1918	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	225	7
+heligoland-bight	1918	Destroyer chief at Destroyer fighting    6-10 km | Station / task Screen / admiral Screen	4	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	5	0
+heligoland-bight	1918	Destroyer chief at Cruiser   fighting     4-6 km | Route / task Withdraw / admiral Route	1	0
+heligoland-bight	1918	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	49	40
+heligoland-bight	1918	Cruiser   chief at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	6	1
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	21	5
+heligoland-bight	1919	Destroyer chief at Cruiser   fighting     4-6 km | Home	25	2
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Screen / admiral Fight	17	4
+heligoland-bight	1919	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	16	2
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Fight	8	6
+heligoland-bight	1919	Destroyer chief at Cruiser   fighting     2-4 km | Home	34	7
+heligoland-bight	1919	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	76	32
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Home	77	4
+heligoland-bight	1919	Destroyer chief at Cruiser   going home   2-4 km | Home	4	2
+heligoland-bight	1919	Destroyer chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	22	2
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     4-6 km | Home	26	1
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	507	218
+heligoland-bight	1919	Destroyer chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	6	0
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	18	4
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	20	1
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	276	49
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Fight	8	2
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	6	5
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     0-2 km | Home	117	65
+heligoland-bight	1919	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	321	196
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Course / task Screen / admiral Fight	70	20
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Course	60	4
+heligoland-bight	1919	Destroyer chief at Destroyer going home   0-2 km | Home	21	14
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Home	61	27
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     0-2 km | Station / task Intercept / admiral Course	12	6
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     0-2 km | Course / task Screen / admiral Fight	4	3
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	4	0
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Fight	26	10
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	217	73
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     0-2 km | Fight band / task Screen / admiral Fight	10	6
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   0-2 km | Fight band / task Screen / admiral Fight	28	22
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	18	0
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   0-2 km | Course / task Screen / admiral Fight	11	11
+heligoland-bight	1919	Destroyer chief at Destroyer going home   4-6 km | Course / task Screen / admiral Fight	8	1
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Screen / admiral Fight	3	2
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   2-4 km | Course / task Screen / admiral Fight	9	5
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	5	0
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	2	0
+heligoland-bight	1919	Destroyer chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	2	1
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Screen / admiral Fight	3	0
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	2	0
+heligoland-bight	1919	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	25	5
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	4	0
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	3	1
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	18	0
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	24	5
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	18	9
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Fight	62	51
+heligoland-bight	1919	Destroyer chief at Destroyer going home   4-6 km | Home	35	0
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     0-2 km | Home	7	3
+heligoland-bight	1919	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Intercept / admiral Fight	31	17
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	2	2
+heligoland-bight	1919	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	211	64
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	18	15
+heligoland-bight	1919	Cruiser   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	10	7
+heligoland-bight	1919	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	135	107
+heligoland-bight	1919	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	2	0
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	4	0
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	20	0
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Away	14	0
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Screen / admiral Fight	20	0
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task Screen / admiral Fight	192	8
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	10	0
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Fight	382	11
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Screen / admiral Fight	14	0
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Fight	224	21
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     2-4 km | Fight band / task Screen / admiral Fight	32	7
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	11	0
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     2-4 km | Home	25	3
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   2-4 km | Fight band / task Screen / admiral Fight	45	11
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     0-2 km | Home	24	23
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   0-2 km | Fight band / task Screen / admiral Fight	10	7
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	6	0
+heligoland-bight	1920	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Fight	118	21
+heligoland-bight	1920	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Fight	61	2
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Home	72	13
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	8	0
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Fight band / task Screen / admiral Fight	40	6
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task Screen / admiral Fight	3	2
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	52	1
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	128	13
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Course / task Screen / admiral Fight	53	4
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	45	5
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	169	6
+heligoland-bight	1920	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Fight	26	20
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     0-2 km | Home	33	13
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Route	1	1
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	100	11
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Home	52	5
+heligoland-bight	1920	Destroyer chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	5	1
+heligoland-bight	1920	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	179	84
+heligoland-bight	1920	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	330	251
+heligoland-bight	1920	Destroyer chief at Destroyer going home   0-2 km | Home	10	4
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	14	5
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	36	5
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	22	7
+heligoland-bight	1920	Destroyer chief at Destroyer going home   2-4 km | Home	32	4
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	50	24
+heligoland-bight	1920	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	12	0
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	5	1
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	50	28
+heligoland-bight	1920	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	10	1
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	1	0
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	45	6
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	2	0
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	125	122
+heligoland-bight	1920	Destroyer chief at Destroyer going home   4-6 km | Home	4	0
+heligoland-bight	1920	Destroyer chief at Cruiser   fighting     4-6 km | Home	47	4
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	50	46
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	14	2
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	8	3
+heligoland-bight	1920	Cruiser   chief at Capital   fighting     4-6 km | Course / task Withdraw / admiral Fight / attack Fire	10	2
+heligoland-bight	1920	Cruiser   other at Capital   fighting     4-6 km | Course / task Withdraw / admiral Fight / attack Fire	28	6
+heligoland-bight	1920	Cruiser   other at Capital   fighting     4-6 km | Run / task Withdraw / admiral Fight / attack Away	4	0
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	84	82
+heligoland-bight	1920	Capital   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Route	16	7
+heligoland-bight	1920	Cruiser   other at Capital   fighting     2-4 km | Fight away	15	2
+heligoland-bight	1920	Cruiser   chief at Capital   fighting     2-4 km | Fight away	4	1
+heligoland-bight	1920	Capital   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Route	16	0
+heligoland-bight	1920	Cruiser   other at Capital   fighting     2-4 km | Fight finishing	2	0
+heligoland-bight	1920	Capital   chief at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Route	12	9
+heligoland-bight	1920	Capital   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Route	2	0
+heligoland-bight	1920	Capital   other at Cruiser   going home   0-2 km | Course / task Withdraw / admiral Route	28	12
+heligoland-bight	1920	Capital   chief at Cruiser   going home   0-2 km | Course / task Withdraw / admiral Route	10	10
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Fight	70	5
+heligoland-bight	1920	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Fight	54	5
+heligoland-bight	1920	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Fight	238	22
+heligoland-bight	1920	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Fight	45	4
+heligoland-bight	1920	Cruiser   chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Fight	10	2
+heligoland-bight	1920	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Fight	170	3
+heligoland-bight	1920	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Fight	13	1
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task None / admiral Fight	55	4
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Patrol / admiral Fight / attack Fire	11	1
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Away	42	1
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     4-6 km | Fight band / task None / admiral Fight	28	7
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Patrol / admiral Fight / attack Gain	45	4
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Home	143	19
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   4-6 km | Fight finishing / task None / admiral Fight	4	0
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	82	7
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Fight / attack Gain	4	0
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	94	8
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Scout / admiral Shadow	31	11
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	11	0
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	148	39
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Course / task Scout / admiral Shadow	1	0
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Course / task Scout / admiral Shadow	20	0
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Station / task Scout / admiral Shadow	37	6
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	67	42
+heligoland-bight	1921	Destroyer chief at Destroyer going home   2-4 km | Station / task Screen / admiral Screen	447	141
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	82	7
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     4-6 km | Station / task Scout / admiral Shadow	2	1
+heligoland-bight	1921	Destroyer chief at Destroyer going home   0-2 km | Station / task Screen / admiral Screen	154	106
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     0-2 km | Home	9	8
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	33	3
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	59	2
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	37	8
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	53	14
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Home	7	1
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   2-4 km | Course / task Intercept / admiral Course	24	9
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	44	1
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	48	13
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Course	9	3
+heligoland-bight	1921	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	17	1
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	17	1
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	10	1
+heligoland-bight	1921	Destroyer chief at Cruiser   fighting     2-4 km | Home	24	7
+heligoland-bight	1921	Destroyer chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	1	0
+heligoland-bight	1921	Destroyer chief at Destroyer going home   4-6 km | Home	57	6
+heligoland-bight	1921	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	10	0
+heligoland-bight	1921	Destroyer chief at Destroyer going home   2-4 km | Home	44	5
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	45	26
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   0-2 km | Course / task Intercept / admiral Course	19	14
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   0-2 km | Station / task Intercept / admiral Course	10	9
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Station	26	10
+heligoland-bight	1921	Cruiser   chief at Destroyer going home   2-4 km | Station / task Scout / admiral Station	182	58
+heligoland-bight	1921	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	23	13
+heligoland-bight	1921	Capital   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	4	1
+heligoland-bight	1921	Capital   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	8	1
+heligoland-bight	1921	Destroyer chief at Capital   fighting     4-6 km | Home	3	0
+heligoland-bight	1921	Destroyer chief at Capital   fighting     2-4 km | Home	1	0
+heligoland-bight	1921	Capital   chief at Destroyer going home   2-4 km | Station / task Intercept / admiral Course	4	2

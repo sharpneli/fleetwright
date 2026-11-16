@@ -220,6 +220,22 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [x] **A commander judged his side by its battle line alone** (found 2026-11-16 in BL6, the Yalu: the Beiyang Fleet declined
+  at first sight in 16 of 16 seeds). His balance put each top unit in the matchup by its line (`MatchupJudge.AddGroup`),
+  and once the force's admiral took its cruiser squadrons off the line as its screen only the two Dingyuans were counted:
+  0.08 against Japan's whole fleet where the bench gives the fleet 1.1. Fixed: `CommanderLayer.AddTop` takes every ship
+  down the tree (`AddMembers`), for the balance and for sending units against a group (balance.md "BL6").
+- [ ] **An 1890s fleet is all "flotilla".** Nothing before the dreadnought comes to `Sightings.TypeOf`'s 14,000 t capital
+  line, so `Roles.Derived` finds no Heavy unit, and ships whose torpedoes are their better weapon against their own side's
+  heaviest (most of a pre-dreadnought cruiser force) make the unit a Flotilla: the Yalu's Beiyang Fleet, two 10,000 t
+  ironclads at its head, reads Flotilla. A Flotilla isn't sent against a group as the heavy units are, it's sent in to
+  attack. The early wave plays even regardless (BL6); the capital line and the role want an era-free rule (no hard
+  switches), for the next AI pass.
+- [ ] **The Bosporus hinges on the boats' attacks.** The Ottoman torpedo boats fire 1-2 torpedoes a game between nine of
+  them (the "torpedo boats barely attack" item, the user's next session after the early wave); the landing's balance
+  answers to the escort hardly at all (one Russian battleship lands as often as three). BL6 balanced it with two more
+  ironclads and three more boats; re-balance once the boats attack.
+
 - [x] **A search line spread over the land** (found 2026-11-09 by the user playing Pungdo: Akitsushima "decided to
   stop before we even found the enemy"). The Stop side's search (aims.md A3) spread the Flying Squadron abreast 0.9 of
   the 15 km visibility apart, toward a datum in the mouth of Asan Bay: her station, 27 km to starboard, lay over the

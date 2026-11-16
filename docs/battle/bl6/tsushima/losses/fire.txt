@@ -1,0 +1,1014 @@
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	32	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	122	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	14	1
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	61	2
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	1066	34
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	2	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	20	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	12	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	132	1
+tsushima	1905	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Search / admiral Fight	4	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	30	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	1	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	70	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	5	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	14	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	5	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	7	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	4	1
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	59	0
+tsushima	1905	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	18	4
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	8	3
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	165	9
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	6	1
+tsushima	1905	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	50	22
+tsushima	1905	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	157	83
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	100	15
+tsushima	1905	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	73	15
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	4	0
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	108	7
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	4	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	8	1
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	16	0
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Run / task None / admiral Run	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Run / task None / admiral Run	18	1
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	12	6
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Run / task None / admiral Run	11	1
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	8	3
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	13	6
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	147	15
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	102	25
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Run	38	3
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Run	10	2
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Search / admiral Fight	4	0
+tsushima	1905	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	34	8
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	23	3
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	12	9
+tsushima	1905	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	26	23
+tsushima	1905	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	26	23
+tsushima	1905	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	64	25
+tsushima	1905	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	24	16
+tsushima	1905	Destroyer chief at Cruiser   fighting     2-4 km | Home	23	6
+tsushima	1905	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	95	63
+tsushima	1905	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	14	13
+tsushima	1905	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	213	179
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	9	0
+tsushima	1905	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	15	3
+tsushima	1905	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	10	8
+tsushima	1905	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	8	5
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	707	205
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Run	6	2
+tsushima	1905	Destroyer chief at Cruiser   fighting     0-2 km | Fight band / task None / admiral Fight	23	9
+tsushima	1905	Destroyer chief at Cruiser   fighting     0-2 km | Home	1	1
+tsushima	1905	Destroyer chief at Cruiser   fighting     2-4 km | Fight band / task None / admiral Fight	1	0
+tsushima	1905	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	86	14
+tsushima	1905	Destroyer chief at Cruiser   going home   2-4 km | Home	51	7
+tsushima	1905	Cruiser   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	16	0
+tsushima	1905	Cruiser   other at Destroyer fighting     0-2 km | Home	3	0
+tsushima	1905	Destroyer chief at Cruiser   going home   0-2 km | Fight attacking / task None / admiral Fight	9	6
+tsushima	1905	Cruiser   chief at Destroyer fighting     0-2 km | Home	4	3
+tsushima	1905	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	20	3
+tsushima	1905	Cruiser   chief at Cruiser   going home  6-10 km | Run / task None / admiral Run	4	0
+tsushima	1905	Cruiser   chief at Cruiser   going home  6-10 km | Station / task None / admiral Run	10	0
+tsushima	1905	Cruiser   chief at Destroyer going home   0-2 km | Home	4	4
+tsushima	1905	Destroyer chief at Cruiser   going home   0-2 km | Home	8	6
+tsushima	1905	Cruiser   other at Destroyer going home   0-2 km | Home	1	1
+tsushima	1905	Cruiser   chief at Destroyer going home   2-4 km | Home	4	3
+tsushima	1905	Cruiser   other at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	8	0
+tsushima	1905	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	92	2
+tsushima	1905	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	48	6
+tsushima	1905	Cruiser   other at Cruiser   going home  6-10 km | Course / task Withdraw / admiral Course	4	0
+tsushima	1905	Cruiser   other at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	119	5
+tsushima	1905	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	72	5
+tsushima	1905	Cruiser   other at Destroyer going home  6-10 km | Course / task Intercept / admiral Fight	8	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	288	13
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	52	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	164	45
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Fight	26	1
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Fight	14	8
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Fight	12	8
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	629	298
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	218	126
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Fight	116	1
+tsushima	1905	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	102	9
+tsushima	1905	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	30	1
+tsushima	1905	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	175	14
+tsushima	1905	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	522	34
+tsushima	1905	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	16	4
+tsushima	1905	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	248	16
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Fight finishing / task Intercept / admiral Fight	8	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Fight	8	1
+tsushima	1905	Cruiser   chief at Destroyer fighting    10-15km | Station / task Intercept / admiral Fight	6	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	108	2
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	142	4
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Fight band / task Intercept / admiral Fight	8	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	132	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Intercept / admiral Fight	24	0
+tsushima	1905	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	1	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	35	0
+tsushima	1905	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	46	0
+tsushima	1905	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	43	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	84	0
+tsushima	1905	Cruiser   other at Destroyer fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	16	4
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Route	54	3
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Route	16	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Route	12	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Route	29	3
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	42	3
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	101	12
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	220	45
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	472	125
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	60	25
+tsushima	1905	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Route	146	1
+tsushima	1905	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Route	4	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	24	5
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	30	4
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	34	18
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	8	1
+tsushima	1905	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	13	9
+tsushima	1905	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	54	51
+tsushima	1905	Cruiser   other at Cruiser   fighting     0-2 km | Fight finishing / task Intercept / admiral Fight	231	201
+tsushima	1905	Cruiser   chief at Cruiser   fighting     0-2 km | Fight finishing / task Intercept / admiral Fight	16	16
+tsushima	1905	Cruiser   chief at Destroyer going home  10-15km | Station / task Intercept / admiral Fight	12	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	90	2
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	4	0
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Course / task Intercept / admiral Course	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Scout / admiral Station	4	0
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Station / task Scout / admiral Station	46	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	28	0
+tsushima	1905	Cruiser   other at Destroyer going home  6-10 km | Station / task Scout / admiral Station	3	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Fight band / task Intercept / admiral Fight	4	0
+tsushima	1905	Cruiser   other at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	153	4
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	41	0
+tsushima	1905	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Intercept / admiral Fight	12	2
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Course / task Scout / admiral Station	1	0
+tsushima	1905	Cruiser   chief at Destroyer going home   4-6 km | Course / task Scout / admiral Station	19	3
+tsushima	1905	Cruiser   other at Destroyer going home   4-6 km | Course / task Scout / admiral Station	29	0
+tsushima	1905	Cruiser   chief at Destroyer going home   4-6 km | Shadow / task Scout / admiral Shadow	25	0
+tsushima	1905	Cruiser   other at Destroyer going home   4-6 km | Shadow / task Scout / admiral Shadow	88	0
+tsushima	1905	Cruiser   other at Destroyer going home   4-6 km | Station / task Scout / admiral Shadow	67	1
+tsushima	1905	Cruiser   chief at Destroyer going home   4-6 km | Station / task Scout / admiral Shadow	11	0
+tsushima	1905	Cruiser   other at Destroyer going home  6-10 km | Station / task Scout / admiral Shadow	83	0
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Station / task Scout / admiral Shadow	49	1
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Shadow / task Scout / admiral Shadow	43	1
+tsushima	1905	Cruiser   other at Destroyer going home  6-10 km | Shadow / task Scout / admiral Shadow	7	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Course	8	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Scout / admiral Shadow	7	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Shadow / task Scout / admiral Shadow	8	0
+tsushima	1905	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Scout / admiral Shadow	45	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Intercept / admiral Course	6	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Course / task Scout / admiral Shadow	24	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Station / task Scout / admiral Shadow	9	0
+tsushima	1905	Cruiser   other at Destroyer fighting    6-10 km | Shadow / task Scout / admiral Shadow	6	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	2	0
+tsushima	1905	Cruiser   other at Destroyer going home  6-10 km | Course / task Scout / admiral Shadow	18	0
+tsushima	1905	Cruiser   chief at Destroyer going home  6-10 km | Course / task Scout / admiral Shadow	14	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Scout / admiral Shadow	16	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	32	4
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Scout / admiral Shadow	29	2
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	13	0
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Shadow / task Scout / admiral Shadow	37	3
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Shadow / task Scout / admiral Shadow	9	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	4	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     4-6 km | Home	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting    6-10 km | Home	6	0
+tsushima	1905	Cruiser   chief at Cruiser   going home  10-15km | Station / task Withdraw / admiral Course	2	0
+tsushima	1905	Cruiser   chief at Cruiser   fighting     2-4 km | Home	2	0
+tsushima	1905	Cruiser   other at Cruiser   fighting     4-6 km | Home	56	2
+tsushima	1905	Cruiser   other at Cruiser   fighting     2-4 km | Home	64	6
+tsushima	1906	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	137	2
+tsushima	1906	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	52	2
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	3559	212
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	1188	109
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	12	1
+tsushima	1906	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	6	0
+tsushima	1906	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	6	0
+tsushima	1906	Cruiser   other at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	4	0
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	247	8
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	4	2
+tsushima	1906	Cruiser   chief at Destroyer fighting    10-15km | Course / task Search / admiral Fight	8	0
+tsushima	1906	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Search / admiral Fight	4	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	1	0
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	25	0
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	12	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	8	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	8	1
+tsushima	1906	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	4	0
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	7	0
+tsushima	1906	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	86	35
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	68	2
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	25	2
+tsushima	1906	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	8	4
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	8	1
+tsushima	1906	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	76	24
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	8	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	28	0
+tsushima	1906	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	212	107
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	4	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	2	1
+tsushima	1906	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	28	22
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	62	2
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	21	2
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	700	112
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Run	20	0
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Run / task None / admiral Run	9	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	25	3
+tsushima	1906	Destroyer chief at Cruiser   fighting     0-2 km | Station / task None / admiral Fight	76	38
+tsushima	1906	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	45	15
+tsushima	1906	Destroyer chief at Cruiser   fighting     0-2 km | Home	70	32
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	8	3
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	46	17
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	44	31
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	26	12
+tsushima	1906	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	24	7
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	47	17
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Search / admiral Fight	7	1
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	28	19
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	182	59
+tsushima	1906	Cruiser   other at Destroyer going home   2-4 km | Course / task Search / admiral Fight	5	0
+tsushima	1906	Cruiser   other at Destroyer fighting     0-2 km | Course / task Search / admiral Fight	4	1
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	12	0
+tsushima	1906	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	21	8
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Run	14	0
+tsushima	1906	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Fight	5	0
+tsushima	1906	Cruiser   other at Destroyer going home   4-6 km | Station / task Search / admiral Fight	5	0
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	109	20
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	638	204
+tsushima	1906	Cruiser   other at Destroyer going home   0-2 km | Station / task Search / admiral Fight	23	6
+tsushima	1906	Cruiser   chief at Destroyer going home   0-2 km | Station / task Search / admiral Fight	12	5
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	775	82
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	1000	72
+tsushima	1906	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	220	10
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	551	36
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	280	46
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	118	6
+tsushima	1906	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	14	0
+tsushima	1906	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	171	47
+tsushima	1906	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	22	2
+tsushima	1906	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	22	8
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	70	36
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	726	340
+tsushima	1906	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	211	140
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	82	19
+tsushima	1906	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	232	110
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	116	70
+tsushima	1906	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	38	34
+tsushima	1906	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	236	165
+tsushima	1906	Cruiser   chief at Cruiser   fighting     4-6 km | Home	2	1
+tsushima	1906	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	211	10
+tsushima	1906	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	8	3
+tsushima	1906	Cruiser   other at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	98	44
+tsushima	1906	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	116	27
+tsushima	1906	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	418	7
+tsushima	1906	Cruiser   other at Destroyer going home   0-2 km | Station / task Withdraw / admiral Course	2	1
+tsushima	1906	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	471	84
+tsushima	1906	Cruiser   chief at Cruiser   fighting    6-10 km | Home	20	0
+tsushima	1906	Cruiser   chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	28	5
+tsushima	1906	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	46	1
+tsushima	1906	Destroyer chief at Destroyer fighting     4-6 km | Home	183	9
+tsushima	1906	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	109	16
+tsushima	1906	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	51	16
+tsushima	1906	Destroyer chief at Destroyer fighting     0-2 km | Station / task Screen / admiral Screen	63	20
+tsushima	1906	Cruiser   other at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	67	14
+tsushima	1906	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	8	0
+tsushima	1906	Cruiser   chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	16	2
+tsushima	1906	Cruiser   chief at Destroyer going home  6-10 km | Station / task Withdraw / admiral Course	36	0
+tsushima	1906	Cruiser   chief at Destroyer going home  6-10 km | Station / task Withdraw / admiral Route	2	0
+tsushima	1906	Cruiser   chief at Cruiser   going home  6-10 km | Course / task Intercept / admiral Course	8	1
+tsushima	1906	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	10	9
+tsushima	1906	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	24	17
+tsushima	1906	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	362	241
+tsushima	1906	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	44	4
+tsushima	1906	Cruiser   chief at Cruiser   going home  10-15km | Course / task Withdraw / admiral Course	4	0
+tsushima	1906	Cruiser   chief at Cruiser   going home  10-15km | Station / task Withdraw / admiral Course	2	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Course	19	0
+tsushima	1906	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Intercept / admiral Course	47	0
+tsushima	1906	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	11	1
+tsushima	1906	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	105	65
+tsushima	1906	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	32	12
+tsushima	1906	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Route	1	0
+tsushima	1906	Cruiser   chief at Destroyer going home  6-10 km | Course / task Scout / admiral Shadow	4	0
+tsushima	1906	Cruiser   chief at Destroyer going home   4-6 km | Course / task Scout / admiral Shadow	17	0
+tsushima	1906	Cruiser   other at Destroyer going home   4-6 km | Course / task Scout / admiral Shadow	47	0
+tsushima	1906	Cruiser   other at Destroyer going home   2-4 km | Course / task Scout / admiral Shadow	88	12
+tsushima	1906	Cruiser   chief at Destroyer going home   2-4 km | Course / task Scout / admiral Shadow	15	2
+tsushima	1906	Cruiser   other at Destroyer going home   0-2 km | Course / task Scout / admiral Shadow	207	116
+tsushima	1906	Cruiser   chief at Destroyer going home   0-2 km | Course / task Scout / admiral Shadow	36	17
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Route / task Withdraw / admiral Route	4	1
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	2	1
+tsushima	1906	Cruiser   chief at Cruiser   fighting     2-4 km | Shadow / task Scout / admiral Shadow	9	3
+tsushima	1906	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	2	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	101	1
+tsushima	1907	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	6	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	595	17
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	10	0
+tsushima	1907	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	2	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	10	1
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	114	3
+tsushima	1907	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	4	0
+tsushima	1907	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	24	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	6	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	6	1
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	16	0
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	4	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	12	1
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	46	1
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	4	0
+tsushima	1907	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	210	40
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	54	1
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	110	2
+tsushima	1907	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	71	18
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	6	1
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	42	8
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	8	2
+tsushima	1907	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	118	34
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	5	0
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	49	14
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Run	1	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	10	4
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	26	11
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	15	0
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	102	20
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Run / task None / admiral Run	10	3
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Run / task None / admiral Run	29	4
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Run	15	3
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	295	111
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	56	22
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Run	22	4
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	7	6
+tsushima	1907	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	28	7
+tsushima	1907	Destroyer chief at Cruiser   fighting     2-4 km | Home	55	13
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	6	6
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	51	44
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	32	32
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	34	25
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	8	8
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	14	11
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	333	274
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	15	0
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	1246	1008
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	84	75
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	5	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Run	4	0
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	1	0
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	2	1
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Route	2	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	34	1
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	29	1
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	148	3
+tsushima	1907	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	4	0
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	8	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	110	11
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	36	3
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	13	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Intercept / admiral Fight	32	4
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	28	5
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Fight band / task Intercept / admiral Fight	52	9
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	185	62
+tsushima	1907	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	25	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	21	10
+tsushima	1907	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	160	2
+tsushima	1907	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	2	0
+tsushima	1907	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	10	0
+tsushima	1907	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	28	2
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Fight band / task Intercept / admiral Fight	431	342
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Fight band / task Intercept / admiral Fight	124	110
+tsushima	1907	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	252	42
+tsushima	1907	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	30	4
+tsushima	1907	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	77	8
+tsushima	1907	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	6	1
+tsushima	1907	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	141	32
+tsushima	1907	Cruiser   chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	8	7
+tsushima	1907	Cruiser   other at Destroyer going home   0-2 km | Station / task Withdraw / admiral Course	272	126
+tsushima	1907	Cruiser   chief at Destroyer going home   0-2 km | Station / task Withdraw / admiral Course	4	4
+tsushima	1907	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	8	3
+tsushima	1907	Cruiser   other at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	87	39
+tsushima	1907	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	2	1
+tsushima	1907	Cruiser   other at Destroyer fighting    6-10 km | Home	2	0
+tsushima	1907	Cruiser   chief at Destroyer fighting    6-10 km | Home	4	1
+tsushima	1907	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Fight	25	2
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	160	41
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Fight	52	16
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Fight finishing / task Intercept / admiral Fight	45	35
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Fight finishing / task Intercept / admiral Fight	34	32
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Home	3	3
+tsushima	1907	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	36	6
+tsushima	1907	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	4	0
+tsushima	1907	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	2	1
+tsushima	1907	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	4	4
+tsushima	1907	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	8	8
+tsushima	1907	Destroyer chief at Cruiser   fighting     0-2 km | Home	37	33
+tsushima	1907	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Fight	409	343
+tsushima	1907	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Fight	56	51
+tsushima	1907	Cruiser   chief at Destroyer fighting     0-2 km | Course / task Intercept / admiral Course	4	0
+tsushima	1907	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Intercept / admiral Course	12	0
+tsushima	1907	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Intercept / admiral Course	12	2
+tsushima	1907	Cruiser   chief at Destroyer fighting    10-15km | Course / task Intercept / admiral Course	4	0
+tsushima	1907	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	142	5
+tsushima	1907	Cruiser   other at Destroyer fighting    6-10 km | Course / task Intercept / admiral Course	233	3
+tsushima	1908	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	10	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	2	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	2	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	16	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	54	4
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	6	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	5	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	4	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	38	3
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	2	0
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	2	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	8	2
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	8	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	11	1
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	10	1
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	67	2
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	33	1
+tsushima	1908	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	198	37
+tsushima	1908	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	104	32
+tsushima	1908	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	8	3
+tsushima	1908	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	66	19
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	6	0
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	10	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	10	1
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	127	4
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	10	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	4	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	2	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	153	10
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	218	29
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Run / task None / admiral Run	24	3
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	23	1
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Run	18	2
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	12	3
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	90	21
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	90	17
+tsushima	1908	Destroyer chief at Cruiser   fighting     2-4 km | Home	4	3
+tsushima	1908	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	5	4
+tsushima	1908	Cruiser   other at Destroyer going home   0-2 km | Station / task Search / admiral Fight	17	2
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	204	39
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	88	59
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	98	38
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Run	4	1
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Run	2	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	4	1
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Home	9	1
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	148	54
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	14	13
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	22	16
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	56	45
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	32	31
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	151	105
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	6	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	728	522
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	1057	372
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	72	59
+tsushima	1908	Cruiser   other at Destroyer going home   2-4 km | Course / task Search / admiral Fight	3	0
+tsushima	1908	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Fight	2	0
+tsushima	1908	Cruiser   other at Destroyer going home  6-10 km | Station / task Search / admiral Fight	16	0
+tsushima	1908	Cruiser   other at Cruiser   going home   0-2 km | Station / task Withdraw / admiral Course	65	36
+tsushima	1908	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Withdraw / admiral Course	14	12
+tsushima	1908	Cruiser   other at Cruiser   going home   0-2 km | Course / task Withdraw / admiral Course	4	2
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Home	62	31
+tsushima	1908	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	105	22
+tsushima	1908	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	55	17
+tsushima	1908	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	30	8
+tsushima	1908	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	690	128
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	14	10
+tsushima	1908	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	10	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	66	62
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Search / admiral Fight	4	0
+tsushima	1908	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	4	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	12	0
+tsushima	1908	Cruiser   chief at Cruiser   going home  10-15km | Course / task Withdraw / admiral Course	28	0
+tsushima	1908	Cruiser   chief at Cruiser   going home  10-15km | Station / task Withdraw / admiral Course	76	0
+tsushima	1908	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	204	4
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Intercept / admiral Fight	12	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	28	4
+tsushima	1908	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	57	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Fight	20	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Intercept / admiral Fight	2	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	95	53
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Intercept / admiral Fight	46	28
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	22	8
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Intercept / admiral Fight	8	7
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Fight band / task Intercept / admiral Fight	83	65
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Fight band / task Intercept / admiral Fight	52	49
+tsushima	1908	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	73	0
+tsushima	1908	Cruiser   chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	8	0
+tsushima	1908	Cruiser   other at Destroyer going home  6-10 km | Station / task Withdraw / admiral Course	56	3
+tsushima	1908	Cruiser   chief at Destroyer going home  6-10 km | Station / task Withdraw / admiral Course	16	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Fight finishing / task Intercept / admiral Fight	6	6
+tsushima	1908	Cruiser   chief at Destroyer going home  10-15km | Station / task Withdraw / admiral Course	10	0
+tsushima	1908	Cruiser   chief at Cruiser   going home  6-10 km | Course / task Withdraw / admiral Course	4	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     0-2 km | Fight away / task Intercept / admiral Fight	8	8
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Fight away / task Intercept / admiral Fight	10	10
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	2	2
+tsushima	1908	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	51	5
+tsushima	1908	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	34	4
+tsushima	1908	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	165	58
+tsushima	1908	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	26	6
+tsushima	1908	Cruiser   other at Cruiser   fighting     4-6 km | Home	1	0
+tsushima	1908	Cruiser   other at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	10	0
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Route	3	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Route	4	2
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	170	7
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	112	2
+tsushima	1908	Cruiser   other at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	46	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	204	12
+tsushima	1908	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Course	16	1
+tsushima	1908	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Intercept / admiral Course	2	0
+tsushima	1908	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Route	16	0
+tsushima	1908	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Route	5	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     0-2 km | Home	7	5
+tsushima	1908	Cruiser   other at Cruiser   going home   0-2 km | Station / task Withdraw / admiral Route	2	0
+tsushima	1908	Cruiser   other at Cruiser   fighting     2-4 km | Home	1	0
+tsushima	1908	Cruiser   chief at Cruiser   fighting     2-4 km | Home	5	5
+tsushima	1909	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	28	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	2	0
+tsushima	1909	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	10	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	18	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	66	1
+tsushima	1909	Cruiser   chief at Destroyer fighting    10-15km | Course / task Search / admiral Fight	4	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	15	1
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	60	3
+tsushima	1909	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	7	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	16	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	9	1
+tsushima	1909	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	18	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	47	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	8	1
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	23	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	6	0
+tsushima	1909	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	36	17
+tsushima	1909	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	352	70
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	9	1
+tsushima	1909	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	41	23
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	8	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	10	3
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	12	1
+tsushima	1909	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	26	9
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	26	3
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	8	2
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	474	69
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	86	10
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	109	13
+tsushima	1909	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Fight	27	13
+tsushima	1909	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	3	0
+tsushima	1909	Destroyer chief at Cruiser   fighting     2-4 km | Home	33	12
+tsushima	1909	Destroyer chief at Cruiser   fighting     0-2 km | Home	10	2
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	6	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Run / task None / admiral Run	4	1
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Run	16	0
+tsushima	1909	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Run	6	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Run / task None / admiral Run	4	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	7	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	6	1
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	74	36
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	11	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Run	8	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	154	41
+tsushima	1909	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	58	1
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	10	5
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	66	18
+tsushima	1909	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	5	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	28	7
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	16	13
+tsushima	1909	Cruiser   chief at Destroyer going home  6-10 km | Course / task Search / admiral Fight	18	0
+tsushima	1909	Cruiser   other at Destroyer going home   2-4 km | Course / task Search / admiral Fight	53	8
+tsushima	1909	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	16	12
+tsushima	1909	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	19	8
+tsushima	1909	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	8	8
+tsushima	1909	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	191	175
+tsushima	1909	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	66	53
+tsushima	1909	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	58	54
+tsushima	1909	Cruiser   other at Destroyer going home   4-6 km | Station / task Search / admiral Fight	19	0
+tsushima	1909	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	137	132
+tsushima	1909	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	14	14
+tsushima	1909	Cruiser   other at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	1	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	28	2
+tsushima	1909	Cruiser   other at Destroyer fighting     4-6 km | Station / task Search / admiral Fight	2	0
+tsushima	1909	Cruiser   chief at Destroyer going home  10-15km | Station / task Search / admiral Fight	2	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    10-15km | Fight finishing / task Search / admiral Fight	4	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    10-15km | Fight band / task Search / admiral Fight	4	0
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Search / admiral Fight	52	2
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	531	114
+tsushima	1909	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	1	0
+tsushima	1909	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	476	12
+tsushima	1909	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	8	0
+tsushima	1909	Destroyer chief at Destroyer going home   4-6 km | Station / task Screen / admiral Screen	7	0
+tsushima	1909	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	36	2
+tsushima	1909	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	44	16
+tsushima	1909	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	190	67
+tsushima	1909	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	153	11
+tsushima	1909	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	56	19
+tsushima	1909	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	74	21
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	137	43
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	100	38
+tsushima	1909	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Search / admiral Fight	8	3
+tsushima	1909	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Search / admiral Fight	4	1
+tsushima	1909	Destroyer chief at Destroyer fighting     2-4 km | Station / task Screen / admiral Screen	181	9
+tsushima	1909	Cruiser   chief at Destroyer fighting     4-6 km | Fight finishing / task Search / admiral Fight	32	5
+tsushima	1909	Cruiser   other at Destroyer fighting     4-6 km | Fight finishing / task Search / admiral Fight	181	6
+tsushima	1909	Destroyer chief at Destroyer fighting     4-6 km | Station / task Screen / admiral Screen	122	5
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	81	6
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	735	17
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	2	1
+tsushima	1910	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	26	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	74	6
+tsushima	1910	Cruiser   other at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	8	0
+tsushima	1910	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	28	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	230	23
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	56	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	21	1
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	36	0
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	16	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	20	0
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	159	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	26	9
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	218	19
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	6	0
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	122	14
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	36	6
+tsushima	1910	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	14	2
+tsushima	1910	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	88	13
+tsushima	1910	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	43	5
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	336	62
+tsushima	1910	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	168	72
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Gain	13	0
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Gain	13	1
+tsushima	1910	Destroyer chief at Cruiser   fighting     0-2 km | Station / task None / admiral Fight	195	51
+tsushima	1910	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	56	22
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	217	81
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Gain	9	0
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	330	152
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	292	131
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Gain	6	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	31	15
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	82	45
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	9	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	17	3
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	10	3
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	17	0
+tsushima	1910	Destroyer chief at Cruiser   fighting     0-2 km | Home	65	46
+tsushima	1910	Destroyer chief at Cruiser   fighting     0-2 km | Fight band / task None / admiral Fight	1	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	12	11
+tsushima	1910	Cruiser   other at Destroyer fighting     2-4 km | Course / task Search / admiral Fight	10	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Search / admiral Fight	4	4
+tsushima	1910	Destroyer chief at Cruiser   fighting     2-4 km | Home	10	2
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Run	5	0
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	33	19
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	2	2
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Search / admiral Fight	10	10
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Fight / attack Run	4	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight / attack Run	2	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Fire	4	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Fire	6	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Course / task None / admiral Fight / attack Fire	18	13
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task None / admiral Fight / attack Fire	4	2
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	81	50
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	281	255
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Run / task None / admiral Fight / attack Away	8	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Run / task None / admiral Fight / attack Away	9	8
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	38	21
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Run / task None / admiral Fight / attack Away	4	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight / attack Away	4	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	6	5
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	407	92
+tsushima	1910	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	4	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Run / task None / admiral Fight	2	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	2	0
+tsushima	1910	Cruiser   chief at Cruiser   going home   2-4 km | Run / task None / admiral Fight	4	1
+tsushima	1910	Cruiser   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	276	78
+tsushima	1910	Destroyer chief at Cruiser   going home   0-2 km | Fight attacking / task None / admiral Fight	104	60
+tsushima	1910	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	553	169
+tsushima	1910	Cruiser   chief at Cruiser   going home   2-4 km | Station / task None / admiral Fight	4	1
+tsushima	1910	Cruiser   other at Destroyer fighting     0-2 km | Home	13	2
+tsushima	1910	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	96	49
+tsushima	1910	Cruiser   chief at Cruiser   going home   4-6 km | Run / task None / admiral Fight	2	2
+tsushima	1910	Cruiser   chief at Cruiser   going home   4-6 km | Station / task None / admiral Fight	4	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Home	1	0
+tsushima	1910	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	6	1
+tsushima	1910	Destroyer chief at Cruiser   going home   0-2 km | Course / task None / admiral Fight / attack Gain	139	82
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Run / task None / admiral Fight	1	0
+tsushima	1910	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	18	0
+tsushima	1910	Cruiser   other at Cruiser   going home   0-2 km | Station / task Withdraw / admiral Course	77	28
+tsushima	1910	Cruiser   chief at Cruiser   going home   0-2 km | Station / task Withdraw / admiral Course	20	18
+tsushima	1910	Destroyer chief at Cruiser   going home   0-2 km | Run / task None / admiral Run	32	14
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Home	2	0
+tsushima	1910	Destroyer chief at Cruiser   going home   2-4 km | Run / task None / admiral Run	16	1
+tsushima	1910	Cruiser   other at Destroyer fighting     2-4 km | Home	4	0
+tsushima	1910	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Search / admiral Fight	20	0
+tsushima	1910	Cruiser   other at Destroyer fighting     4-6 km | Course / task Search / admiral Fight	58	2
+tsushima	1910	Destroyer chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	5	0
+tsushima	1910	Cruiser   other at Destroyer fighting     4-6 km | Station / task Search / admiral Fight	1	0
+tsushima	1910	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Search / admiral Fight	2	0
+tsushima	1910	Cruiser   other at Destroyer going home   4-6 km | Station / task Search / admiral Fight	97	1
+tsushima	1910	Destroyer chief at Cruiser   fighting     4-6 km | Home	4	1
+tsushima	1910	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	46	1
+tsushima	1910	Cruiser   chief at Destroyer going home   4-6 km | Station / task Search / admiral Fight	10	2
+tsushima	1910	Cruiser   other at Destroyer going home  6-10 km | Station / task Search / admiral Fight	96	1
+tsushima	1910	Cruiser   chief at Destroyer going home  10-15km | Course / task Search / admiral Fight	4	0
+tsushima	1910	Cruiser   chief at Destroyer going home  6-10 km | Course / task Search / admiral Fight	12	0
+tsushima	1910	Cruiser   other at Destroyer going home  6-10 km | Course / task Search / admiral Fight	7	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  10-15km | Course / task Withdraw / admiral Course	4	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Withdraw / admiral Course	22	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Course / task Withdraw / admiral Course	6	0
+tsushima	1910	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	22	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	8	1
+tsushima	1910	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	2	0
+tsushima	1910	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	12	2
+tsushima	1910	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	10	3
+tsushima	1910	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	28	7
+tsushima	1910	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	105	12
+tsushima	1910	Cruiser   other at Destroyer fighting     0-2 km | Course / task Withdraw / admiral Course	179	122
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	128	17
+tsushima	1910	Cruiser   other at Destroyer going home   0-2 km | Course / task Withdraw / admiral Course	25	16
+tsushima	1910	Cruiser   other at Destroyer going home   0-2 km | Station / task Withdraw / admiral Course	572	441
+tsushima	1910	Cruiser   chief at Destroyer fighting     0-2 km | Course / task Withdraw / admiral Course	2	2
+tsushima	1910	Cruiser   chief at Destroyer going home   0-2 km | Station / task Withdraw / admiral Course	18	15
+tsushima	1910	Cruiser   other at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	118	52
+tsushima	1910	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	6	4
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Search / admiral Fight	40	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	66	50
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	64	3
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Route	1	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Search / admiral Fight	12	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Fight band / task Search / admiral Fight	12	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Fight band / task Search / admiral Fight	11	1
+tsushima	1910	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	181	43
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	92	18
+tsushima	1910	Destroyer chief at Cruiser   fighting     2-4 km | Station / task Screen / admiral Screen	3	0
+tsushima	1910	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	42	0
+tsushima	1910	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	298	58
+tsushima	1910	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	58	23
+tsushima	1910	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	24	18
+tsushima	1910	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	167	34
+tsushima	1910	Cruiser   chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	4	1
+tsushima	1910	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	27	27
+tsushima	1910	Cruiser   other at Cruiser   fighting     0-2 km | Fight finishing / task Search / admiral Fight	38	33
+tsushima	1910	Cruiser   chief at Cruiser   fighting     0-2 km | Fight finishing / task Search / admiral Fight	18	17
+tsushima	1910	Cruiser   chief at Cruiser   fighting     4-6 km | Home	17	2
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Route	2	0
+tsushima	1910	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Intercept / admiral Fight	20	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Home	39	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	81	5
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	66	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	60	1
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Course	2	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Shadow / task Scout / admiral Shadow	15	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Intercept / admiral Course	10	0
+tsushima	1910	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	92	4
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Home	6	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Course / task Intercept / admiral Course	78	1
+tsushima	1910	Cruiser   chief at Cruiser   going home  6-10 km | Station / task Intercept / admiral Course	4	0
+tsushima	1910	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	16	0
+tsushima	1910	Cruiser   chief at Cruiser   going home  10-15km | Course / task Intercept / admiral Course	12	0
+tsushima	1910	Cruiser   other at Cruiser   going home   4-6 km | Course / task Intercept / admiral Course	71	2
+tsushima	1910	Cruiser   other at Cruiser   going home  6-10 km | Course / task Intercept / admiral Course	130	2
+tsushima	1911	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	64	4
+tsushima	1911	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	144	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	3243	223
+tsushima	1911	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	6	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	608	33
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	10	0
+tsushima	1911	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	4	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	255	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	23	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	16	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	25	1
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	116	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	8	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	15	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	13	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	130	3
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	14	3
+tsushima	1911	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	8	1
+tsushima	1911	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	204	49
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	219	18
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	230	44
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	27	1
+tsushima	1911	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	79	28
+tsushima	1911	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	144	54
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Gain	7	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Gain	7	0
+tsushima	1911	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	4	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	5	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	47	29
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	8	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	169	24
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	6	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	4	1
+tsushima	1911	Destroyer chief at Cruiser   fighting     2-4 km | Home	57	20
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	22	10
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	222	51
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Run	21	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Run	9	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	43	8
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	86	17
+tsushima	1911	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Fight	34	6
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Run / task None / admiral Run	10	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Run	29	7
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	2	2
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	65	60
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Run	8	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	26	20
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	14	13
+tsushima	1911	Cruiser   chief at Destroyer going home  10-15km | Station / task Search / admiral Fight	14	0
+tsushima	1911	Cruiser   other at Destroyer going home   4-6 km | Station / task Search / admiral Fight	45	0
+tsushima	1911	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	71	41
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	72	50
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	128	98
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	16	13
+tsushima	1911	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	18	6
+tsushima	1911	Cruiser   other at Destroyer fighting     0-2 km | Station / task Search / admiral Fight	7	1
+tsushima	1911	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	97	9
+tsushima	1911	Destroyer chief at Cruiser   going home   0-2 km | Fight attacking / task None / admiral Fight	23	19
+tsushima	1911	Cruiser   chief at Cruiser   going home   4-6 km | Station / task None / admiral Run	11	0
+tsushima	1911	Cruiser   chief at Cruiser   going home   4-6 km | Run / task None / admiral Run	6	0
+tsushima	1911	Cruiser   other at Destroyer fighting     0-2 km | Home	1	0
+tsushima	1911	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	16	1
+tsushima	1911	Destroyer chief at Cruiser   going home   0-2 km | Home	6	2
+tsushima	1911	Cruiser   other at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	6	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Home	112	4
+tsushima	1911	Cruiser   chief at Cruiser   going home  6-10 km | Run / task None / admiral Run	4	0
+tsushima	1911	Cruiser   chief at Cruiser   going home  6-10 km | Station / task None / admiral Run	2	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Run	13	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	6	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	464	13
+tsushima	1911	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Intercept / admiral Course	34	0
+tsushima	1911	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	110	5
+tsushima	1911	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	36	3
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Intercept / admiral Course	112	5
+tsushima	1911	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	420	4
+tsushima	1911	Cruiser   other at Destroyer fighting    6-10 km | Course / task Withdraw / admiral Course	304	3
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	198	26
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Intercept / admiral Course	143	26
+tsushima	1911	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	1038	54
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	215	94
+tsushima	1911	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	411	21
+tsushima	1911	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	36	6
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Intercept / admiral Course	148	60
+tsushima	1911	Cruiser   chief at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	4	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	114	40
+tsushima	1911	Cruiser   other at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	245	41
+tsushima	1911	Cruiser   chief at Destroyer fighting     2-4 km | Course / task Withdraw / admiral Course	8	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Intercept / admiral Course	208	33
+tsushima	1911	Cruiser   other at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	97	10
+tsushima	1911	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Withdraw / admiral Course	8	1
+tsushima	1911	Cruiser   other at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	363	28
+tsushima	1911	Cruiser   other at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	291	19
+tsushima	1911	Cruiser   chief at Destroyer going home   2-4 km | Course / task Withdraw / admiral Course	2	0
+tsushima	1911	Cruiser   chief at Destroyer going home   2-4 km | Station / task Withdraw / admiral Course	8	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	138	38
+tsushima	1911	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	509	18
+tsushima	1911	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Course	190	2
+tsushima	1911	Cruiser   chief at Destroyer going home   4-6 km | Station / task Withdraw / admiral Course	18	1
+tsushima	1911	Cruiser   chief at Destroyer going home   4-6 km | Course / task Withdraw / admiral Course	15	0
+tsushima	1911	Cruiser   other at Destroyer going home   4-6 km | Station / task Withdraw / admiral Route	49	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Route	6	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	8	0
+tsushima	1911	Cruiser   other at Destroyer going home   4-6 km | Course / task Withdraw / admiral Route	16	0
+tsushima	1911	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Route	10	0
+tsushima	1911	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Route	32	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	12	11
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Route	5	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Route	91	73
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	12	6
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Intercept / admiral Course	100	99
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Route	2	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Route	105	64
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Route	10	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Route	151	90
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Route	89	74
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Route	8	6
+tsushima	1911	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	70	46
+tsushima	1911	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Intercept / admiral Course	18	4
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Route	77	8
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Route	6	2
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Home	2	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Scout / admiral Shadow	7	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	5	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Shadow / task Scout / admiral Shadow	2	0
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Scout / admiral Shadow	8	0
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Shadow / task Scout / admiral Shadow	23	1
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Shadow / task Scout / admiral Shadow	47	3
+tsushima	1911	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	18	5
+tsushima	1911	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Scout / admiral Shadow	18	0
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Shadow / task Scout / admiral Shadow	73	7
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Shadow / task Scout / admiral Shadow	17	6
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Scout / admiral Shadow	83	13
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Scout / admiral Shadow	9	1
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Intercept / admiral Course	26	13
+tsushima	1911	Cruiser   other at Cruiser   fighting     2-4 km | Home	21	8
+tsushima	1911	Cruiser   other at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	4	3
+tsushima	1911	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Intercept / admiral Course	6	4
+tsushima	1911	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	30	22
+tsushima	1911	Cruiser   other at Cruiser   going home   2-4 km | Course / task Intercept / admiral Course	94	36
+tsushima	1911	Cruiser   chief at Cruiser   fighting     2-4 km | Home	4	3
+tsushima	1911	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	24	4
+tsushima	1911	Cruiser   other at Cruiser   going home   4-6 km | Station / task Intercept / admiral Course	55	2
+tsushima	1911	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Intercept / admiral Course	36	0
+tsushima	1911	Cruiser   chief at Cruiser   going home  10-15km | Station / task Withdraw / admiral Course	2	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    10-15km | Course / task Withdraw / admiral Course	22	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    10-15km | Station / task Withdraw / admiral Course	48	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	269	6
+tsushima	1912	Cruiser   chief at Destroyer fighting    6-10 km | Course / task Search / admiral Fight	16	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	54	1
+tsushima	1912	Cruiser   chief at Destroyer fighting    10-15km | Station / task Search / admiral Fight	4	0
+tsushima	1912	Cruiser   chief at Destroyer fighting    6-10 km | Station / task Search / admiral Fight	16	0
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Withdraw / admiral Course	26	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Gain	2	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Gain	1	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	10	0
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	6	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	7	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Course / task None / admiral Fight / attack Run	5	0
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Withdraw / admiral Course	81	2
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Course / task Search / admiral Fight	4	1
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	34	1
+tsushima	1912	Cruiser   other at Cruiser   fighting    6-10 km | Station / task None / admiral Fight / attack Run	6	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Station / task Search / admiral Fight	156	11
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	22	3
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task None / admiral Fight / attack Run	10	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	50	7
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Course / task Withdraw / admiral Course	22	0
+tsushima	1912	Cruiser   chief at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	10	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	10	0
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Station / task None / admiral Fight / attack Run	16	0
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	408	51
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	340	33
+tsushima	1912	Cruiser   other at Destroyer fighting     2-4 km | Station / task Search / admiral Fight	198	32
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Withdraw / admiral Course	84	10
+tsushima	1912	Destroyer chief at Cruiser   fighting     2-4 km | Fight attacking / task None / admiral Fight	73	11
+tsushima	1912	Destroyer chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight	86	23
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Run	6	0
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Course / task None / admiral Fight / attack Run	36	3
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	654	274
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Search / admiral Fight	196	81
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	61	19
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Station / task None / admiral Fight / attack Run	6	3
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task None / admiral Fight / attack Run	3	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Course / task Withdraw / admiral Course	26	14
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	766	129
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Station / task Withdraw / admiral Course	68	25
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Home	6	1
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Run / task None / admiral Run	22	5
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Home	4	2
+tsushima	1912	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Search / admiral Fight	8	3
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Run / task None / admiral Run	6	1
+tsushima	1912	Cruiser   other at Cruiser   going home   2-4 km | Station / task Search / admiral Fight	15	7
+tsushima	1912	Destroyer chief at Cruiser   fighting     0-2 km | Fight attacking / task None / admiral Fight	16	1
+tsushima	1912	Cruiser   other at Destroyer going home   2-4 km | Station / task Search / admiral Fight	13	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	100	76
+tsushima	1912	Destroyer chief at Cruiser   fighting     2-4 km | Home	38	5
+tsushima	1912	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Search / admiral Fight	295	221
+tsushima	1912	Cruiser   other at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	78	59
+tsushima	1912	Cruiser   chief at Cruiser   fighting     0-2 km | Course / task Withdraw / admiral Course	46	30
+tsushima	1912	Cruiser   other at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	276	185
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Run / task None / admiral Run	6	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting     0-2 km | Station / task Withdraw / admiral Course	22	12
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Run / task None / admiral Run	2	0
+tsushima	1912	Cruiser   other at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	29	1
+tsushima	1912	Cruiser   other at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	99	12
+tsushima	1912	Cruiser   chief at Cruiser   going home  6-10 km | Run / task None / admiral Run	5	0
+tsushima	1912	Cruiser   chief at Cruiser   going home   2-4 km | Station / task Withdraw / admiral Course	20	3
+tsushima	1912	Cruiser   chief at Cruiser   going home   2-4 km | Course / task Withdraw / admiral Course	2	0
+tsushima	1912	Cruiser   other at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	27	0
+tsushima	1912	Destroyer chief at Cruiser   going home   2-4 km | Run / task None / admiral Run	43	6
+tsushima	1912	Cruiser   chief at Cruiser   going home   4-6 km | Station / task Withdraw / admiral Course	12	0
+tsushima	1912	Destroyer chief at Cruiser   going home   4-6 km | Run / task None / admiral Run	14	0
+tsushima	1912	Cruiser   other at Cruiser   going home   4-6 km | Course / task Withdraw / admiral Course	2	0
+tsushima	1912	Cruiser   other at Cruiser   going home  6-10 km | Course / task Withdraw / admiral Course	2	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Station / task Search / admiral Fight	328	51
+tsushima	1912	Cruiser   other at Destroyer fighting     4-6 km | Course / task Withdraw / admiral Course	28	0
+tsushima	1912	Cruiser   other at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	474	11
+tsushima	1912	Cruiser   other at Destroyer fighting    6-10 km | Station / task Withdraw / admiral Course	82	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Fight band / task Search / admiral Fight	92	5
+tsushima	1912	Cruiser   chief at Destroyer going home  6-10 km | Station / task Search / admiral Fight	20	1
+tsushima	1912	Cruiser   chief at Cruiser   fighting    6-10 km | Fight finishing / task Search / admiral Fight	92	4
+tsushima	1912	Cruiser   chief at Destroyer fighting     4-6 km | Station / task Withdraw / admiral Course	2	0
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	88	27
+tsushima	1912	Cruiser   other at Cruiser   fighting     4-6 km | Fight finishing / task Search / admiral Fight	118	39
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	110	62
+tsushima	1912	Cruiser   other at Cruiser   fighting     2-4 km | Fight band / task Search / admiral Fight	116	84
+tsushima	1912	Destroyer chief at Cruiser   fighting     0-2 km | Station / task Screen / admiral Screen	231	207
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Fight band / task Search / admiral Fight	32	29
+tsushima	1912	Cruiser   chief at Cruiser   fighting     2-4 km | Fight finishing / task Search / admiral Fight	8	6
+tsushima	1912	Cruiser   other at Cruiser   fighting     0-2 km | Fight finishing / task Search / admiral Fight	143	126
+tsushima	1912	Cruiser   chief at Cruiser   fighting     0-2 km | Fight finishing / task Search / admiral Fight	48	46
+tsushima	1912	Cruiser   other at Cruiser   fighting     0-2 km | Fight band / task Search / admiral Fight	98	74
+tsushima	1912	Cruiser   chief at Cruiser   fighting     0-2 km | Fight band / task Search / admiral Fight	48	44
+tsushima	1912	Cruiser   chief at Cruiser   fighting     4-6 km | Home	10	4
+tsushima	1912	Cruiser   other at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	16	6
+tsushima	1912	Cruiser   chief at Destroyer fighting     0-2 km | Station / task Withdraw / admiral Course	4	4
+tsushima	1912	Cruiser   chief at Destroyer going home  6-10 km | Station / task Intercept / admiral Course	140	2
+tsushima	1912	Cruiser   chief at Destroyer going home  10-15km | Station / task Intercept / admiral Course	8	0
+tsushima	1912	Cruiser   chief at Destroyer going home  6-10 km | Course / task Intercept / admiral Course	26	0
+tsushima	1912	Cruiser   other at Destroyer going home  6-10 km | Station / task Intercept / admiral Course	187	1
+tsushima	1912	Cruiser   other at Destroyer going home  6-10 km | Course / task Intercept / admiral Course	32	0
+tsushima	1912	Cruiser   chief at Destroyer going home   4-6 km | Course / task Intercept / admiral Course	4	0
+tsushima	1912	Cruiser   chief at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	36	0
+tsushima	1912	Cruiser   other at Destroyer going home   4-6 km | Station / task Intercept / admiral Course	106	0
+tsushima	1912	Cruiser   chief at Destroyer going home  6-10 km | Shadow / task Scout / admiral Shadow	6	0

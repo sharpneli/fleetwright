@@ -443,6 +443,12 @@ Balance, AI on both sides (`--play --seeds 12`, ~30 s a game): score 0.11 v 0.10
 (9,300 t) a game and Italy 3.3 (9,000 t); every game runs to the clock but one; three games sink battleships on one
 side or both. As built, no tuning.
 
+**BL6, the scenarios rebalanced (2026-11-16):** by their forces (the user: ship counts, not tempers or crews) after the
+damage changes and BL5's reach held to the end: Tsushima given history's reach (the open Sea of Japan), Pungdo a fourth
+Chinese escort, Port Arthur three Japanese boats, the Bosporus four Ottoman ironclads and nine boats, Åland two Sverige
+and two Swedish destroyers against nine Finnish boats, Heligoland's German patrols four boats a flotilla; the Yalu even
+once the commander counted his screening cruisers (an AI fix). Numbers and what was tried: docs/battle/balance.md "BL6".
+
 ## Open questions for the user
 
 1. Which of these, and how many for the first release? (A dozen seems about right: three or four a size.)

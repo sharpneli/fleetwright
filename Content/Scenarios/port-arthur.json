@@ -3,7 +3,7 @@
 // cruisers come up from the south. History: four Japanese boats caught Reshitelny and Steregushchiy; Reshitelny got in,
 // Steregushchiy was overwhelmed and sank under tow; Novik and Bayan sortied too late, turned back by Tokiwa and Chitose.
 // Not history's forces: made an even skirmish (the user, 2026-11-09: scenarios are inspired by history for play, not
-// replicas), four boats a side and two cruisers a side, the Russians nearer home, the Japanese better drilled.
+// replicas), four Russian boats against three Japanese (four until BL6, for balance), two cruisers a side, the Russians nearer home, the Japanese better drilled.
 // The classes: buyny for every Russian boat, novik for Novik, bayan for Bayan; ikazuchi for every Japanese boat, yoshino
 // for Chitose and Takasago (Elswick's fast cruisers, near sisters).
 //   Japan, the hunters: quick-firers, fast cruisers, trained crews, and the enemy's boats cut off from home.
@@ -15,7 +15,7 @@
   "brief": "10 March 1904, dawn. Four Russian destroyers are coming home to Port Arthur after a night's sweep, and a Japanese flotilla has slipped between them and the harbour. Novik and Bayan are already coming out of the roads to bring them in, while Togo's fast cruisers Chitose and Takasago steam up from the south to finish the job. A skirmish in the half light, on the doorstep of the Russian base.",
   "place": "off the outer roads, Port Arthur",
   "about": {
-    "Japan": { "character": "The hunters: four boats across the enemy's way home, two fast cruisers coming up behind, well drilled.", "commander": "R-Adm Dewa", "ensign": "japan" },
+    "Japan": { "character": "The hunters: three boats across the enemy's way home, two fast cruisers coming up behind, well drilled.", "commander": "R-Adm Dewa", "ensign": "japan" },
     "Russia": { "character": "The rescue: four boats running for home, an armoured cruiser and a fast scout coming out to meet them.", "commander": "R-Adm Molas", "ensign": "russia" } },
   "start": "1904-03-09T22:20",
   "seed": 1904,
@@ -48,7 +48,7 @@
     // the flotilla across the boats' way home; the cruisers coming up from the south
     { "name": "1st Destroyer Flotilla", "admiral": { "name": "Capt Tsuchiya", "temper": 0.3, "why": "pressed the Russian boats close" }, "side": 0, "at": [38.715, 121.40], "course": 120, "kn": 20, "spacing": 300,
       "task": { "do": "patrol", "to": [38.70, 121.42] },
-      "ships": [ { "design": "ikazuchi", "names": ["Shirakumo", "Asashio", "Kasumi", "Akatsuki"] } ] },
+      "ships": [ { "design": "ikazuchi", "names": ["Shirakumo", "Asashio", "Kasumi"] } ] },
     { "name": "3rd Division", "admiral": { "name": "R-Adm Dewa", "temper": 0.2 }, "side": 0, "at": [38.58, 121.60], "course": 315, "kn": 18, "spacing": 600,
       "ships": [ { "design": "yoshino", "names": ["Chitose", "Takasago"] } ] }
   ]

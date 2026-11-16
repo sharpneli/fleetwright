@@ -3,7 +3,7 @@
 // Pungdo; Guangyi was driven ashore, Jiyuan fled (her captain's white flag and Japanese ensign a lasting scandal), and Naniwa
 // (Captain Tōgō) sank the chartered transport Kowshing with some 1,100 soldiers aboard.
 // Not history's forces: an even fight with a shape (the user, 2026-11-09: scenarios are inspired by history for play),
-// three cruisers a side, the escort already with the transport, China to bring her into Asan Bay, Japan to stop her.
+// three Japanese cruisers against four Chinese (Caojiang, Guangyi's sister, added in BL6 for balance), the escort already with the transport, China to bring her into Asan Bay, Japan to stop her.
 // Zhiyuan (with the fleet at Weihaiwei that day) joins the escort; China's crews green, Japan's trained.
 // The classes: jiyuan, zhiyuan, guangyi for the Chinese, troopship for Kowshing; yoshino for Yoshino and Akitsushima (a
 // smaller near sister), naniwa for Naniwa.
@@ -13,11 +13,11 @@
 {
   "scenario": 1,
   "name": "Pungdo, 1894",
-  "brief": "25 July 1894, morning. War between China and Japan is days away, and China is reinforcing its garrison at Asan by sea. The transport Kowshing is coming in from the west with a thousand soldiers aboard, and the cruisers Zhiyuan, Jiyuan and Guangyi, out of Asan Bay before dawn, have met her and lead her in. Japan's Flying Squadron lies across their way off Pungdo: the fastest cruisers in Asia, with quick-firing guns. Bring the transport into the bay, or stop her.",
+  "brief": "25 July 1894, morning. War between China and Japan is days away, and China is reinforcing its garrison at Asan by sea. The transport Kowshing is coming in from the west with a thousand soldiers aboard, and the cruisers Zhiyuan, Jiyuan, Guangyi and Caojiang, out of Asan Bay before dawn, have met her and lead her in. Japan's Flying Squadron lies across their way off Pungdo: the fastest cruisers in Asia, with quick-firing guns. Bring the transport into the bay, or stop her.",
   "place": "off Pungdo, at the mouth of Asan Bay",
   "about": {
     "Japan": { "character": "The Flying Squadron: three fast cruisers with quick-firers and trained crews.", "commander": "R-Adm Tsuboi", "ensign": "japan" },
-    "China": { "character": "The escort: three small cruisers with big Krupp guns, slower, and a transport to bring in.", "commander": "Capt Fang Boqian", "ensign": "china" } },
+    "China": { "character": "The escort: four small cruisers with big Krupp guns, slower, and a transport to bring in.", "commander": "Capt Fang Boqian", "ensign": "china" } },
   "start": "1894-07-24T23:15",
   "seed": 1894,
   "camera": [37.0, 126.35, 60],
@@ -44,7 +44,7 @@
     { "name": "Transport", "admiral": "Capt Galsworthy", "side": 1, "at": [37.215, 125.80], "course": 105, "kn": 10,
       "ships": [ { "design": "troopship", "names": ["Kowshing"] } ] },
     { "name": "Escort", "admiral": "Capt Fang Boqian", "side": 1, "at": [37.205, 125.86], "course": 105, "kn": 10, "spacing": 600,
-      "ships": [ { "design": "zhiyuan", "names": ["Zhiyuan"] }, { "design": "jiyuan", "names": ["Jiyuan"] }, { "design": "guangyi", "names": ["Guangyi"] } ] },
+      "ships": [ { "design": "zhiyuan", "names": ["Zhiyuan"] }, { "design": "jiyuan", "names": ["Jiyuan"] }, { "design": "guangyi", "names": ["Guangyi", "Caojiang"] } ] },
     // ------------------------------------------------------------- Japan: 3
     { "name": "Flying Squadron", "admiral": { "name": "R-Adm Tsuboi", "temper": 0.3, "why": "opened fire before war was declared" }, "side": 0, "at": [37.13, 126.33], "course": 285, "kn": 12, "spacing": 600,
       "ships": [ { "design": "yoshino", "names": ["Yoshino"] }, { "design": "naniwa", "names": ["Naniwa"] }, { "design": "yoshino", "names": ["Akitsushima"] } ] }
