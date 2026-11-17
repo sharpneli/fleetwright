@@ -51,6 +51,7 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
     readonly Dictionary<int, UnitRole> allocated = [];
     readonly List<(int Unit, UnitRole Role)> made = new(64);   // the allocation in the order made: what's hashed
     readonly HashSet<int> mains = [];
+    readonly HashSet<int> lookouts = [];   // squadrons (group ids) whose own ships are their side's lookouts (AL4)
     long nextMs = long.MinValue;
     long shape = long.MinValue;   // the units as they were at the last allocation
     bool provisional;             // allocated outside a think (a test, the map before the first): the first think does it again
@@ -95,6 +96,15 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
     {
         Provisional();
         return mains.Contains(u.Id);
+    }
+
+    /// <summary>Whether a squadron puts its own ships out on its bows as lookouts (docs/battle/allocation.md AL4): it leads
+    /// its side's main body (the main body, or the guide of its line down the forces), and nothing of its side was
+    /// allocated to scout ahead of it. When nothing better is left the job takes ships of the main body.</summary>
+    public bool Lookouts(int groupId)
+    {
+        Provisional();
+        return lookouts.Contains(groupId);
     }
 
     /// <summary>Nothing thought yet (a test, the map's first frame): allocated for now, and again at the first think.</summary>
@@ -144,6 +154,8 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
         allocated.Clear();
         made.Clear();
         mains.Clear();
+        lookouts.Clear();
+        Span<int> mainOf = stackalloc int[256];
         // each side's top units, by its commander's task
         Span<bool> sides = stackalloc bool[256];
         for (int slot = 0; slot < store.Slots; slot++)
@@ -162,7 +174,7 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
                     units.Add(Unit.Ship(store[slot].Entity));
             int main = Allocate((byte)side, SideNeeds((byte)side));
             if (main >= 0)
-                mains.Add(units[main].Id);
+                mains.Add((mainOf[side] = units[main].Id));
         }
         // each force's members, by the force's task
         for (int k = 0; k < groups.Count; k++)
@@ -177,7 +189,24 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
                     units.Add(Unit.Group(members[i]));
             Allocate((byte)side, ForceNeeds(g));
         }
+        // the lookouts (AL4): a side with nothing scouting ahead puts its main body's leading squadron's own ships out
+        Span<bool> scouted = stackalloc bool[256];
+        foreach (var (unit, role) in made)   // every unit is in it, a role set by hand over its own
+            if ((set.TryGetValue(unit, out var r) ? r : role) == UnitRole.Scout && SideOf(new Unit(unit)) is int side and >= 0)
+                scouted[side] = true;
+        for (int side = 0; side < 256; side++)
+        {
+            if (!sides[side] || scouted[side] || mainOf[side] >= 0 || groups.Get(-mainOf[side]) is not { } lead)
+                continue;
+            while (lead.IsForce && groups.Get(lead.Guide) is { } next)
+                lead = next;
+            if (!lead.IsForce)
+                lookouts.Add(lead.GroupId);
+        }
     }
+
+    int SideOf(Unit u) => u.IsGroup ? groups.Get(u.GroupId) is { } g ? SideOf(g) : -1
+        : store.SlotOf(u.Entity) is int slot and >= 0 ? store[slot].Side : -1;
 
     /// <summary>What a task needs of the units it has (docs/battle/allocation.md "The jobs, set by the task"): scouts ahead of
     /// its main body, how many; whether its scouting force must be a match for the enemy's; whether it wants a screen

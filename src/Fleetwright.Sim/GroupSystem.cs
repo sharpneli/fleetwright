@@ -80,6 +80,7 @@ public enum GroupCommand : ushort
     Merge,
     Subordinate,
     Shape,
+    Wings,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -108,6 +109,14 @@ public sealed class GroupSystem : IWorldSystem
 
         /// <summary>The bearing its line lies on from the guide, whatever its formation (<see cref="BearingOf"/>).</summary>
         public double LineBearingDeg => BearingOf(Formation, BearingDeg);
+
+        /// <summary>A squadron's lookouts on its bows (docs/battle/allocation.md AL4): how far off its guide, 0 for none. In
+        /// line ahead its last ships take the stations (<see cref="Wings"/>), the rest keep the column.</summary>
+        public double WingM { get; internal set; }
+
+        /// <summary>How many of its line are out on its bows: up to two (the last on the starboard bow, the one before her
+        /// on the port), leaving two in the column; none but in a squadron in line ahead with <see cref="WingM"/>.</summary>
+        public int Wings => !IsForce && Formation == Formation.Column && WingM > 0 ? Math.Clamp(line.Count - 2, 0, 2) : 0;
 
         /// <summary>A force: its members are groups. A squadron's are ships.</summary>
         public bool IsForce { get; internal set; }
@@ -433,8 +442,45 @@ public sealed class GroupSystem : IWorldSystem
         return f == Formation.Column ? (line[i - 1], spacing, 0) : (line[0], astern, abeam);
     }
 
-    /// <summary>The station of the i-th ship of a squadron's line (i from 1).</summary>
-    public static (int Target, double AsternM, double AbeamM) StationOf(Group g, int i) => StationOf(g.Formation, g.SpacingM, g.Line, i, g.BearingDeg);
+    /// <summary>The station of the i-th ship of a squadron's line (i from 1): a lookout on its guide's bow
+    /// (<see cref="Group.Wings"/>), else the formation's.</summary>
+    public static (int Target, double AsternM, double AbeamM) StationOf(Group g, int i)
+    {
+        if (WingOf(g, i) is int k and >= 0)
+        {
+            var (a, b) = WingOffset(g.WingM, k);
+            return (g.Line[0], a, b);
+        }
+        return StationOf(g.Formation, g.SpacingM, g.Line, i, g.BearingDeg);
+    }
+
+    /// <summary>Which of a squadron's lookouts the i-th of its line is: 0 on the starboard bow (the last), 1 on the port;
+    /// -1 for one in the formation.</summary>
+    public static int WingOf(Group g, int i)
+    {
+        int k = g.Line.Count - 1 - i;
+        return i >= 1 && k < g.Wings ? k : -1;
+    }
+
+    /// <summary>Whether a ship is out on her squadron's bow as a lookout (<see cref="Group.Wings"/>).</summary>
+    public bool IsWing(int ship)
+    {
+        if (Of(ship) is not { Wings: > 0 } g)
+            return false;
+        var line = g.Line;
+        for (int i = line.Count - g.Wings; i < line.Count; i++)
+            if (line[i] == ship)
+                return i >= 1;
+        return false;
+    }
+
+    /// <summary>A lookout's station from the guide (docs/battle/allocation.md AL4): <paramref name="wingM"/> off her,
+    /// 45° off her bow, the first to starboard and the second to port.</summary>
+    public static (double AsternM, double AbeamM) WingOffset(double wingM, int k)
+    {
+        const double Diag = 0.70710678118654752;
+        return (-wingM * Diag, (k == 0 ? 1 : -1) * wingM * Diag);
+    }
 
     /// <summary>The station of the i-th group of a force's line (i from 1), for its guide ship: the ship it keeps
     /// station on, and how far astern of it and to its starboard. Where the force's line goes on from the group before
@@ -498,7 +544,7 @@ public sealed class GroupSystem : IWorldSystem
         {
             for (int i = 0; i < line.Count; i++)
             {
-                var (a, b) = OffsetFromGuide(g.Formation, g.SpacingM, i, g.BearingDeg);
+                var (a, b) = WingOf(g, i) is int k and >= 0 ? WingOffset(g.WingM, k) : OffsetFromGuide(g.Formation, g.SpacingM, i, g.BearingDeg);
                 into.Add((line[i], astern0 + a, abeam0 + b));
             }
             return;
@@ -726,6 +772,10 @@ public sealed class GroupSystem : IWorldSystem
     public static Command Shape(int groupId, LineShape shape, double spacingM = 0) =>
         new(Id, (ushort)GroupCommand.Shape, A: groupId, B: (int)shape, X: spacingM);
 
+    /// <summary>A squadron's lookouts out on its bows <paramref name="wingM"/> off its guide, or in (0)
+    /// (<see cref="Group.WingM"/>, docs/battle/allocation.md AL4): its admiral's to give.</summary>
+    public static Command SetWings(int groupId, double wingM) => new(Id, (ushort)GroupCommand.Wings, A: groupId, X: wingM);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -819,6 +869,10 @@ public sealed class GroupSystem : IWorldSystem
             case GroupCommand.Reverse:
                 Get((int)c.A)?.Reverse();
                 break;
+            case GroupCommand.Wings:
+                if (Get((int)c.A) is { IsForce: false } winged)
+                    winged.WingM = double.IsFinite(c.X) ? Math.Max(c.X, 0) : 0;
+                break;
             case GroupCommand.Shape:
                 if (Get((int)c.A) is { } shaped)
                     Shape(shaped, (LineShape)c.B, c.X);
@@ -876,7 +930,7 @@ public sealed class GroupSystem : IWorldSystem
             if (detachments[i] != Detachment.InLine)
                 d.Detach(members[i], detachments[i]);
         }
-        g.IsForce = true;
+        (g.IsForce, g.WingM) = (true, 0);   // its lookouts come in: the divisions' admirals put out their own
         foreach (var d in divisions)
         {
             d.Parent = g.GroupId;
@@ -1034,6 +1088,8 @@ public sealed class GroupSystem : IWorldSystem
             if (g.Formation == Formation.Bearing)
                 h.Add(g.BearingDeg);   // only then: a world of the four old formations hashes as before
             h.Add(g.SpacingM);
+            if (g.WingM > 0)
+                h.Add(g.WingM);   // only then: a world without lookouts hashes as before
             h.Add(g.Members.Count);
             for (int i = 0; i < g.Members.Count; i++)
             {

@@ -47,9 +47,17 @@ static class AllocationBench
             w.AdvanceTo(w.Time + 1000);   // the first thinks
             Print(w, ai, s, start, "at the start");
             long until = w.Time.Ms + (long)(minutes * 60_000);
-            bool contact = false;
+            bool contact = false, shown = false;
+            long half = w.Time.Ms + 30 * 60_000;
             while (w.Time.Ms < until && !(contact = Contact(ai, s)))
+            {
                 w.AdvanceTo(w.Time + 60_000);
+                if (!shown && w.Time.Ms >= half && !Contact(ai, s))
+                {
+                    shown = true;
+                    Print(w, ai, s, start, "half an hour in");   // the stations taken up (AL4's lookouts)
+                }
+            }
             if (contact)
             {
                 var met = w.Time;
@@ -98,6 +106,20 @@ static class AllocationBench
         var slots = new List<int>();
         Ships(w, g, slots);
         Line(w, ai, Unit.Group(g.GroupId), depth, g.Name + (g.IsForce ? " (force)" : ""), slots);
+        if (g.Wings > 0 && store.SlotOf(g.Guide) is int lead and >= 0)
+        {
+            // its lookouts (AL4): where each is off the guide now, and where her station is
+            var guide = store[lead];
+            var parts = new List<string>();
+            for (int i = g.Line.Count - g.Wings; i < g.Line.Count; i++)
+                if (store.SlotOf(g.Line[i]) is int slot and >= 0)
+                {
+                    var p = store[slot].Position;
+                    double km = Earth.Distance(guide.Position, p) / 1000, off = ((Earth.Bearing(guide.Position, p) - guide.HeadingDeg) % 360 + 540) % 360 - 180;
+                    parts.Add(string.Format(Inv, "{0} {1:0.0} km {2:+0;-0}°", start.ShipNames.GetValueOrDefault(g.Line[i]) ?? $"#{g.Line[i]}", km, off));
+                }
+            Console.WriteLine(string.Format(Inv, "{0}lookouts at {1:0.0} km, 45°: {2}", new string(' ', 2 * depth + 2), g.WingM / 1000, string.Join(", ", parts)));
+        }
         if (g.IsForce)
             foreach (int m in g.Members)
                 if (w.Groups.Get(m) is { } sub)

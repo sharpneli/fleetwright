@@ -572,6 +572,52 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.Equal((TaskKind.Screen, main.Id), (ai.Commanders.GivenOf(screen).Given, ai.Commanders.GivenOf(screen).Target));
     }
 
+    /// <summary>A battle squadron alone has nothing to scout for it (docs/battle/allocation.md AL4): its last two ships go
+    /// out on its bows as lookouts, 45° off its guide's bow at a share of the visibility, and come back into its line once
+    /// the enemy's held. Given a pair of light cruisers, they scout and the squadron keeps its line.</summary>
+    [Fact]
+    public void A_battle_squadron_alone_puts_lookouts_on_its_bows_and_takes_them_in_at_contact()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought");
+        var main = Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 4);
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        Run(w, 80 * 60);   // out on what speed they have over the squadron's: 6 kn, from 1.8 km astern to 9 km off the bow
+        var g = w.Groups.Get(main.GroupId)!;
+        var store = w.Ships.Store;
+        var guide = store[store.SlotOf(g.Guide)];
+        double want = Settings.LookoutVisibilityShare * 30_000;
+        Assert.Equal(want, g.WingM, 1);
+        Assert.Equal(2, g.Wings);
+        for (int k = 0; k < 2; k++)
+        {
+            var p = store[store.SlotOf(g.Line[3 - k])].Position;
+            double km = Earth.Distance(guide.Position, p), off = ((Earth.Bearing(guide.Position, p) - guide.HeadingDeg) % 360 + 540) % 360 - 180;
+            output.WriteLine($"lookout {k}: {km:0} m, {off:0}° off the bow");
+            Assert.InRange(km, 0.8 * want, 1.2 * want);
+            Assert.InRange(off, k == 0 ? 35 : -55, k == 0 ? 55 : -35);
+        }
+        Assert.True(store[store.SlotOf(g.Line[1])].Position is var second && Earth.Distance(guide.Position, second) < 1_000);   // the column keeps two
+
+        // the enemy held: in they come
+        int enemy = Class(w, "dreadnought");
+        var (la, lo) = LatLon(Off(guide.HeadingDeg, 20_000, Earth.LatLon(guide.Position).Lat, Earth.LatLon(guide.Position).Lon));
+        w.Apply(ShipSystem.Spawn(enemy, la, lo, guide.HeadingDeg + 180, 10, 1));
+        Run(w, 3 * 60);
+        output.WriteLine($"the commander {ai.Commanders.PhaseOf(0)}; wings {g.WingM:0} m");
+        Assert.Equal(0, g.Wings);
+
+        // light cruisers to scout (beside a flotilla): the squadron keeps its line
+        var (w2, ai2) = Make();
+        var main2 = Column(w2, ai2, Class(w2, "dreadnought"), Earth.Position(Lat, Lon), 0, 4);
+        var cruisers = Column(w2, ai2, Class(w2, "light_cruiser"), Off(0, 10_000), 0, 2);
+        Column(w2, ai2, Class(w2, "m_class"), Off(90, 4_000), 0, 4);   // the boats: by their size, the cruisers aren't
+        w2.Apply(ai2.Orders.Commander(0, CommanderMode.On));
+        Run(w2, 10 * 60);
+        Assert.Equal(UnitRole.Scout, ai2.Roles.Of(cruisers));
+        Assert.Equal(0, w2.Groups.Get(main2.GroupId)!.Wings);
+    }
+
     [Fact]
     public void Units_through_with_their_tasks_are_given_their_roles()
     {

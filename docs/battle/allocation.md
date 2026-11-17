@@ -134,10 +134,10 @@ aims' kinds) reads her matchup instead.
 | Step | What | State |
 |---|---|---|
 | AL0 | **The bench:** `shipgen allocation SCENARIO`: each side's units, their measures and jobs at the start and at first contact; fixtures for the cases below | **done 2026-11-16** (below) |
-| AL1 | **What a unit brings:** strength, speed, attack, screening, eye, per unit at a think, from the matchup profiles | **done 2026-11-16** (eye with AL4) |
+| AL1 | **What a unit brings:** strength, speed, attack, screening, eye, per unit at a think, from the matchup profiles | **done 2026-11-16** (no eye measure: AL4 takes lookouts from the squadron's own alike ships) |
 | AL2 | **The jobs by task**, the table above | **done 2026-11-16** (scouts, the scouting force's match, the screen) |
 | AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | **done 2026-11-16**, with the force admirals' members (AL4's pass) |
-| AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | |
+| AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | **done 2026-11-17** (the force admirals with AL3) |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | |
 | AL6 | **Regrouping** the worn-down squadrons | |
 | AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for |
@@ -253,6 +253,41 @@ Britain stays in it (14.0), Germany's 49.0 is where it was (about 4x, BL3's volu
 Ottomans' ironclads now a line), Åland 8 of 16 each way (Finland's aims 5 of 16), Pungdo's China 8 of 16, Port Arthur's
 Russia 5 of 16; the Yalu and Conrad's war as they were. The prizes' war still doesn't fight (0.0 / 0.3): each force's
 cruisers its line, its destroyers scouting ahead, both commanders declining an even fight (bugs.md). The panel 627 s (701).
+
+### AL4 Lookouts on the bows (built 2026-11-17)
+
+The force admirals' pass came with AL3; what was left is the job taken from the main body when nothing better is left
+("a battleship on each wing of a squadron with no cruisers"). A lookout is a station in her squadron's formation, not a
+unit (decision 1): `GroupSystem.Group.WingM`, given by the squadron's admiral (`GroupSystem.SetWings`), puts the last
+ships of a squadron in line ahead out on its guide's bows, 45° off, the last to starboard and the one before her to
+port, up to two and always leaving two in the column. Every reader of a formation reads them (`StationOf`,
+`LineOffsets`: the captains' stations, the rails, the map); the coast's clearance leaves them out (each slides off the
+land on her own). Hashed only when out, so a world without them hashes as before.
+
+**Who puts them out** (`Roles.Lookouts`, `AdmiralLayer.WingsStep`): the squadron leading its side's main body (the main
+body, or the guide of its line down the forces) when nothing of its side was allocated to scout; in line ahead with
+ships to spare, its side's commander's (not the player's, nor on the conn), before contact (no enemy held, lost, or going
+home) and by day. Out at `LookoutVisibilityShare` (0.3, [EST]) of the visibility: 12 km in clear air (8.5 km ahead and
+abeam of the guide, each seeing as far again), 4.8 km in 16 km. In at contact and by night; given again when the
+visibility moves their distance by more than a quarter. They get out on the speed they have over the squadron's, so
+from the column's tail to 9 km at 6 kn spare takes about an hour.
+
+The eye measure (AL1) isn't needed for it: a squadron's ships are alike, and units' eyes come into it only when lookouts
+are taken from other units, which the scouts already are. On passage (no scouts wanted) the cruisers screen and the
+squadron's own ships are its lookouts.
+
+The bench (`docs/battle/allocation/al4/bench.txt`, a lookouts line under each squadron with them): the battle squadron
+alone, both sides, two battleships 4.6 km off at ±45° half an hour in; Germany's destroyers alone (two of a speed, no
+scouts) put two boats out; the battle fleets, the prizes' war, the Yalu (in contact before dawn) and the Jutland have
+scouts or no time for it.
+
+**What it moved** (`docs/battle/allocation/al4/`: the panel at 8 seeds, the early wave at 16, beside AL7a's): where
+nothing scouts. The panel 7 of 14 within about twice the record (7), the record's loser lost more in 27 of 44 (26); only
+Coronel and Åland move, within their seeds (Åland's Finland 6.9 of 13 lost at 8 seeds, 5.9 at 16, against 4.8 and 4.9).
+The Bosporus's lines both put lookouts out (Russia's three-ship squadron one, the Ottoman ironclads two): Russia lands
+7 of 16 (10), the Ottomans losing 7.6 to her 0.1; Pungdo's both sides: Japan loses none (0.2), China 2.4 (2.2); the
+Yalu's Japan once the enemy's lost (the search), 0.3 lost to China's 1.8. Port Arthur, Manila, Conrad's war and the
+prizes' war as they were, to the hash. fc-history as it was. The panel 745 s (AL7a's run on a busier machine).
 
 ### AL7a A ship not made out is one not yet accounted for (built 2026-11-17)
 

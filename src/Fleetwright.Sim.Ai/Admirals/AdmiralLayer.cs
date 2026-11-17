@@ -396,6 +396,7 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             if (a.HandedTo != to.Id)
                 HandOver(ctx, a, to);
             CloseUp(ctx, g, a, lead);
+            WingsStep(ctx, g, a, lead);
             FormingStep(ctx, g, a, lead);
             bool deploying = DeployStep(ctx, g, a, lead);
             if (deploying && a.DeployMs == ctx.NowMs)
@@ -467,6 +468,27 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
                 ctx.Issue(GroupSystem.SetFormation(g.GroupId, g.Formation, a.DaySpacingM, g.BearingDeg));
             a.DaySpacingM = 0;
         }
+    }
+
+    /// <summary>A squadron's lookouts (docs/battle/allocation.md AL4): leading its side's main body with nothing of its
+    /// side scouting ahead (<see cref="Roles.Lookouts"/>), in line ahead with ships to spare, its side's commander's,
+    /// before contact (no enemy held, or lost, or going home) and by day, its admiral puts its last ships out on its bows
+    /// (<see cref="GroupSystem.Group.Wings"/>) a <see cref="SimSettings.LookoutVisibilityShare"/> of the visibility off
+    /// its guide; else they come in. Given again when the visibility moves their distance by more than a quarter.</summary>
+    void WingsStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
+    {
+        if (g.IsForce)
+            return;
+        var guide = ctx.Ships[lead];
+        double want = 0;
+        if (g.Formation == Formation.Column && g.Line.Count >= 3 && a.Whose != Whose.Player && !a.Conn && Roles.Lookouts(g.GroupId) &&
+            Commanders is { } cm && cm.Commands(Unit.Group(groups.TopOf(g).GroupId), guide.Side, ctx.World.PlayerSide) &&
+            cm.PhaseOf(guide.Side).Phase is Sim.Ai.Commanders.CommanderPhase.NoContact or Sim.Ai.Commanders.CommanderPhase.Lost or Sim.Ai.Commanders.CommanderPhase.Home &&
+            !AiNight.At(ctx, guide.Position, ctx.World.Time))
+            want = ctx.Settings.LookoutVisibilityShare * ctx.World.Weather.At(guide.Position, ctx.World.Time).VisibilityM;
+        if (want == 0 ? g.WingM == 0 : g.WingM > 0 && Math.Abs(want - g.WingM) <= 0.25 * g.WingM)
+            return;
+        ctx.Issue(GroupSystem.SetWings(g.GroupId, want));
     }
 
     /// <summary>Whether a group's admiral already holds his superior's order to keep this station on a ship.</summary>
@@ -665,7 +687,8 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
         groups.LineOffsets(g, line);
         double width = 0;
         for (int i = 1; i < line.Count; i++)
-            width = Math.Max(width, Math.Abs(line[i].AbeamM));
+            if (!groups.IsWing(line[i].Ship))   // a lookout keeps herself off the coast
+                width = Math.Max(width, Math.Abs(line[i].AbeamM));
         width = Math.Max(width, a.ClearAbove);
         int to = GuideUnit(g).Id;
         if (a.ClearTo == to && a.ClearM == width)

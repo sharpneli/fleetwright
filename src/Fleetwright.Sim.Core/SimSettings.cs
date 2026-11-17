@@ -2780,6 +2780,11 @@ public sealed record SimSettings
     public double AllocationSpareKn { get; init; } = 1.5;
     public int AllocationScouts { get; init; } = 3;
     public int AllocationPeriodMs { get; init; } = 60_000;
+    /// <summary>A squadron's lookouts on its bows (docs/battle/allocation.md AL4): with nothing scouting ahead of its side's
+    /// main body, its last ships keep 45° off its guide's bow this share of the visibility off her: in sight of her with
+    /// room to spare, each seeing as far again ahead and abeam (by day in clear air, 40 km, 12 km out, 8.5 km ahead and
+    /// abeam of her). [EST], an admiral's judgement: a share.</summary>
+    public double LookoutVisibilityShare { get; init; } = 0.3;
     /// <summary>What a class is reported as by type (<c>ShipTypes</c>), against the world's warships, not an era's
     /// tonnage: from these shares of their tonnage-weighted mean full displacement (Σt² / Σt over every ship placed) a
     /// capital ship, a cruiser, a destroyer; under the last, a small craft. Set so the Jutland's lines fall where the old
