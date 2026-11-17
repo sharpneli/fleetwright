@@ -618,6 +618,30 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.Equal(0, w2.Groups.Get(main2.GroupId)!.Wings);
     }
 
+    /// <summary>The fast wing's choice (docs/battle/allocation.md AL5): a battleship squadron with battlecruisers beside it
+    /// meets the enemy's battlecruisers ahead of his battle line. The battlecruisers are the fast wing (strong, with speed to
+    /// spare), left out of the commander's sending by gravity; the line holds its own against what's held, so the wing goes
+    /// where it does the most for the least: his battlecruisers, like against like.</summary>
+    [Fact]
+    public void A_fast_wing_goes_for_the_enemys_battlecruisers()
+    {
+        var (w, ai) = Make();
+        int bb = Class(w, "dreadnought"), bc = Class(w, "lion"), his = Class(w, "seydlitz");
+        Column(w, ai, bb, Earth.Position(Lat, Lon), 0, 4);
+        var wing = Column(w, ai, bc, Off(90, 8_000), 0, 4);
+        int first = w.Ships.NewestEntity + 1;
+        Column(w, ai, his, Off(0, 26_000), 180, 4, side: 1);
+        Column(w, ai, bb, Off(0, 70_000), 180, 4, side: 1);   // his line, out of sight astern of them
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        Run(w, 8 * 60);
+        var given = ai.Commanders.GivenOf(wing);
+        output.WriteLine($"the commander {ai.Commanders.PhaseOf(0)}; the wing {ai.Roles.Of(wing)}, fast {ai.Roles.IsFastWing(wing)}: given {given}, on {ai.Tasks.Of(wing)}, " +
+                         $"fighting {ai.Admirals.Of(wing.GroupId)}");
+        Assert.True(ai.Roles.IsFastWing(wing));
+        Assert.Contains(given.Why, new[] { CommanderWhy.Flank, CommanderWhy.Wing });
+        Assert.InRange(given.Target, first, first + 3);
+    }
+
     [Fact]
     public void Units_through_with_their_tasks_are_given_their_roles()
     {

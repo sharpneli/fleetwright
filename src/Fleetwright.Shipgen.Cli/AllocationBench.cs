@@ -93,8 +93,35 @@ static class AllocationBench
                     Group(w, ai, start, groups[k], 3);
             for (int slot = 0; slot < store.Slots; slot++)
                 if (store.IsAlive(slot) && store[slot].Side == side && groups.Of(store[slot].Entity) == null)
+                {
                     Line(w, ai, Unit.Ship(store[slot].Entity), 3, start.ShipNames.GetValueOrDefault(store[slot].Entity) ?? $"#{store[slot].Entity}", [slot]);
+                    Wing(w, ai, start, Unit.Ship(store[slot].Entity), 3);
+                }
+            // the enemy as the side sees him (AL5): each group in sight, its strength, whether it's of his line
+            var pic = w.Sightings.Of((byte)side);
+            foreach (var eg in ai.Tactical.Of(w, (byte)side))
+            {
+                var names = new List<string>();
+                foreach (int i in ai.Tactical.Members((byte)side, eg))
+                    names.Add(start.ShipNames.GetValueOrDefault(pic![i].Entity) ?? $"#{pic![i].Entity}");
+                Console.WriteLine(string.Format(Inv, "      sees {0,2} ships str {1,8:#,0}{2}: {3}", eg.Count, eg.StrengthT, eg.Line ? " his line" : "         ",
+                    string.Join(", ", names.Take(6)) + (names.Count > 6 ? ", ..." : "")));
+            }
         }
+    }
+
+    /// <summary>A fast wing's choice (AL5): the ship it's closing or fighting, and why its commander sent it.</summary>
+    static void Wing(World w, AiSystem ai, ScenarioStart start, Unit u, int depth)
+    {
+        if (!ai.Roles.IsFastWing(u))
+            return;
+        var (kind, _, _) = ai.Tasks.Of(u);
+        var (order, target, _) = u.IsGroup ? ai.Admirals.Of(u.GroupId) : ai.Captains.Of(u.Entity);
+        int on = kind == Sim.Ai.Tasks.TaskKind.Intercept ? ai.Tasks.TargetOf(u) : order == Sim.Ai.Captains.CaptainOrder.Fight && target != 0 ? new Unit(target).ShipOf(w.Groups) : 0;
+        var why = ai.Commanders.GivenOf(u).Why;
+        string name = on == 0 ? "nobody" : start.ShipNames.GetValueOrDefault(on) ?? $"#{on}";
+        string unit = on != 0 && w.Groups.UnitOf(on) is { } eu ? $" ({eu.Name})" : "";
+        Console.WriteLine($"{new string(' ', 2 * depth + 2)}fast wing: {kind} {order} on {name}{unit}{(why is CommanderWhy.Line or CommanderWhy.Flank or CommanderWhy.Wing ? $", {why}" : "")}");
     }
 
     static int Side(World w, GroupSystem.Group g) =>
@@ -106,6 +133,7 @@ static class AllocationBench
         var slots = new List<int>();
         Ships(w, g, slots);
         Line(w, ai, Unit.Group(g.GroupId), depth, g.Name + (g.IsForce ? " (force)" : ""), slots);
+        Wing(w, ai, start, Unit.Group(g.GroupId), depth);
         if (g.Wings > 0 && store.SlotOf(g.Guide) is int lead and >= 0)
         {
             // its lookouts (AL4): where each is off the guide now, and where her station is

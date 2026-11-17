@@ -48,8 +48,8 @@ public sealed class ForceMeasures(World world, MatchupJudge judge, Doctrine doct
     sealed class SideRef
     {
         public long Ms = long.MinValue;
-        public readonly MatchupSide Enemy = new(), Main = new(), Attackers = new(), Fast = new();
-        public double EnemyT, AttackersT, FastT, FastStrengthT, BoatT;
+        public readonly MatchupSide Enemy = new(), Main = new(), Attackers = new(), Fast = new(), Fleet = new();
+        public double EnemyT, AttackersT, FastT, FastStrengthT, BoatT, FleetT, LineShipT;
     }
 
     readonly SideRef?[] refs = new SideRef?[256];
@@ -113,6 +113,32 @@ public sealed class ForceMeasures(World world, MatchupJudge judge, Doctrine doct
             return Ref(side).FastStrengthT;
     }
 
+    /// <summary>A set of the enemy's ships as a side holds them (a group of contacts, as they're taken) measured as his
+    /// units are (docs/battle/allocation.md AL5): its strength against the side's fleet, its strength a ship, and whether
+    /// those are ships of his line (<see cref="SimSettings.AllocationLineShare"/> of the strength a ship of his strongest
+    /// unit or more: the rule his own allocation draws his line by), so a group of his destroyers is never his main body
+    /// however many there are.</summary>
+    public (double StrengthT, double ShipStrengthT, bool Line) Enemy(byte side, MatchupSide ships)
+    {
+        lock (gate)
+        {
+            var r = Ref(side);
+            double t = Tonnage(ships);
+            if (t <= 0)
+                return default;
+            double str = Strength(ships, t, r.Fleet, r.FleetT, 0), ship = str / t * ShipT(ships);
+            return (str, ship, ship >= world.Settings.AllocationLineShare * r.LineShipT);
+        }
+    }
+
+    /// <summary>Whether a set of ships fights with its guns against another (<see cref="Matchup.Attackers"/>: its torpedoes
+    /// beat its guns in less than half its tonnage): what makes a line of battle against them (AL5), not its type.</summary>
+    public bool Guns(MatchupSide ships, MatchupSide against)
+    {
+        lock (gate)
+            return AttackerShare(ships, against) < 0.5;
+    }
+
     /// <summary>Which of a set of units are a line (docs/battle/allocation.md "The allocation"): those whose ships are of
     /// <see cref="SimSettings.AllocationLineShare"/> of the strongest ships' strength or more (the strong: each unit by
     /// its strength a ship, <see cref="UnitMeasure.ShipStrengthT"/>, so a fleet's battleships in one force don't make a
@@ -173,6 +199,8 @@ public sealed class ForceMeasures(World world, MatchupJudge judge, Doctrine doct
             r.Enemy.CopyFrom(fleet);
         r.EnemyT = Tonnage(r.Enemy);
         double fleetT = Tonnage(fleet);
+        r.Fleet.CopyFrom(fleet);
+        r.FleetT = fleetT;
         // his line and his scouts: his top units' strength against as much of the side's fleet, and their speed
         r.Main.Clear();
         r.Fast.Clear();
@@ -191,6 +219,9 @@ public sealed class ForceMeasures(World world, MatchupJudge judge, Doctrine doct
             double ot = Tonnage(other), str = Strength(other, ot, fleet, fleetT, Share((byte)SideOf(v)));
             units.Add((str / ot * ShipT(other), Matchup.Slowest(other.Entries), str));
         }
+        r.LineShipT = 0;
+        foreach (var u in units)
+            r.LineShipT = Math.Max(r.LineShipT, u.Ship);
         Span<bool> strong = stackalloc bool[units.Count], inLine = stackalloc bool[units.Count];
         var (lineKn, main) = Line(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(units), strong, inLine, world.Settings);
         for (int i = 0; i < tops.Count; i++)

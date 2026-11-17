@@ -1,3 +1,5 @@
+using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Ai.Tasks;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
@@ -27,6 +29,10 @@ public sealed partial class AdmiralLayer
     internal FlotillaAttacks Attacks { get; set; } = null!;
     internal Commanders.CommanderLayer? Commanders { get; set; }
 
+    /// <summary>Where a fast wing goes in battle (set by the AI system).</summary>
+    internal FastWing? Wings { get; set; }
+
+    readonly MatchupSide wingRest = new(), wingSide = new();
 
     void DisposeStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
@@ -48,6 +54,16 @@ public sealed partial class AdmiralLayer
             return;   // flotillas and screens only: they keep together
 
         var force = Unit.Group(g.GroupId);
+        byte side = ctx.Ships[lead].Side;
+        bool battle = Wings != null && Commanders is { } cm && cm.Commands(Unit.Group(groups.TopOf(g).GroupId), side, ctx.World.PlayerSide) &&
+                      cm.PhaseOf(side).Phase is Sim.Ai.Commanders.CommanderPhase.Contact or Sim.Ai.Commanders.CommanderPhase.Battle;
+        if (battle)
+        {
+            wingRest.Clear();
+            for (int i = 0; i < g.Members.Count; i++)
+                if (Roles.Of(Unit.Group(g.Members[i])) is UnitRole.Heavy or UnitRole.Screen && groups.Get(g.Members[i]) is { } sub)
+                    Judge.AddMembers(ctx.World, sub, wingRest);
+        }
         int scouts = 0;
         for (int i = 0; i < g.Members.Count; i++)
         {
@@ -61,6 +77,8 @@ public sealed partial class AdmiralLayer
             bool live = Tasks.OnTask(u), mine = live && Gave(a, m) == Tasks.StartOf(u);
             if (live && !mine)
                 continue;   // someone else's task: his commander's, or the player's
+            if (battle && attends && role == UnitRole.Scout && Roles.IsFastWing(u) && Wing(ctx, a, m, side))
+                continue;   // his fast wing where it does the most (AL5)
             if (!attends)
             {
                 if (mine)
@@ -75,6 +93,35 @@ public sealed partial class AdmiralLayer
                 continue;   // at it already
             Give(ctx, a, m, Dispositions.Attend(ctx.Orders, role, u, force, scout, OrderSource.Commander));
         }
+    }
+
+    /// <summary>A fast wing of his force (docs/battle/allocation.md AL5, <see cref="FastWing"/>), while his side holds the
+    /// enemy and accepts battle, against the line of his force it fights beside (his members of the line and the screen):
+    /// closing the ship chosen, and fighting her once she's in sight within <see cref="SimSettings.FightCompareM"/>. True
+    /// if it had a choice.</summary>
+    bool Wing(in AiContext ctx, Admiral a, int member, byte side)
+    {
+        var u = Unit.Group(member);
+        if (groups.Get(member) is not { } wg || ctx.Ships.SlotOf(groups.GuideShip(wg)) is not (int slot and >= 0))
+            return false;
+        wingSide.Clear();
+        Judge.AddMembers(ctx.World, wg, wingSide);
+        var (fight, target, _) = Of(member);
+        int on = Tasks!.Of(u) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) ? Tasks.TargetOf(u)
+            : fight == CaptainOrder.Fight && target != 0 ? new Unit(target).ShipOf(groups) : 0;
+        var w = Wings!.Choose(ctx, side, wingSide, wingRest, Wings.GroupOf(ctx, side, on));
+        if (w.Choice == WingChoice.None)
+            return false;
+        if (!(Tasks.Of(u).Kind == TaskKind.Intercept && Tasks.TargetOf(u) == w.Target))
+            Give(ctx, a, member, ctx.Orders.Intercept(u, w.Target, 0, OrderSource.Commander));
+        var pic = ctx.World.Sightings.Of(side)!;
+        if (pic.IndexOf(w.Target) is int ti and >= 0 && pic[ti].InSight &&
+            (pic.EstimateAt(ti, ctx.NowMs, ctx.Settings).Position - ctx.Ships[slot].Position).Length <= ctx.Settings.FightCompareM &&
+            !(fight == CaptainOrder.Fight && new Unit(target).ShipOf(groups) == w.Target))
+            ctx.Issue(ctx.Orders.Fight(u, Unit.Ship(w.Target), 0, OrderSource.Commander));
+        if (w.Choice == WingChoice.Line)
+            Judge.AddMembers(ctx.World, wg, wingRest);
+        return true;
     }
 
     /// <summary>A flotilla of his force sent in to attack (docs/battle/admirals-orders.md O7b), by the rule every commander

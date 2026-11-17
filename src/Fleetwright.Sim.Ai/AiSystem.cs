@@ -86,13 +86,14 @@ public sealed class AiSystem : IWorldSystem
         Roles = new Roles(world, Measures, Doctrine);
         Admirals = new AdmiralLayer(world.Groups, Captains, Seen, Doctrine) { Judge = Judge, Roles = Roles };
         Captains.Admirals = Admirals;
-        Tactical = new TacticalPicture(Seen, Judge.Matchups);
-        Admirals.Tactical = Tactical;
+        Tactical = new TacticalPicture(Seen, Judge.Matchups) { Measures = Measures };
+        (Admirals.Tactical, Admirals.Measures) = (Tactical, Measures);
         Tasks = new TaskLayer(world.Groups, Seen, Homes) { Admirals = Admirals, Captains = Captains, Doctrine = Doctrine, Judge = Judge };
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Book = Aims };
-        (Admirals.Attacks, Admirals.Commanders) = (Attacks, Commanders);
+        var wings = new FastWing(Judge, Held, Measures);
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Wings = wings, Book = Aims };
+        (Admirals.Attacks, Admirals.Commanders, Admirals.Wings) = (Attacks, Commanders, wings);
         (Roles.Tasks, Roles.Commanders, Roles.Book) = (Tasks, Commanders, Aims);
         layers = [Commanders, Tasks, Admirals, Captains];
         nextTick = new long[layers.Length];

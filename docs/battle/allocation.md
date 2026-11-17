@@ -138,7 +138,7 @@ aims' kinds) reads her matchup instead.
 | AL2 | **The jobs by task**, the table above | **done 2026-11-16** (scouts, the scouting force's match, the screen) |
 | AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | **done 2026-11-16**, with the force admirals' members (AL4's pass) |
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | **done 2026-11-17** (the force admirals with AL3) |
-| AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | |
+| AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | **done 2026-11-17** (below) |
 | AL6 | **Regrouping** the worn-down squadrons | |
 | AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
@@ -288,6 +288,56 @@ The Bosporus's lines both put lookouts out (Russia's three-ship squadron one, th
 7 of 16 (10), the Ottomans losing 7.6 to her 0.1; Pungdo's both sides: Japan loses none (0.2), China 2.4 (2.2); the
 Yalu's Japan once the enemy's lost (the search), 0.3 lost to China's 1.8. Port Arthur, Manila, Conrad's war and the
 prizes' war as they were, to the hash. fc-history as it was. The panel 745 s (AL7a's run on a busier machine).
+
+### AL5 At contact (built 2026-11-17)
+
+**The enemy's main body by strength.** Each group of contacts a side sees (`TacticalPicture`) is measured as his units are
+(`ForceMeasures.Enemy`): its strength against the side's fleet, its strength a ship, and whether those are ships of his line
+(`AllocationLineShare` of his strongest unit's strength a ship or more, the rule his own allocation draws his line by,
+his order of battle being known). His main body is the strongest group of his line's ships: never a group of destroyers
+however many, and with only his battlecruisers in sight, they are what he holds of it.
+
+**The line by guns.** A force deploys into its line of battle against his main body when two ships or more are in its
+line and they fight him with their guns (`ForceMeasures.Guns`: less than half its tonnage would rather use its
+torpedoes, `Matchup.Attackers`), not when two of them are capital ships: a cruiser force deploys against cruisers, a
+flotilla never against a battle line.
+
+**The fast wing's choice** (`FastWing`, decision 4). A fast wing is a unit allocated to scout because it's strong with
+speed to spare (`Roles.IsFastWing`). Once the enemy's held and its commander accepts battle (Contact or Battle), it isn't
+sent by gravity with the rest (`Assign`); its commander (the side's for his top units, a force's admiral for his
+members, `DisposeStep`) chooses where it goes, the strongest wing first:
+
+- **The line:** if the rest (the line and the screen, and wings sent to the line before it) is outmatched by his main
+  body without it (doctrine's bar), it goes for his main body's van.
+- **Else the most for the least:** each group he holds that the wing alone isn't hopeless against (doctrine's bar) is
+  worth what the wing puts out of it (the matchup's share of it lost) times what the group is worth: its strength
+  against the side's fleet, or for a group whose torpedoes are its weapon against the line, what its attack would take
+  of the line, if that's more (his flotillas broken up before they reach the line). His main body taken is its van,
+  flanked; another group its biggest ship. Kept unless another is worth `CommanderRetargetShare` times as much.
+- Nothing repays it: it keeps scouting off its main body's bow, clear of the fight.
+
+The wing closes the ship chosen (an intercept, its scouting over) and fights her once she's in sight within
+`FightCompareM` (a Fight on her: the course its fight keeps is on her; its guns still go where they do the most). Not
+built from the list under "At contact": the screen's worth as the opening it makes for our attack, beside our own attack,
+across his way home (an aim's Stop), his cripples once he breaks off (only as a group that's worth the most for the least).
+
+**The bench** (`shipgen allocation`, `allocation/al5/bench.txt`) lists each side's groups of contacts with their strength
+and the ships counted his line, and under each fast wing its task, its order and on whom. The battle fleets: Britain's
+1st BCS flanks the I Scouting Group's van (Lützow), Hipper's ships the only line held; Germany's I Scouting Group, inside
+the High Seas Fleet's force, finds nothing it isn't hopeless against (the British battleships) and keeps scouting.
+Destroyers alone: Britain's wing goes to the line, on V45, its own flotilla outmatched without it. The Yalu has no fast
+wing: both Japan's squadrons are her line (AL3), and a fast main body splitting off from a slower consort to fight as a
+wing isn't built. `CommanderTests.A_fast_wing_goes_for_the_enemys_battlecruisers`: four Lions beside four dreadnoughts against four
+Seydlitzes ahead of four dreadnoughts; the Lions intercept the Seydlitzes' van and fight her.
+
+**What it moved** (`docs/battle/allocation/al5/`: the panel at 8 seeds, the early wave at 16, beside AL4's): 7 of 14
+sides within about twice the record (7), the record's loser lost more in 28 of 44 (27). Tsushima's Russia 7.9 of 13 lost
+against the record's 7 (5.8), her loser losing more in 7 of 8 (4); the Jutland's Britain 14.3 against 14 (20.5), Germany
+39.5 (38.8); Heligoland's Germany 5.0 against 4 (2.8), its heavy guns now at 4.7 km, in the record's 4-8 (3.8, CLOSE);
+Dogger Bank's Germany 6.0 (7.6), still high against Blücher alone. Åland's Sweden loses 4.0 of 8 (3.3), Finland 5.6 of 13
+(5.9); the Yalu fights a little more (Japan 0.7, China 1.9; 0.3 and 1.8), Manila's United States 1.4 (1.0), Conrad's war
+Italy 2.3 (3.3); Pungdo, Port Arthur, the Bosporus (Russia lands 8 of 16) and the prizes' war as they were, within their
+seeds. fc-history as it was. The panel 1306 s, on a machine running the test suite beside it for part of the time.
 
 ### AL7a A ship not made out is one not yet accounted for (built 2026-11-17)
 

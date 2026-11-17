@@ -7,7 +7,7 @@ namespace Fleetwright.Sim.Ai.Admirals;
 
 /// <summary>A force's deployment (docs/battle/command.md 5.1c): a force in a cruising order (its squadrons in columns
 /// side by side, or any line that isn't one line ahead) with doctrine's Deploy, whose guide comes within
-/// <see cref="SimSettings.DeployM"/> of the enemy's main body (the tactical picture's strongest group with a capital ship),
+/// <see cref="SimSettings.DeployM"/> of the enemy's main body (the tactical picture's strongest group of his line's ships),
 /// forms one line of battle: the wing column furthest along the course it deploys on leads (the force taken in the reverse order when
 /// that's its far wing), the force in line ahead, its squadrons as far apart as their own ships, the rest following it
 /// in succession; the leading column steers across the enemy's course, ahead of him (of the two ways, the nearer its
@@ -19,6 +19,11 @@ public sealed partial class AdmiralLayer
 {
     /// <summary>The enemy as the admirals see him: groups and their strength (set by the AI system).</summary>
     internal TacticalPicture? Tactical { get; set; }
+
+    /// <summary>What his units bring (set by the AI system): whether a line fights with its guns.</summary>
+    internal ForceMeasures? Measures { get; set; }
+
+    readonly MatchupSide lineSide = new(), mainSide = new();
 
     /// <summary>Whether a force is deploying into its line of battle.</summary>
     public bool Deploying(int groupId) => Find(groupId) is int i and >= 0 && admirals[i].DeployMs != 0;
@@ -46,7 +51,7 @@ public sealed partial class AdmiralLayer
                 a.Deployed = false;
             return false;
         }
-        if (!near || OneLine(g) || !BattleForce(ctx, g))
+        if (!near || OneLine(g) || !BattleForce(ctx, g, guide.Side, main))
             return false;
         int first = groups.Get(g.Line[0]) is { } f0 ? groups.GuideShip(f0) : 0, last = groups.Get(g.Line[^1]) is { } fl ? groups.GuideShip(fl) : 0;
         if (ctx.Ships.SlotOf(first) < 0 || ctx.Ships.SlotOf(last) < 0)
@@ -165,18 +170,28 @@ public sealed partial class AdmiralLayer
         return groups.StationOfGroup(g, i);
     }
 
-    /// <summary>Whether a force is a battle force that deploys: two capital ships or more in its line, and not on a task
-    /// that keeps it apart (scouting, screening, shadowing, searching, withdrawing). Cruiser and flotilla forces don't.</summary>
-    bool BattleForce(in AiContext ctx, GroupSystem.Group g)
+    /// <summary>Whether a force forms a line of battle against the enemy's main body (docs/battle/allocation.md AL5): two
+    /// ships or more in its line, fighting him with their guns (<see cref="ForceMeasures.Guns"/>: a flotilla's torpedoes
+    /// are its better weapon against a battle line, a cruiser squadron's guns against cruisers), and not on a task that keeps
+    /// it apart (scouting, screening, shadowing, searching, withdrawing). Never by its ships' type.</summary>
+    bool BattleForce(in AiContext ctx, GroupSystem.Group g, byte side, in EnemyGroup main)
     {
         if (Tasks?.Of(Unit.Group(g.GroupId)) is { Kind: Ai.Tasks.TaskKind.Scout or Ai.Tasks.TaskKind.Screen or Ai.Tasks.TaskKind.Shadow or Ai.Tasks.TaskKind.Search or Ai.Tasks.TaskKind.Withdraw })
             return false;
         groups.LineOffsets(g, line);
-        int capitals = 0;
+        lineSide.Clear();
+        int ships = 0;
         foreach (var (ship, _, _) in line)
-            if (ctx.Ships.SlotOf(ship) is int slot and >= 0 && ctx.World.Types.Of(ctx.Ships[slot].Handling.Class) == ShipType.Capital)
-                capitals++;
-        return capitals >= 2;
+            if (ctx.Ships.SlotOf(ship) is int slot and >= 0)
+            {
+                lineSide.AddOwn(ctx.World, Judge.Matchups, slot);
+                ships++;
+            }
+        if (ships < 2 || Measures == null || Tactical == null)
+            return ships >= 2;
+        mainSide.Clear();
+        Tactical.AddTo(ctx.World, side, main, mainSide);
+        return lineSide.Count > 0 && mainSide.Count > 0 && Measures.Guns(lineSide, mainSide);
     }
 
     /// <summary>Whether a force is one line ahead already: in column, and every group of it too.</summary>

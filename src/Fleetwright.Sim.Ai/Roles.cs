@@ -52,6 +52,7 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
     readonly List<(int Unit, UnitRole Role)> made = new(64);   // the allocation in the order made: what's hashed
     readonly HashSet<int> mains = [];
     readonly HashSet<int> lookouts = [];   // squadrons (group ids) whose own ships are their side's lookouts (AL4)
+    readonly HashSet<int> fastWing = [];   // the strong units with speed to spare: the fast wing in battle (AL5)
     long nextMs = long.MinValue;
     long shape = long.MinValue;   // the units as they were at the last allocation
     bool provisional;             // allocated outside a think (a test, the map before the first): the first think does it again
@@ -107,6 +108,18 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
         return lookouts.Contains(groupId);
     }
 
+    /// <summary>Whether a unit is its admiral's fast wing (docs/battle/allocation.md AL5): strong, with speed to spare over
+    /// his line (allocated to scout ahead, always), so in battle its admiral chooses where it fights
+    /// (<see cref="FastWing"/>). A role the player set holds: then it's the fast wing only as a scout.</summary>
+    public bool IsFastWing(Unit u)
+    {
+        Provisional();
+        return fastWing.Contains(u.Id) && Of(u) == UnitRole.Scout;
+    }
+
+    /// <summary>A unit's strength (<see cref="UnitMeasure.StrengthT"/>), as its allocation measures it.</summary>
+    public double Strength(Unit u) => measures.Of(u).StrengthT;
+
     /// <summary>Nothing thought yet (a test, the map's first frame): allocated for now, and again at the first think.</summary>
     void Provisional()
     {
@@ -155,6 +168,7 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
         made.Clear();
         mains.Clear();
         lookouts.Clear();
+        fastWing.Clear();
         Span<int> mainOf = stackalloc int[256];
         // each side's top units, by its commander's task
         Span<bool> sides = stackalloc bool[256];
@@ -282,6 +296,7 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
             {
                 job[i] = UnitRole.Scout;
                 scoutsT += m[i].StrengthT;
+                fastWing.Add(units[i].Id);
             }
         bool enemyScouts = false;
         for (int i = 0; i < n; i++)

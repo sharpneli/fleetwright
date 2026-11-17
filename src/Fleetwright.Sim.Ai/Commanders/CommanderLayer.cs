@@ -115,6 +115,16 @@ public enum CommanderWhy : byte
 
     /// <summary>Home: every aim of his side decided.</summary>
     AimsDecided,
+
+    /// <summary>The fast wing to his line (docs/battle/allocation.md AL5): the line outmatched by the enemy's main body
+    /// without it; it goes for his van.</summary>
+    Line,
+
+    /// <summary>The fast wing on the enemy main body's van, flanking it rather than joining the line.</summary>
+    Flank,
+
+    /// <summary>The fast wing on another enemy group, where it does the most for the least.</summary>
+    Wing,
 }
 
 /// <summary>The side's commander (docs/battle/command.md 5.1d), the layer above the tasks: one per side, the C-in-C on
@@ -197,6 +207,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     internal Roles Roles { get; set; } = null!;
     internal CaptainLayer? Captains { get; set; }
     internal FlotillaAttacks Attacks { get; set; } = null!;
+    internal FastWing Wings { get; set; } = null!;
     internal AimBook Book { get; set; } = new();
 
     public bool Active
@@ -419,6 +430,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && hunt is not { Way: true } && Commands(tops[main].Unit, side, player) &&
             Search(ctx, s, tops[main]) && hunt == null)
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
+        ChooseWings(ctx, s, side, player);
 
         for (int i = 0; i < tops.Count; i++)
         {
@@ -446,6 +458,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             }
             if (s.Phase == CommanderPhase.Night && ByNight(ctx, t))
                 continue;
+            if (wingOf[i].Choice != WingChoice.None)
+            {
+                Wing(ctx, t, wingOf[i]);
+                continue;
+            }
             if (t.Group >= 0)
             {
                 // sent after an enemy group: close its biggest ship, unless it's in a fight already (doctrine's) or closing
@@ -522,6 +539,82 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         Attacks.Sent(t.Unit, why);
         return true;
     }
+
+    /// <summary>His fast wings' choices (docs/battle/allocation.md AL5, <see cref="FastWing"/>), while he holds the enemy
+    /// and accepts battle: each of his fast wings he commands, the strongest first, against the line it fights beside (his
+    /// units of the line and the screen, and the wings sent to it before it).</summary>
+    void ChooseWings(in AiContext ctx, SideState s, byte side, int player)
+    {
+        wingOf.Clear();
+        for (int i = 0; i < tops.Count; i++)
+            wingOf.Add((WingChoice.None, -1, 0));
+        if (s.Phase is not (CommanderPhase.Contact or CommanderPhase.Battle))
+            return;
+        wingOrder.Clear();
+        rest.Clear();
+        for (int i = 0; i < tops.Count; i++)
+        {
+            var t = tops[i];
+            if (t.Side != side || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla)
+                continue;
+            if (Roles.IsFastWing(t.Unit))
+            {
+                if (t.Reaching == 0 && Commands(t.Unit, side, player) && Tasks!.Of(t.Unit) is not (TaskKind.Attack, TaskState.OnTask or TaskState.Engaged, _))
+                    wingOrder.Add(i);
+            }
+            else if (t.Role is UnitRole.MainBody or UnitRole.Heavy or UnitRole.Screen)
+                AddTop(ctx, t, rest);
+        }
+        for (int a = 1; a < wingOrder.Count; a++)   // the strongest first, ties in their order (a handful: insertion)
+        {
+            int x = wingOrder[a], b = a;
+            for (; b > 0 && Roles.Strength(tops[wingOrder[b - 1]].Unit) < Roles.Strength(tops[x].Unit); b--)
+                wingOrder[b] = wingOrder[b - 1];
+            wingOrder[b] = x;
+        }
+        foreach (int i in wingOrder)
+        {
+            one.Clear();
+            AddTop(ctx, tops[i], one);
+            int current = Wings.GroupOf(ctx, side, WingTarget(tops[i].Unit));
+            var w = Wings.Choose(ctx, side, one, rest, current);
+            wingOf[i] = w;
+            if (w.Choice == WingChoice.Line)
+                AddTop(ctx, tops[i], rest);
+        }
+    }
+
+    /// <summary>A fast wing on its choice: closing the ship chosen (an intercept, its scouting over), and once it's in
+    /// sight within <see cref="SimSettings.FightCompareM"/>, fighting her (the course its fight keeps is on her; its guns
+    /// still go where they do the most).</summary>
+    void Wing(in AiContext ctx, in Top t, (WingChoice Choice, int Group, int Target) w)
+    {
+        var why = w.Choice switch { WingChoice.Line => CommanderWhy.Line, WingChoice.Flank => CommanderWhy.Flank, _ => CommanderWhy.Wing };
+        if (!(Tasks!.Of(t.Unit).Kind == TaskKind.Intercept && Tasks.TargetOf(t.Unit) == w.Target))
+            Give(ctx, t, ctx.Orders.Intercept(t.Unit, w.Target, 0, OrderSource.Commander), why);
+        else if (GivenOf(t.Unit).Why != why && Find(t.Unit.Id) is int r and >= 0)
+            recs[r].Why = why;
+        var pic = ctx.World.Sightings.Of(t.Side)!;
+        if (pic.IndexOf(w.Target) is int ti and >= 0 && pic[ti].InSight &&
+            (pic.EstimateAt(ti, ctx.NowMs, ctx.Settings).Position - store[t.Slot].Position).Length <= ctx.Settings.FightCompareM &&
+            FightingOn(t.Unit) != w.Target)
+            ctx.Issue(ctx.Orders.Fight(t.Unit, Unit.Ship(w.Target), 0, OrderSource.Commander));
+    }
+
+    /// <summary>The ship a unit's fight is on (0: none, or fighting whoever's there).</summary>
+    int FightingOn(Unit u)
+    {
+        var (order, target, _) = u.IsGroup ? Tasks!.Admirals!.Of(u.GroupId) : Captains!.Of(u.Entity);
+        return order == CaptainOrder.Fight && target != 0 ? new Unit(target).ShipOf(groups) : 0;
+    }
+
+    /// <summary>The ship a fast wing is on now: the one it's closing, else the one its fight's on.</summary>
+    int WingTarget(Unit u) =>
+        Tasks!.Of(u) is (TaskKind.Intercept, TaskState.OnTask or TaskState.Engaged or TaskState.InContact, _) ? Tasks.TargetOf(u) : FightingOn(u);
+
+    readonly List<(WingChoice Choice, int Group, int Target)> wingOf = new(32);
+    readonly List<int> wingOrder = new(8);
+    readonly MatchupSide rest = new();
 
     static bool Bigger(in Top a, in Top b) =>
         Attending(a.Role) != Attending(b.Role) ? Attending(b.Role)
@@ -683,8 +776,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             {
                 var t = tops[i];
                 if (t.Side != side || t.Group >= 0 || t.Role is UnitRole.None or UnitRole.Auxiliary or UnitRole.Flotilla or UnitRole.Screen ||
-                    t.Reaching > 0 || !Commands(t.Unit, side, player))
-                    continue;
+                    t.Reaching > 0 || !Commands(t.Unit, side, player) || Roles.IsFastWing(t.Unit))
+                    continue;   // a fast wing chooses where it fights on its own (FastWing)
                 int on = closingGroup[i];
                 if (on == k)
                 {

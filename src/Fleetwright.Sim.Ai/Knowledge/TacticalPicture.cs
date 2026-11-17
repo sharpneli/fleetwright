@@ -17,11 +17,19 @@ public struct EnemyGroup
     /// <summary>Its van: the ship furthest along its course (the nearest the centre, stopped), and where it is.</summary>
     public int Van;
     public Vec3d VanPosition;
+
+    /// <summary>Its strength against the side's fleet, and whether its ships are of his line (<see cref="ForceMeasures.Enemy"/>,
+    /// docs/battle/allocation.md AL5); the strongest of those is his main body.</summary>
+    public double StrengthT;
+    public bool Line;
+
+    /// <summary>Its contacts: a run of the picture's indices (<see cref="TacticalPicture.Members"/>).</summary>
+    public int First;
 }
 
 /// <summary>What an admiral sees of the enemy (docs/battle/command.md "The tactical picture"): his navy's contacts in sight
 /// chained into groups, each within <see cref="SimSettings.TacticalGapM"/> of the next whatever its type (a battle line
-/// with its screen is one group), with their centre, course, tonnage, capital ships and van. Built for a side the first
+/// with its screen is one group), with their centre, course, tonnage, capital ships, van and strength. Built for a side the first
 /// time it's asked at a moment, through the contacts' grid (each contact's neighbours, never pairs); not world state.
 /// Nothing allocated once grown.</summary>
 public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
@@ -31,13 +39,20 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
         public long BuiltMs = long.MinValue;
         public Picture? Picture;
         public int Version;
-        public int[] Parent = [], Slot = [];
+        public int[] Parent = [], Slot = [], Members = [];
         public EnemyGroup[] Groups = [];
         public int Count;
         public double[] VanKey = [];
     }
 
     readonly Side?[] sides = new Side?[256];
+    readonly MatchupSide scratch = new();
+
+    /// <summary>What measures a group's strength (set by the AI system; without it, the old rule: a capital ship and tonnage).</summary>
+    internal ForceMeasures? Measures { get; set; }
+
+    /// <summary>A group's contacts, by their index in the side's picture.</summary>
+    public ReadOnlySpan<int> Members(byte side, in EnemyGroup g) => sides[side]!.Members.AsSpan(g.First, g.Count);
 
     /// <summary>The enemy groups a side sees now.</summary>
     public ReadOnlySpan<EnemyGroup> Of(World world, byte side)
@@ -46,16 +61,24 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
         return v == null ? [] : v.Groups.AsSpan(0, v.Count);
     }
 
-    /// <summary>The enemy's main body near a point: the biggest group (by tonnage) with a capital ship whose van or centre
-    /// is within a radius; false if there's none.</summary>
+    /// <summary>The enemy's main body near a point (docs/battle/allocation.md AL5): the strongest group of his line's ships
+    /// (<see cref="EnemyGroup.Line"/>) whose van or centre is within a radius; false if there's none.</summary>
     public bool MainBody(World world, byte side, Vec3d near, double radiusM, out EnemyGroup main)
     {
         main = default;
         bool any = false;
         foreach (ref readonly var g in Of(world, side))
-            if (g.Capitals > 0 && (Math.Min((g.Centre - near).Length, (g.VanPosition - near).Length) <= radiusM) && (!any || g.TonnageT > main.TonnageT))
+            if (g.Line && (Math.Min((g.Centre - near).Length, (g.VanPosition - near).Length) <= radiusM) && (!any || g.StrengthT > main.StrengthT))
                 (main, any) = (g, true);
         return any;
+    }
+
+    /// <summary>A group's contacts into a side of a matchup, as they're taken.</summary>
+    public void AddTo(World world, byte side, in EnemyGroup g, MatchupSide into)
+    {
+        var pic = world.Sightings.Of(side)!;
+        foreach (int i in Members(side, g))
+            into.AddContact(world, matchups, side, pic[i]);
     }
 
     Side? Build(World world, byte side)
@@ -109,11 +132,35 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
             if (pic[i].Type == ShipType.Capital)
                 g.Capitals++;
         }
-        for (int k = 0; k < v.Count; k++)
+        for (int k = 0, at = 0; k < v.Count; k++)
         {
             ref var g = ref v.Groups[k];
             g.Centre = g.Centre.Normalized() * Earth.Radius;
             g.Velocity *= 1.0 / g.Count;
+            (g.First, at) = (at, at + g.Count);
+        }
+        // each group's contacts in a run, and its strength
+        if (v.Members.Length < n)
+            v.Members = new int[v.Parent.Length];
+        Span<int> fill = v.Count <= 256 ? stackalloc int[v.Count] : new int[v.Count];
+        for (int i = 0; i < n; i++)
+            if (InSight(pic, i))
+            {
+                int k = v.Slot[Find(v.Parent, i)];
+                v.Members[v.Groups[k].First + fill[k]++] = i;
+            }
+        for (int k = 0; k < v.Count; k++)
+        {
+            ref var g = ref v.Groups[k];
+            if (Measures == null)
+            {
+                (g.StrengthT, g.Line) = (g.TonnageT, g.Capitals > 0);
+                continue;
+            }
+            scratch.Clear();
+            foreach (int i in v.Members.AsSpan(g.First, g.Count))
+                scratch.AddContact(world, matchups, side, pic[i]);
+            (g.StrengthT, _, g.Line) = scratch.Count > 0 ? Measures.Enemy(side, scratch) : default;
         }
         // each group's van
         if (v.VanKey.Length < v.Count)
