@@ -643,6 +643,29 @@ public class CommanderTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void A_worn_flotilla_regroups_into_a_like_one_in_sight()
+    {
+        var (w, ai) = Make();
+        int dd = Class(w, "m_class"), lc = Class(w, "light_cruiser");
+        int first = w.Ships.NewestEntity + 1;
+        var worn = Column(w, ai, dd, Earth.Position(Lat, Lon), 0, 4);
+        var whole = Column(w, ai, dd, Off(90, 3_000), 0, 4);
+        var cruisers = Column(w, ai, lc, Off(270, 3_000), 0, 2);
+        w.Apply(ai.Orders.Commander(0, CommanderMode.On));
+        Run(w, 2 * 60);
+        Assert.Equal(0, ai.Regroup.Count);   // nothing lost, nothing regrouped
+        w.Apply(DamageSystem.Sink(first + 2, Fleetwright.Sim.Combat.LossKind.Foundered));
+        w.Apply(DamageSystem.Sink(first + 3, Fleetwright.Sim.Combat.LossKind.Foundered));
+        Run(w, 4 * 60);
+        output.WriteLine($"merges {ai.Regroup.Count}: " + string.Join(", ", Enumerable.Range(0, ai.Regroup.Count).Select(i => ai.Regroup[i])));
+        Assert.Null(w.Groups.Get(worn.GroupId));
+        Assert.Equal(6, w.Groups.Get(whole.GroupId)!.Members.Count);
+        Assert.Equal(new[] { first, first + 1 }, w.Groups.Get(whole.GroupId)!.Members.Skip(4));
+        Assert.Equal(2, w.Groups.Get(cruisers.GroupId)!.Members.Count);   // not alike: not into the cruisers
+        Assert.Equal(1, ai.Regroup.Count);
+    }
+
+    [Fact]
     public void Units_through_with_their_tasks_are_given_their_roles()
     {
         var (w, ai) = Make();

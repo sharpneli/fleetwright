@@ -859,6 +859,7 @@ static class ScenarioPlay
                 },
                 PlayEvent.Rearguard => $"{SideName(l.Side)}'s {Name(l.Entity)} stays behind as the rearguard",
                 PlayEvent.Deployed => $"{SideName(l.Side)}'s {end.GroupName(l.Entity)} deploys into line of battle",
+                PlayEvent.Regrouped => $"{SideName(l.Side)}'s {end.GroupName(l.Entity)} ({l.Count} {(l.Count == 1 ? "ship" : "ships")}) regroups into {end.GroupName(l.Other)}",
                 PlayEvent.Task => $"{SideName(l.Side)}'s {(l.Entity < 0 ? end.GroupName(-l.Entity) : Name(l.Entity))}: " +
                                   $"{((Fleetwright.Sim.Ai.Tasks.TaskKind)(l.Other / 256)).ToString().ToLowerInvariant()} " +
                                   (Fleetwright.Sim.Ai.Tasks.TaskState)l.Count switch
@@ -972,7 +973,8 @@ static class ScenarioPlay
             var lost = runs.Select(r => r.Result[side].Lost).ToList();
             var tonnes = runs.Select(r => r.Result[side].LostTonnes).ToList();
             Console.WriteLine($"  {s.Sides[side],-12} lost {lost.Average():F1} of {runs[0].Result[side].Ships} ships (from {lost.Min()} to {lost.Max()}), " +
-                              $"{tonnes.Average():0} t; made {runs.Average(r => r.Result[side].Hits):F0} hits, fired {runs.Average(r => r.Result[side].Torpedoes):F1} torpedoes; aims met {runs.Count(r => r.Result[side].AimsMet)} times, score {runs.Average(r => r.Result[side].Score):0.00}");
+                              $"{tonnes.Average():0} t; made {runs.Average(r => r.Result[side].Hits):F0} hits, fired {runs.Average(r => r.Result[side].Torpedoes):F1} torpedoes; aims met {runs.Count(r => r.Result[side].AimsMet)} times, score {runs.Average(r => r.Result[side].Score):0.00}" +
+                              (runs.Sum(r => r.End.Timeline.Count(l => l.Kind == PlayEvent.Regrouped && l.Side == side)) is int rg and > 0 ? $"; regrouped {(double)rg / runs.Count:F1} squadrons" : ""));
         }
     }
 

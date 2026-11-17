@@ -1036,6 +1036,7 @@
   "AllocationScouts": 3,
   "AllocationPeriodMs": 60000,
   "LookoutVisibilityShare": 0.3,
+  "RegroupShare": 0.5,
   "TypeCapitalShare": 0.5,
   "TypeCruiserShare": 0.1,
   "TypeDestroyerShare": 0.016,

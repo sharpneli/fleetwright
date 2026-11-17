@@ -139,7 +139,7 @@ aims' kinds) reads her matchup instead.
 | AL3 | **The commander's allocation** of his top units: replaces `Roles.Derived` and the main body by capital tonnage; set roles held | **done 2026-11-16**, with the force admirals' members (AL4's pass) |
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | **done 2026-11-17** (the force admirals with AL3) |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | **done 2026-11-17** (below) |
-| AL6 | **Regrouping** the worn-down squadrons | |
+| AL6 | **Regrouping** the worn-down squadrons | **done 2026-11-17** (below) |
 | AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
 
@@ -338,6 +338,37 @@ Dogger Bank's Germany 6.0 (7.6), still high against Blücher alone. Åland's Swe
 (5.9); the Yalu fights a little more (Japan 0.7, China 1.9; 0.3 and 1.8), Manila's United States 1.4 (1.0), Conrad's war
 Italy 2.3 (3.3); Pungdo, Port Arthur, the Bosporus (Russia lands 8 of 16) and the prizes' war as they were, within their
 seeds. fc-history as it was. The panel 1306 s, on a machine running the test suite beside it for part of the time.
+
+### AL6 Regrouping (built 2026-11-17)
+
+**A worn squadron** is one down to `RegroupShare` (a half) of the most ships it has had (`Regrouping`: two of four, three
+of six, one of two; a squadron of one is a lone ship from the start, never worn). Ships leave a squadron sunk, given up,
+fallen out (home, by their captain's call) or staying behind as a rearguard; nothing else the AI does leaves a ship
+alone, so a squadron's remnant is its straggler, and "stragglers of a squadron gone" need no rule of their own.
+
+**Its admiral merges it** into the nearest squadron of his on the same job (`Roles.Of`) in sight of it (within the
+visibility at its guide) whose ships are alike: speeds within `AllocationSpareKn`, strength a ship within
+`AllocationLineShare` of each other, the rules the allocation draws its line by, so a remnant of battlecruisers never
+goes into a light cruiser squadron of a speed, nor a slow one slows a fast one. Its ships go to the end of that one's line
+in their order (`GroupSystem.Add`), and it's gone; the allocation thinks the units over as they change. The fewest first,
+each squadron once a pass. The side's commander does it for his top units (at his think, not those reaching for a zone
+nor those in on an attack), each force's admiral for his members (at his disposition, not the player's, those on
+someone else's task, nor those in on the attack he sent them on), and only while the side's commander has the unit: a
+player's own units the player organises. Each merge is told on `scenario --play`'s timeline ("regroups into"), and the
+spread over seeds counts them.
+
+Not built: a worn top unit into a squadron inside a force (each admiral regroups his own), nor two worn squadrons of
+unlike ships into one; a worn squadron with no like one in sight stays as it is.
+
+**What it moved** (`allocation/al6/`, against `al5/`): little, and rightly so. Merges are rare: in the early wave at
+most 0.6 a side a seed (the Conrad 0.6 and 0.5, the Bosporus's Ottomans 0.4, Åland's Finns 0.2, the Yalu 0.1 each,
+Manila's Americans 0.1); Pungdo, Port Arthur and the prizes' war have none and play out to the hash. Most worn remnants
+have no like squadron in sight (Tsushima's Japanese destroyer division: its fellow 36 km off in 13 km of visibility), or
+their role has moved from their fellows' (a flotilla's last boat a screen). One Jutland seed merged twice (VII Flotilla's
+last boat into V Flotilla at 20:31, the 2nd Cruiser Squadron's last into the 1st at 00:06). The panel: 7 of 14 sides
+within 2x (7), the record's loser lost more in 28 of 44 (28); the Dover Strait, Coronel, the prizes' war and Heligoland
+to the hash; Tsushima 7.4 v 5.6 (7.9 v 5.5), Jutland 12.3 v 40.3 (14.3 v 39.5), Dogger 1.9 v 6.5 (1.8 v 6.0), Cape
+Sarych's Russia 2.5 (1.6), Åland's Sweden 3.5 (3.9): within their seeds' spread.
 
 ### AL7a A ship not made out is one not yet accounted for (built 2026-11-17)
 

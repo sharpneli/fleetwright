@@ -32,7 +32,11 @@ public sealed partial class AdmiralLayer
     /// <summary>Where a fast wing goes in battle (set by the AI system).</summary>
     internal FastWing? Wings { get; set; }
 
+    /// <summary>Worn squadrons merged (set by the AI system).</summary>
+    internal Regrouping? Regrouper { get; set; }
+
     readonly MatchupSide wingRest = new(), wingSide = new();
+    readonly List<int> regroupable = new(8);
 
     void DisposeStep(in AiContext ctx, GroupSystem.Group g, Admiral a, int lead)
     {
@@ -40,6 +44,7 @@ public sealed partial class AdmiralLayer
             doctrine.OfGroup(g, ctx.Ships[lead].Side, DoctrineField.Dispose) == 0)
             return;
         a.DisposedMs = ctx.NowMs;
+        RegroupStep(ctx, g, a, ctx.Ships[lead].Side);
 
         // the main body's role: the battle line if he has one, else his scouts
         var body = UnitRole.None;
@@ -93,6 +98,28 @@ public sealed partial class AdmiralLayer
                 continue;   // at it already
             Give(ctx, a, m, Dispositions.Attend(ctx.Orders, role, u, force, scout, OrderSource.Commander));
         }
+    }
+
+    /// <summary>His worn squadrons merged into like ones in sight (docs/battle/allocation.md AL6, <see cref="Regrouping"/>),
+    /// while the side's commander has his force (the player's own forces the player organises): his members that are
+    /// squadrons, but the player's, those on someone else's task and those in on the attack he sent them on.</summary>
+    void RegroupStep(in AiContext ctx, GroupSystem.Group g, Admiral a, byte side)
+    {
+        if (Regrouper == null || Commanders is not { } c || !c.Commands(Unit.Group(groups.TopOf(g).GroupId), side, ctx.World.PlayerSide))
+            return;
+        regroupable.Clear();
+        for (int i = 0; i < g.Members.Count; i++)
+        {
+            int m = g.Members[i];
+            var u = Unit.Group(m);
+            if (groups.Get(m) is not { IsForce: false } || Find(m) is int mi and >= 0 && admirals[mi].Whose == Whose.Player)
+                continue;
+            bool live = Tasks!.OnTask(u), mine = live && Gave(a, m) == Tasks.StartOf(u);
+            if (live && !mine || mine && Tasks.Of(u) is (TaskKind.Attack, TaskState.OnTask or TaskState.Engaged, _))
+                continue;
+            regroupable.Add(m);
+        }
+        Regrouper.Pass(ctx, side, regroupable);
     }
 
     /// <summary>A fast wing of his force (docs/battle/allocation.md AL5, <see cref="FastWing"/>), while his side holds the

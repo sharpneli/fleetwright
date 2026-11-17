@@ -76,6 +76,10 @@ public enum PlayEvent : byte
     /// <summary>A ship's captain stays behind as her running force's rearguard (docs/battle/balance.md BL5; Entity the
     /// ship).</summary>
     Rearguard,
+
+    /// <summary>A worn squadron merged into a like one (docs/battle/allocation.md AL6; Entity the squadron gone, Other the
+    /// one it went into, both group ids, Count how many ships went).</summary>
+    Regrouped,
 }
 
 /// <summary>A line of the timeline: when, what, whose side, and the ships it's about.</summary>
@@ -117,6 +121,7 @@ public sealed class ScenarioEnd
     readonly Dictionary<int, byte> taskStates = [];   // the state each unit's task was last told in
     readonly Dictionary<int, long> ordersTold = [];   // when each unit's last commander's order was given, as told
     readonly int[] phases = new int[256];             // each side's commander's phase and reason as last told
+    int regroupsTold;                                 // the merges told
     readonly Dictionary<int, (string Name, int Side)> groupsTold = [];
 
     /// <summary>A group's name as it was when the timeline told of it.</summary>
@@ -370,6 +375,13 @@ public sealed class ScenarioEnd
                 phases[side] = key;
                 lines.Add(new PlayLine(now, PlayEvent.Phase, side, Other: (int)reason, Count: (int)phase));
             }
+        }
+        for (; regroupsTold < ai.Regroup.Count; regroupsTold++)
+        {
+            var r = ai.Regroup[regroupsTold];
+            groupsTold[r.From] = (r.FromName, r.Side);
+            groupsTold[r.Into] = (r.IntoName, r.Side);
+            lines.Add(new PlayLine(r.Ms, PlayEvent.Regrouped, r.Side, r.From, r.Into, r.Ships));
         }
         for (int i = 0; i < cmd.Count; i++)
         {

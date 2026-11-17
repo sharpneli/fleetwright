@@ -2785,6 +2785,10 @@ public sealed record SimSettings
     /// room to spare, each seeing as far again ahead and abeam (by day in clear air, 40 km, 12 km out, 8.5 km ahead and
     /// abeam of her). [EST], an admiral's judgement: a share.</summary>
     public double LookoutVisibilityShare { get; init; } = 0.3;
+    /// <summary>A worn squadron (docs/battle/allocation.md AL6): down to this share of the most ships it has had, its admiral
+    /// merges it into a like squadron of his on the same job in sight of it (two of four, three of six; one of two).
+    /// [EST], an admiral's judgement: a share.</summary>
+    public double RegroupShare { get; init; } = 0.5;
     /// <summary>What a class is reported as by type (<c>ShipTypes</c>), against the world's warships, not an era's
     /// tonnage: from these shares of their tonnage-weighted mean full displacement (Σt² / Σt over every ship placed) a
     /// capital ship, a cruiser, a destroyer; under the last, a small craft. Set so the Jutland's lines fall where the old

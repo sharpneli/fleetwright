@@ -208,6 +208,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     internal CaptainLayer? Captains { get; set; }
     internal FlotillaAttacks Attacks { get; set; } = null!;
     internal FastWing Wings { get; set; } = null!;
+
+    /// <summary>Worn squadrons merged (set by the AI system).</summary>
+    internal Regrouping Regrouper { get; set; } = null!;
+    readonly List<int> squadrons = new(16);
     internal AimBook Book { get; set; } = new();
 
     public bool Active
@@ -430,6 +434,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && hunt is not { Way: true } && Commands(tops[main].Unit, side, player) &&
             Search(ctx, s, tops[main]) && hunt == null)
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
+        Regroup(ctx, side, player);
         ChooseWings(ctx, s, side, player);
 
         for (int i = 0; i < tops.Count; i++)
@@ -538,6 +543,22 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         Give(ctx, t, ctx.Orders.Attack(t.Unit, 0, OrderSource.Commander), why);
         Attacks.Sent(t.Unit, why);
         return true;
+    }
+
+    /// <summary>His worn squadrons merged into like ones in sight (docs/battle/allocation.md AL6, <see cref="Regrouping"/>):
+    /// his top squadrons he commands, but those reaching for a zone and those in on an attack.</summary>
+    void Regroup(in AiContext ctx, byte side, int player)
+    {
+        squadrons.Clear();
+        for (int i = 0; i < tops.Count; i++)
+        {
+            var t = tops[i];
+            if (t.Side != side || !t.Unit.IsGroup || t.Role == UnitRole.None || t.Reaching > 0 || groups.Get(t.Unit.GroupId) is not { IsForce: false } ||
+                !Commands(t.Unit, side, player) || Tasks!.Of(t.Unit) is (TaskKind.Attack, TaskState.OnTask or TaskState.Engaged, _))
+                continue;
+            squadrons.Add(t.Unit.GroupId);
+        }
+        Regrouper.Pass(ctx, side, squadrons);
     }
 
     /// <summary>His fast wings' choices (docs/battle/allocation.md AL5, <see cref="FastWing"/>), while he holds the enemy
