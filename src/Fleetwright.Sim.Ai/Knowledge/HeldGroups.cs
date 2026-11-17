@@ -118,7 +118,7 @@ public sealed class HeldGroups(Matchups matchups)
             v.Members[g.First + g.Count++] = i;
             g.Centre += v.Position[h];
             g.Velocity += pic.EstimateAt(i, now, ctx.Settings).Velocity;
-            double t = matchups.TonnageOf(world, pic[i]);
+            double t = matchups.TonnageOf(world, pic.Side, pic[i]);
             g.TonnageT += t;
             if (pic[i].Type == ShipType.Capital)
                 g.Capitals++;

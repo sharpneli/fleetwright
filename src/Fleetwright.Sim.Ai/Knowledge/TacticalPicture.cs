@@ -104,7 +104,7 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
             ref var g = ref v.Groups[v.Slot[r]];
             g.Centre += seen.Position(side, i);
             g.Velocity += seen.Velocity(side, i);
-            g.TonnageT += matchups.TonnageOf(world, pic[i]);
+            g.TonnageT += matchups.TonnageOf(world, pic.Side, pic[i]);
             g.Count++;
             if (pic[i].Type == ShipType.Capital)
                 g.Capitals++;

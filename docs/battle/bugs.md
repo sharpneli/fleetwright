@@ -235,7 +235,9 @@ runs 5-7, after its fix, and the Debug run had none.
   alone takes that type's ships at sea for its size. The Jutland's lines stay where they were bar the capital line (12,200
   t: her pre-dreadnoughts and armoured cruisers in); Tsushima's battleships and Izumos, the Yalu's Dingyuans and Yoshinos,
   the Bosporus's ironclads are capital ships now. What it moved: balance.md "The capital line made relative".
-- [ ] **The prizes' war no longer fights** (2026-11-16, after the relative capital line): its light cruisers are the
+- [x] **The prizes' war no longer fights** (fixed 2026-11-17, allocation.md AL7a: not a decline between equals but a
+  misread; France's three destroyers, seen only as ships, were taken for her average ship, half a cruiser each; a ship
+  not made out is now one of those not yet accounted for, and they fight, 0.8 / 0.4 lost of 16): its light cruisers are the
   scenario's capital ships now, so each force reads Heavy, not the Flotilla its three destroyers made it (half its ships
   boats); its admiral sends the destroyers (worked out Scout: their torpedoes aren't their better weapon against a light
   cruiser) off to scout (`AdmiralLayer.Dispose`), and both commanders decline an even fight at first sight, every game

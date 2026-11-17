@@ -1,0 +1,191 @@
+the balance panel (docs/battle/balance.md): 9 scenarios, 8 seeds each (the Jutland 4), the fine tier, the AI on every side; fc-history at 12 runs a case
+  playing 9 scenarios (68 plays) on 32 threads...
+
+Night in the Dover Strait (8 seeds; ended time 5, done 3; 3.5 h on average); the record: G42 and G85
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Britain              2     0.3      0-1       0     in          32   39.7%           0.5
+  Germany              6     0.6      0-2       2    LOW          24   39.6%           0.5
+  the record's loser lost more in 3 of 8 seeds
+  how they went: broke in two 57%, capsized 43%
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Britain       light (under 120 mm)          79  37.1%  fired at  2.8 km (1.3-3.6), hits at 1.2 km
+      by range: 0-2 km 41% of shells at 71.0%, 2-4 km 49% of shells at 12.3%, 4-6 km 10% of shells at 18.8%
+    Germany       light (under 120 mm)          56  39.0%  fired at  2.3 km (1.1-3.6), hits at 1.1 km
+      by range: 0-2 km 47% of shells at 69.7%, 2-4 km 36% of shells at 16.7%, 4-6 km 8% of shells at 2.7%, 6-10 km 8% of shells at 0.0%
+  the light guns' fire, every side: median 2.6 km against the record's 0-2 km [EST]: FAR
+
+Coronel (8 seeds; ended time 2, decided 1, done 5; 5.3 h on average); the record: Good Hope and Monmouth
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Britain              3     1.3      0-3       2     in         202   13.4%           0.0
+  Germany              5     1.1      0-2       0   HIGH         299    8.8%           0.1
+  the record's loser lost more in 3 of 8 seeds
+  how they went: capsized 81%, broke in two 13%, foundered 6%; given up: taken 0, struck 0, scuttled 0, abandoned 15
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Britain       light (under 120 mm)         286   5.9%  fired at  6.5 km (6.0-7.3), hits at 6.1 km
+      by range: 2-4 km 3% of shells at 24.2%, 4-6 km 20% of shells at 9.1%, 6-10 km 77% of shells at 4.4%
+    Britain       medium (120-200 mm)         1182  13.7%  fired at  7.0 km (5.8-8.8), hits at 5.7 km
+      by range: 2-4 km 2% of shells at 52.9%, 4-6 km 27% of shells at 24.6%, 6-10 km 60% of shells at 9.4%, 10-15 km 12% of shells at 3.5%
+    Germany       light (under 120 mm)        1674   6.8%  fired at  6.7 km (5.9-8.2), hits at 6.0 km
+      by range: 2-4 km 1% of shells at 12.5%, 4-6 km 25% of shells at 12.6%, 6-10 km 71% of shells at 4.8%, 10-15 km 3% of shells at 0.3%
+    Germany       medium (120-200 mm)          554   5.7%  fired at  6.6 km (5.4-7.7), hits at 5.6 km
+      by range: 2-4 km 2% of shells at 29.5%, 4-6 km 35% of shells at 8.1%, 6-10 km 63% of shells at 3.5%, 10-15 km 0% of shells at 0.0%
+    Germany       heavy (200 mm and over)     1095   9.8%  fired at  7.0 km (5.8-9.1), hits at 5.7 km
+      by range: 2-4 km 1% of shells at 41.2%, 4-6 km 28% of shells at 19.1%, 6-10 km 63% of shells at 6.2%, 10-15 km 8% of shells at 1.6%
+  the heavy guns' fire, every side: median 7.0 km against the record's 5-11 km [EST]: in
+
+Cape Sarych (8 seeds; ended time 2, done 6; 5.0 h on average)
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Russia               7     1.6      0-5       0   HIGH         827   26.9%           0.0
+  Ottoman Empire       2     0.5      0-1       0     in         234   23.3%           0.0
+  how they went: foundered 73%, capsized 20%, broke in two 7%; given up: taken 0, struck 1, scuttled 0, abandoned 14
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Russia        light (under 120 mm)         450  33.9%  fired at  3.4 km (2.1-4.5), hits at 1.8 km
+      by range: 0-2 km 23% of shells at 81.1%, 2-4 km 32% of shells at 37.8%, 4-6 km 45% of shells at 7.0%, 6-10 km 0% of shells at 12.5%
+    Russia        medium (120-200 mm)         2177  20.4%  fired at  5.9 km (4.5-7.1), hits at 4.0 km
+      by range: 0-2 km 5% of shells at 93.1%, 2-4 km 13% of shells at 43.8%, 4-6 km 34% of shells at 19.1%, 6-10 km 48% of shells at 7.4%
+    Russia        heavy (200 mm and over)      406  24.7%  fired at  6.4 km (4.7-7.6), hits at 3.6 km
+      by range: 0-2 km 6% of shells at 98.1%, 2-4 km 11% of shells at 65.7%, 4-6 km 24% of shells at 22.9%, 6-10 km 58% of shells at 9.4%
+    Ottoman Empirelight (under 120 mm)         554  20.0%  fired at  5.5 km (3.5-6.2), hits at 2.1 km
+      by range: 0-2 km 13% of shells at 78.0%, 2-4 km 18% of shells at 32.6%, 4-6 km 34% of shells at 7.7%, 6-10 km 36% of shells at 5.3%, 10-15 km 0% of shells at 0.0%
+    Ottoman Empiremedium (120-200 mm)          167  20.0%  fired at  5.8 km (3.9-6.3), hits at 2.7 km
+      by range: 0-2 km 9% of shells at 87.7%, 2-4 km 16% of shells at 38.4%, 4-6 km 28% of shells at 14.2%, 6-10 km 46% of shells at 3.6%
+    Ottoman Empireheavy (200 mm and over)      261  26.2%  fired at  6.2 km (5.3-6.7), hits at 5.1 km
+      by range: 0-2 km 6% of shells at 87.1%, 2-4 km 9% of shells at 51.5%, 4-6 km 23% of shells at 26.3%, 6-10 km 61% of shells at 16.0%
+  the heavy guns' fire, every side: median 6.3 km against the record's 6-8 km [EST]: in
+
+The prizes' war, 1920 (8 seeds; ended time 6, done 2; 6.9 h on average)
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  France               6     0.8      0-2       -                156    5.9%           0.3
+  Italy                6     0.1      0-1       -                 87    3.5%           0.0
+  how they went: capsized 83%, broke in two 17%; given up: taken 0, struck 0, scuttled 0, abandoned 3
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    France        light (under 120 mm)        2017   6.0%  fired at  8.7 km (7.6-9.1), hits at 4.1 km
+      by range: 0-2 km 2% of shells at 70.2%, 2-4 km 6% of shells at 33.5%, 4-6 km 7% of shells at 11.3%, 6-10 km 79% of shells at 2.7%, 10-15 km 6% of shells at 0.3%
+    France        medium (120-200 mm)          196   4.8%  fired at  8.9 km (8.5-9.8), hits at 8.6 km
+      by range: 0-2 km 1% of shells at 50.0%, 2-4 km 1% of shells at 45.0%, 4-6 km 2% of shells at 11.8%, 6-10 km 73% of shells at 4.2%, 10-15 km 23% of shells at 2.5%
+    Italy         light (under 120 mm)        2087   3.4%  fired at  8.7 km (8.1-9.0), hits at 8.0 km
+      by range: 0-2 km 0% of shells at 64.3%, 2-4 km 3% of shells at 18.6%, 4-6 km 7% of shells at 9.8%, 6-10 km 84% of shells at 2.5%, 10-15 km 6% of shells at 0.6%
+
+The battle for Åland, 1921 (8 seeds; ended time 5, decided 1, done 2; 9.3 h on average)
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Finland             13     4.8     1-10       -                515   27.9%           0.4
+  Sweden               8     3.3      1-8       -                337   26.1%           0.3
+  how they went: capsized 53%, foundered 36%, broke in two 12%; given up: taken 0, struck 1, scuttled 1, abandoned 36
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Finland       light (under 120 mm)        1394  26.1%  fired at  3.9 km (3.1-4.7), hits at 2.9 km
+      by range: 0-2 km 8% of shells at 83.6%, 2-4 km 44% of shells at 32.9%, 4-6 km 48% of shells at 9.8%, 6-10 km 0% of shells at 0.0%
+    Finland       heavy (200 mm and over)      404  26.2%  fired at  5.7 km (4.7-6.6), hits at 4.5 km
+      by range: 0-2 km 2% of shells at 91.7%, 2-4 km 14% of shells at 59.0%, 4-6 km 44% of shells at 23.3%, 6-10 km 41% of shells at 14.5%
+    Sweden        light (under 120 mm)         647  19.5%  fired at  3.7 km (2.8-4.5), hits at 2.5 km
+      by range: 0-2 km 11% of shells at 68.1%, 2-4 km 47% of shells at 21.0%, 4-6 km 41% of shells at 5.5%, 6-10 km 0% of shells at 0.0%
+    Sweden        medium (120-200 mm)          447  35.1%  fired at  3.5 km (2.2-4.5), hits at 2.0 km
+      by range: 0-2 km 23% of shells at 77.9%, 2-4 km 41% of shells at 29.3%, 4-6 km 35% of shells at 14.9%, 6-10 km 2% of shells at 5.5%
+    Sweden        heavy (200 mm and over)      146  21.7%  fired at  4.7 km (3.7-6.0), hits at 3.6 km
+      by range: 0-2 km 9% of shells at 79.0%, 2-4 km 22% of shells at 26.8%, 4-6 km 45% of shells at 15.9%, 6-10 km 24% of shells at 7.8%
+
+Heligoland Bight (8 seeds; ended time 2, quiet 1, done 5; 6.2 h on average); the record: Mainz, Cöln, Ariadne, V187
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Britain             44     0.1      0-1       0     in         205   26.7%           1.0
+  Germany             16     2.8      1-4       4     in          23   14.1%           0.3
+  the record's loser lost more in 8 of 8 seeds
+  how they went: capsized 70%, broke in two 17%, foundered 13%; given up: taken 0, struck 0, scuttled 0, abandoned 3
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Britain       light (under 120 mm)         503  27.7%  fired at  3.4 km (2.4-4.2), hits at 2.4 km
+      by range: 0-2 km 15% of shells at 63.4%, 2-4 km 52% of shells at 30.1%, 4-6 km 32% of shells at 6.8%
+    Britain       medium (120-200 mm)          231  21.6%  fired at  4.3 km (3.5-4.9), hits at 3.4 km
+      by range: 0-2 km 8% of shells at 72.3%, 2-4 km 32% of shells at 29.0%, 4-6 km 60% of shells at 11.1%, 6-10 km 0% of shells at 0.0%
+    Britain       heavy (200 mm and over)        6  36.0%  fired at  3.8 km (3.6-3.9), hits at 3.6 km
+      by range: 2-4 km 84% of shells at 40.5%, 4-6 km 16% of shells at 12.5%
+    Germany       light (under 120 mm)         156  11.9%  fired at  4.4 km (3.5-5.0), hits at 3.7 km
+      by range: 0-2 km 3% of shells at 41.9%, 2-4 km 37% of shells at 16.3%, 4-6 km 60% of shells at 7.5%
+  the heavy guns' fire, every side: median 3.8 km against the record's 4-8 km [EST]: CLOSE
+
+Dogger Bank (8 seeds; ended time 8; 7.2 h on average); the record: Blücher
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Britain             33     1.3      0-3       0   HIGH         658    9.4%           2.1
+  Germany             26     7.6     4-14       1   HIGH         108    3.2%           0.1
+  the record's loser lost more in 8 of 8 seeds
+  how they went: broke in two 42%, capsized 41%, foundered 17%; given up: taken 1, struck 2, scuttled 9, abandoned 22; rearguards 0.1 a seed, 1 of 1 lost
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Britain       light (under 120 mm)        1941  15.9%  fired at  6.7 km (5.1-8.2), hits at 4.0 km
+      by range: 0-2 km 4% of shells at 83.2%, 2-4 km 10% of shells at 48.1%, 4-6 km 25% of shells at 18.8%, 6-10 km 59% of shells at 5.1%, 10-15 km 1% of shells at 1.0%
+    Britain       medium (120-200 mm)         1925   9.1%  fired at  9.4 km (7.5-11.3), hits at 6.0 km
+      by range: 0-2 km 1% of shells at 100.0%, 2-4 km 2% of shells at 61.7%, 4-6 km 10% of shells at 21.7%, 6-10 km 43% of shells at 8.0%, 10-15 km 43% of shells at 2.4%
+    Britain       heavy (200 mm and over)     2710   4.0%  fired at 15.2 km (12.8-17.3), hits at 11.3 km
+      by range: 2-4 km 0% of shells at 41.1%, 4-6 km 1% of shells at 39.9%, 6-10 km 8% of shells at 13.1%, 10-15 km 38% of shells at 3.1%, 15+ km 52% of shells at 2.0%
+    Germany       light (under 120 mm)         597   3.9%  fired at  7.3 km (5.9-8.2), hits at 4.0 km
+      by range: 0-2 km 1% of shells at 67.3%, 2-4 km 7% of shells at 17.3%, 4-6 km 17% of shells at 5.9%, 6-10 km 69% of shells at 1.3%, 10-15 km 5% of shells at 0.4%
+    Germany       medium (120-200 mm)          199   4.0%  fired at  7.3 km (5.9-8.5), hits at 6.5 km
+      by range: 2-4 km 0% of shells at 0.0%, 4-6 km 26% of shells at 6.3%, 6-10 km 67% of shells at 3.4%, 10-15 km 7% of shells at 0.9%
+    Germany       heavy (200 mm and over)     2278   2.8%  fired at 16.0 km (13.4-17.7), hits at 14.8 km
+      by range: 2-4 km 0% of shells at 12.5%, 4-6 km 1% of shells at 11.0%, 6-10 km 12% of shells at 5.6%, 10-15 km 27% of shells at 2.4%, 15+ km 60% of shells at 2.2%
+  the heavy guns' fire, every side: median 15.5 km against the record's 15-18 km [EST]: in
+
+Tsushima (8 seeds; ended time 3, done 5; 16.3 h on average); the record: of the file's 13: six battleships sunk and Buyny scuttled; Oryol and Bedovy taken, which the sim doesn't do
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Russia              13     5.8      3-9       7     in        1413   12.8%           0.1
+  Japan               14     5.4      3-8       0   HIGH         994   17.6%           0.1
+  the record's loser lost more in 4 of 8 seeds
+  how they went: foundered 49%, capsized 45%, broke in two 6%; given up: taken 0, struck 0, scuttled 5, abandoned 65
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Russia        light (under 120 mm)        3388  16.5%  fired at  4.0 km (2.9-5.0), hits at 2.3 km
+      by range: 0-2 km 11% of shells at 60.5%, 2-4 km 39% of shells at 21.0%, 4-6 km 45% of shells at 4.2%, 6-10 km 6% of shells at 1.6%
+    Russia        medium (120-200 mm)         5923   9.7%  fired at  6.4 km (5.1-7.7), hits at 4.4 km
+      by range: 0-2 km 2% of shells at 68.4%, 2-4 km 8% of shells at 33.9%, 4-6 km 32% of shells at 12.1%, 6-10 km 58% of shells at 3.3%, 10-15 km 0% of shells at 0.0%
+    Russia        heavy (200 mm and over)     1529   6.4%  fired at  8.3 km (6.6-9.5), hits at 5.7 km
+      by range: 0-2 km 1% of shells at 78.0%, 2-4 km 4% of shells at 38.6%, 4-6 km 14% of shells at 11.7%, 6-10 km 67% of shells at 4.1%, 10-15 km 15% of shells at 1.1%
+    Japan         light (under 120 mm)         850  20.7%  fired at  3.7 km (2.1-5.1), hits at 1.6 km
+      by range: 0-2 km 24% of shells at 54.3%, 2-4 km 32% of shells at 21.6%, 4-6 km 42% of shells at 2.3%, 6-10 km 2% of shells at 0.0%
+    Japan         medium (120-200 mm)         2003  23.2%  fired at  4.7 km (3.3-6.1), hits at 2.8 km
+      by range: 0-2 km 10% of shells at 72.5%, 2-4 km 26% of shells at 40.8%, 4-6 km 38% of shells at 12.3%, 6-10 km 26% of shells at 2.1%, 10-15 km 0% of shells at 0.0%
+    Japan         heavy (200 mm and over)     2609  11.3%  fired at  8.2 km (6.4-9.4), hits at 4.3 km
+      by range: 0-2 km 2% of shells at 80.8%, 2-4 km 6% of shells at 50.0%, 4-6 km 13% of shells at 20.6%, 6-10 km 64% of shells at 5.1%, 10-15 km 14% of shells at 1.5%, 15+ km 0% of shells at 0.0%
+  the heavy guns' fire, every side: median 8.2 km against the record's 3-7 km [EST]: FAR
+
+Jutland (4 seeds; ended time 4; 14.0 h on average)
+  side             ships    lost    range  record     2x  shell hits   hit %  torpedo hits
+  Britain            151    20.5     6-32      14     in        2550   10.7%          14.5
+  Germany             99    38.8    33-46      11   HIGH        2742    9.9%           9.0
+  the record's loser lost more in 0 of 4 seeds
+  how they went: broke in two 38%, capsized 38%, foundered 23%, magazine 2%; given up: taken 0, struck 8, scuttled 12, abandoned 76; rearguards 0.5 a seed, 1 of 2 lost
+  where the fire was (shells a run, hit %, the true range when fired: the shells' median (quartiles), the hits' median):
+    Britain       light (under 120 mm)        6499  18.5%  fired at  5.4 km (3.6-7.5), hits at 3.3 km
+      by range: 0-2 km 5% of shells at 67.4%, 2-4 km 29% of shells at 35.2%, 4-6 km 23% of shells at 15.1%, 6-10 km 42% of shells at 3.7%, 10-15 km 1% of shells at 0.3%
+    Britain       medium (120-200 mm)         3790  14.4%  fired at  7.8 km (5.3-10.4), hits at 3.5 km
+      by range: 0-2 km 4% of shells at 84.4%, 2-4 km 10% of shells at 49.6%, 4-6 km 17% of shells at 19.2%, 6-10 km 37% of shells at 5.3%, 10-15 km 31% of shells at 1.8%
+    Britain       heavy (200 mm and over)    11744   4.5%  fired at 14.9 km (12.0-16.9), hits at 8.8 km
+      by range: 0-2 km 0% of shells at 78.1%, 2-4 km 2% of shells at 48.1%, 4-6 km 3% of shells at 17.9%, 6-10 km 10% of shells at 6.3%, 10-15 km 35% of shells at 2.6%, 15+ km 49% of shells at 2.3%
+    Germany       light (under 120 mm)       14206  10.8%  fired at  5.4 km (4.1-7.1), hits at 3.5 km
+      by range: 0-2 km 4% of shells at 68.1%, 2-4 km 19% of shells at 22.5%, 4-6 km 37% of shells at 7.6%, 6-10 km 38% of shells at 3.2%, 10-15 km 2% of shells at 1.3%
+    Germany       medium (120-200 mm)         3779   9.1%  fired at  7.4 km (4.7-9.6), hits at 3.8 km
+      by range: 0-2 km 2% of shells at 81.1%, 2-4 km 14% of shells at 27.7%, 4-6 km 23% of shells at 10.6%, 6-10 km 41% of shells at 2.8%, 10-15 km 21% of shells at 1.9%
+    Germany       heavy (200 mm and over)     8634   5.2%  fired at 14.3 km (11.0-16.5), hits at 5.8 km
+      by range: 0-2 km 1% of shells at 82.4%, 2-4 km 4% of shells at 38.0%, 4-6 km 5% of shells at 17.5%, 6-10 km 10% of shells at 6.0%, 10-15 km 39% of shells at 3.1%, 15+ km 42% of shells at 1.9%
+  the heavy guns' fire, every side: median 14.6 km against the record's 8-17 km [EST]: in
+
+the scenarios: 7 of 14 sides within about twice the record; the record's loser lost more in 26 of 44 seeds; how ships went, all together: capsized 44%, foundered 28%, broke in two 28%, magazine 1%; given up: taken 1, struck 12, scuttled 27, abandoned 234
+
+fc-history: 5 of 23 cases in their bands (18 HIGH, 0 LOW); the orderings 5 of 7 in
+  Santiago 1898, US 12"                          57.5%  band 1.8-7%  HIGH
+  Yellow Sea 1904, Japanese 12"                  37.1%  band 2.5-9%  HIGH
+  Tsushima 1905, Japanese 12"                    28.7%  band 5-15%  HIGH
+  Tsushima 1905, Japanese 6"                     10.9%  band 1-4%  HIGH
+  Dogger Bank 1915, British BCs                  10.7%  band 0.7-2.8%  HIGH
+  Dogger Bank 1915, German BCs                    6.3%  band 1.2-5%  HIGH
+  Jutland 1916, British 1st/2nd BCS               9.5%  band 0.7-2.8%  HIGH
+  Jutland 1916, British 5th BS                    7.8%  band 1.3-5.2%  HIGH
+  Jutland 1916, Grand Fleet BS                   18.4%  band 1.8-7.2%  HIGH
+  Jutland 1916, British 3rd BCS                  31.7%  band 2.2-8.6%  HIGH
+  Jutland 1916, German 1st SG                    10.2%  band 2-8%  HIGH
+  Jutland 1916, German battleships               14.1%  band 1.5-6%  HIGH
+  USN practice 1912-18, 6 kyd                    64.4%  band 17-39%  HIGH
+  USN practice 1912-18, 10 kyd                   27.9%  band 10-23%  HIGH
+  Bismarck's end, Rodney                         46.1%  band 6-20%  HIGH
+  Denmark Strait, Bismarck                       17.6%  band 2.7-11%  HIGH
+  USN 1944 study, 16" at 10 kyd                  51.4%  band 22-49%  HIGH
+  Light guns at a fast boat, 5"                   4.2%  band 0.5-2%  HIGH
+  Tsushima's 12" over the Yellow Sea's (closer, blooded)          0.77  want 1.2-4  LOW
+  the Germans over the British at Jutland (BCs)                   1.08  want 1.5-5  LOW
+
+time: 691 s
+kept in docs/battle/allocation/al7a/balance.json

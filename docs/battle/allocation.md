@@ -140,7 +140,7 @@ aims' kinds) reads her matchup instead.
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | |
 | AL6 | **Regrouping** the worn-down squadrons | |
-| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | |
+| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
 
 ### AL0 The bench (built 2026-11-16)
@@ -253,6 +253,28 @@ Britain stays in it (14.0), Germany's 49.0 is where it was (about 4x, BL3's volu
 Ottomans' ironclads now a line), Åland 8 of 16 each way (Finland's aims 5 of 16), Pungdo's China 8 of 16, Port Arthur's
 Russia 5 of 16; the Yalu and Conrad's war as they were. The prizes' war still doesn't fight (0.0 / 0.3): each force's
 cruisers its line, its destroyers scouting ahead, both commanders declining an even fight (bugs.md). The panel 627 s (701).
+
+### AL7a A ship not made out is one not yet accounted for (built 2026-11-17)
+
+The prizes' war's commanders weren't declining an even fight: they misread it. Italy's held France's three cruisers made
+out to their type (Capital, the relative line) and her three destroyers, in sight, only as ships; a ship not yet made
+out to her type was taken for the average of the enemy's fleet, half of it cruisers here, so the destroyers counted
+half a cruiser each: four and a half cruisers against his three, 0.39 against the bar's 0.4. Against France as she was
+he read 0.86-0.92. With good intelligence (decision 2) a commander knows what's at sea and which of it he's made out, so a
+ship he can't make out is one of the others (`Matchups.OfType`, `Matchups.Unmade`, a navy's own, once a moment and
+picture): a contact made out to her type is one of that type less the ships made out to their class; one made out no
+further than a ship, one of the side's ships less those made out to their class and, a share of each class by number,
+those made out to their type. Over-counted (more taken for a type than are at sea), the side's whole census, as before.
+Contacts' tonnage (`TonnageOf`, the held groups') reads the same.
+
+**What it moved** (`docs/battle/allocation/al7a/`): the prizes' war fights, 143 and 100 hits (41 and 20 before), France
+0.8 and Italy 0.4 lost of 16 seeds (0.0 and 0.3): a light-cruiser action at 6-10 km, 105 mm guns at 3%, the destroyers
+not attacking cruisers by day; decisive only in a few seeds. Commanders reading the enemy truer fight more across the
+panel: 7 of 14 sides within about twice the record (9); the record's loser lost more in 26 of 44 (24). Out of band now are
+sides the record has losing nothing: Coronel's Germany 1.1, the Dogger Bank's Britain 1.3; nearer the record: Cape
+Sarych's Russia 1.6 (3.1), the Jutland's Germany 38.8 (49.0, Britain 20.5 still in it), the Dogger Bank's Germany 7.6
+(5.6) further. The early wave as it was within a seed or two (Åland 4.9 of 13 v 3.2 of 8, the Bosporus's Russia 10 of
+16, the Yalu's Japan 0.2 lost to China's 1.9).
 
 ## Questions for the user
 

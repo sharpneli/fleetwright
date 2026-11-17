@@ -764,7 +764,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         int best = 0;
         double bestT = -1;
         foreach (int i in Held.Members(side, g))
-            if ((wanted & 1 << (int)pic[i].Type) != 0 && Judge.Matchups.TonnageOf(ctx.World, pic[i]) is var t && t > bestT)
+            if ((wanted & 1 << (int)pic[i].Type) != 0 && Judge.Matchups.TonnageOf(ctx.World, side, pic[i]) is var t && t > bestT)
                 (best, bestT) = (pic[i].Entity, t);
         return best;
     }

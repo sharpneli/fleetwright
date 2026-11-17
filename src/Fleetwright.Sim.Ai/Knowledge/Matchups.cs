@@ -7,7 +7,8 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 /// <summary>The matchup's sides from the world (docs/battle/command.md 5.1g, piece 2): each class's profile, made once
 /// from the world's own range tables, and each side's classes at sea by type (the census), made once a moment it's
 /// asked, from which a contact not yet made out to its class is taken as the average of what its side has of its type
-/// (the user's pick: closer to the truth, though it knows which classes are at sea). Not world state: everything here
+/// (the user's pick: closer to the truth, though it knows which classes are at sea) that the navy hasn't accounted for
+/// among its other contacts (docs/battle/allocation.md AL7a: good intelligence). Not world state: everything here
 /// is made again from the world and the pictures. While the AI thinks on the workers (docs/battle/workers.md W13) its
 /// profiles are only read, and the census is counted by the first to ask at a moment.</summary>
 public sealed class Matchups
@@ -107,23 +108,168 @@ public sealed class Matchups
         return (census[i], censusTotal[i]);
     }
 
-    /// <summary>A contact's tonnage as it's taken: its class's once made out, else the average of what its side has at sea
-    /// of its type (of any type, before that's made out); 0 with nothing to take it for.</summary>
-    public double TonnageOf(World world, in Contact c)
+    /// <summary>A contact's tonnage as a navy (<paramref name="viewer"/>) takes it: its class's once made out, else the
+    /// average of what its side has at sea of its type that the navy hasn't made out (<see cref="OfType"/>); 0 before
+    /// its type is made out.</summary>
+    public double TonnageOf(World world, byte viewer, in Contact c)
     {
         if (c.Level >= ContactLevel.Class && c.TakenFor >= 0 && world.Ships.Registry.Get(c.TakenFor) is { } taken)
             return taken.Motion.FullDisplacementT;
         if (c.Level < ContactLevel.Type)
             return 0;
-        var (classes, total) = Census(world, c.Side, c.Type);
-        if (classes == null || total == 0)
-            (classes, total) = Census(world, c.Side, ShipType.Unknown);
-        if (classes == null || total == 0)
+        var (classes, total) = OfType(world, viewer, c.Side, c.Type);
+        if (classes == null || total <= 0)
             return 0;
         double t = 0;
         foreach (var (p, n) in classes)
             t += p.DisplacementT * n;
         return t / total;
+    }
+
+    // what each navy hasn't made out yet (docs/battle/allocation.md AL7a), as fractional ships: by the census's index, the
+    // census (Full) and the census less the ships made out to their class (Typed); by side, that less the ships made out to
+    // their type too (Ships)
+    sealed class Left
+    {
+        public long Ms = long.MinValue;
+        public int Version = -1;
+        public readonly List<(MatchupProfile Profile, double Count)>?[] Full = new List<(MatchupProfile, double)>?[256 * (Types + 1)];
+        public readonly double[] FullTotals = new double[256 * (Types + 1)];
+        public readonly List<(MatchupProfile Profile, double Count)>?[] Typed = new List<(MatchupProfile, double)>?[256 * (Types + 1)];
+        public readonly double[] TypedTotals = new double[256 * (Types + 1)];
+        public readonly List<(MatchupProfile Profile, double Count)>?[] Ships = new List<(MatchupProfile, double)>?[256];
+        public readonly double[] ShipsTotals = new double[256];
+    }
+
+    readonly Left?[] left = new Left?[256];
+
+    /// <summary>What a contact a navy (<paramref name="viewer"/>) has made out to its type (<see cref="ShipType.Unknown"/>:
+    /// to its side alone) is one of, as fractional ships (docs/battle/allocation.md AL7a): its side's ships at sea of the
+    /// type less each the navy holds made out to her class (as taken, wrongly or not). Good intel (the user, 2026-11-16):
+    /// knowing what's at sea and which of them it's made out, a ship it hasn't is one of the others. With none left of the
+    /// type (more taken for it than are at sea), the side's any type, then the census. Made once a moment and picture.</summary>
+    public (List<(MatchupProfile Profile, double Count)>? Classes, double Total) OfType(World world, byte viewer, byte side, ShipType type)
+    {
+        var l = Ensure(world, viewer);
+        int i = side * (Types + 1) + (type == ShipType.Unknown ? Types : (int)type), any = side * (Types + 1) + Types;
+        return l.TypedTotals[i] > 1e-9 ? (l.Typed[i], l.TypedTotals[i])
+            : l.TypedTotals[any] > 1e-9 ? (l.Typed[any], l.TypedTotals[any])
+            : l.FullTotals[i] > 0 ? (l.Full[i], l.FullTotals[i])
+            : (l.Full[any], l.FullTotals[any]);
+    }
+
+    /// <summary>What a contact a navy (<paramref name="viewer"/>) hasn't made out to her type could be of a side's
+    /// (docs/battle/allocation.md AL7a): its ships at sea less each the navy holds made out to her class, and less each
+    /// made out to her type (a share of each class of that type left, by their number). The prizes' war's commander took
+    /// three destroyers seen only as ships for France's average ship, half a cruiser each, though he'd made out her three
+    /// cruisers, and declined an even fight at 0.39. Exactly: none when every ship of the side is accounted for; else the
+    /// whole census.</summary>
+    public (List<(MatchupProfile Profile, double Count)>? Classes, double Total) Unmade(World world, byte viewer, byte side, bool exactly)
+    {
+        var l = Ensure(world, viewer);
+        if (exactly)
+            return (l.Ships[side], l.ShipsTotals[side]);
+        int any = side * (Types + 1) + Types;
+        return (l.Full[any], l.FullTotals[any]);
+    }
+
+    Left Ensure(World world, byte viewer)
+    {
+        Census(world, viewer, ShipType.Unknown);   // this moment's census counted
+        var pic = world.Sightings.Of(viewer);
+        int version = pic?.Version ?? -2;
+        var l = left[viewer];
+        if (l == null)
+            lock (left)
+                l = left[viewer] ??= new Left();
+        if (Volatile.Read(ref l.Ms) != world.Time.Ms || Volatile.Read(ref l.Version) != version)
+            lock (l)
+                if (l.Ms != world.Time.Ms || l.Version != version)
+                    CountLeft(world, pic, version, l);
+        return l;
+    }
+
+    void CountLeft(World world, Picture? pic, int version, Left l)
+    {
+        for (int i = 0; i < census.Length; i++)
+        {
+            Copy(census[i], censusTotal[i], ref l.Full[i], ref l.FullTotals[i]);
+            Copy(census[i], censusTotal[i], ref l.Typed[i], ref l.TypedTotals[i]);
+        }
+        var reg = world.Ships.Registry;
+        // made out to their class: one of that class off its type's and its side's
+        for (int k = 0; pic != null && k < pic.Count; k++)
+        {
+            ref readonly var c = ref pic[k];
+            if (c.Out || c.Level < ContactLevel.Class || c.TakenFor < 0 || reg.Get(c.TakenFor) is not { } cls || !profiles.TryGetValue(cls, out var p))
+                continue;
+            int b = c.Side * (Types + 1), t = b + (int)world.Types.Of(cls);
+            Take(l.Typed[t], ref l.TypedTotals[t], p, 1);
+            Take(l.Typed[b + Types], ref l.TypedTotals[b + Types], p, 1);
+        }
+        for (int side = 0; side < 256; side++)
+        {
+            int any = side * (Types + 1) + Types;
+            Copy(l.Typed[any], l.TypedTotals[any], ref l.Ships[side], ref l.ShipsTotals[side]);
+        }
+        // made out to their type alone: a share of each class of the type left off the side's
+        for (int k = 0; pic != null && k < pic.Count; k++)
+        {
+            ref readonly var c = ref pic[k];
+            if (c.Out || c.Level != ContactLevel.Type)
+                continue;
+            int i = c.Side * (Types + 1) + (c.Type == ShipType.Unknown ? Types : (int)c.Type);
+            double total = l.TypedTotals[i];
+            if (l.Typed[i] is not { } pool || total <= 1e-9 || l.Ships[c.Side] is not { } ships)
+                continue;
+            foreach (var (p, n) in pool)
+                Take(ships, ref l.ShipsTotals[c.Side], p, n / total);
+        }
+        l.Version = version;
+        Volatile.Write(ref l.Ms, world.Time.Ms);
+    }
+
+    static void Copy(List<(MatchupProfile Profile, int Count)>? src, int total, ref List<(MatchupProfile Profile, double Count)>? dst, ref double dstTotal)
+    {
+        if (src == null || total <= 0)
+        {
+            dst?.Clear();
+            dstTotal = 0;
+            return;
+        }
+        dst ??= new(src.Count);
+        dst.Clear();
+        foreach (var (p, n) in src)
+            dst.Add((p, n));
+        dstTotal = total;
+    }
+
+    static void Copy(List<(MatchupProfile Profile, double Count)>? src, double total, ref List<(MatchupProfile Profile, double Count)>? dst, ref double dstTotal)
+    {
+        if (src == null || total <= 1e-9)
+        {
+            dst?.Clear();
+            dstTotal = 0;
+            return;
+        }
+        dst ??= new(src.Count);
+        dst.Clear();
+        dst.AddRange(src);
+        dstTotal = total;
+    }
+
+    static void Take(List<(MatchupProfile Profile, double Count)>? list, ref double total, MatchupProfile p, double n)
+    {
+        if (list == null)
+            return;
+        for (int k = 0; k < list.Count; k++)
+            if (ReferenceEquals(list[k].Profile, p))
+            {
+                double off = Math.Min(n, list[k].Count);
+                list[k] = (p, list[k].Count - off);
+                total -= off;
+                return;
+            }
     }
 
     void Count(World world)
@@ -227,24 +373,27 @@ public sealed class MatchupSide
         }
         if (c.Level < ContactLevel.Type)
         {
-            // a ship, not yet a type: any of the others' at sea
-            int all = 0;
+            // a ship, not yet a type: any of the others' at sea it hasn't made out (every one, if it's made them all out)
+            bool exactly = false;
+            for (int side = 0; side < 256 && !exactly; side++)
+                exactly = side != viewer && m.Census(world, (byte)side, ShipType.Unknown).Total > 0 && m.Unmade(world, viewer, (byte)side, true).Total > 1e-9;
+            double all = 0;
             for (int side = 0; side < 256; side++)
-                if (side != viewer)
-                    all += m.Census(world, (byte)side, ShipType.Unknown).Total;
-            for (int side = 0; side < 256 && all > 0; side++)
-                if (side != viewer && m.Census(world, (byte)side, ShipType.Unknown) is ({ } some, > 0))
+                if (side != viewer && m.Census(world, (byte)side, ShipType.Unknown).Total > 0)
+                    all += m.Unmade(world, viewer, (byte)side, exactly).Total;
+            for (int side = 0; side < 256 && all > 1e-9; side++)
+                if (side != viewer && m.Census(world, (byte)side, ShipType.Unknown).Total > 0 && m.Unmade(world, viewer, (byte)side, exactly) is ({ } some, > 1e-9))
                     foreach (var (p, n) in some)
-                        Add(new MatchupEntry(p, (double)n / all, guns, guns, Speed: speed, Toughness: tough));
+                        if (n > 1e-9)
+                            Add(new MatchupEntry(p, n / all, guns, guns, Speed: speed, Toughness: tough));
             return;
         }
-        var (classes, total) = m.Census(world, c.Side, c.Type);
-        if (classes == null || total == 0)
-            (classes, total) = m.Census(world, c.Side, ShipType.Unknown);
-        if (classes == null || total == 0)
+        var (classes, total) = m.OfType(world, viewer, c.Side, c.Type);
+        if (classes == null || total <= 1e-9)
             return;   // nothing at sea to take it for
         foreach (var (p, n) in classes)
-            Add(new MatchupEntry(p, (double)n / total, guns, guns, Speed: speed, Toughness: tough));
+            if (n > 1e-9)
+                Add(new MatchupEntry(p, n / total, guns, guns, Speed: speed, Toughness: tough));
     }
 
     /// <summary>An entry: whole ships with an entry of their class (whole too) go into it; others are entries of their own,

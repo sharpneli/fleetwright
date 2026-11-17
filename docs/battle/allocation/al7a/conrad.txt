@@ -1,0 +1,117 @@
+Conrad's war, 1908: 27 ships, 2 sides, from 1908-10-20 07:00:00.000 until 1908-10-20 16:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1908: done    at 11:21 (+4:21)  Austria-Hungary lost 2/14 (1506 t), score 0.02   Italy lost 2/13 (1618 t), score 0.02   (foundered 2, capsized 1)   eda8e45fc3aa272b   (17.2 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): magazine flooded by the sea 1, guns out 1
+                      at the end, 24 ships afloat: main mounts out 4 of 62 (4 of 94 guns): magazine flooded by the sea 4
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 6612 fired, 24 at ships seen done for
+  seed   1909: time    at 16:00 (+9:00)  Austria-Hungary lost 4/14 (16440 t), score 0.04   Italy lost 4/13 (3236 t), score 0.17   (foundered 1, capsized 7)   0a78739d69d34792   (29.6 s)
+           main guns: 2 fell out for them, main mounts out 1 of 4 (1 of 4 guns): guns out 1
+                      at the end, 19 ships afloat: main mounts out 2 of 50 (4 of 78 guns): magazine flooded by order 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 10203 fired, 14 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 4 of 10 afloat home, 6 not (6 in an encounter, 2 stopped, 0 dead in the water, the farthest 144 km)
+           Italy        done? retiring (outmatched); 1 of 9 afloat home, 8 not (8 in an encounter, 1 stopped, 0 dead in the water, the farthest 172 km)
+  seed   1910: time    at 16:00 (+9:00)  Austria-Hungary lost 6/14 (12154 t), score 0.06   Italy lost 6/13 (4854 t), score 0.13   (foundered 3, capsized 9)   3dbfcf40dfdb89d1   (21.9 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 15 ships afloat: main mounts out 2 of 44 (2 of 75 guns): magazine flooded by the sea 2
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 9316 fired, 18 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 4 of 8 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 180 km)
+           Italy        done? retiring (outmatched); 5 of 7 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 21 km)
+  seed   1911: time    at 16:00 (+9:00)  Austria-Hungary lost 2/14 (1506 t), score 0.27   Italy lost 5/13 (22328 t), score 0.02   (foundered 3, capsized 4)   f253e9528794e8af   (32.7 s)
+           main guns: 4 fell out for them, main mounts out 6 of 8 (7 of 9 guns): gunhouse out of action 4, magazine flooded by the sea 1, magazine spent (its race) 1
+                      at the end, 21 ships afloat: main mounts out 6 of 56 (9 of 86 guns): magazine flooded by order 3, magazine flooded by the sea 1, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 9824 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 4 of 12 afloat home, 8 not (8 in an encounter, 1 stopped, 1 dead in the water, the farthest 190 km)
+           Italy        done? retiring (outmatched); 5 of 8 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 483 km)
+  seed   1912: time    at 16:00 (+9:00)  Austria-Hungary lost 2/14 (1506 t), score 0.03   Italy lost 3/13 (2427 t), score 0.02   (foundered 1, capsized 3)   7398924b8e154158   (26.6 s)
+           main guns: 5 fell out for them, main mounts out 6 of 10 (7 of 13 guns): guns out 3, magazine flooded by order 1, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 23 ships afloat: main mounts out 7 of 60 (10 of 92 guns): magazine flooded by order 3, guns out 2, magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 7481 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 4 of 12 afloat home, 8 not (8 in an encounter, 3 stopped, 1 dead in the water, the farthest 123 km)
+           Italy        done? retiring (outmatched); 6 of 10 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 145 km)
+  seed   1913: time    at 16:00 (+9:00)  Austria-Hungary lost 2/14 (10840 t), score 0.00   Italy lost 0/13 (0 t), score 0.12   (capsized 2)   19dd64fb3b505955   (32.0 s)
+           main guns: 8 fell out for them, main mounts out 15 of 16 (18 of 19 guns): guns out 8, magazine flooded by the sea 3, gunhouse out of action 2, magazine flooded by order 1, gunhouse destroyed 1
+                      at the end, 25 ships afloat: main mounts out 9 of 64 (14 of 95 guns): gunhouse out of action 3, guns out 2, magazine flooded by order 1, magazine flooded by the sea 1, gunhouse destroyed 1, jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 5682 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 9 of 12 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 274 km)
+           Italy        done? retiring (outmatched); 5 of 13 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 200 km)
+  seed   1914: done    at 13:25 (+6:25)  Austria-Hungary lost 3/14 (2259 t), score 0.06   Italy lost 6/13 (4854 t), score 0.02   (capsized 9)   a60c3b9649eefcdc   (16.9 s)
+           main guns: 3 fell out for them, main mounts out 6 of 6 (6 of 6 guns): magazine flooded by the sea 2, gunhouse out of action 2, guns out 2
+                      at the end, 18 ships afloat: main mounts out 2 of 50 (2 of 82 guns): guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 8742 fired, 17 at ships seen done for
+  seed   1915: time    at 16:00 (+9:00)  Austria-Hungary lost 5/14 (26527 t), score 0.05   Italy lost 5/13 (4045 t), score 0.28   (foundered 2, capsized 8)   8eb2c96d7cd7b518   (27.4 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (4 of 4 guns): guns out 2, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 17 ships afloat: main mounts out 4 of 46 (8 of 73 guns): magazine flooded by order 2, gunhouse out of action 2
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 12299 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 3 of 9 afloat home, 6 not (6 in an encounter, 0 stopped, 1 dead in the water, the farthest 96 km)
+           Italy        done? retiring (outmatched); 4 of 8 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 126 km)
+  seed   1916: time    at 16:00 (+9:00)  Austria-Hungary lost 3/14 (2259 t), score 0.01   Italy lost 1/13 (809 t), score 0.02   (capsized 4)   788de9b64e3c3c2d   (32.2 s)
+           main guns: 4 fell out for them, main mounts out 8 of 8 (8 of 8 guns): guns out 4, magazine flooded by the sea 3, gunhouse out of action 1
+                      at the end, 23 ships afloat: main mounts out 4 of 60 (4 of 92 guns): magazine flooded by the sea 2, guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 6248 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 1 of 11 afloat home, 10 not (10 in an encounter, 2 stopped, 0 dead in the water, the farthest 152 km)
+           Italy        done? retiring (outmatched); 6 of 12 afloat home, 6 not (6 in an encounter, 1 stopped, 0 dead in the water, the farthest 180 km)
+  seed   1917: time    at 16:00 (+9:00)  Austria-Hungary lost 2/14 (1506 t), score 0.36   Italy lost 6/13 (30000 t), score 0.02   (foundered 2, capsized 6)   634084750786dff7   (29.5 s)
+           main guns: 5 fell out for them, main mounts out 11 of 14 (17 of 21 guns): magazine flooded by order 3, gunhouse out of action 3, gunhouse destroyed 2, guns out 2, magazine flooded by the sea 1
+                      at the end, 19 ships afloat: main mounts out 13 of 52 (22 of 80 guns): magazine flooded by order 9, gunhouse out of action 2, magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 11455 fired, 18 at ships seen done for
+           Austria-Hungary done? battle; 4 of 12 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 105 km)
+           Italy        done? retiring (broken off); 6 of 7 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 115 km)
+  seed   1918: time    at 16:00 (+9:00)  Austria-Hungary lost 0/14 (0 t), score 0.04   Italy lost 4/13 (3236 t), score 0.00   (foundered 1, capsized 3)   720c259e92c9a980   (23.3 s)
+           main guns: 4 fell out for them, main mounts out 6 of 8 (6 of 8 guns): guns out 5, magazine flooded by the sea 1
+                      at the end, 23 ships afloat: main mounts out 2 of 60 (2 of 92 guns): magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 5927 fired, 129 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 7 of 14 afloat home, 7 not (7 in an encounter, 3 stopped, 0 dead in the water, the farthest 173 km)
+           Italy        done? retiring (outmatched); 7 of 9 afloat home, 2 not (2 in an encounter, 1 stopped, 0 dead in the water, the farthest 195 km)
+  seed   1919: time    at 16:00 (+9:00)  Austria-Hungary lost 1/14 (753 t), score 0.01   Italy lost 1/13 (809 t), score 0.01   (capsized 2)   c3c4ab70b4c94134   (32.9 s)
+           main guns: 5 fell out for them, main mounts out 11 of 14 (14 of 18 guns): guns out 6, magazine flooded by order 2, gunhouse destroyed 1, gunhouse out of action 1, barbette out 1
+                      at the end, 25 ships afloat: main mounts out 14 of 64 (23 of 96 guns): magazine flooded by order 9, guns out 2, magazine flooded by the sea 1, gunhouse out of action 1, jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 5082 fired, 0 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 9 of 13 afloat home, 4 not (4 in an encounter, 1 stopped, 0 dead in the water, the farthest 155 km)
+           Italy        done? retiring (outmatched); 5 of 12 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 133 km)
+  seed   1920: done    at 15:53 (+8:53)  Austria-Hungary lost 1/14 (753 t), score 0.03   Italy lost 3/13 (2427 t), score 0.01   (capsized 3)   46242ab407d6b064   (28.8 s)
+           main guns: 8 fell out for them, main mounts out 12 of 16 (13 of 18 guns): guns out 10, magazine flooded by the sea 2
+                      at the end, 24 ships afloat: main mounts out 7 of 62 (9 of 94 guns): guns out 4, magazine flooded by the sea 3
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 8742 fired, 0 at ships seen done for
+  seed   1921: time    at 16:00 (+9:00)  Austria-Hungary lost 2/14 (1506 t), score 0.03   Italy lost 3/13 (2427 t), score 0.02   (foundered 1, capsized 4)   940c58342ae3ee56   (29.3 s)
+           main guns: 7 fell out for them, main mounts out 11 of 14 (11 of 14 guns): guns out 5, magazine flooded by the sea 3, gunhouse out of action 3
+                      at the end, 22 ships afloat: main mounts out 3 of 58 (3 of 90 guns): magazine flooded by the sea 2, gunhouse out of action 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 7604 fired, 16 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 5 of 12 afloat home, 7 not (3 in an encounter, 1 stopped, 0 dead in the water, the farthest 136 km)
+           Italy        done? retiring (outmatched); 9 of 10 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 149 km)
+  seed   1922: done    at 11:42 (+4:42)  Austria-Hungary lost 1/14 (753 t), score 0.01   Italy lost 1/13 (809 t), score 0.01   (capsized 1)   657218522bf3ecf9   (16.3 s)
+           main guns: 6 fell out for them, main mounts out 10 of 12 (10 of 12 guns): guns out 7, magazine flooded by the sea 2, gunhouse out of action 1
+                      at the end, 26 ships afloat: main mounts out 10 of 66 (10 of 98 guns): guns out 5, magazine flooded by the sea 4, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 5208 fired, 48 at ships seen done for
+  seed   1923: time    at 16:00 (+9:00)  Austria-Hungary lost 3/14 (2259 t), score 0.03   Italy lost 3/13 (2427 t), score 0.02   (capsized 6)   7234e988d7107f1f   (26.4 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 2
+                      at the end, 21 ships afloat: main mounts out 1 of 56 (2 of 88 guns): jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 8507 fired, 116 at ships seen done for
+           Austria-Hungary done? retiring (outmatched); 5 of 11 afloat home, 6 not (6 in an encounter, 1 stopped, 0 dead in the water, the farthest 96 km)
+           Italy        done? retiring (outmatched); 3 of 10 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 165 km)
+
+over 16 seeds:
+  ended time     12 times, after 9:00 on average
+  ended done      4 times, after 6:05 on average
+  Austria-Hungary lost 2.4 of 14 ships (from 0 to 6), 5158 t; made 463 hits, fired 1.2 torpedoes; aims met 0 times, score 0.06
+  Italy        lost 3.3 of 13 ships (from 0 to 6), 5394 t; made 341 hits, fired 0.6 torpedoes; aims met 0 times, score 0.05
+over 16 seeds:
+  main guns: 66 fell out for them, main mounts out 113 of 140 (128 of 160 guns): guns out 58, magazine flooded by the sea 21, gunhouse out of action 21, magazine flooded by order 7, gunhouse destroyed 4, magazine spent (its race) 1, barbette out 1
+             at the end, 345 ships afloat: main mounts out 90 of 910 (128 of 1405 guns): magazine flooded by order 29, magazine flooded by the sea 23, guns out 21, gunhouse out of action 13, jammed 3, gunhouse destroyed 1
+  blackouts: 3 ship-wide (3 by a hit's shock, 0 by near misses), 3 ships blacked out
+  shells: 128932 fired, 400 at ships seen done for
