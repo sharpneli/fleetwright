@@ -171,7 +171,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public int Target, TakenFor, Step;
         public long CheckMs;
         public ContactLevel Level;
-        public ShipType Type;
+        public double SizeT;   // her size as estimated (docs/battle/allocation.md AL7b)
     }
 
     Captain[] captains = new Captain[16];

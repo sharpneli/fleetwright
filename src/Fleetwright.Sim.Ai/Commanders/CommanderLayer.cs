@@ -199,7 +199,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     // A3, A4: across his way to a zone, or a hunting ground) and the kinds it wants sunk first
     SideState? cur;
     (Zone Zone, bool Way)? hunt;
-    int wanted;
+    bool wanted;
 
     internal TaskLayer? Tasks { get; set; }
     internal MatchupJudge Judge { get; set; } = null!;
@@ -397,7 +397,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         // ships reaching, a convoy's auxiliaries too (docs/battle/aims.md A2): what the rest support
         int pursued = Book.Pursued(side);
         Zone? zone = pursued >= 0 && Book[side, pursued].Kind == AimKind.Reach ? Book[side, pursued].Zone : null;
-        (cur, hunt, wanted) = (s, Book.SearchZone(side), Book.Wanted(side));
+        (cur, hunt, wanted) = (s, Book.SearchZone(side), Book.Wants(side));
         int main = -1;
         for (int i = 0; i < tops.Count; i++)
         {
@@ -872,13 +872,13 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// what his navy takes her for), 0 for none.</summary>
     int WantedIn(in AiContext ctx, byte side, in HeldGroup g)
     {
-        if (wanted == 0)
+        if (!wanted)
             return 0;
         var pic = ctx.World.Sightings.Of(side)!;
         int best = 0;
         double bestT = -1;
         foreach (int i in Held.Members(side, g))
-            if ((wanted & 1 << (int)pic[i].Type) != 0 && Judge.Matchups.TonnageOf(ctx.World, side, pic[i]) is var t && t > bestT)
+            if (Book!.Wanted(ctx.World, Judge.Matchups, side, pic[i]) >= 0.5 && Judge.Matchups.TonnageOf(ctx.World, side, pic[i]) is var t && t > bestT)
                 (best, bestT) = (pic[i].Entity, t);
         return best;
     }

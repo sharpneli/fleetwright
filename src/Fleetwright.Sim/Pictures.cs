@@ -84,11 +84,12 @@ public struct Contact
     public ShipType Type;
 
     /// <summary>Her size as her navy's lookouts estimate it once she's made out to her type (docs/battle/allocation.md
-    /// AL7b): what she shows side on above the water, m² (0 before); <see cref="SizeSigma"/> its error now, the log's
-    /// standard deviation: the lookout's (<see cref="SimSettings.SightSizeSigma"/>) at the type's margin, shrinking as he
-    /// makes her out better and none at the class's. The error's draw is hers for each navy, so the estimate only comes
-    /// nearer the truth. What's estimated from her (her side's classes near that size, a torpedo's aim) reads it.</summary>
-    public double SizeM2, SizeSigma;
+    /// AL7b): her bulk, what she displaces as the eye takes it from her length, freeboard and upperworks, t (0 before);
+    /// <see cref="SizeSigma"/> its error now, the log's standard deviation: the lookout's
+    /// (<see cref="SimSettings.SightSizeSigma"/>) at the type's margin, shrinking as he makes her out better and none at
+    /// the class's. The error's draw is hers for each navy, so the estimate only comes nearer the truth. What's estimated
+    /// from her (her side's classes near that size, a torpedo's aim) reads it.</summary>
+    public double SizeT, SizeSigma;
 
     /// <summary>Whether she's made out to carry guns (a main battery), once made out to her type: a merchant or not.</summary>
     public bool Armed;
@@ -278,7 +279,7 @@ public sealed class Picture
             h.Add(c.TakenFor);
             if (c.Level >= ContactLevel.Type)
             {
-                h.Add(c.SizeM2);
+                h.Add(c.SizeT);
                 h.Add(c.SizeSigma);
                 h.Add(c.Armed);
             }

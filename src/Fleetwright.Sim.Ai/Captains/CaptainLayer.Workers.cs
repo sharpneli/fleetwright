@@ -20,7 +20,8 @@ public sealed partial class CaptainLayer
         public int[] CrewTargets = new int[64];
         public (long Source, int Group, int Men, bool Supply)[] CrewSources = new (long, int, int, bool)[64];
         public bool CandDark;
-        public int[] CandEntity = new int[32], CandRank = new int[32], CandSlot = new int[32], CandPic = new int[32];
+        public int[] CandEntity = new int[32], CandSlot = new int[32], CandPic = new int[32];
+        public double[] CandRank = new double[32];
         public double[] CandRange = new double[32], CandLead = new double[32], CandBearing = new double[32], CandDone = new double[32];
         public double[] CandMatters = new double[32], CandWant = new double[32], CandClosing = new double[32];
         public Vec3d[] CandPos = new Vec3d[32];
@@ -28,7 +29,8 @@ public sealed partial class CaptainLayer
         public int CandCount;
         public Unknowns CandUnknowns;
         public double CandBold, CandFinish;
-        public int CandWanted, CandUnknown;
+        public bool CandWanted;
+        public int CandUnknown;
         public double CandUnknownM;
         public double[] Reaches = new double[16];
         public int[] OwnTargets = new int[8], HeldTargets = new int[8];
@@ -52,7 +54,7 @@ public sealed partial class CaptainLayer
     // Finish), and how much his side's aim wants her (docs/battle/aims.md A3: what it wants sunk, or one that endangers
     // him; 1 for neither)
     ref int[] candEntity => ref M.CandEntity;
-    ref int[] candRank => ref M.CandRank;
+    ref double[] candRank => ref M.CandRank;
     ref int[] candSlot => ref M.CandSlot;
     ref int[] candPic => ref M.CandPic;
     ref double[] candRange => ref M.CandRange;
@@ -70,7 +72,7 @@ public sealed partial class CaptainLayer
     ref Unknowns candUnknowns => ref M.CandUnknowns;
     ref double candBold => ref M.CandBold;
     ref double candFinish => ref M.CandFinish;
-    ref int candWanted => ref M.CandWanted;   // the kinds his side's aim wants sunk first (AimBook.Wanted), as of this think
+    ref bool candWanted => ref M.CandWanted;   // whether his side's aim wants any sunk first (AimBook.Wants), as of this think
     ref int candUnknown => ref M.CandUnknown;
     ref double candUnknownM => ref M.CandUnknownM;
     ref double[] reaches => ref M.Reaches;
@@ -259,7 +261,7 @@ public sealed partial class CaptainLayer
         // doctrine the last ship's guns had left in it, until her own guns' think set hers)
         (candUnknowns, candBold, candFinish) = ((Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns),
             doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression), FinishOf(doctrine, own));
-        (candWanted, candDark, candCount, candUnknown) = (Book?.Wanted(own.Side) ?? 0, false, -1, 0);
+        (candWanted, candDark, candCount, candUnknown) = (Book?.Wants(own.Side) == true, false, -1, 0);
         int i = Find(own.Entity);
         if (i >= 0)
             Behave(ctx, ref captains[i], own, slot);

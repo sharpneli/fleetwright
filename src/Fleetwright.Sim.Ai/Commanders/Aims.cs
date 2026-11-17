@@ -1,5 +1,7 @@
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
+using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Ai.Commanders;
 
@@ -86,8 +88,10 @@ public sealed class AimBook
     // every ship seen, in the order seen: its side, tonnage (as the results') and whether she's a merchant
     readonly Dictionary<int, (byte Side, double Tonnes, bool Merchant)> roster = [];
     readonly List<int> seen = [];
-    // by side, the kinds its pursued aim wants sunk (bits of 1 << ShipType), as of the last update
-    readonly int[] wanted = new int[256];
+    // by side, what its pursued aim wants sunk first, as of the last update: unarmed ships (a Sink), or the classes of a
+    // Reach's ships still on their way (a Stop of it)
+    readonly bool[] wantUnarmed = new bool[256];
+    readonly List<ShipClass>?[] wantClasses = new List<ShipClass>?[256];
 
     /// <summary>How many aims a side has.</summary>
     public int Count(int side) => sides[side & 255]?.Count ?? 0;
@@ -159,11 +163,61 @@ public sealed class AimBook
     public bool Reaching(int side, int ship) =>
         Pursued(side) is int p and >= 0 && sides[side & 255]![p] is { Aim.Kind: AimKind.Reach } e && e.Named.Contains(ship) && !e.Arrived.Contains(ship);
 
-    /// <summary>The kinds of enemy ship (bits of 1 &lt;&lt; <see cref="ShipType"/>) a side's pursued aim wants sunk before
-    /// the rest (docs/battle/aims.md A3), as of the last update: a Stop of a Reach the named ships' still on their way (a
-    /// convoy's transports, a breaker), as a ship's type reads; a Sink merchants; else none. The side knows what the
-    /// enemy's after (the scenario's intelligence); his captains know a ship by what they take her for.</summary>
-    public int Wanted(int side) => wanted[side & 255];
+    /// <summary>Whether a side's pursued aim wants any enemy sunk before the rest (docs/battle/aims.md A3), as of the last
+    /// update: a Stop of a Reach whose named ships are still on their way (a convoy's transports, a breaker), a Sink.</summary>
+    public bool Wants(int side) => wantUnarmed[side & 255] || wantClasses[side & 255] is { Count: > 0 };
+
+    /// <summary>How much a side's pursued aim wants a contact sunk before the rest, 0-1 (docs/battle/aims.md A3,
+    /// docs/battle/allocation.md AL7c), as the side holds her: a Sink, a ship made out to carry no guns; a Stop, the share
+    /// of what she may be (the class she's taken for, else the classes her estimate weighs: <see cref="Matchups.Weigh"/>)
+    /// that's of the Reach's ships still on their way. The side knows what the enemy's after (the scenario's intelligence);
+    /// his captains know a ship by what they take her for, but a class her side hasn't at sea she can't be (good
+    /// intelligence, the scenarios' stance): taken for one, she's weighed by her size.</summary>
+    public double Wanted(World w, Matchups m, int side, in Contact c)
+    {
+        side &= 255;
+        if (wantUnarmed[side])
+            return c.Level >= ContactLevel.Type && !c.Armed ? 1 : 0;
+        if (wantClasses[side] is not { Count: > 0 } classes || c.Level < ContactLevel.Type)
+            return 0;
+        if (c.Level >= ContactLevel.Class && c.TakenFor >= 0 && w.Ships.Registry.Get(c.TakenFor) is { } taken)
+        {
+            if (Has(classes, taken))
+                return 1;
+            if (AtSea(w, m, c.Side, taken))
+                return 0;   // one of her side's other classes
+            // taken for a class her side hasn't at sea (a Russian boat for a Japanese one): the scenarios' good
+            // intelligence knows she isn't, and weighs her by her size (the user, 2026-11-17: in the full game a
+            // mistaken class may mislead)
+        }
+        var g = m.Weigh(w, (byte)side, c);
+        if (g.Total <= 0)
+            return 0;
+        double yes = 0;
+        for (int k = 0; k < g.Pool!.Count; k++)
+            if (Has(classes, g.Pool[k].Profile.Class))
+                yes += g.Of(k);
+        return yes / g.Total;
+    }
+
+    /// <summary>Whether a side has a ship of a class at sea (the census).</summary>
+    static bool AtSea(World w, Matchups m, byte side, ShipClass c)
+    {
+        if (m.Census(w, side).Classes is not { } at)
+            return false;
+        foreach (var (p, _) in at)
+            if (ReferenceEquals(p.Class, c))
+                return true;
+        return false;
+    }
+
+    static bool Has(List<ShipClass> classes, ShipClass c)
+    {
+        foreach (var x in classes)
+            if (ReferenceEquals(x, c))
+                return true;
+        return false;
+    }
 
     /// <summary>Where a side's pursued aim has its main body search for the enemy (docs/battle/aims.md A3, A4), as of the
     /// last update: across the enemy's way (<c>Way</c>) to the zone his Reach makes for, for a Stop of it; the hunting
@@ -229,25 +283,29 @@ public sealed class AimBook
             for (int i = 0; i < Count(side); i++)
                 sides[side]![i].State = Read(w, side, i).State;
         for (int side = 0; side < sides.Length; side++)
-            wanted[side] = Count(side) > 0 ? WantedNow(w, store, side) : 0;
+            WantedNow(store, side);
     }
 
-    int WantedNow(World w, ShipStore store, int side)
+    void WantedNow(ShipStore store, int side)
     {
-        if (Pursued(side) is not (int p and >= 0))
-            return 0;
+        wantUnarmed[side] = false;
+        wantClasses[side]?.Clear();
+        if (Count(side) == 0 || Pursued(side) is not (int p and >= 0))
+            return;
         var a = this[side, p];
         if (a.Kind == AimKind.Sink)
-            return 1 << (int)ShipType.Merchant;
+        {
+            wantUnarmed[side] = true;
+            return;
+        }
         if (a.Kind != AimKind.Stop || a.About is not (>= 0 and < 256) || FirstNotStop(a.About) is not (int j and >= 0))
-            return 0;
+            return;
         var e = sides[a.About]![j];
-        int bits = 0;
         if (e.Aim.Kind == AimKind.Reach)
             foreach (int ship in e.Ships)
-                if (!e.Arrived.Contains(ship) && store.SlotOf(ship) is int slot and >= 0 && Aims.Afloat(store, slot))
-                    bits |= 1 << (int)w.Types.Of(store[slot].Handling.Class);
-        return bits;
+                if (!e.Arrived.Contains(ship) && store.SlotOf(ship) is int slot and >= 0 && Aims.Afloat(store, slot) &&
+                    store[slot].Handling.Class is var cls && !Has(wantClasses[side] ??= new(4), cls))
+                    wantClasses[side]!.Add(cls);
     }
 
     /// <summary>How a side's i-th aim stands now.</summary>

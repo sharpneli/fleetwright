@@ -77,7 +77,7 @@ public class DeploymentTests(ITestOutputHelper output)
         var groups = ai.Tactical.Of(w, 0);
         Assert.Equal(1, groups.Length);
         var g = groups[0];
-        output.WriteLine($"one group of {g.Count}, {g.Capitals} capital, {g.TonnageT:F0} t; its van #{g.Van}");
+        output.WriteLine($"one group of {g.Count}, {g.TonnageT:F0} t; its van #{g.Van}");
         Assert.Equal(6, g.Count);
         Assert.True(g.TonnageT > 6 * 14_000, $"{g.TonnageT:F0}");   // six dreadnoughts, as they're taken
         Assert.Equal(w.Groups.Get(w.Groups.Count)!.Guide, g.Van);   // the enemy column's guide leads it north

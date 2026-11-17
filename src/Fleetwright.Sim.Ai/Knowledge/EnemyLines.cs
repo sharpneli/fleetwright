@@ -3,8 +3,9 @@ using Fleetwright.Sim.Core;
 namespace Fleetwright.Sim.Ai.Knowledge;
 
 /// <summary>The enemy's line through a contact (docs/battle/fighting.md 4.2c, docs/battle/command.md 5.1b): the contacts
-/// a navy holds in sight chained to it, each within <see cref="SimSettings.FireLineGapM"/> of the next and of its type
-/// if that's made out, van first (furthest along the contact's course; a stopped line, nearest the contact first). Just
+/// a navy holds in sight chained to it, each within <see cref="SimSettings.FireLineGapM"/> of the next and, once she's made
+/// out to her type, of a size with her (tonnage, as the matchup takes them, within <see cref="SimSettings.AllocationLineShare"/>
+/// of each other: the line's rule, docs/battle/allocation.md AL7c), van first (furthest along the contact's course; a stopped line, nearest the contact first). Just
 /// the contact if it's held but not in sight; nothing if it's not held. What an admiral distributes his fire over and a
 /// line's guide crosses ahead of; a contact seen going down is left out of it (fighting.md 4.3b): one implementation, until the tactical picture's enemy groups (5.1c) take it over.
 /// Each user holds his own (its scratch); nothing allocated once grown.</summary>
@@ -18,7 +19,7 @@ public sealed class EnemyLines(SeenContacts seen)
 
     /// <summary>The line through a contact (an entity, as the side's picture holds it), van first, into a list of
     /// entities.</summary>
-    public void Of(World world, byte side, int target, List<int> into)
+    public void Of(World world, Matchups m, byte side, int target, List<int> into)
     {
         into.Clear();
         var pic = world.Sightings.Of(side);
@@ -31,7 +32,8 @@ public sealed class EnemyLines(SeenContacts seen)
                 into.Add(target);
             return;
         }
-        var type = pic[ti].Type;
+        bool typed = pic[ti].Level >= ContactLevel.Type;
+        double t0 = typed ? m.TonnageOf(world, side, pic[ti]) : 0;
         // one seen going down is no target: the line is chained from where she is, without her
         var (at, v, _) = pic.EstimateAt(ti, world.Time.Ms, world.Settings);
         int skip = pic[ti].Out ? 1 : 0;
@@ -43,7 +45,7 @@ public sealed class EnemyLines(SeenContacts seen)
         visited[ti] = visitStamp;
         for (int q = 0; q < queue.Count; q++)
             foreach (int j in seen.Close(world, side, q == 0 ? at : seen.Position(side, queue[q])))
-                if (visited[j] != visitStamp && (type == ShipType.Unknown || pic[j].Type == type))
+                if (visited[j] != visitStamp && (!typed || Alike(world, m, side, t0, pic[j])))
                 {
                     visited[j] = visitStamp;
                     queue.Add(j);
@@ -65,5 +67,14 @@ public sealed class EnemyLines(SeenContacts seen)
         Array.Sort(keys, items, 0, n);
         for (int k = 0; k < n; k++)
             into.Add(items[k]);
+    }
+
+    /// <summary>Whether a contact made out to her type is of a size with the line's (tonnage within the line's share).</summary>
+    static bool Alike(World world, Matchups m, byte side, double t0, in Contact c)
+    {
+        if (c.Level < ContactLevel.Type)
+            return false;
+        double t = m.TonnageOf(world, side, c);
+        return t0 > 0 && t > 0 && Math.Min(t, t0) >= world.Settings.AllocationLineShare * Math.Max(t, t0);
     }
 }

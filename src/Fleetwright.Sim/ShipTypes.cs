@@ -39,14 +39,11 @@ public sealed class ShipTypes(SimSettings settings)
     /// <summary>Whether a class is a merchant: no main mounts. The one type that doesn't depend on the others.</summary>
     public static bool IsMerchant(ShipClass c) => c.Silhouette.MainMounts == 0;
 
-    /// <summary>What a class shows side on above the water, m² (its silhouette's: what a lookout judges her size by).</summary>
-    public static double SideAreaM2(ShipClass c) => Sight.AreaAbove(c.Numbers(c.Silhouette.SideAreaM2), 0);
-
     /// <summary>The length and draught of a ship estimated at a size (docs/battle/allocation.md AL7b: a contact made out as a
     /// type and no more, sized for a torpedo's aim and depth): the ships placed, armed or not as she is, each by how near
-    /// what it shows side on is to the estimate (a normal in its log, of <paramref name="sigma"/>); every ship placed if
-    /// none of her kind is, and 120 m by 4 m in a world with no ships.</summary>
-    public (double LengthM, double DraughtM) At(double sizeM2, double sigma, bool armed)
+    /// its displacement is to the estimate (a normal in its log, of <paramref name="sigma"/>); every ship placed if none
+    /// of her kind is, and 120 m by 4 m in a world with no ships.</summary>
+    public (double LengthM, double DraughtM) At(double sizeT, double sigma, bool armed)
     {
         for (int pass = 0; pass < 2; pass++)
         {
@@ -55,7 +52,7 @@ public sealed class ShipTypes(SimSettings settings)
             {
                 if (pass == 0 && IsMerchant(cls) == armed)
                     continue;
-                double area = SideAreaM2(cls), x = sizeM2 > 0 && area > 0 ? Math.Log(area / sizeM2) / sigma : 0, k = ships * Math.Exp(-0.5 * x * x);
+                double t = cls.Motion.FullDisplacementT, x = sizeT > 0 && t > 0 ? Math.Log(t / sizeT) / sigma : 0, k = ships * Math.Exp(-0.5 * x * x);
                 (w, l, d) = (w + k, l + k * cls.Length, d + k * cls.Vertical.Draught);
             }
             if (w > 1e-300)

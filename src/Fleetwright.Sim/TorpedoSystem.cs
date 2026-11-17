@@ -451,8 +451,8 @@ public sealed class TorpedoSystem : IWorldSystem
             ref readonly var c = ref pic![ci];
             if (c.TakenFor >= 0 && ships.Registry.Get(c.TakenFor) is { } taken)
                 (length, draught) = (taken.Length, taken.Vertical.Draught);
-            else if (c.Level >= ContactLevel.Type && c.SizeM2 > 0)   // ships of her size as estimated (AL7b)
-                (length, draught) = world.Types.At(c.SizeM2, Math.Max(c.SizeSigma, settings.SightSizeFloor), c.Armed);
+            else if (c.Level >= ContactLevel.Type && c.SizeT > 0)   // ships of her size as estimated (AL7b)
+                (length, draught) = world.Types.At(c.SizeT, Math.Max(c.SizeSigma, settings.SightSizeFloor), c.Armed);
             else
                 (length, draught) = world.Types.Mean();   // not yet made out to her type: the warships at sea, on average
         }

@@ -978,7 +978,7 @@ public sealed class Sightings
         }
     }
 
-    /// <summary>Her size as the lookouts estimate it (docs/battle/allocation.md AL7b): what she shows side on, off by a draw of hers for
+    /// <summary>Her size as the lookouts estimate it (docs/battle/allocation.md AL7b): her bulk (displacement), off by a draw of hers for
     /// the navy (its own stream, so no other draw moves) times the error at the best margin she's been made out at, the
     /// lookout's <see cref="SimSettings.SightSizeSigma"/> at the type's margin to none at the class's; and whether she's
     /// armed (a main battery: <see cref="ShipTypes.IsMerchant"/>).</summary>
@@ -987,10 +987,10 @@ public sealed class Sightings
         var cls = ts.Handling.Class;
         double span = Math.Max(settings.SightClassMargin - settings.SightTypeMargin, 1e-9);
         double sigma = settings.SightSizeSigma * Math.Clamp((settings.SightClassMargin - margin) / span, 0, 1);
-        if (typed && c.SizeM2 > 0)
+        if (typed && c.SizeT > 0)
             sigma = Math.Min(sigma, c.SizeSigma);
         double z = sizeStream.Derive((ulong)by << 32 ^ (uint)ts.Entity).NextGaussian();
-        (c.SizeM2, c.SizeSigma, c.Armed) = (ShipTypes.SideAreaM2(cls) * Math.Exp(z * sigma), sigma, !ShipTypes.IsMerchant(cls));
+        (c.SizeT, c.SizeSigma, c.Armed) = (cls.Motion.FullDisplacementT * Math.Exp(z * sigma), sigma, !ShipTypes.IsMerchant(cls));
     }
 
     /// <summary>The margin whose a ship is made out at under a sky (cd/m²): the type's by day, the class's in the dark,

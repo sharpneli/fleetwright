@@ -124,24 +124,24 @@ public sealed class Matchups
     }
 
     /// <summary>The classes a contact made out to her type may be, weighed (docs/battle/allocation.md AL7b): each class
-    /// of the pool by its ships, times how near its size is to her estimated size (<see cref="Contact.SizeM2"/>: a normal
-    /// in the log of what she shows side on, of her estimate's error, never under <see cref="SimSettings.SightSizeFloor"/>), armed or
+    /// of the pool by its ships, times how near its size is to her estimated size (<see cref="Contact.SizeT"/>: a normal
+    /// in the log of her displacement, of her estimate's error, never under <see cref="SimSettings.SightSizeFloor"/>), armed or
     /// not as she's made out. <see cref="Of"/> over <see cref="Total"/> is a class's share; no pool, no total.</summary>
-    public readonly struct Weighing(List<(MatchupProfile Profile, double Count)>? pool, double sizeM2, double sigma, int armed, bool flat, double total)
+    public readonly struct Weighing(List<(MatchupProfile Profile, double Count)>? pool, double sizeT, double sigma, int armed, bool flat, double total)
     {
         public List<(MatchupProfile Profile, double Count)>? Pool { get; } = pool;
         public double Total { get; } = total;
 
         /// <summary>The pool's k-th class's weight.</summary>
-        public double Of(int k) => Weight(Pool![k].Profile, Pool[k].Count, sizeM2, sigma, armed, flat);
+        public double Of(int k) => Weight(Pool![k].Profile, Pool[k].Count, sizeT, sigma, armed, flat);
 
-        internal static double Weight(MatchupProfile p, double n, double sizeM2, double sigma, int armed, bool flat)
+        internal static double Weight(MatchupProfile p, double n, double sizeT, double sigma, int armed, bool flat)
         {
             if (n <= 1e-9 || armed >= 0 && ShipTypes.IsMerchant(p.Class) == (armed == 1))
                 return 0;
-            if (flat || sizeM2 <= 0 || p.SideAreaM2 <= 0)
+            if (flat || sizeT <= 0 || p.DisplacementT <= 0)
                 return n;
-            double x = Math.Log(p.SideAreaM2 / sizeM2) / sigma;
+            double x = Math.Log(p.DisplacementT / sizeT) / sigma;
             return n * Math.Exp(-0.5 * x * x);
         }
     }
@@ -159,22 +159,22 @@ public sealed class Matchups
         double sigma = Math.Max(c.SizeSigma, s.SightSizeFloor);
         int armed = c.Armed ? 1 : 0;
         var pool = l.Typed[c.Side];
-        double total = Sum(pool, c.SizeM2, sigma, armed, false);
+        double total = Sum(pool, c.SizeT, sigma, armed, false);
         if (total <= 0)
-            total = Sum(pool = l.Full[c.Side], c.SizeM2, sigma, armed, false);
+            total = Sum(pool = l.Full[c.Side], c.SizeT, sigma, armed, false);
         if (total <= 0)
-            total = Sum(pool, c.SizeM2, sigma, armed = -1, false);
+            total = Sum(pool, c.SizeT, sigma, armed = -1, false);
         bool flat = total <= 1e-300;
         if (flat)
-            total = Sum(pool, c.SizeM2, sigma, armed, true);
-        return new Weighing(pool, c.SizeM2, sigma, armed, flat, total > 1e-300 ? total : 0);
+            total = Sum(pool, c.SizeT, sigma, armed, true);
+        return new Weighing(pool, c.SizeT, sigma, armed, flat, total > 1e-300 ? total : 0);
     }
 
-    static double Sum(List<(MatchupProfile Profile, double Count)>? pool, double sizeM2, double sigma, int armed, bool flat)
+    static double Sum(List<(MatchupProfile Profile, double Count)>? pool, double sizeT, double sigma, int armed, bool flat)
     {
         double t = 0;
         for (int k = 0; pool != null && k < pool.Count; k++)
-            t += Weighing.Weight(pool[k].Profile, pool[k].Count, sizeM2, sigma, armed, flat);
+            t += Weighing.Weight(pool[k].Profile, pool[k].Count, sizeT, sigma, armed, flat);
         return t;
     }
 
@@ -257,7 +257,7 @@ public sealed class Matchups
 
     static void Copy(List<(MatchupProfile Profile, int Count)>? src, int total, ref List<(MatchupProfile Profile, double Count)>? dst, ref double dstTotal)
     {
-        if (src == null || total <= 0)
+        if (src == null)
         {
             dst?.Clear();
             dstTotal = 0;
@@ -265,23 +265,25 @@ public sealed class Matchups
         }
         dst ??= new(src.Count);
         dst.Clear();
-        foreach (var (p, n) in src)
-            dst.Add((p, n));
-        dstTotal = total;
+        if (total > 0)
+            foreach (var (p, n) in src)
+                dst.Add((p, n));
+        dstTotal = Math.Max(total, 0);
     }
 
     static void Copy(List<(MatchupProfile Profile, double Count)>? src, double total, ref List<(MatchupProfile Profile, double Count)>? dst, ref double dstTotal)
     {
-        if (src == null || total <= 1e-9)
+        if (src == null)
         {
             dst?.Clear();
             dstTotal = 0;
             return;
         }
-        dst ??= new(src.Count);
+        dst ??= new(src.Count);   // made with its source, empty or not: one filled later mid-fight would be garbage
         dst.Clear();
-        dst.AddRange(src);
-        dstTotal = total;
+        if (total > 1e-9)
+            dst.AddRange(src);
+        dstTotal = total > 1e-9 ? total : 0;
     }
 
     static void Take(List<(MatchupProfile Profile, double Count)>? list, ref double total, MatchupProfile p, double n)

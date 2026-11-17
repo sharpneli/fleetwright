@@ -48,11 +48,11 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
     readonly GroupSystem groups = world.Groups;
     readonly ShipStore store = world.Ships.Store;
     readonly SortedDictionary<int, UnitRole> set = [];
-    readonly Dictionary<int, UnitRole> allocated = [];
+    readonly Dictionary<int, UnitRole> allocated = new(64);
     readonly List<(int Unit, UnitRole Role)> made = new(64);   // the allocation in the order made: what's hashed
-    readonly HashSet<int> mains = [];
-    readonly HashSet<int> lookouts = [];   // squadrons (group ids) whose own ships are their side's lookouts (AL4)
-    readonly HashSet<int> fastWing = [];   // the strong units with speed to spare: the fast wing in battle (AL5)
+    readonly HashSet<int> mains = new(8);   // sized up front, as the others: a set's first entry mid-fight is garbage
+    readonly HashSet<int> lookouts = new(8);   // squadrons (group ids) whose own ships are their side's lookouts (AL4)
+    readonly HashSet<int> fastWing = new(8);   // the strong units with speed to spare: the fast wing in battle (AL5)
     long nextMs = long.MinValue;
     long shape = long.MinValue;   // the units as they were at the last allocation
     bool provisional;             // allocated outside a think (a test, the map before the first): the first think does it again

@@ -18,7 +18,7 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     /// <summary>A judger's scratch: one per worker lane (docs/battle/workers.md W13).</summary>
     sealed class Lane
     {
-        public readonly MatchupSide Own = new(), Theirs = new(), NearTheirs = new();
+        public readonly MatchupSide Own = new(), Theirs = new(), NearTheirs = new(), One = new();
         public readonly List<(int Ship, double AsternM, double AbeamM)> Line = new(32);
         public readonly List<(double D, int K, int Slot)> FallCands = new(32);
         public readonly List<int> Written = new(64);   // units whose call was made since the last Publish
@@ -312,11 +312,33 @@ public sealed class MatchupJudge(GroupSystem groups, SeenContacts seen, Doctrine
     public bool AttackerAgainst(World world, MatchupProfile a, MatchupProfile b, byte side)
     {
         double share = doctrine.OfGroup(null, side, DoctrineField.RangeShare);
-        if (pairs.TryGetValue((a, b, share), out bool yes))
+        lock (pairs)   // asked on the workers too (a captain's posture): made once, read after
+        {
+            if (pairs.TryGetValue((a, b, share), out bool yes))
+                return yes;
+            (oneA[0], oneB[0]) = (new MatchupEntry(a, 1), new MatchupEntry(b, 1));
+            pairs[(a, b, share)] = yes = (Matchup.Attackers(oneA, oneB, world.Settings) & 1) != 0;
             return yes;
-        (oneA[0], oneB[0]) = (new MatchupEntry(a, 1), new MatchupEntry(b, 1));
-        pairs[(a, b, share)] = yes = (Matchup.Attackers(oneA, oneB, world.Settings) & 1) != 0;
-        return yes;
+        }
+    }
+
+    /// <summary>How much of what a contact may be, as a navy (<paramref name="viewer"/>) holds her (the class she's taken
+    /// for, else the classes her estimate weighs: <see cref="MatchupSide.AddContact"/>), is an attacker against a class
+    /// (<paramref name="theyAttack"/>) or a class is one against (docs/battle/allocation.md AL7c), 0-1: a torpedo threat
+    /// to a line or a ship, and the heavy ships a boat keeps clear of, by the matchup rather than her type.</summary>
+    public double AttackerShare(World world, in Contact c, MatchupProfile own, byte viewer, bool theyAttack)
+    {
+        var one = L.One;
+        one.Clear();
+        one.AddContact(world, Matchups, viewer, c);
+        double yes = 0, all = 0;
+        foreach (ref readonly var e in one.Entries)
+        {
+            all += e.Count;
+            if (theyAttack ? AttackerAgainst(world, e.Profile, own, viewer) : AttackerAgainst(world, own, e.Profile, viewer))
+                yes += e.Count;
+        }
+        return all > 0 ? yes / all : 0;
     }
 
     /// <summary>The enemy a ship's side holds in sight within <see cref="SimSettings.FightCompareM"/> of her, as

@@ -11,8 +11,8 @@ public struct EnemyGroup
     /// <summary>Its tonnage, as its ships are taken (<see cref="Matchups.TonnageOf"/>).</summary>
     public double TonnageT;
 
-    /// <summary>How many ships, and how many taken for capital ships.</summary>
-    public int Count, Capitals;
+    /// <summary>How many ships.</summary>
+    public int Count;
 
     /// <summary>Its van: the ship furthest along its course (the nearest the centre, stopped), and where it is.</summary>
     public int Van;
@@ -129,8 +129,6 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
             g.Velocity += seen.Velocity(side, i);
             g.TonnageT += matchups.TonnageOf(world, pic.Side, pic[i]);
             g.Count++;
-            if (pic[i].Type == ShipType.Capital)
-                g.Capitals++;
         }
         for (int k = 0, at = 0; k < v.Count; k++)
         {
@@ -154,7 +152,7 @@ public sealed class TacticalPicture(SeenContacts seen, Matchups matchups)
             ref var g = ref v.Groups[k];
             if (Measures == null)
             {
-                (g.StrengthT, g.Line) = (g.TonnageT, g.Capitals > 0);
+                (g.StrengthT, g.Line) = (g.TonnageT, true);   // no measures (no AI system round it): every group a line
                 continue;
             }
             scratch.Clear();

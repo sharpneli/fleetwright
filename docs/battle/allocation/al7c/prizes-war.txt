@@ -1,0 +1,124 @@
+The prizes' war, 1920: 12 ships, 2 sides, from 1920-09-14 08:00:00.000 until 1920-09-14 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1920: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   5c164062bb659675   (15.9 s)
+           main guns: 3 fell out for them, main mounts out 5 of 8 (5 of 8 guns): magazine flooded by the sea 3, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 12 ships afloat: main mounts out 10 of 36 (10 of 36 guns): magazine flooded by the sea 6, gunhouse out of action 3, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4489 fired, 0 at ships seen done for
+           France       done? retiring (outmatched); 2 of 6 afloat home, 4 not (4 in an encounter, 3 stopped, 0 dead in the water, the farthest 41 km)
+           Italy        done? retiring (outmatched); 3 of 6 afloat home, 3 not (3 in an encounter, 2 stopped, 2 dead in the water, the farthest 105 km)
+  seed   1921: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   5f4e21b9714cded0   (14.4 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): guns out 2, gunhouse out of action 1
+                      at the end, 12 ships afloat: main mounts out 4 of 36 (4 of 36 guns): gunhouse destroyed 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4377 fired, 0 at ships seen done for
+           France       done? retiring (outmatched); 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 54 km)
+           Italy        done? retiring (outmatched); 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 1 dead in the water, the farthest 88 km)
+  seed   1922: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   708c88dd8a8c23da   (11.7 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 2 of 36 (2 of 36 guns): gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1766 fired, 0 at ships seen done for
+           France       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 206 km)
+           Italy        done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 224 km)
+  seed   1923: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.07   Italy lost 1/6 (1918 t), score 0.00   (broke in two 1)   861f3ea202d62674   (15.2 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse destroyed 4, gunhouse out of action 2, magazine spent (its race) 1, magazine put out by a hit 1, guns out 1
+                      at the end, 11 ships afloat: main mounts out 5 of 32 (5 of 32 guns): gunhouse destroyed 3, magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 3127 fired, 0 at ships seen done for
+           France       done? battle; 3 of 6 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 14 km)
+           Italy        done? battle; 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 1 dead in the water, the farthest 106 km)
+  seed   1924: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   eabf71742d3678e5   (11.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 2 of 36 (2 of 36 guns): magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1248 fired, 0 at ships seen done for
+           France       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 323 km)
+           Italy        done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 372 km)
+  seed   1925: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   b4e1b9e9d218bdae   (10.1 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 1 of 36 (1 of 36 guns): gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1309 fired, 0 at ships seen done for
+           France       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 304 km)
+           Italy        done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 306 km)
+  seed   1926: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.30   Italy lost 1/6 (8106 t), score 0.00   (foundered 1)   5dc78842d15a5ae2   (15.1 s)
+           main guns: 2 fell out for them, main mounts out 2 of 4 (2 of 4 guns): gunhouse out of action 2
+                      at the end, 11 ships afloat: main mounts out 6 of 34 (6 of 34 guns): magazine flooded by the sea 4, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 7025 fired, 141 at ships seen done for
+           France       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 1 stopped, 1 dead in the water, the farthest 91 km)
+           Italy        done? retiring (outmatched); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 48 km)
+  seed   1927: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   a22b59cefe96523a   (13.0 s)
+           main guns: 3 fell out for them, main mounts out 4 of 6 (4 of 6 guns): guns out 3, gunhouse destroyed 1
+                      at the end, 12 ships afloat: main mounts out 3 of 36 (3 of 36 guns): gunhouse out of action 2, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4141 fired, 0 at ships seen done for
+           France       done? home (gave up); 3 of 6 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 56 km)
+           Italy        done? retiring (outmatched); 3 of 6 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 129 km)
+  seed   1928: time    at 15:00 (+7:00)  France lost 1/6 (1852 t), score 0.00   Italy lost 0/6 (0 t), score 0.07   (capsized 1)   26c218bb83e2dcfc   (18.2 s)
+           main guns: 2 fell out for them, main mounts out 6 of 8 (6 of 8 guns): gunhouse destroyed 2, gunhouse out of action 2, guns out 2
+                      at the end, 11 ships afloat: main mounts out 9 of 32 (9 of 32 guns): gunhouse destroyed 4, magazine flooded by the sea 3, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 6626 fired, 0 at ships seen done for
+           France       done? retiring (outmatched); 2 of 5 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 46 km)
+           Italy        done? retiring (outmatched); 2 of 6 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 77 km)
+  seed   1929: time    at 15:00 (+7:00)  France lost 1/6 (1852 t), score 0.17   Italy lost 2/6 (4443 t), score 0.07   (foundered 1, capsized 2)   23048644df84b5cd   (15.0 s)
+           main guns: 4 fell out for them, main mounts out 11 of 14 (11 of 14 guns): gunhouse destroyed 5, guns out 4, gunhouse out of action 2
+                      at the end, 9 ships afloat: main mounts out 2 of 24 (2 of 24 guns): gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4186 fired, 0 at ships seen done for
+           France       done? home (gave up); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 28 km)
+           Italy        done? retiring (outmatched); 4 of 4 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1930: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   a399c952e257cfc0   (11.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 12 ships afloat: main mounts out 1 of 36 (1 of 36 guns): gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2439 fired, 0 at ships seen done for
+           France       done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 321 km)
+           Italy        done? contact; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 320 km)
+  seed   1931: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.00   Italy lost 0/6 (0 t), score 0.00   3eead8c7bcd93bf2   (12.7 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (3 of 4 guns): guns out 3
+                      at the end, 12 ships afloat: main mounts out 3 of 36 (3 of 36 guns): guns out 2, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1952 fired, 0 at ships seen done for
+           France       done? retiring (outmatched); 6 of 6 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Italy        done? contact; 1 of 6 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 97 km)
+  seed   1932: time    at 15:00 (+7:00)  France lost 0/6 (0 t), score 0.23   Italy lost 3/6 (6295 t), score 0.00   (capsized 3)   d9dd5e8ae2b00302   (14.8 s)
+           main guns: 1 fell out for them, main mounts out 2 of 4 (2 of 4 guns): magazine flooded by the sea 1, guns out 1
+                      at the end, 9 ships afloat: main mounts out 2 of 24 (2 of 24 guns): magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 6959 fired, 21 at ships seen done for
+           France       done? lost (lost contact); 0 of 6 afloat home, 6 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 268 km)
+           Italy        done? retiring (outmatched); 0 of 3 afloat home, 3 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 149 km)
+  seed   1933: time    at 15:00 (+7:00)  France lost 1/6 (1918 t), score 0.17   Italy lost 1/6 (4529 t), score 0.07   (capsized 2)   0e738bfac2b4ab2e   (18.1 s)
+           main guns: 2 fell out for them, main mounts out 5 of 6 (5 of 6 guns): gunhouse out of action 3, gunhouse destroyed 2
+                      at the end, 10 ships afloat: main mounts out 6 of 30 (6 of 30 guns): magazine flooded by the sea 4, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 7025 fired, 10 at ships seen done for
+           France       done? retiring (outmatched); 3 of 5 afloat home, 2 not (2 in an encounter, 1 stopped, 1 dead in the water, the farthest 89 km)
+           Italy        done? retiring (outmatched); 1 of 5 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 235 km)
+  seed   1934: time    at 15:00 (+7:00)  France lost 1/6 (1918 t), score 0.17   Italy lost 2/6 (4443 t), score 0.07   (foundered 1, capsized 2)   fe73a13a960aeff5   (11.1 s)
+           main guns: 4 fell out for them, main mounts out 11 of 14 (11 of 14 guns): guns out 6, gunhouse destroyed 3, gunhouse out of action 2
+                      at the end, 9 ships afloat: main mounts out 7 of 24 (7 of 24 guns): gunhouse destroyed 3, magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4256 fired, 123 at ships seen done for
+           France       done? lost (lost contact); 2 of 5 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 136 km)
+           Italy        done? retiring (outmatched); 3 of 4 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 31 km)
+  seed   1935: time    at 15:00 (+7:00)  France lost 2/6 (3704 t), score 0.37   Italy lost 2/6 (9807 t), score 0.14   (capsized 1, broke in two 1)   ad6849a4a165279b   (19.6 s)
+           main guns: 2 fell out for them, main mounts out 5 of 6 (5 of 6 guns): guns out 2, magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 10 ships afloat: main mounts out 11 of 28 (11 of 28 guns): magazine flooded by the sea 6, gunhouse destroyed 3, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 8212 fired, 29 at ships seen done for
+           France       done? home (gave up); 1 of 4 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 186 km)
+           Italy        done? retiring (broken off); 0 of 4 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 171 km)
+
+over 16 seeds:
+  ended time     16 times, after 7:00 on average
+  France       lost 0.4 of 6 ships (from 0 to 2), 703 t; made 167 hits, fired 7.0 torpedoes; aims met 0 times, score 0.09
+  Italy        lost 0.8 of 6 ships (from 0 to 3), 2471 t; made 72 hits, fired 3.6 torpedoes; aims met 0 times, score 0.03
+over 16 seeds:
+  main guns: 29 fell out for them, main mounts out 66 of 90 (66 of 90 guns): guns out 24, gunhouse destroyed 19, gunhouse out of action 16, magazine flooded by the sea 5, magazine spent (its race) 1, magazine put out by a hit 1
+             at the end, 176 ships afloat: main mounts out 74 of 516 (74 of 516 guns): magazine flooded by the sea 28, gunhouse destroyed 22, gunhouse out of action 22, guns out 2
+  blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+  shells: 69137 fired, 324 at ships seen done for

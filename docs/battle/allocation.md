@@ -140,7 +140,7 @@ aims' kinds) reads her matchup instead.
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | **done 2026-11-17** (the force admirals with AL3) |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | **done 2026-11-17** (below) |
 | AL6 | **Regrouping** the worn-down squadrons | **done 2026-11-17** (below) |
-| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for; AL7b 2026-11-17: the size estimate, the matchup by it; AL7c the decisions |
+| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | **done 2026-11-17**: AL7a a contact not made out is one not yet accounted for; AL7b the size estimate, the matchup by it; AL7c every decision by the matchup |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
 
 ### AL0 The bench (built 2026-11-16)
@@ -385,21 +385,72 @@ Sarych's Russia 1.6 (3.1), the Jutland's Germany 38.8 (49.0, Britain 20.5 still 
 ### AL7b A ship made out to her type is estimated, not typed (built 2026-11-17)
 
 **The estimate.** Once a navy makes a ship out to her type its lookouts judge her size and whether she's armed
-(`Contact.SizeM2`, `SizeSigma`, `Armed`; `Sightings.Size`). Size is what she shows side on above the water (her
-silhouette's area, `ShipTypes.SideAreaM2`): what the eye takes in, and what tells a dreadnought from a destroyer far
-better than her length here (the crunched destroyers of 1914 are 102 m to an Iron Duke's 178 m, but 661 m² to her
-1,792 m²). It's off by a log-normal error, `SightSizeSigma` (0.35 [EST]: a quarter on her length and as much on her height)
-at the type's margin, shrinking to none at the class's; the draw is hers for each navy (a stream of its own, so no other
-draw moves), and the error is the least yet, so the estimate only comes nearer as he makes her out better. Asked of the
-research companion (REQUESTS.md 2026-11-17).
+(`Contact.SizeT`, `SizeSigma`, `Armed`; `Sightings.Size`). Size is her bulk: what she displaces, as the eye takes it from
+her length, freeboard and upperworks. It's off by a log-normal error, `SightSizeSigma` (0.35 [EST]) at the type's margin,
+shrinking to none at the class's; the draw is hers for each navy (a stream of its own, so no other draw moves), and the
+error is the least yet, so the estimate only comes nearer as he makes her out better. Made out to her type, he has her
+kind right: the types' bands are five times apart. Asked of the research companion (REQUESTS.md 2026-11-17).
+
+*First built on what she shows side on (her silhouette's area), the eye's own measure; AL7c moved it to her bulk.* Side
+area hardly tells the kinds of the 1890s apart (Pelayo 1,009 m², Carlos V 703, the crunched Audaz destroyers 533), so a
+battleship made out to her type was a third a destroyer: Manila's, Port Arthur's and Pungdo's hunters couldn't tell the
+ships they were after from their escorts, and the side reaching made it twice as often (found by an on/off ladder of
+AL7c's changes, every one back to the type's rule, `allocation/al7c/`'s notes). Displacement parts them twentyfold.
 
 **What reads it.** The matchup takes her for her side's classes not yet made out (AL7a's pool, as armed as she is), each
-weighed by its ships and by how near its size is to the estimate (a normal in the log of the area, of her error, never
+weighed by its ships and by how near its size is to the estimate (a normal in the log of the displacement, of her error, never
 under `SightSizeFloor`, 0.1 [EST]: a ship made out well is still any of the classes about her size); `Matchups.Weigh`
 replaces the census by type, so her tonnage (`TonnageOf`), her matchup entries and what's left unaccounted for read it.
 A torpedo's aim at her takes the length and draught of the ships placed near her size (`ShipTypes.At`), and before
 she's made out to her type the warships' mean (`ShipTypes.Mean`). The type stays on the contact as the map's and the
 reports' word; nothing in the matchup reads it now.
+
+**What it moved** (`allocation/al7b/`, against `al6/`; its early wave run again from its own commit, the first try having
+read AL7c's settings): 9 of 14 sides within 2x (7); the record's loser lost more in 26 of 44 (28). Coronel's Germany
+0.8 (1.1) and the Dogger Bank's Britain 0.9 (1.9) come into band; Heligoland's Germany 3.4 (5.0), Tsushima 7.6 v 5.4 (7.4
+v 5.6) much as they were; the Jutland bloodier for Britain, 23.0 v 42.5 (12.3 v 40.3; 11-40 over its four seeds), German
+torpedo hits 13.3 a seed (8.0). The early wave within a seed or two, but for Åland's aims: Sweden meets hers in 13 of 16
+(8), Finland 2 (8), the losses much as they were (5.4 of 13 v 2.6 of 8; 5.6 v 3.8): BL6's balance there leaning Swedish.
+
+### AL7c Every decision by the matchup, not the type (built 2026-11-17)
+
+Nothing in the AI reads a contact's type now; what did reads her matchup:
+
+- **Her size as a rank** (`Knowledge.SizeRank`): her tonnage as the matchup takes her (AL7b's weighing; before she's
+  made out to her type, the mean of the ships not yet accounted for), as a rank from 0 (a small craft) to 4 (a capital
+  ship), smoothly: the old types' ranks, each at the middle of its type's band of the yardstick (`ShipTypes`) and
+  between them by the log of her tonnage, a ship made out unarmed 5. A secondary battery takes the smallest first
+  (`FireSizeShare` a step), a chief battery fighting to win the largest (`FireHeavyShare`, the user's BL5g call), as
+  before but with no step at a type's edge; an unknown's smaller size is still a guess against the one held.
+- **Torpedoes for the biggest** (a captain's own and a flotilla's admiral's target): her run or range counts longer by
+  `TorpedoSizeShare` (1 [EST]) for each step of her size under a capital ship's, so of two alike the nearer, where the
+  ranks came strictly first; an unarmed ship by her size too.
+- **A torpedo threat** (the line turning away from a contact, a ship closing up her open guns against torpedo craft
+  in reach): one that's an attacker against her by the matchup (`MatchupJudge.AttackerShare`: of the classes she may
+  be, most), where a destroyer's type or smaller was.
+- **The enemy's heavy ships** a boat keeps clear of (the screen's `SafeRange`, the attack's way round them): those his
+  boats would attack rather than fight, where capital ships and cruisers were.
+- **The aims' wanted** (`AimBook.Wanted`, 0-1): a Sink wants a ship made out unarmed; a Stop the share of what she may be
+  that's of the Reach's ships still on their way, where their types were; one taken for a class her side hasn't at sea
+  she can't be (good intelligence, the scenarios' stance: in the full game a mistaken class may mislead, a withdrawal
+  included, the user 2026-11-17), so she's weighed by her size. A captain's target counts nearer by the share,
+  his course round an escort pushes by the rest, and the commander's wanted ship is one mostly of them.
+- **The enemy's line** through a target: the ships chained to her of a size with her (tonnage within
+  `AllocationLineShare`), where it was her type; and a battery's shell is judged again when her size estimate moves.
+
+The held groups' count of capital ships is gone (read by nothing but a fallback). The type is the map's, the rail's and
+the reports' word (`ScenarioPlay`, `LossBench`, `MapScene`). Found on the way: the allocation's sets (`Roles`: the
+main bodies, lookouts and fast wing) were made empty, so the first lookout put out mid-fight was 104 bytes of garbage
+(`TorpedoTests`' flotilla attack, once the boats' targets moved); they're sized up front now, and the matchup's pools of
+ships not yet accounted for are made with their sources, empty or not.
+
+**What it moved** (`allocation/al7c/`, against `al6/`, with the estimate on displacement; `ladder.txt` the on/off ladder
+that found side area wanting): 8 of 14 sides within 2x (7); the record's loser lost more in 28 of 44 (28). The Jutland
+19.8 v 27.8 (12.3 v 40.3): Germany's losses come down toward the record's 11, Britain's within it; Tsushima 7.1 v 6.9
+(7.4 v 5.6); Coronel both in band (2.0 v 0.9); Heligoland's Germany 2.4 (5.0), Britain none; the Dogger Bank's Britain
+2.6 (1.9); Cape Sarych's Russia 1.5 (2.5). The early wave as AL6's within a seed or two (Pungdo's reach 4 of 16, Port
+Arthur's 6, Manila's 5; the Bosporus's Russia 13; the prizes' war fights, 0.4 v 0.8 of 16), but for Åland: Sweden meets
+her aims in 14 of 16 (8), Finland losing 6.2 of 13 to her 1.9 of 8 (5.6 v 3.8), the lean AL7b began; for AL8.
 
 ## Questions for the user
 

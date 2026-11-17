@@ -1,0 +1,120 @@
+Cámara at Manila, 1898: 9 ships, 2 sides, from 1898-08-19 22:30:00.000 until 1898-08-20 10:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1898: time    at 10:00 (+11:30)  Spain lost 1/5 (1083 t), aims met, score 1.00   United States lost 3/4 (14736 t), score 0.00   (foundered 2, capsized 2)   741bb84b4aa93f3e   (16.1 s)
+           main guns: 3 fell out for them, main mounts out 5 of 6 (7 of 8 guns): gunhouse out of action 2, magazine flooded by the sea 1, barbette out 1, guns out 1
+                      at the end, 5 ships afloat: main mounts out 5 of 12 (6 of 14 guns): magazine flooded by order 2, magazine flooded by the sea 2, barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3148 fired, 3 at ships seen done for
+           Spain        done? home (aims decided); 3 of 4 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 27 km)
+           United States done? home (aims decided); 1 of 1 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1899: time    at 10:00 (+11:30)  Spain lost 3/5 (14171 t), score 0.00   United States lost 2/4 (10308 t), aims met, score 1.00   (foundered 2, capsized 1)   1d05fc6f903e1788   (13.7 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 6 ships afloat: main mounts out 4 of 12 (8 of 20 guns): magazine flooded by the sea 3, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4462 fired, 38 at ships seen done for
+           Spain        done? home (aims decided); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 114 km)
+           United States done? home (aims decided); 2 of 2 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1900: time    at 10:00 (+11:30)  Spain lost 4/5 (9113 t), score 0.00   United States lost 2/4 (10308 t), aims met, score 1.00   (capsized 5)   eefc118ec17c50bf   (12.0 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 2
+                      at the end, 4 ships afloat: main mounts out 2 of 10 (4 of 16 guns): magazine flooded by the sea 1, magazine spent (its race) 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2989 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 149 km)
+           United States done? home (aims decided); 2 of 2 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1901: decided at 04:59 (+6:29)  Spain lost 5/5 (21118 t), score 0.00   United States lost 0/4 (0 t), aims met, score 1.00   (capsized 4)   800f39ae1010fbc4   (8.4 s)
+           main guns: 3 fell out for them, main mounts out 7 of 8 (7 of 8 guns): magazine flooded by order 2, magazine flooded by the sea 2, guns out 2, magazine spent (its race) 1
+                      at the end, 5 ships afloat: main mounts out 6 of 12 (8 of 20 guns): magazine flooded by order 3, magazine flooded by the sea 1, magazine spent (its race) 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2767 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           United States done? home (aims decided); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 47 km)
+  seed   1902: time    at 10:00 (+11:30)  Spain lost 2/5 (2166 t), score 0.00   United States lost 2/4 (8856 t), score 1.00   (capsized 4)   36628456650a1074   (14.4 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (4 of 4 guns): guns out 2, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 5 ships afloat: main mounts out 2 of 12 (4 of 16 guns): magazine flooded by the sea 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3743 fired, 13 at ships seen done for
+           Spain        done? battle; 1 of 3 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 86 km)
+           United States done? retiring (broken off); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 49 km)
+  seed   1903: time    at 10:00 (+11:30)  Spain lost 4/5 (9113 t), score 0.00   United States lost 1/4 (5154 t), aims met, score 1.00   (foundered 1, capsized 4)   c900f72341a2612b   (11.1 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 4 ships afloat: main mounts out 1 of 10 (2 of 16 guns): magazine flooded by order 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3031 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 87 km)
+           United States done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1904: time    at 10:00 (+11:30)  Spain lost 3/5 (3249 t), score 0.00   United States lost 2/4 (8856 t), score 1.00   (capsized 5)   68c909ecc8815032   (9.8 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 4 ships afloat: main mounts out 0 of 10 (0 of 14 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3590 fired, 42 at ships seen done for
+           Spain        done? lost (lost contact); 0 of 2 afloat home, 2 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 135 km)
+           United States done? retiring (broken off); 0 of 2 afloat home, 2 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 51 km)
+  seed   1905: time    at 10:00 (+11:30)  Spain lost 2/5 (2166 t), score 0.50   United States lost 2/4 (10308 t), score 0.50   (foundered 2, capsized 2)   bf8ff32db8e4a2ef   (15.0 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (4 of 4 guns): guns out 4
+                      at the end, 5 ships afloat: main mounts out 0 of 12 (0 of 16 guns)
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 3283 fired, 92 at ships seen done for
+           Spain        done? battle; 1 of 3 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 113 km)
+           United States done? retiring (broken off); 2 of 2 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1906: time    at 10:00 (+11:30)  Spain lost 4/5 (9113 t), score 0.00   United States lost 2/4 (8856 t), aims met, score 1.00   (foundered 2, capsized 3, broke in two 1)   871c59001a7b27bf   (13.9 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (4 of 4 guns): gunhouse destroyed 1, barbette out 1
+                      at the end, 3 ships afloat: main mounts out 4 of 8 (7 of 12 guns): magazine flooded by the sea 3, jammed 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 6207 fired, 28 at ships seen done for
+           Spain        done? home (aims decided); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 116 km)
+           United States done? home (aims decided); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 12 km)
+  seed   1907: time    at 10:00 (+11:30)  Spain lost 3/5 (3249 t), score 0.00   United States lost 0/4 (0 t), score 1.00   (foundered 1, capsized 2)   b1f1fa8f6d972f0f   (16.8 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (6 of 8 guns): magazine flooded by order 1, barbette out 1, guns out 1
+                      at the end, 6 ships afloat: main mounts out 4 of 14 (7 of 22 guns): magazine flooded by the sea 2, magazine flooded by order 1, barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 4014 fired, 6 at ships seen done for
+           Spain        done? battle; 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 149 km)
+           United States done? retiring (outmatched); 2 of 4 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 23 km)
+  seed   1908: done    at 04:23 (+5:53)  Spain lost 3/5 (3249 t), aims met, score 1.00   United States lost 0/4 (0 t), score 0.00   (capsized 3)   5e24e962c5075e7c   (7.0 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 6 ships afloat: main mounts out 1 of 14 (2 of 22 guns): magazine flooded by order 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2336 fired, 41 at ships seen done for
+  seed   1909: time    at 10:00 (+11:30)  Spain lost 2/5 (2166 t), aims met, score 1.00   United States lost 2/4 (10308 t), score 0.00   (foundered 2, capsized 2)   166c108d883928f1   (9.8 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (4 of 4 guns): magazine flooded by the sea 2, gunhouse out of action 1, guns out 1
+                      at the end, 5 ships afloat: main mounts out 2 of 12 (2 of 16 guns): magazine flooded by the sea 1, jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3068 fired, 107 at ships seen done for
+           Spain        done? home (aims decided); 2 of 3 afloat home, 1 not (1 in an encounter, 1 stopped, 0 dead in the water, the farthest 146 km)
+           United States done? home (aims decided); 2 of 2 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1910: time    at 10:00 (+11:30)  Spain lost 3/5 (3249 t), aims met, score 1.00   United States lost 2/4 (9582 t), score 0.00   (foundered 1, capsized 4)   7a6c8754a1c0b0ca   (14.5 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): magazine flooded by the sea 1, gunhouse destroyed 1
+                      at the end, 4 ships afloat: main mounts out 1 of 10 (2 of 14 guns): magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3531 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 127 km)
+           United States done? home (aims decided); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 33 km)
+  seed   1911: done    at 07:49 (+9:19)  Spain lost 2/5 (17869 t), score 0.00   United States lost 2/4 (9582 t), aims met, score 1.00   (foundered 2, capsized 2)   b98838f9108c36db   (13.3 s)
+           main guns: 5 fell out for them, main mounts out 8 of 10 (11 of 14 guns): guns out 3, magazine flooded by the sea 2, magazine flooded by order 1, gunhouse destroyed 1, jammed 1
+                      at the end, 5 ships afloat: main mounts out 7 of 10 (11 of 14 guns): magazine flooded by the sea 3, magazine flooded by order 2, gunhouse destroyed 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2954 fired, 0 at ships seen done for
+  seed   1912: done    at 05:59 (+7:29)  Spain lost 3/5 (8030 t), score 0.00   United States lost 1/4 (5154 t), aims met, score 1.00   (foundered 2, capsized 2)   da77f042342a5b4f   (9.6 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 6 ships afloat: main mounts out 2 of 14 (4 of 22 guns): magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2067 fired, 2 at ships seen done for
+  seed   1913: time    at 10:00 (+11:30)  Spain lost 2/5 (2166 t), aims met, score 1.00   United States lost 0/4 (0 t), score 0.00   (capsized 2)   b2b54f9ebd89c4b9   (11.2 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 7 ships afloat: main mounts out 0 of 16 (0 of 24 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2368 fired, 20 at ships seen done for
+           Spain        done? home (aims decided); 2 of 3 afloat home, 1 not (1 in an encounter, 1 stopped, 0 dead in the water, the farthest 137 km)
+           United States done? home (aims decided); 3 of 4 afloat home, 1 not (1 in an encounter, 1 stopped, 0 dead in the water, the farthest 12 km)
+
+over 16 seeds:
+  ended time     12 times, after 11:30 on average
+  ended decided   1 times, after 6:29 on average
+  ended done      3 times, after 7:33 on average
+  Spain        lost 2.9 of 5 ships (from 1 to 5), 6954 t; made 179 hits, fired 1.6 torpedoes; aims met 5 times, score 0.34
+  United States lost 1.4 of 4 ships (from 0 to 3), 7001 t; made 246 hits, fired 3.4 torpedoes; aims met 7 times, score 0.66; regrouped 0.2 squadrons
+over 16 seeds:
+  main guns: 25 fell out for them, main mounts out 47 of 52 (57 of 64 guns): guns out 18, magazine flooded by the sea 10, gunhouse out of action 7, magazine flooded by order 4, gunhouse destroyed 3, barbette out 3, magazine spent (its race) 1, jammed 1
+             at the end, 80 ships afloat: main mounts out 41 of 188 (67 of 278 guns): magazine flooded by the sea 20, magazine flooded by order 10, guns out 4, magazine spent (its race) 2, barbette out 2, jammed 2, gunhouse destroyed 1
+  blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 2 ships blacked out
+  shells: 53558 fired, 392 at ships seen done for

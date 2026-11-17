@@ -1,0 +1,22 @@
+AL7c's on/off ladder (2026-11-17): each change back to the type's rule (AL7C_OFF, a temporary switch since removed),
+16 seeds of the aims scenarios; the side reaching's aims met, and losses. The estimate on side area (AL7b as first built).
+
+                                      Pungdo (China)     Port Arthur (Russia)   Manila (Spain)
+AL6                                   aims 4             aims 3                 aims 5
+AL7b                                  aims 6             aims 4                 aims 5
+AL7c, every change                    aims 10            aims 8                 aims 10
+  all six off (= AL7b, exactly)       aims 6             aims 4                 aims 5
+  the aims' wanted off                aims 10            aims 5                 aims 5
+  the torpedo threat off              aims 7             aims 8                 aims 9
+  the size rank off                   aims 8             aims 7                 aims 7
+  the torpedo choice off              aims 9             aims 8                 aims 9
+  the heavy ships kept clear of off   aims 9             aims 6                 aims 6
+  the enemy line off                  aims 10            aims 8                 aims 10
+  a mistaken class weighed by size    aims 10            aims 8                 aims 10   (no change: not the cause)
+
+A probe of the wanted reading at Manila: Pelayo, a reacher, made out to her type was estimated at 430-560 m² (her own
+1,009), so taken for a third a reacher; a Spanish destroyer (533) up to 1,164 m², 0.84 a reacher. Side area hardly
+parts the 1890s' kinds; displacement does, twentyfold.
+
+The estimate on displacement (AL7c as committed):
+AL7c                                  aims 4             aims 6                 aims 5

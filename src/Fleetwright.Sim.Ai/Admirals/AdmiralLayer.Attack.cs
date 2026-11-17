@@ -1,4 +1,5 @@
 using Fleetwright.Sim.Ai.Captains;
+using Fleetwright.Sim.Ai.Knowledge;
 using Fleetwright.Sim.Combat;
 using Fleetwright.Sim.Core;
 
@@ -256,7 +257,8 @@ public sealed partial class AdmiralLayer
         return false;
     }
 
-    /// <summary>A course from a guide to a point round the enemy's heavy ships in sight (BL5h): straight unless it would come
+    /// <summary>A course from a guide to a point round the enemy's heavy ships in sight (BL5h; those his boats would attack
+    /// rather than fight, by the matchup: docs/battle/allocation.md AL7c): straight unless it would come
     /// within <paramref name="safeM"/> of one; then along the tangent of the first such circle, the side nearer the course
     /// to the point; from inside one, out of it and round toward the point.</summary>
     double RoundHeavies(in AiContext ctx, ShipState guide, Vec3d to, double safeM)
@@ -267,12 +269,13 @@ public sealed partial class AdmiralLayer
         if (pic == null || along < 1)
             return straight;
         var dir = (to - at) * (1 / along);
+        var boat = Judge.Matchups.Profile(ctx.World, guide.Handling.Class);
         double first = double.PositiveInfinity;
         Vec3d? circle = null;
         foreach (int i in seen.Near(ctx.World, guide.Side, at, ctx.Settings.FightCompareM))
         {
-            if (pic[i].Type is not (ShipType.Capital or ShipType.Cruiser) || pic[i].Out)
-                continue;
+            if (pic[i].Out || Judge.AttackerShare(ctx.World, pic[i], boat, guide.Side, theyAttack: false) < 0.5)
+                continue;   // not a ship his boats attack rather than fight (AL7c): not one to go round
             var q = seen.Position(guide.Side, i);
             var rel = q - at;
             double ahead = Vec3d.Dot(rel, dir), d = rel.Length;
@@ -396,21 +399,22 @@ public sealed partial class AdmiralLayer
         return (true, beaten || a?.AttackBeaten == true);
     }
 
-    /// <summary>The contact torpedoes are for: the biggest in sight within <see cref="SimSettings.FightCompareM"/>, the
-    /// nearest of them first; 0 if none.</summary>
+    /// <summary>The contact torpedoes are for: the biggest in sight within <see cref="SimSettings.FightCompareM"/>, by her
+    /// size as the matchup takes her (docs/battle/allocation.md AL7c: her range counting longer by
+    /// <see cref="CaptainLayer.TorpedoSized"/> for each step under a capital ship); 0 if none.</summary>
     int Biggest(in AiContext ctx, ShipState guide)
     {
         var pic = ctx.World.Sightings.Of(guide.Side);
         if (pic == null)
             return 0;
-        int best = 0, bestRank = int.MaxValue;
-        double bestD = double.MaxValue;
+        int best = 0;
+        double bestBy = double.MaxValue;
         foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, ctx.Settings.FightCompareM))
         {
-            int rank = CaptainLayer.TorpedoRank(pic[i].Type);
-            double d = (seen.Position(guide.Side, i) - guide.Position).Length;
-            if (rank < bestRank || rank == bestRank && d < bestD)
-                (best, bestRank, bestD) = (pic[i].Entity, rank, d);
+            double size = SizeRank.Of(SizeRank.TonnageOf(ctx.World, Judge.Matchups, guide.Side, pic[i]), ctx.World.Types.ReferenceT, ctx.Settings);
+            double by = (seen.Position(guide.Side, i) - guide.Position).Length * CaptainLayer.TorpedoSized(ctx.Settings, size);
+            if (by < bestBy)
+                (best, bestBy) = (pic[i].Entity, by);
         }
         return best;
     }

@@ -267,7 +267,7 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>The nearest enemy warship her navy holds near her (<see cref="SimSettings.FightCompareM"/>), a known foe
-    /// not taken for a merchant (0 for none), and where.</summary>
+    /// not made out to carry no guns (0 for none), and where.</summary>
     int NearestWarship(in AiContext ctx, ShipState own, out Vec3d at)
     {
         at = default;
@@ -278,7 +278,7 @@ public sealed partial class CaptainLayer
         double bestD = double.MaxValue;
         foreach (int i in seen.Near(ctx.World, own.Side, own.Position, ctx.Settings.FightCompareM))
         {
-            if (pic[i].Type == ShipType.Merchant || pic[i].Out)
+            if (pic[i].Level >= ContactLevel.Type && !pic[i].Armed || pic[i].Out)
                 continue;
             var q = seen.Position(own.Side, i);
             if (!Opens(ctx, own, pic[i], q))
@@ -327,7 +327,7 @@ public sealed partial class CaptainLayer
         candUnknowns = (Unknowns)doctrine.Of(own.Entity, own.Side, DoctrineField.Unknowns);
         candBold = doctrine.Of(own.Entity, own.Side, DoctrineField.Aggression);
         candFinish = FinishOf(doctrine, own);
-        candWanted = Book?.Wanted(own.Side) ?? 0;
+        candWanted = Book?.Wants(own.Side) == true;
         if (ownTargets.Length < cls.Batteries.Length)
             ownTargets = new int[Math.Max(cls.Batteries.Length, ownTargets.Length * 2)];
         if (heldTargets.Length < ownTargets.Length)
@@ -444,7 +444,7 @@ public sealed partial class CaptainLayer
         ref readonly var c = ref pic[ci];
         int step = (int)(Earth.Distance(own.Position, c.Position) / ShellJudgeStepM);
         ref var j = ref js[b];
-        bool same = j.Target == target && j.TakenFor == c.TakenFor && j.Step == step && j.Level == c.Level && j.Type == c.Type;
+        bool same = j.Target == target && j.TakenFor == c.TakenFor && j.Step == step && j.Level == c.Level && j.SizeT == c.SizeT;
         if (same && !check)
             return;
         if ((ShellUse)doctrine.Of(own.Entity, own.Side, DoctrineField.Shells) != ShellUse.ByTarget)
@@ -458,7 +458,7 @@ public sealed partial class CaptainLayer
         bool spent = ordered is { } o && !Has(combat, slot, cls, b, o);
         if (same && !spent)
             return;
-        (j.Target, j.TakenFor, j.Step, j.Level, j.Type) = (target, c.TakenFor, step, c.Level, c.Type);
+        (j.Target, j.TakenFor, j.Step, j.Level, j.SizeT) = (target, c.TakenFor, step, c.Level, c.SizeT);
         var lo = combat.Loadout(slot);
         MatchupGun? gun = null;
         foreach (var g in Judge.Matchups.Profile(ctx.World, lo).Guns)
@@ -573,16 +573,14 @@ public sealed partial class CaptainLayer
             target = cap.FireTarget;
         if (target == 0 && !onOrder)
         {
-            int bestRank = int.MaxValue;
-            double bestRun = double.MaxValue;
+            double bestBy = double.MaxValue;
             foreach (int i in seen.Aimable(ctx.World, own.Side, own.Position, reach))
             {
                 if (!Opens(ctx, own, pic[i], seen.Position(own.Side, i)))
                     continue;   // not known for a foe (docs/battle/night.md Q6)
-                double run = Run(ctx, pic, own, i, speed);
-                int rank = TorpedoRank(pic[i].Type);
-                if (run <= reach && TorpedoChance(ctx, pic, i, run, speed) >= s.TorpedoMinChance && (rank < bestRank || rank == bestRank && run < bestRun))
-                    (target, bestRank, bestRun) = (pic[i].Entity, rank, run);
+                double run = Run(ctx, pic, own, i, speed), by = run * TorpedoSized(s, Size(ctx, own, pic[i]));
+                if (run <= reach && by < bestBy && TorpedoChance(ctx, pic, i, run, speed) >= s.TorpedoMinChance)
+                    (target, bestBy) = (pic[i].Entity, by);
             }
         }
         if (target == 0)
@@ -809,16 +807,10 @@ public sealed partial class CaptainLayer
         return (range, speed);
     }
 
-    /// <summary>Whom torpedoes are for: the biggest first.</summary>
-    internal static int TorpedoRank(ShipType t) => t switch
-    {
-        ShipType.Capital => 0,
-        ShipType.Cruiser => 1,
-        ShipType.Merchant => 2,
-        ShipType.Unknown => 3,
-        ShipType.Destroyer => 4,
-        _ => 5,
-    };
+    /// <summary>Whom torpedoes are for: the biggest first (docs/battle/allocation.md AL7c). A contact's run counts longer by
+    /// <see cref="SimSettings.TorpedoSizeShare"/> for each step of her size's rank (<see cref="SizeRank"/>) under a capital
+    /// ship's; an unarmed ship by her size too (<see cref="Size"/>).</summary>
+    internal static double TorpedoSized(SimSettings s, double size) => 1 + s.TorpedoSizeShare * (SizeRank.Capital - Math.Min(size, SizeRank.Capital));
 
     /// <summary>Whether a ship has torpedoes left in launchers that work. Whether she attacks with them is the matchup's
     /// (<see cref="Knowledge.MatchupJudge.Attacks"/>): no ship is torpedo craft by her design.</summary>
@@ -884,7 +876,8 @@ public sealed partial class CaptainLayer
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
             keep = false;   // a friend in the way: not while he's there
         double curBy = 0, curRange = 0;
-        int curRank = 0, curCan = 0;
+        double curRank = 0;
+        int curCan = 0;
         double curDone = keep ? pic[ci].DoneFor(now, s) : 0;
         if (keep && curDone >= cease)
             keep = false;
@@ -896,14 +889,16 @@ public sealed partial class CaptainLayer
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare &&
                    (gun == null || WorthOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare, hitFloor, floor));
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
-            curRank = secondary ? Rank(pic[ci].Type) : 0;
+            double size = Rank(ctx, own, pic[ci]);
+            curRank = secondary ? size : 0;
             double curLead = Lead(own, q, v, s);
             curBy = curLead * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) *
-                    (heavy ? Heavy(s, Rank(pic[ci].Type), Closing(s, p, q, v)) : 1) /
+                    (heavy ? Heavy(s, size, Closing(s, p, q, v)) : 1) /
                     (Worth(curDone) * Matters(ctx, pic[ci], p, q, v, candFinish) * Want(ctx, own, slot, pic[ci], curLead));
         }
 
-        int best = 0, bestRank = 0, bestCan = -1;
+        int best = 0, bestCan = -1, bestK = -1;
+        double bestRank = 0;
         double bestBy = double.MaxValue, bestRange = 0;
         for (int k = 0; k < candCount; k++)
         {
@@ -912,13 +907,13 @@ public sealed partial class CaptainLayer
             int can = Can(Bears(cls, b, candBearing[k]), candRange[k] <= guns);
             if (can < bestCan)
                 continue;
-            int rank = secondary ? candRank[k] : 0;
+            double rank = secondary ? candRank[k] : 0;
             double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) *
                         (heavy ? Heavy(s, candRank[k], candClosing[k]) : 1) /
                         (Worth(candDone[k]) * candMatters[k] * candWant[k]);
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || WorthOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k], hitFloor, floor)) && !Foul(ctx, own, k))
-                (best, bestCan, bestRank, bestBy, bestRange) = (candEntity[k], can, rank, by, candRange[k]);
+                (best, bestCan, bestRank, bestBy, bestRange, bestK) = (candEntity[k], can, rank, by, candRange[k], k);
         }
         if (!keep)
             return best;
@@ -927,7 +922,7 @@ public sealed partial class CaptainLayer
         if (bestCan != curCan)
             return bestCan > curCan ? best : current;
         // an unknown's smaller size is a guess: against the one held she counts as its size
-        if (bestRank < curRank && bestRank == Rank(ShipType.Unknown))
+        if (bestRank < curRank && bestK >= 0 && pic[candPic[bestK]].Level < ContactLevel.Type)
             bestBy *= Sized(s, curRank) / Sized(s, bestRank);
         // a shift costs the ranging (BL1ae): over his horizon her fire counts from when she'd be ranged, the one held's from
         // when it's ranged (now, firing for effect)
@@ -954,10 +949,10 @@ public sealed partial class CaptainLayer
     /// nearer first), and one that can't is passed over for them. 1 with nothing wanted.</summary>
     double Want(in AiContext ctx, ShipState own, int slot, in Contact c, double rangeM)
     {
-        if (candWanted == 0)
+        if (!candWanted)
             return 1;
-        double w = ctx.Settings.WantedShare;
-        return (candWanted & 1 << (int)c.Type) != 0 ? w : 1 + (w - 1) * Threat(ctx, own, slot, c, rangeM);
+        double w = ctx.Settings.WantedShare, share = Book!.Wanted(ctx.World, Judge.Matchups, own.Side, c);
+        return share >= 1 ? w : share * w + (1 - share) * (1 + (w - 1) * Threat(ctx, own, slot, c, rangeM));
     }
 
     /// <summary>The contact within <see cref="SimSettings.FightCompareM"/> his side's aim makes the best enemy to fight: the
@@ -1014,13 +1009,14 @@ public sealed partial class CaptainLayer
         var push = new Vec3d();
         foreach (int i in seen.Near(ctx.World, own.Side, p, s.FightCompareM))
         {
-            if (pic[i].Entity == enemy || (candWanted & 1 << (int)pic[i].Type) != 0)
+            double wanted = pic[i].Entity == enemy ? 1 : Book!.Wanted(ctx.World, Judge.Matchups, own.Side, pic[i]);
+            if (wanted >= 1)
                 continue;
             var q = seen.Position(own.Side, i);
             if (!Opens(ctx, own, pic[i], q))
                 continue;
             var d = p - q;
-            double r = Math.Max(d.Length, 100), th = Threat(ctx, own, slot, pic[i], r);
+            double r = Math.Max(d.Length, 100), th = (1 - wanted) * Threat(ctx, own, slot, pic[i], r);
             push += d * (th * s.WantedAvoidM * s.WantedAvoidM / (r * r * r));
         }
         var up = p.Normalized();
@@ -1078,17 +1074,17 @@ public sealed partial class CaptainLayer
     }
 
     /// <summary>A secondary battery's range to a contact counts longer by <see cref="SimSettings.FireSizeShare"/> for each
-    /// step of her type's rank (<see cref="Rank"/>), so a boat comes before a battleship at much the same range, never one
+    /// step of her size's rank (<see cref="Rank"/>), so a boat comes before a battleship at much the same range, never one
     /// alongside.</summary>
-    static double Sized(SimSettings s, int rank) => 1 + s.FireSizeShare * rank;
+    static double Sized(SimSettings s, double rank) => 1 + s.FireSizeShare * rank;
 
     /// <summary>A chief battery fighting to win (docs/battle/balance.md BL5g; the user: "b", a battle line's main guns for
     /// his heavy ships, his boats to the secondaries unless they close to attack): a contact's range counts longer by
-    /// <see cref="SimSettings.FireHeavyShare"/> for each step of her type's rank under a capital ship's, the steps fading as
+    /// <see cref="SimSettings.FireHeavyShare"/> for each step of her size's rank under a capital ship's, the steps fading as
     /// she comes on (<paramref name="closing"/>: in full holding off, none closing at <see cref="SimSettings.CrippleOpenMs"/>
-    /// of her own speed). A merchant counts as a small craft.</summary>
-    static double Heavy(SimSettings s, int rank, double closing) =>
-        1 + s.FireHeavyShare * (Rank(ShipType.Capital) - (rank > Rank(ShipType.Capital) ? Rank(ShipType.Small) : rank)) * (1 - closing);
+    /// of her own speed). An unarmed ship counts as a small craft.</summary>
+    static double Heavy(SimSettings s, double rank, double closing) =>
+        1 + s.FireHeavyShare * (SizeRank.Capital - (rank > SizeRank.Capital ? 0 : rank)) * (1 - closing);
 
     /// <summary>How fast a contact comes on by her own course, 0-1: her speed toward the observer over
     /// <see cref="SimSettings.CrippleOpenMs"/>.</summary>
@@ -1124,7 +1120,7 @@ public sealed partial class CaptainLayer
         if (candEntity.Length < near.Length)
         {
             int n = Math.Max(near.Length, candEntity.Length * 2);
-            (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new int[n], new int[n], new double[n], new double[n], new double[n]);
+            (candEntity, candRank, candSlot, candRange, candLead, candBearing) = (new int[n], new double[n], new int[n], new double[n], new double[n], new double[n]);
             (candPic, candDone, candMatters, candWant, candClosing) = (new int[n], new double[n], new double[n], new double[n], new double[n]);
             (candPos, candFoul) = (new Vec3d[n], new sbyte[n]);
         }
@@ -1149,7 +1145,7 @@ public sealed partial class CaptainLayer
             }
             (candEntity[candCount], candSlot[candCount], candRange[candCount]) = (e, ctx.Ships.SlotOf(e), (q - p).Length);
             candLead[candCount] = Lead(own, q, seen.Velocity(own.Side, i), ctx.Settings);
-            (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(pic[i].Type));
+            (candBearing[candCount], candRank[candCount]) = (Earth.Bearing(p, q) - heading, Rank(ctx, own, pic[i]));
             (candPos[candCount], candFoul[candCount], candPic[candCount]) = (q, -1, i);
             candDone[candCount] = pic[i].DoneFor(ctx.NowMs, ctx.Settings);
             candMatters[candCount] = Matters(ctx, pic[i], p, q, seen.Velocity(own.Side, i), candFinish);
@@ -1198,16 +1194,14 @@ public sealed partial class CaptainLayer
         return false;
     }
 
-    /// <summary>A secondary battery's preference by what the contact is taken for: the smallest first (a merchant last).</summary>
-    static int Rank(ShipType t) => t switch
-    {
-        ShipType.Small => 0,
-        ShipType.Destroyer => 1,
-        ShipType.Unknown => 2,
-        ShipType.Cruiser => 3,
-        ShipType.Capital => 4,
-        _ => 5,
-    };
+    /// <summary>A contact's size as his navy takes her, as a rank (docs/battle/allocation.md AL7c, <see cref="SizeRank"/>):
+    /// 0 a small craft to 4 a capital ship, smoothly by her tonnage as the matchup takes her; an unarmed ship 5. A secondary
+    /// battery takes the smallest first (an unarmed ship last), a chief battery fighting to win the largest.</summary>
+    double Rank(in AiContext ctx, ShipState own, in Contact c) => SizeRank.Of(ctx.World, Judge.Matchups, own.Side, c);
+
+    /// <summary>A contact's size alone as a rank, armed or not (<see cref="SizeRank.Of(double, double, SimSettings)"/>).</summary>
+    double Size(in AiContext ctx, ShipState own, in Contact c) =>
+        SizeRank.Of(SizeRank.TonnageOf(ctx.World, Judge.Matchups, own.Side, c), ctx.World.Types.ReferenceT, ctx.Settings);
 
     /// <summary>His Fight, each second (docs/battle/command.md 5.1g): the enemy (the one ordered, else the main battery's
     /// target, else the nearest in sight), and his unit's call (<see cref="MatchupJudge.Call"/>, docs/battle/workers.md W11):
@@ -1241,8 +1235,8 @@ public sealed partial class CaptainLayer
         // his side's aim wanting something sunk first (a convoy's transports): the enemy he fights is the one his guns would
         // choose, the wanted counting nearer and an escort by how much she endangers him (aims.md A3; balance.md BL5: with
         // escorts covering now, a hunter fought a harmless light cruiser for three hours, his convoy's intercept waiting)
-        candWanted = Book?.Wanted(own.Side) ?? 0;
-        if (cap.Target == 0 && !rearguard && candWanted != 0 && WantedEnemy(ctx, own, slot) is int we and not 0 && we != enemy &&
+        candWanted = Book?.Wants(own.Side) == true;
+        if (cap.Target == 0 && !rearguard && candWanted && WantedEnemy(ctx, own, slot) is int we and not 0 && we != enemy &&
             ctx.Picture.TryGet(own.Side, we, out var wt))
             (enemy, t) = (we, wt);
         if (enemy == 0)
@@ -1284,9 +1278,9 @@ public sealed partial class CaptainLayer
         if (!away && c >= s.FightFinishConfidence && m.Terms.LostA < s.FightFinishLostShare)
             (band, cap.Finishing) = (band * s.FightFinishShare, true);   // he can hardly be hurt (a cripple, not a torpedo boat): in to finish her
         var (course, kn) = away ? Behaviours.Run(own, t) : Behaviours.Fight(own, t, band, s.FightBandShare, s.FightCloseDeg, s.FightMinCloseKn, ref cap.FightSide);
-        candWanted = Book?.Wanted(own.Side) ?? 0;
-        if (!away && candWanted != 0 && ctx.World.Sightings.Of(own.Side) is { } fp && fp.IndexOf(enemy) is int fi and >= 0 &&
-            (candWanted & 1 << (int)fp[fi].Type) != 0)
+        candWanted = Book?.Wants(own.Side) == true;
+        if (!away && candWanted && ctx.World.Sightings.Of(own.Side) is { } fp && fp.IndexOf(enemy) is int fi and >= 0 &&
+            Book!.Wanted(ctx.World, Judge.Matchups, own.Side, fp[fi]) >= 0.5)
             course = Around(ctx, own, slot, course, enemy);   // on what his aim wants: round what endangers him, if he can
         if (away)
             course = Evade(ctx, own, slot, FallBackCourse(course, fallBack, s), attackRun: false);

@@ -199,8 +199,9 @@ public sealed partial class AdmiralLayer
         return double.IsPositiveInfinity(r) ? r : nearest - r;
     }
 
-    /// <summary>The range out of which the enemy's heavy ships in sight of a guide's side (capital ships and cruisers within
-    /// <see cref="SimSettings.FightCompareM"/> of her) let a group's ships be by doctrine's floors (<see cref="Matchup.LetBeM"/>:
+    /// <summary>The range out of which the enemy's heavy ships in sight of a guide's side (those the group's boats would
+    /// attack rather than fight, by the matchup: docs/battle/allocation.md AL7c; within <see cref="SimSettings.FightCompareM"/>
+    /// of her) let a group's ships be by doctrine's floors (<see cref="Matchup.LetBeM"/>:
     /// their secondaries, their chief guns too <paramref name="underBigGuns"/>; what can be seen at most), m, and the
     /// nearest of them; infinite with none, or no ship of the group to judge by.</summary>
     double SafeRange(in AiContext ctx, ShipState guide, int group, bool underBigGuns, out double nearest)
@@ -210,11 +211,12 @@ public sealed partial class AdmiralLayer
         var pic = ctx.World.Sightings.Of(guide.Side);
         if (pic == null || groups.Get(group) is not { } sg || ctx.Ships.SlotOf(groups.GuideShip(sg)) is not (int boat and >= 0))
             return double.PositiveInfinity;
+        var boatProfile = Judge.Matchups.Profile(ctx.World, ctx.Ships.Combat.Loadout(boat));
         arcEnemy.Clear();
         foreach (int i in seen.Near(ctx.World, guide.Side, guide.Position, s.FightCompareM))
         {
-            if (pic[i].Type is not (ShipType.Capital or ShipType.Cruiser) || pic[i].Out)
-                continue;
+            if (pic[i].Out || Judge.AttackerShare(ctx.World, pic[i], boatProfile, guide.Side, theyAttack: false) < 0.5)
+                continue;   // a ship his boats would fight, not attack (AL7c): no heavy ship to keep clear of
             arcEnemy.AddContact(ctx.World, Judge.Matchups, guide.Side, pic[i]);
             nearest = Math.Min(nearest, (seen.Position(guide.Side, i) - guide.Position).Length);
         }

@@ -1,0 +1,124 @@
+The Bosporus coup, 1896: 23 ships, 2 sides, from 1896-12-15 05:30:00.000 until 1896-12-15 14:45:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1896: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 7/16 (3136 t), score 0.00   (foundered 3, capsized 3)   60a4082a17307a15   (21.1 s)
+           main guns: 6 fell out for them, main mounts out 5 of 6 (5 of 6 guns): gunhouse out of action 3, magazine spent (its race) 1, guns out 1
+                      at the end, 17 ships afloat: main mounts out 4 of 27 (4 of 36 guns): gunhouse out of action 2, magazine flooded by the sea 1, magazine spent (its race) 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1502 fired, 3 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 448 km)
+           Ottoman Empire done? home (aims decided); 4 of 9 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 37 km)
+  seed   1897: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 11/16 (15312 t), score 0.00   (foundered 1, capsized 10)   bd0e59266819144d   (21.6 s)
+           main guns: 11 fell out for them, main mounts out 12 of 14 (12 of 14 guns): gunhouse out of action 6, magazine flooded by the sea 4, guns out 2
+                      at the end, 12 ships afloat: main mounts out 6 of 20 (8 of 29 guns): magazine flooded by the sea 4, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2855 fired, 14 at ships seen done for
+           Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 431 km)
+           Ottoman Empire done? home (aims decided); 3 of 5 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 33 km)
+  seed   1898: time    at 14:45 (+9:15)  Russia lost 1/7 (2879 t), aims met, score 1.00   Ottoman Empire lost 10/16 (20056 t), score 0.00   (foundered 2, capsized 6)   6e9b2470266d5bd5   (22.0 s)
+           main guns: 9 fell out for them, main mounts out 8 of 11 (8 of 11 guns): gunhouse out of action 4, magazine flooded by the sea 3, guns out 1
+                      at the end, 15 ships afloat: main mounts out 8 of 22 (10 of 31 guns): magazine flooded by the sea 6, gunhouse out of action 1, guns out 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 2304 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 3 of 6 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 409 km)
+           Ottoman Empire done? home (aims decided); 2 of 6 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 63 km)
+  seed   1899: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 8/16 (3584 t), score 0.00   (foundered 3, capsized 4)   c77f02e2121aaf7e   (19.0 s)
+           main guns: 7 fell out for them, main mounts out 6 of 7 (6 of 7 guns): magazine flooded by the sea 3, guns out 2, gunhouse out of action 1
+                      at the end, 17 ships afloat: main mounts out 3 of 27 (3 of 36 guns): magazine flooded by the sea 1, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1444 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 453 km)
+           Ottoman Empire done? home (aims decided); 3 of 8 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 65 km)
+  seed   1900: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 5/16 (2240 t), score 0.00   (foundered 2, capsized 3)   59042f96dd1a3a56   (18.2 s)
+           main guns: 7 fell out for them, main mounts out 7 of 7 (7 of 7 guns): magazine flooded by the sea 2, magazine spent (its race) 2, guns out 2, magazine flooded by order 1
+                      at the end, 18 ships afloat: main mounts out 2 of 28 (2 of 37 guns): magazine flooded by order 1, magazine spent (its race) 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1169 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 291 km)
+           Ottoman Empire done? home (aims decided); 3 of 11 afloat home, 8 not (8 in an encounter, 2 stopped, 1 dead in the water, the farthest 69 km)
+  seed   1901: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 5/16 (2240 t), score 0.00   (foundered 2, capsized 3)   a7eeb41114f53878   (18.6 s)
+           main guns: 7 fell out for them, main mounts out 6 of 7 (6 of 7 guns): guns out 5, magazine flooded by the sea 1
+                      at the end, 18 ships afloat: main mounts out 4 of 28 (4 of 37 guns): magazine flooded by the sea 3, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1729 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 449 km)
+           Ottoman Empire done? home (aims decided); 6 of 11 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 98 km)
+  seed   1902: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 7/16 (3136 t), score 0.00   (foundered 3, capsized 3)   c6431c2b7963d01d   (20.6 s)
+           main guns: 8 fell out for them, main mounts out 6 of 8 (6 of 8 guns): guns out 5, magazine flooded by the sea 1
+                      at the end, 17 ships afloat: main mounts out 2 of 27 (2 of 36 guns): magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1704 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 451 km)
+           Ottoman Empire done? home (aims decided); 5 of 9 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 57 km)
+  seed   1903: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 7/16 (8328 t), score 0.00   (foundered 3, capsized 4)   b989de410fb0e99d   (21.8 s)
+           main guns: 9 fell out for them, main mounts out 10 of 10 (10 of 10 guns): guns out 5, magazine flooded by the sea 3, gunhouse out of action 2
+                      at the end, 16 ships afloat: main mounts out 10 of 25 (16 of 34 guns): magazine flooded by the sea 8, gunhouse out of action 1, guns out 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 1931 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 451 km)
+           Ottoman Empire done? home (aims decided); 6 of 9 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 51 km)
+  seed   1904: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), score 0.25   Ottoman Empire lost 11/16 (4928 t), score 0.75   (foundered 6, capsized 4)   0cbc97c8dee1a9c7   (20.8 s)
+           main guns: 8 fell out for them, main mounts out 9 of 9 (9 of 9 guns): gunhouse out of action 4, guns out 3, magazine flooded by the sea 2
+                      at the end, 13 ships afloat: main mounts out 6 of 23 (6 of 32 guns): gunhouse out of action 5, magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3257 fired, 0 at ships seen done for
+           Russia       done? battle; 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 455 km)
+           Ottoman Empire done? retiring (outmatched); 1 of 5 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 46 km)
+  seed   1905: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 7/16 (3136 t), score 0.00   (foundered 2, capsized 5)   8743c1d4dd8b2bc2   (21.1 s)
+           main guns: 10 fell out for them, main mounts out 12 of 13 (12 of 13 guns): gunhouse out of action 7, guns out 4, magazine flooded by the sea 1
+                      at the end, 16 ships afloat: main mounts out 7 of 26 (7 of 35 guns): gunhouse out of action 4, guns out 2, magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2711 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 318 km)
+           Ottoman Empire done? home (aims decided); 5 of 9 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 68 km)
+  seed   1906: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 5/16 (2240 t), score 0.00   (foundered 2, capsized 3)   f079ef91a1d0da98   (19.4 s)
+           main guns: 8 fell out for them, main mounts out 4 of 8 (4 of 8 guns): guns out 3, magazine flooded by the sea 1
+                      at the end, 18 ships afloat: main mounts out 3 of 28 (3 of 37 guns): magazine flooded by the sea 2, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1431 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 312 km)
+           Ottoman Empire done? home (aims decided); 4 of 11 afloat home, 7 not (7 in an encounter, 1 stopped, 1 dead in the water, the farthest 33 km)
+  seed   1907: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), score 0.00   Ottoman Empire lost 5/16 (2240 t), score 1.00   (foundered 4)   2d33ad4306697b88   (27.0 s)
+           main guns: 10 fell out for them, main mounts out 11 of 13 (11 of 13 guns): gunhouse out of action 6, guns out 4, magazine flooded by the sea 1
+                      at the end, 19 ships afloat: main mounts out 9 of 29 (9 of 38 guns): gunhouse out of action 4, guns out 3, magazine flooded by the sea 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2814 fired, 11 at ships seen done for
+           Russia       done? battle; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 444 km)
+           Ottoman Empire done? retiring (outmatched); 5 of 11 afloat home, 6 not (6 in an encounter, 1 stopped, 0 dead in the water, the farthest 41 km)
+  seed   1908: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 8/16 (13968 t), score 0.00   (foundered 4, capsized 3)   672c0a758e414c4a   (23.4 s)
+           main guns: 9 fell out for them, main mounts out 9 of 11 (9 of 11 guns): gunhouse out of action 4, guns out 4, magazine flooded by the sea 1
+                      at the end, 16 ships afloat: main mounts out 9 of 25 (9 of 34 guns): gunhouse out of action 3, guns out 3, magazine flooded by the sea 2, magazine flooded by order 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2718 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 407 km)
+           Ottoman Empire done? home (aims decided); 3 of 8 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 44 km)
+  seed   1909: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 8/16 (8776 t), score 0.00   (foundered 3, capsized 5)   6fd19d0b94224bcb   (23.7 s)
+           main guns: 6 fell out for them, main mounts out 6 of 7 (6 of 7 guns): gunhouse out of action 3, magazine flooded by the sea 2, guns out 1
+                      at the end, 15 ships afloat: main mounts out 6 of 24 (6 of 33 guns): gunhouse out of action 5, magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3657 fired, 16 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 452 km)
+           Ottoman Empire done? home (aims decided); 2 of 8 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 98 km)
+  seed   1910: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), score 0.00   Ottoman Empire lost 8/16 (13968 t), score 1.00   (foundered 3, capsized 5)   cf0c323094f15fbc   (27.5 s)
+           main guns: 6 fell out for them, main mounts out 5 of 7 (5 of 7 guns): guns out 3, magazine flooded by the sea 1, gunhouse destroyed 1
+                      at the end, 15 ships afloat: main mounts out 4 of 23 (4 of 32 guns): magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3969 fired, 0 at ships seen done for
+           Russia       done? battle; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 452 km)
+           Ottoman Empire done? retiring (broken off); 1 of 8 afloat home, 7 not (7 in an encounter, 1 stopped, 1 dead in the water, the farthest 53 km)
+  seed   1911: time    at 14:45 (+9:15)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 9/16 (9224 t), score 0.00   (foundered 1, capsized 7)   9408dc6f1f1e1d7e   (21.7 s)
+           main guns: 10 fell out for them, main mounts out 11 of 11 (11 of 11 guns): gunhouse out of action 5, magazine flooded by the sea 3, guns out 3
+                      at the end, 15 ships afloat: main mounts out 5 of 24 (5 of 33 guns): gunhouse out of action 4, magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2948 fired, 0 at ships seen done for
+           Russia       done? home (aims decided); 1 of 7 afloat home, 6 not (6 in an encounter, 3 stopped, 0 dead in the water, the farthest 440 km)
+           Ottoman Empire done? home (aims decided); 3 of 7 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 33 km)
+
+over 16 seeds:
+  ended time     16 times, after 9:15 on average
+  Russia       lost 0.1 of 7 ships (from 0 to 1), 180 t; made 259 hits, fired 0.0 torpedoes; aims met 13 times, score 0.83
+  Ottoman Empire lost 7.6 of 16 ships (from 5 to 11), 7282 t; made 14 hits, fired 9.8 torpedoes; aims met 0 times, score 0.17; regrouped 0.1 squadrons
+over 16 seeds:
+  main guns: 131 fell out for them, main mounts out 127 of 149 (127 of 149 guns): guns out 48, gunhouse out of action 45, magazine flooded by the sea 29, magazine spent (its race) 3, magazine flooded by order 1, gunhouse destroyed 1
+             at the end, 257 ships afloat: main mounts out 88 of 406 (98 of 550 guns): magazine flooded by the sea 35, gunhouse out of action 33, guns out 15, magazine flooded by order 2, magazine spent (its race) 2, gunhouse destroyed 1
+  blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 2 ships blacked out
+  shells: 38143 fired, 44 at ships seen done for

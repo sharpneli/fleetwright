@@ -53,7 +53,7 @@ public sealed partial class AdmiralLayer
         {
             int slot = ctx.Ships.SlotOf(own[0]);
             byte side = slot >= 0 ? ctx.Ships[slot].Side : (byte)0;
-            enemyLines.Of(ctx.World, side, a.FireTarget, enemy);
+            enemyLines.Of(ctx.World, Judge.Matchups, side, a.FireTarget, enemy);
             if (enemy.Count == 0)
             {
                 // the target's gone from the picture, or seen going down alone: at will

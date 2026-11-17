@@ -127,11 +127,11 @@ public sealed partial class CaptainLayer
         return false;
     }
 
-    // her side's enemies in sight this think (by side: when worked out, how many, each's position and whether a torpedo
-    // craft), worked out once a side a think for all its ships
+    // her side's enemies in sight this think (by side: when worked out, how many, each's position and its contact's slot
+    // in the side's picture), worked out once a side a think for all its ships
     readonly long[] sideSeenMs = new long[256];
     readonly int[] sideSeenCount = new int[256];
-    readonly (Vec3d At, bool Small)[]?[] sideSeen = new (Vec3d, bool)[]?[256];
+    readonly (Vec3d At, int Pic)[]?[] sideSeen = new (Vec3d, int)[]?[256];
 
     /// <summary>Her side's enemies in sight, worked out by the first of its ships to ask at a moment, the rest waiting for
     /// it (docs/battle/workers.md W13).</summary>
@@ -149,16 +149,17 @@ public sealed partial class CaptainLayer
                 {
                     if (!pic[i].InSight || pic.Out(pic[i].Entity) || !ctx.World.Relations.Hostile((byte)side, pic[i].Side))
                         continue;
-                    var list = sideSeen[side] ??= new (Vec3d, bool)[64];
+                    var list = sideSeen[side] ??= new (Vec3d, int)[64];
                     if (sideSeenCount[side] == list.Length)
                         Array.Resize(ref sideSeen[side], list.Length * 2);
-                    sideSeen[side]![sideSeenCount[side]++] = (pic.EstimateAt(i, ctx.NowMs, ctx.Settings).Position, pic[i].Type is ShipType.Small or ShipType.Destroyer);
+                    sideSeen[side]![sideSeenCount[side]++] = (pic.EstimateAt(i, ctx.NowMs, ctx.Settings).Position, i);
                 }
             Volatile.Write(ref sideSeenMs[side], ctx.NowMs + 1);   // worked out: read from here on
         }
     }
 
-    /// <summary>The enemies her side holds in sight within a range of her.</summary>
+    /// <summary>The enemies her side holds in sight within a range of her, and whether each is a torpedo craft to her: an
+    /// attacker against her by the matchup, as her side takes her (docs/battle/allocation.md AL7c).</summary>
     void Enemies(in AiContext ctx, ShipState own, double within)
     {
         crewEnemyCount = 0;
@@ -166,12 +167,16 @@ public sealed partial class CaptainLayer
         EnemiesOf(ctx, side);
         var p = own.Position;
         var seen = sideSeen[side];
+        var pic = ctx.World.Sightings.Of((byte)side);
+        MatchupProfile? mine = null;
         for (int i = 0; i < sideSeenCount[side]; i++)
         {
-            var (q, small) = seen![i];
+            var (q, at) = seen![i];
             double range = (q - p).Length;
-            if (range > within)
+            if (range > within || pic == null)
                 continue;
+            mine ??= Judge.Matchups.Profile(ctx.World, ctx.Ships.Combat.Loadout(ctx.Ships.SlotOf(own.Entity)));
+            bool small = Judge.AttackerShare(ctx.World, pic[at], mine, own.Side, theyAttack: true) >= 0.5;
             if (crewEnemyCount == crewEnemies.Length)
                 Array.Resize(ref crewEnemies, crewEnemies.Length * 2);
             crewEnemies[crewEnemyCount++] = (Earth.Bearing(p, q) - own.HeadingDeg, range, small);

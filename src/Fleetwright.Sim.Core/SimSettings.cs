@@ -551,10 +551,10 @@ public sealed record SimSettings
     public double SightMisidentify { get; init; } = 0.3;
     public double SightSimilarScore { get; init; } = 1.5;
 
-    /// <summary>A lookout's error on a ship's size (what she shows side on: her length by her height) when he's made her
-    /// out to her type and no more, the log's standard deviation (docs/battle/allocation.md AL7b, Contact.SizeM2): about a
-    /// third either way [EST], a quarter on her length and as much on her height; shrinking as he makes her out better,
-    /// none once he's made out her class.</summary>
+    /// <summary>A lookout's error on a ship's size (her bulk, what she displaces as the eye takes it from her length,
+    /// freeboard and upperworks) when he's made her out to her type and no more, the log's standard deviation
+    /// (docs/battle/allocation.md AL7b, Contact.SizeT): about a third either way [EST]; shrinking as he makes her out
+    /// better, none once he's made out her class. Her kind he has right: the types' bands are five times apart.</summary>
     public double SightSizeSigma { get; init; } = 0.35;
 
     /// <summary>The least spread, in the log of her size, her side's classes are weighed by around a ship's estimated size
@@ -1046,6 +1046,12 @@ public sealed record SimSettings
     /// craft four), the steps fading as she comes on [EST]: a destroyer holding off counts as at four times her range, so a
     /// battle line 13 km off comes before a boat at 3.5 km; one closing to attack, as near as she is.</summary>
     public double FireHeavyShare { get; init; } = 1;
+
+    /// <summary>Whom torpedoes are for, the biggest first (docs/battle/allocation.md AL7c): a contact's run (or range) counts
+    /// longer by this share for each step of her size's rank under a capital ship's (Knowledge.SizeRank: a cruiser one, a
+    /// destroyer three) [EST]; a battleship at 8 km before a destroyer beyond 2, a cruiser at 4 km before a battleship
+    /// beyond 5. Smooth in her size: the ranks' old order kept, the nearer of two alike first.</summary>
+    public double TorpedoSizeShare { get; init; } = 1;
 
     /// <summary>The shell by target (docs/battle/shell-choice.md A3): a captain changes a battery's load only for a kind
     /// whose rounds do this many times the one loaded [EST], since each change costs the round in the gun.</summary>

@@ -5,13 +5,12 @@ namespace Fleetwright.Sim.Ai.Knowledge;
 
 /// <summary>An enemy group a navy holds, in sight or not (docs/battle/command.md 5.1g): its contacts (a run of
 /// <see cref="HeldGroups.Members"/>), where they are on the average and how they go by the picture's estimates, its
-/// tonnage as its ships are taken, its capital ships, and its biggest ship (the one to close).</summary>
+/// tonnage as its ships are taken, and its biggest ship (the one to close).</summary>
 public struct HeldGroup
 {
     public int First, Count;
     public Vec3d Centre, Velocity;
     public double TonnageT;
-    public int Capitals;
     public int Biggest;
 }
 
@@ -120,8 +119,6 @@ public sealed class HeldGroups(Matchups matchups)
             g.Velocity += pic.EstimateAt(i, now, ctx.Settings).Velocity;
             double t = matchups.TonnageOf(world, pic.Side, pic[i]);
             g.TonnageT += t;
-            if (pic[i].Type == ShipType.Capital)
-                g.Capitals++;
             if (t > v.BiggestT[k])
                 (g.Biggest, v.BiggestT[k]) = (pic[i].Entity, t);
         }

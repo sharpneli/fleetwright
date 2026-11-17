@@ -144,7 +144,7 @@ public class PictureTests(ITestOutputHelper output)
         var w = Closing(Day, 25_000);
         FirstSeen(w);
         var pic = w.Sightings.Of(1)!;
-        double size = ShipTypes.SideAreaM2(Ship(w, 2).Handling.Class), lastSigma = double.MaxValue, lastOff = double.MaxValue;
+        double size = Ship(w, 2).Handling.Class.Motion.FullDisplacementT, lastSigma = double.MaxValue, lastOff = double.MaxValue;
         bool typed = false;
         while (pic[pic.IndexOf(2)].Level < ContactLevel.Class)
         {
@@ -153,9 +153,9 @@ public class PictureTests(ITestOutputHelper output)
             ref readonly var c = ref pic[pic.IndexOf(2)];
             if (c.Level < ContactLevel.Type)
                 continue;
-            double off = Math.Abs(Math.Log(c.SizeM2 / size));
+            double off = Math.Abs(Math.Log(c.SizeT / size));
             if (!typed)
-                output.WriteLine($"made out to her type at {Apart(w) / 1000:F1} km: {c.SizeM2:F0} m² for her {size:F0} m², error {c.SizeSigma:F2}");
+                output.WriteLine($"made out to her type at {Apart(w) / 1000:F1} km: {c.SizeT:F0} t for her {size:F0} t, error {c.SizeSigma:F2}");
             typed = true;
             Assert.True(c.Armed);
             Assert.InRange(c.SizeSigma, 0, Settings.SightSizeSigma);
@@ -166,7 +166,7 @@ public class PictureTests(ITestOutputHelper output)
         Assert.True(typed, "made out to her type before her class");
         ref readonly var k = ref pic[pic.IndexOf(2)];
         Assert.Equal(0, k.SizeSigma);
-        Assert.Equal(size, k.SizeM2, 6);
+        Assert.Equal(size, k.SizeT, 6);
     }
 
     [Fact]

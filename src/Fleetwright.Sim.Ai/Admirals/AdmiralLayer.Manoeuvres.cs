@@ -193,16 +193,11 @@ public sealed partial class AdmiralLayer
         return tracks && anyD < double.MaxValue;
     }
 
-    /// <summary>Whether a contact is taken for a torpedo threat to a line: once the class it's taken for is made out, an
-    /// attacker against the line's guide's (<see cref="Knowledge.MatchupJudge.AttackerAgainst(in AiContext, MatchupProfile, MatchupProfile, byte)"/>,
-    /// docs/battle/admirals-orders.md O7c); before, by its type (a destroyer, or smaller).</summary>
-    bool TakenForAttacker(in AiContext ctx, in Contact c, ShipState guide)
-    {
-        if (c.Level < ContactLevel.Class || c.TakenFor < 0 || ctx.World.Ships.Registry.Get(c.TakenFor) is not { } taken)
-            return c.Type is ShipType.Destroyer or ShipType.Small;
-        var m = Judge.Matchups;
-        return Judge.AttackerAgainst(ctx, m.Profile(ctx.World, taken), m.Profile(ctx.World, guide.Handling.Class), guide.Side);
-    }
+    /// <summary>Whether a contact is taken for a torpedo threat to a line: an attacker against the line's guide's class
+    /// (docs/battle/admirals-orders.md O7c), by the class she's taken for once made out, before by most of the classes her
+    /// estimate weighs (<see cref="Knowledge.MatchupJudge.AttackerShare"/>, docs/battle/allocation.md AL7c).</summary>
+    bool TakenForAttacker(in AiContext ctx, in Contact c, ShipState guide) =>
+        Judge.AttackerShare(ctx.World, c, Judge.Matchups.Profile(ctx.World, guide.Handling.Class), guide.Side, theyAttack: true) >= 0.5;
 
     /// <summary>Whether a group is turning together, or the line it's in is.</summary>
     bool Manoeuvring(GroupSystem.Group g)
