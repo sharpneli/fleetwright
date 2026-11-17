@@ -1,0 +1,134 @@
+Allocation: a battle squadron alone (a-battle-squadron.json): 8 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      1st Battle Squadron          Heavy      its orders         117,160 t  str  146,768 q 1.25  21.3 kn     scr  0.00 sct  0.00  4 Iron Duke-like (1914)
+    Germany: the commander NoContact
+      III Squadron                 Heavy      its orders          96,920 t  str   77,368 q 0.80  21.0 kn     scr  0.00 sct  0.00  4 König-like (1914)
+        lookouts at 4.8 km, 45°: Markgraf 1.2 km -180°, Kronprinz 1.8 km -180°
+  half an hour in, 1916-05-31 08:30:01.000:
+    Britain: the commander NoContact
+      1st Battle Squadron          Heavy      its orders         117,160 t  str  146,768 q 1.25  21.3 kn     scr  0.00 sct  0.00  4 Iron Duke-like (1914)
+        lookouts at 4.8 km, 45°: Benbow 4.6 km -45°, Emperor of India 4.4 km +46°
+    Germany: the commander NoContact
+      III Squadron                 Heavy      its orders          96,920 t  str   77,368 q 0.80  21.0 kn     scr  0.00 sct  0.00  4 König-like (1914)
+        lookouts at 4.8 km, 45°: Markgraf 4.6 km -45°, Kronprinz 4.5 km +46°
+  no contact in 240 min
+
+Allocation: battle fleets (b-battle-fleet.json): 48 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      2nd Battle Squadron          Heavy      its orders         109,780 t  str  181,436 q 1.65  21.5 kn     scr 16.71 sct  2.26  4 King George V-like (1912)
+      4th Battle Squadron          Heavy      its orders         117,160 t  str  181,199 q 1.55  21.3 kn     scr 15.56 sct  2.13  4 Iron Duke-like (1914)
+      1st Battle Cruiser Squadron  Scout      its orders         176,030 t  str  120,577 q 0.68  28.0 kn     scr  8.01 sct  0.98  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        fast wing: None Course on nobody
+      2nd Light Cruiser Squadron   Scout      its orders          16,050 t  str    9,429 q 0.59  25.5 kn     scr  4.29 sct  1.00  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      11th Flotilla                Flotilla   its orders          16,000 t  str    1,636 q 0.10  34.0 kn att scr  0.54 sct  0.20  8 M class destroyer (1915)
+    Germany: the commander NoContact
+      High Seas Fleet (force)      Heavy      its orders         403,080 t  str  235,523 q 0.58  21.0 kn     scr  9.78 sct  0.90  2 Derfflinger-like (1914) + 4 G101-like large torpedo boat (1914) + 2 Graudenz-like (1914) + 4 Kaiser-like (1912) + 4 König-like (1914) + 1 Moltke-like (1911) + 2 Pillau-like (1914) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 4 V25-like torpedo boat (1914)
+        III Squadron               Heavy      its orders          96,920 t  str   69,094 q 0.71  21.0 kn     scr 32.74 sct  1.16  4 König-like (1914)
+        VI Division                Heavy      its orders         119,488 t  str   50,512 q 0.42  21.0 kn     scr 19.06 sct  0.70  4 Kaiser-like (1912)
+        I Scouting Group           Scout      Scout OnTask       139,602 t  str   52,963 q 0.38  25.5 kn     scr 17.10 sct  0.65  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913)
+          fast wing: Scout Station on nobody
+        II Scouting Group          Scout      Scout OnTask        31,990 t  str    2,215 q 0.07  27.3 kn att scr  1.77 sct  0.15  2 Graudenz-like (1914) + 2 Pillau-like (1914)
+        II Flotilla                Flotilla   Screen OnTask       15,080 t  str    1,151 q 0.08  33.5 kn att scr  1.28 sct  0.15  4 G101-like large torpedo boat (1914) + 4 V25-like torpedo boat (1914)
+  half an hour in, 1916-05-31 08:30:01.000:
+    Britain: the commander NoContact
+      2nd Battle Squadron          Heavy      its orders         109,780 t  str  181,436 q 1.65  21.5 kn     scr 16.71 sct  2.26  4 King George V-like (1912)
+      4th Battle Squadron          Heavy      its orders         117,160 t  str  181,199 q 1.55  21.3 kn     scr 15.56 sct  2.13  4 Iron Duke-like (1914)
+      1st Battle Cruiser Squadron  Scout      its orders         176,030 t  str  120,577 q 0.68  28.0 kn     scr  8.01 sct  0.98  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        fast wing: None Course on nobody
+      2nd Light Cruiser Squadron   Scout      its orders          16,050 t  str    9,429 q 0.59  25.5 kn     scr  4.29 sct  1.00  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      11th Flotilla                Flotilla   its orders          16,000 t  str    1,636 q 0.10  34.0 kn att scr  0.54 sct  0.20  8 M class destroyer (1915)
+    Germany: the commander NoContact
+      High Seas Fleet (force)      Heavy      its orders         403,080 t  str  235,523 q 0.58  21.0 kn     scr  9.78 sct  0.90  2 Derfflinger-like (1914) + 4 G101-like large torpedo boat (1914) + 2 Graudenz-like (1914) + 4 Kaiser-like (1912) + 4 König-like (1914) + 1 Moltke-like (1911) + 2 Pillau-like (1914) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 4 V25-like torpedo boat (1914)
+        III Squadron               Heavy      its orders          96,920 t  str   69,094 q 0.71  21.0 kn     scr 32.74 sct  1.16  4 König-like (1914)
+        VI Division                Heavy      its orders         119,488 t  str   50,512 q 0.42  21.0 kn     scr 19.06 sct  0.70  4 Kaiser-like (1912)
+        I Scouting Group           Scout      Scout OnTask       139,602 t  str   52,963 q 0.38  25.5 kn     scr 17.10 sct  0.65  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913)
+          fast wing: Scout Station on nobody
+        II Scouting Group          Scout      Scout OnTask        31,990 t  str    2,215 q 0.07  27.3 kn att scr  1.77 sct  0.15  2 Graudenz-like (1914) + 2 Pillau-like (1914)
+        II Flotilla (force)        Flotilla   Screen OnTask       15,080 t  str    1,151 q 0.08  33.5 kn att scr  1.28 sct  0.15  4 G101-like large torpedo boat (1914) + 4 V25-like torpedo boat (1914)
+          II Flotilla I            Heavy      its orders           7,408 t  str      540 q 0.07  33.5 kn att scr  1.24 sct  0.15  4 V25-like torpedo boat (1914)
+          II Flotilla II           Heavy      its orders           7,672 t  str      607 q 0.08  33.5 kn att scr  1.32 sct  0.16  4 G101-like large torpedo boat (1914)
+  five minutes after the first contact (1916-05-31 09:58:01.000), 1916-05-31 10:03:01.000:
+    Britain: the commander Battle
+      2nd Battle Squadron          Heavy      its orders         109,780 t  str  181,436 q 1.65  21.5 kn     scr 16.71 sct  2.26  4 King George V-like (1912)
+      4th Battle Squadron          Heavy      its orders         117,160 t  str  181,199 q 1.55  21.3 kn     scr 15.56 sct  2.13  4 Iron Duke-like (1914)
+      1st Battle Cruiser Squadron  Scout      Intercept Engaged  176,030 t  str  120,577 q 0.68  28.0 kn     scr  8.01 sct  0.98  2 Lion-like (1912) + 1 Queen Mary-like (1913) + 1 Tiger-like (1914)
+        fast wing: Intercept Fight on Lützow (I Scouting Group), Flank
+      2nd Light Cruiser Squadron   Scout      its orders          16,050 t  str    9,429 q 0.59  25.5 kn     scr  4.29 sct  1.00  2 Birmingham-like Town (1914) + 2 Chatham-like Town (1912)
+      11th Flotilla                Flotilla   its orders          16,000 t  str    1,636 q 0.10  34.0 kn att scr  0.54 sct  0.20  8 M class destroyer (1915)
+      sees  4 ships str   39,254 his line: Derfflinger, Lützow, Seydlitz, Moltke
+    Germany: the commander Contact
+      High Seas Fleet (force)      Heavy      Intercept OnTask   403,080 t  str  235,523 q 0.58  21.0 kn     scr  9.78 sct  0.90  2 Derfflinger-like (1914) + 4 G101-like large torpedo boat (1914) + 2 Graudenz-like (1914) + 4 Kaiser-like (1912) + 4 König-like (1914) + 1 Moltke-like (1911) + 2 Pillau-like (1914) + 1 Seydlitz-like (echelon, cross-deck fire, 1913) + 4 V25-like torpedo boat (1914)
+        III Squadron               Heavy      its orders          96,920 t  str   69,094 q 0.71  21.0 kn     scr 32.74 sct  1.16  4 König-like (1914)
+        VI Division                Heavy      its orders         119,488 t  str   50,512 q 0.42  21.0 kn     scr 19.06 sct  0.70  4 Kaiser-like (1912)
+        I Scouting Group           Scout      Scout InContact    139,602 t  str   52,963 q 0.38  25.5 kn     scr 17.10 sct  0.65  2 Derfflinger-like (1914) + 1 Moltke-like (1911) + 1 Seydlitz-like (echelon, cross-deck fire, 1913)
+          fast wing: Scout Shadow on nobody
+        II Scouting Group          Scout      Scout InContact     31,990 t  str    2,215 q 0.07  27.3 kn att scr  1.77 sct  0.15  2 Graudenz-like (1914) + 2 Pillau-like (1914)
+        II Flotilla (force)        Flotilla   Screen OnTask       15,080 t  str    1,151 q 0.08  33.5 kn att scr  1.28 sct  0.15  4 G101-like large torpedo boat (1914) + 4 V25-like torpedo boat (1914)
+          II Flotilla I            Heavy      its orders           7,408 t  str      540 q 0.07  33.5 kn att scr  1.24 sct  0.15  4 V25-like torpedo boat (1914)
+          II Flotilla II           Heavy      its orders           7,672 t  str      607 q 0.08  33.5 kn att scr  1.32 sct  0.16  4 G101-like large torpedo boat (1914)
+      sees  9 ships str  279,189 his line: Southampton, Emperor of India, Marlborough, Benbow, Nottingham, Birmingham, ...
+
+Allocation: destroyers alone (c-destroyers.json): 16 ships
+  at the start, 1916-05-31 08:00:01.000:
+    Britain: the commander None
+      12th Flotilla                Scout      its orders           8,000 t  str    6,234 q 0.78  34.0 kn     scr  0.00 sct  0.00  4 M class destroyer (1915)
+        fast wing: None Course on nobody
+      13th Flotilla                Heavy      its orders           4,860 t  str    6,042 q 1.24  29.0 kn     scr  0.00 sct  0.00  4 Laforey-like L class destroyer (1913)
+    Germany: the commander NoContact
+      VI Flotilla                  Heavy      its orders           7,408 t  str    7,374 q 1.00  33.5 kn     scr  0.00 sct  1.24  4 V25-like torpedo boat (1914)
+      IX Flotilla                  Heavy      its orders           7,672 t  str    8,080 q 1.05  33.5 kn     scr  0.00 sct  1.32  4 G101-like large torpedo boat (1914)
+        lookouts at 4.8 km, 45°: G87 0.8 km -180°, V30 1.2 km -180°
+  half an hour in, 1916-05-31 08:30:01.000:
+    Britain: the commander NoContact
+      12th Flotilla                Scout      its orders           8,000 t  str    6,234 q 0.78  34.0 kn     scr  0.00 sct  0.00  4 M class destroyer (1915)
+        fast wing: None Course on nobody
+      13th Flotilla                Heavy      its orders           4,860 t  str    6,042 q 1.24  29.0 kn     scr  0.00 sct  0.00  4 Laforey-like L class destroyer (1913)
+    Germany: the commander NoContact
+      VI Flotilla                  Heavy      its orders           7,408 t  str    7,374 q 1.00  33.5 kn     scr  0.00 sct  1.24  4 V25-like torpedo boat (1914)
+      IX Flotilla                  Heavy      its orders           7,672 t  str    8,080 q 1.05  33.5 kn     scr  0.00 sct  1.32  4 G101-like large torpedo boat (1914)
+        lookouts at 4.8 km, 45°: G87 4.8 km -45°, V30 4.8 km +45°
+  five minutes after the first contact (1916-05-31 08:45:01.000), 1916-05-31 08:50:01.000:
+    Britain: the commander Battle
+      12th Flotilla                Scout      Intercept Engaged    8,000 t  str    6,234 q 0.78  34.0 kn     scr  0.00 sct  0.00  4 M class destroyer (1915)
+        fast wing: Intercept Fight on V45 (VI Flotilla), Line
+      13th Flotilla                Heavy      its orders           4,860 t  str    6,042 q 1.24  29.0 kn     scr  0.00 sct  0.00  4 Laforey-like L class destroyer (1913)
+      sees  7 ships str   13,539 his line: G87, V45, V46, V69, S50, G41, ...
+    Germany: the commander Battle
+      VI Flotilla                  Heavy      its orders           7,408 t  str    7,374 q 1.00  33.5 kn     scr  0.00 sct  1.24  4 V25-like torpedo boat (1914)
+      IX Flotilla                  Heavy      its orders           7,672 t  str    8,080 q 1.05  33.5 kn     scr  0.00 sct  1.32  4 G101-like large torpedo boat (1914)
+      sees  1 ships str    1,567 his line: Mary Rose
+
+The prizes' war, 1920 (prizes-war.json): 12 ships
+  at the start, 1920-09-14 08:00:01.000:
+    France: the commander None
+      Division légère (force)      Heavy      its orders          26,343 t  str   27,950 q 1.06  27.0 kn     scr  0.00 sct  2.33  1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 2 V25-like torpedo boat (1914) + 1 Wiesbaden-like (1915)
+        Cruisers                   Heavy      its orders          20,721 t  str   26,738 q 1.29  27.0 kn     scr  0.00 sct  2.54  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Wiesbaden-like (1915)
+        Destroyers                 Scout      Scout OnTask         5,622 t  str    2,723 q 0.48  33.5 kn     scr  0.00 sct  1.06  1 G101-like large torpedo boat (1914) + 2 V25-like torpedo boat (1914)
+    Italy: the commander NoContact
+      Divisione esploratori (force) Heavy      its orders          26,819 t  str   25,277 q 0.94  27.0 kn     scr  0.00 sct  2.06  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914) + 1 V25-like torpedo boat (1914)
+        Esploratori                Heavy      its orders          20,524 t  str   24,512 q 1.19  27.0 kn     scr  0.00 sct  2.37  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914)
+        Cacciatorpediniere         Scout      Scout OnTask         6,295 t  str    2,707 q 0.43  33.5 kn     scr  0.00 sct  0.95  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 V25-like torpedo boat (1914)
+  five minutes after the first contact (1920-09-14 08:13:01.000), 1920-09-14 08:18:01.000:
+    France: the commander Battle
+      Division légère (force)      Heavy      its orders          26,343 t  str   27,950 q 1.06  27.0 kn     scr  0.00 sct  2.33  1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 2 V25-like torpedo boat (1914) + 1 Wiesbaden-like (1915)
+        Cruisers                   Heavy      its orders          20,721 t  str   26,738 q 1.29  27.0 kn     scr  0.00 sct  2.54  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Wiesbaden-like (1915)
+        Destroyers                 Scout      Scout InContact      5,622 t  str    2,723 q 0.48  33.5 kn     scr  0.00 sct  1.06  1 G101-like large torpedo boat (1914) + 2 V25-like torpedo boat (1914)
+      sees  3 ships str   12,638 his line: Ancona, Brindisi, Bari
+    Italy: the commander Battle
+      Divisione esploratori (force) Heavy      its orders          26,819 t  str   25,277 q 0.94  27.0 kn     scr  0.00 sct  2.06  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914) + 1 V25-like torpedo boat (1914)
+        Esploratori                Heavy      its orders          20,524 t  str   24,512 q 1.19  27.0 kn     scr  0.00 sct  2.37  1 Graudenz-like (1914) + 1 Novara-like scout cruiser (1915) + 1 Pillau-like (1914)
+        Cacciatorpediniere         Scout      Scout InContact      6,295 t  str    2,707 q 0.43  33.5 kn     scr  0.00 sct  0.95  1 B97-like large torpedo boat (1915) + 1 G101-like large torpedo boat (1914) + 1 V25-like torpedo boat (1914)
+      sees  3 ships str   17,192 his line: Metz, Mulhouse, Thionville
+
+The Yalu, 1894 (yalu.json): 15 ships
+  at the start, 1894-09-17 04:00:01.000:
+    Japan: the commander None
+      Flying Squadron              Heavy      its orders          16,306 t  str   57,273 q 3.51  18.0 kn     scr  3.16 sct  0.00  2 Naniwa-like protected cruiser (1885) + 2 Yoshino-like protected cruiser (1893)
+      Main Squadron                Heavy      its orders          10,311 t  str   12,276 q 1.19  16.0 kn     scr  1.17 sct  0.00  1 Chiyoda-like belted cruiser (1890) + 3 Matsushima-like coast-defence cruiser (1890)
+    China: the commander NoContact
+      Beiyang Fleet (force)        Heavy      its orders          30,168 t  str   17,908 q 0.59  14.5 kn     scr  0.00 sct  0.00  2 Dingyuan-like ironclad (1884) + 1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 2 Laiyuan-like armoured cruiser (1887) + 1 Zhiyuan-like protected cruiser (1887)
+        Ironclads                  Heavy      its orders          20,570 t  str    6,886 q 0.33  14.5 kn     scr  0.00 sct  0.00  2 Dingyuan-like ironclad (1884)
+        Armoured Cruisers          Flotilla   Screen OnTask        4,308 t  str    2,496 q 0.58  15.5 kn att scr  0.00 sct  0.00  2 Laiyuan-like armoured cruiser (1887)
+        Cruisers                   Heavy      its orders           5,290 t  str    6,979 q 1.32  15.0 kn     scr  0.00 sct  0.00  1 Guangyi-like torpedo cruiser (1891) + 1 Jiyuan-like protected cruiser (1883) + 1 Zhiyuan-like protected cruiser (1887)

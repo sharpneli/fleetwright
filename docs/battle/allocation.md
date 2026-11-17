@@ -140,7 +140,7 @@ aims' kinds) reads her matchup instead.
 | AL4 | **The cascade:** the force admirals by the same pass (`Dispose`); a squadron's stations (lookouts on its wings) | **done 2026-11-17** (the force admirals with AL3) |
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | **done 2026-11-17** (below) |
 | AL6 | **Regrouping** the worn-down squadrons | **done 2026-11-17** (below) |
-| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for |
+| AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | AL7a done 2026-11-17: a contact not made out is one not yet accounted for; AL7b 2026-11-17: the size estimate, the matchup by it; AL7c the decisions |
 | AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
 
 ### AL0 The bench (built 2026-11-16)
@@ -360,16 +360,6 @@ spread over seeds counts them.
 Not built: a worn top unit into a squadron inside a force (each admiral regroups his own), nor two worn squadrons of
 unlike ships into one; a worn squadron with no like one in sight stays as it is.
 
-**What it moved** (`allocation/al6/`, against `al5/`): little, and rightly so. Merges are rare: in the early wave at
-most 0.6 a side a seed (the Conrad 0.6 and 0.5, the Bosporus's Ottomans 0.4, Åland's Finns 0.2, the Yalu 0.1 each,
-Manila's Americans 0.1); Pungdo, Port Arthur and the prizes' war have none and play out to the hash. Most worn remnants
-have no like squadron in sight (Tsushima's Japanese destroyer division: its fellow 36 km off in 13 km of visibility), or
-their role has moved from their fellows' (a flotilla's last boat a screen). One Jutland seed merged twice (VII Flotilla's
-last boat into V Flotilla at 20:31, the 2nd Cruiser Squadron's last into the 1st at 00:06). The panel: 7 of 14 sides
-within 2x (7), the record's loser lost more in 28 of 44 (28); the Dover Strait, Coronel, the prizes' war and Heligoland
-to the hash; Tsushima 7.4 v 5.6 (7.9 v 5.5), Jutland 12.3 v 40.3 (14.3 v 39.5), Dogger 1.9 v 6.5 (1.8 v 6.0), Cape
-Sarych's Russia 2.5 (1.6), Åland's Sweden 3.5 (3.9): within their seeds' spread.
-
 ### AL7a A ship not made out is one not yet accounted for (built 2026-11-17)
 
 The prizes' war's commanders weren't declining an even fight: they misread it. Italy's held France's three cruisers made
@@ -391,6 +381,25 @@ sides the record has losing nothing: Coronel's Germany 1.1, the Dogger Bank's Br
 Sarych's Russia 1.6 (3.1), the Jutland's Germany 38.8 (49.0, Britain 20.5 still in it), the Dogger Bank's Germany 7.6
 (5.6) further. The early wave as it was within a seed or two (Åland 4.9 of 13 v 3.2 of 8, the Bosporus's Russia 10 of
 16, the Yalu's Japan 0.2 lost to China's 1.9).
+
+### AL7b A ship made out to her type is estimated, not typed (built 2026-11-17)
+
+**The estimate.** Once a navy makes a ship out to her type its lookouts judge her size and whether she's armed
+(`Contact.SizeM2`, `SizeSigma`, `Armed`; `Sightings.Size`). Size is what she shows side on above the water (her
+silhouette's area, `ShipTypes.SideAreaM2`): what the eye takes in, and what tells a dreadnought from a destroyer far
+better than her length here (the crunched destroyers of 1914 are 102 m to an Iron Duke's 178 m, but 661 m² to her
+1,792 m²). It's off by a log-normal error, `SightSizeSigma` (0.35 [EST]: a quarter on her length and as much on her height)
+at the type's margin, shrinking to none at the class's; the draw is hers for each navy (a stream of its own, so no other
+draw moves), and the error is the least yet, so the estimate only comes nearer as he makes her out better. Asked of the
+research companion (REQUESTS.md 2026-11-17).
+
+**What reads it.** The matchup takes her for her side's classes not yet made out (AL7a's pool, as armed as she is), each
+weighed by its ships and by how near its size is to the estimate (a normal in the log of the area, of her error, never
+under `SightSizeFloor`, 0.1 [EST]: a ship made out well is still any of the classes about her size); `Matchups.Weigh`
+replaces the census by type, so her tonnage (`TonnageOf`), her matchup entries and what's left unaccounted for read it.
+A torpedo's aim at her takes the length and draught of the ships placed near her size (`ShipTypes.At`), and before
+she's made out to her type the warships' mean (`ShipTypes.Mean`). The type stays on the contact as the map's and the
+reports' word; nothing in the matchup reads it now.
 
 ## Questions for the user
 

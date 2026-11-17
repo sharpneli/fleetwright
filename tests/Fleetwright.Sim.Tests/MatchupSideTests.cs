@@ -6,7 +6,7 @@ using Xunit.Abstractions;
 namespace Fleetwright.Sim.Tests;
 
 /// <summary>The matchup's sides from the world (docs/battle/command.md 5.1g, piece 2): own ships exactly, enemies as the
-/// picture takes them (a class mistaken misleads; a type is what its side has of it), and what's seen of their
+/// picture takes them (a class mistaken misleads; a ship made out to her type is what her side has near her size), and what's seen of their
 /// condition.</summary>
 public class MatchupSideTests(ITestOutputHelper output)
 {
@@ -74,25 +74,31 @@ public class MatchupSideTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_type_is_what_its_side_has_of_it()
+    public void A_ship_made_out_to_her_type_is_what_her_side_has_near_her_size()
     {
-        var (w, _) = Make(["arethusa"], ["iron_duke", "iron_duke", "v25", "v25", "derfflinger"]);
+        // docs/battle/allocation.md AL7b: her side's classes weighed by how near their size is to her estimated size
+        var (w, ids) = Make(["arethusa"], ["iron_duke", "iron_duke", "v25", "v25", "derfflinger"]);
         var m = new Matchups();
         MatchupSide b = new();
-        // a capital ship, not yet made out: two Iron Dukes and a Derfflinger at sea
-        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Capital });
-        Assert.Equal(2, b.Count);
+        double Size(string n) => ShipTypes.SideAreaM2(w.Ships.Registry.Get(ids[n])!);
+        double Share(string prefix) => b.Entries.ToArray().Where(e => e.Profile.Class.Name.StartsWith(prefix)).Sum(e => e.Count);
+        // judged an Iron Duke's size, a third either way: two Iron Dukes and a Derfflinger, the boats hardly
+        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Type, TakenFor = -1, Side = 1, SizeM2 = Size("iron_duke"), SizeSigma = 0.35, Armed = true });
+        output.WriteLine(string.Join(", ", b.Entries.ToArray().Select(e => $"{e.Profile.Class.Name} ({e.Profile.SideAreaM2:F0} m²) {e.Count:0.###}")));
         Assert.Equal(1, b.Entries.ToArray().Sum(e => e.Count), 6);
-        Assert.Equal(2.0 / 3, b.Entries.ToArray().First(e => e.Profile.Class.Name.StartsWith("Iron Duke")).Count, 6);
-        // a destroyer: the V25s
+        Assert.True(Share("Iron Duke") + Share("Derfflinger") > 0.98);
+        Assert.True(Share("Iron Duke") > Share("Derfflinger"));
+        double loose = Share("Iron Duke");
+        // made out better: nearer her own
         b.Clear();
-        b.AddContact(w, m, 0, new Contact { Entity = 4, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
-        Assert.Equal(1, b.Count);
-        Assert.StartsWith("V25", b.Entries[0].Profile.Class.Name);
-        // two contacts of a type are two ships, whole: one entry
-        b.AddContact(w, m, 0, new Contact { Entity = 5, Level = ContactLevel.Type, TakenFor = -1, Side = 1, Type = ShipType.Destroyer });
-        Assert.Equal(1, b.Count);
-        Assert.Equal(2, b.Entries[0].Count, 6);
+        b.AddContact(w, m, 0, new Contact { Entity = 2, Level = ContactLevel.Type, TakenFor = -1, Side = 1, SizeM2 = Size("iron_duke"), SizeSigma = 0.05, Armed = true });
+        Assert.True(Share("Iron Duke") > loose);
+        // a boat's size: the V25s; two contacts of it are two ships, whole: one entry
+        b.Clear();
+        b.AddContact(w, m, 0, new Contact { Entity = 4, Level = ContactLevel.Type, TakenFor = -1, Side = 1, SizeM2 = Size("v25"), SizeSigma = 0.35, Armed = true });
+        Assert.True(Share("V25") > 0.97);
+        b.AddContact(w, m, 0, new Contact { Entity = 5, Level = ContactLevel.Type, TakenFor = -1, Side = 1, SizeM2 = Size("v25"), SizeSigma = 0.35, Armed = true });
+        Assert.InRange(Share("V25"), 1.94, 2);
     }
 
     [Fact]

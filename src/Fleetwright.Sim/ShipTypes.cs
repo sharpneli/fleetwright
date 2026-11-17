@@ -17,11 +17,8 @@ namespace Fleetwright.Sim;
 /// after (the AI's workers too).</para></summary>
 public sealed class ShipTypes(SimSettings settings)
 {
-    const int Types = (int)ShipType.Merchant + 1;
-
     double sumT, sumT2;   // the warships placed: Σ t, Σ t² (full displacement)
     readonly List<(ShipClass Class, int Ships)> placed = [];
-    readonly double[] lengthM = new double[Types], draughtM = new double[Types];
 
     /// <summary>The yardstick, t: the warships' tonnage-weighted mean full displacement; 0 before any is placed.</summary>
     public double ReferenceT => sumT > 0 ? sumT2 / sumT : 0;
@@ -42,15 +39,43 @@ public sealed class ShipTypes(SimSettings settings)
     /// <summary>Whether a class is a merchant: no main mounts. The one type that doesn't depend on the others.</summary>
     public static bool IsMerchant(ShipClass c) => c.Silhouette.MainMounts == 0;
 
-    /// <summary>The typical length and draught of a type, m: the mean of the ships placed reported as it (a contact made
-    /// out as a type and no more, sized for a torpedo's aim and depth); the warships' mean if none is, and 120 m by 4 m in
-    /// a world with no ships.</summary>
-    public (double LengthM, double DraughtM) Typical(ShipType type) =>
-        lengthM[(int)type] > 0 ? (lengthM[(int)type], draughtM[(int)type])
-        : lengthM[(int)ShipType.Unknown] > 0 ? (lengthM[(int)ShipType.Unknown], draughtM[(int)ShipType.Unknown])
-        : (120, 4);
+    /// <summary>What a class shows side on above the water, m² (its silhouette's: what a lookout judges her size by).</summary>
+    public static double SideAreaM2(ShipClass c) => Sight.AreaAbove(c.Numbers(c.Silhouette.SideAreaM2), 0);
 
-    /// <summary>A ship placed (<see cref="ShipSystem"/>'s spawn): the yardstick and the types' sizes worked out again.</summary>
+    /// <summary>The length and draught of a ship estimated at a size (docs/battle/allocation.md AL7b: a contact made out as a
+    /// type and no more, sized for a torpedo's aim and depth): the ships placed, armed or not as she is, each by how near
+    /// what it shows side on is to the estimate (a normal in its log, of <paramref name="sigma"/>); every ship placed if
+    /// none of her kind is, and 120 m by 4 m in a world with no ships.</summary>
+    public (double LengthM, double DraughtM) At(double sizeM2, double sigma, bool armed)
+    {
+        for (int pass = 0; pass < 2; pass++)
+        {
+            double w = 0, l = 0, d = 0;
+            foreach (var (cls, ships) in placed)
+            {
+                if (pass == 0 && IsMerchant(cls) == armed)
+                    continue;
+                double area = SideAreaM2(cls), x = sizeM2 > 0 && area > 0 ? Math.Log(area / sizeM2) / sigma : 0, k = ships * Math.Exp(-0.5 * x * x);
+                (w, l, d) = (w + k, l + k * cls.Length, d + k * cls.Vertical.Draught);
+            }
+            if (w > 1e-300)
+                return (l / w, d / w);
+        }
+        return (120, 4);
+    }
+
+    /// <summary>The warships placed's mean length and draught, m (a contact not yet made out to her type, sized for a
+    /// torpedo's aim and depth); 120 m by 4 m in a world with none.</summary>
+    public (double LengthM, double DraughtM) Mean()
+    {
+        double n = 0, l = 0, d = 0;
+        foreach (var (cls, ships) in placed)
+            if (!IsMerchant(cls))
+                (n, l, d) = (n + ships, l + cls.Length * ships, d + cls.Vertical.Draught * ships);
+        return n > 0 ? (l / n, d / n) : (120, 4);
+    }
+
+    /// <summary>A ship placed (<see cref="ShipSystem"/>'s spawn): the yardstick worked out again.</summary>
     internal void Placed(ShipClass c)
     {
         int k = 0;
@@ -65,24 +90,5 @@ public sealed class ShipTypes(SimSettings settings)
             sumT += t;
             sumT2 += t * t;
         }
-        Span<int> n = stackalloc int[Types];
-        Array.Clear(lengthM);
-        Array.Clear(draughtM);
-        foreach (var (cls, ships) in placed)
-        {
-            int type = (int)Of(cls);
-            lengthM[type] += cls.Length * ships;
-            draughtM[type] += cls.Vertical.Draught * ships;
-            n[type] += ships;
-            if (type != (int)ShipType.Merchant)   // Unknown's slot: every warship's, the fallback
-            {
-                lengthM[0] += cls.Length * ships;
-                draughtM[0] += cls.Vertical.Draught * ships;
-                n[0] += ships;
-            }
-        }
-        for (int i = 0; i < Types; i++)
-            if (n[i] > 0)
-                (lengthM[i], draughtM[i]) = (lengthM[i] / n[i], draughtM[i] / n[i]);
     }
 }

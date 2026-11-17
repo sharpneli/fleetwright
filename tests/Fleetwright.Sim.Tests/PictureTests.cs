@@ -137,6 +137,39 @@ public class PictureTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void Made_out_to_her_type_her_size_is_estimated_and_comes_nearer_as_she_closes()
+    {
+        // docs/battle/allocation.md AL7b: her size as the lookouts judge it, off by a third or so at the type's margin,
+        // never further off as she's made out better, and her own once her class is
+        var w = Closing(Day, 25_000);
+        FirstSeen(w);
+        var pic = w.Sightings.Of(1)!;
+        double size = ShipTypes.SideAreaM2(Ship(w, 2).Handling.Class), lastSigma = double.MaxValue, lastOff = double.MaxValue;
+        bool typed = false;
+        while (pic[pic.IndexOf(2)].Level < ContactLevel.Class)
+        {
+            Run(w, 5);
+            Assert.True(Apart(w) > 500, "never made out to her class");
+            ref readonly var c = ref pic[pic.IndexOf(2)];
+            if (c.Level < ContactLevel.Type)
+                continue;
+            double off = Math.Abs(Math.Log(c.SizeM2 / size));
+            if (!typed)
+                output.WriteLine($"made out to her type at {Apart(w) / 1000:F1} km: {c.SizeM2:F0} m² for her {size:F0} m², error {c.SizeSigma:F2}");
+            typed = true;
+            Assert.True(c.Armed);
+            Assert.InRange(c.SizeSigma, 0, Settings.SightSizeSigma);
+            Assert.True(c.SizeSigma <= lastSigma && off <= lastOff + 1e-12, "the estimate only comes nearer");
+            Assert.True(off <= 4 * Settings.SightSizeSigma);
+            (lastSigma, lastOff) = (c.SizeSigma, off);
+        }
+        Assert.True(typed, "made out to her type before her class");
+        ref readonly var k = ref pic[pic.IndexOf(2)];
+        Assert.Equal(0, k.SizeSigma);
+        Assert.Equal(size, k.SizeM2, 6);
+    }
+
+    [Fact]
     public void A_ship_lost_fades_from_the_snapshot_as_she_is_for_a_while()
     {
         var w = Closing(Day, 25_000);

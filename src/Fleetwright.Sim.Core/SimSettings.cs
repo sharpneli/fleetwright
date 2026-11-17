@@ -551,6 +551,17 @@ public sealed record SimSettings
     public double SightMisidentify { get; init; } = 0.3;
     public double SightSimilarScore { get; init; } = 1.5;
 
+    /// <summary>A lookout's error on a ship's size (what she shows side on: her length by her height) when he's made her
+    /// out to her type and no more, the log's standard deviation (docs/battle/allocation.md AL7b, Contact.SizeM2): about a
+    /// third either way [EST], a quarter on her length and as much on her height; shrinking as he makes her out better,
+    /// none once he's made out her class.</summary>
+    public double SightSizeSigma { get; init; } = 0.35;
+
+    /// <summary>The least spread, in the log of her size, her side's classes are weighed by around a ship's estimated size
+    /// (docs/battle/allocation.md AL7b): a contact made out well is still any of the classes about her size, a tenth either
+    /// way [EST].</summary>
+    public double SightSizeFloor { get; init; } = 0.1;
+
     /// <summary>A contact out of sight this long is forgotten, ms.</summary>
     public long SightForgetMs { get; init; } = 6 * 3_600_000L;
 

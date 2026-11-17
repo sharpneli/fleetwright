@@ -36,7 +36,7 @@ public sealed class Sightings
     readonly Encounters encounters;
     readonly Picture?[] bySide = new Picture?[256];
     readonly List<Picture> pictures = new(4);
-    readonly RandomStream stream, smokeStream, lightStream;
+    readonly RandomStream stream, smokeStream, lightStream, sizeStream;
     readonly Probes probes;
     readonly int smokeLookProbe;
     readonly Dictionary<int, int> similar = new(64);   // a class's most similar other class in the world, or -1
@@ -111,6 +111,7 @@ public sealed class Sightings
         stream = RandomStream.Named(seed, "Sighting");
         smokeStream = RandomStream.Named(seed, "SmokeSighting");
         lightStream = RandomStream.Named(seed, "LightSighting");
+        sizeStream = RandomStream.Named(seed, "SizeSighting");
     }
 
     /// <summary>The pictures that exist, in the order they were made.</summary>
@@ -882,7 +883,7 @@ public sealed class Sightings
         if (tk.ColoursDown && (con.Level >= ContactLevel.Class || margin >= SideMargin(lookNight.SkyCdM2)))
             con.Seen |= SeenFlags.ColoursDown;   // her colours, where they can be made out: her type's margin by day, her class's in the dark (SK3)
         con.Shape = margin;
-        Identify(ref con, ts, margin, d, ref r, classesInUse);
+        Identify(ref con, os.Side, ts, margin, d, ref r, classesInUse);
     }
 
     /// <summary>Her guns as watched (docs/battle/crew.md N5b): her quiet starts again when she comes into sight or a salvo of
@@ -951,9 +952,10 @@ public sealed class Sightings
 
     /// <summary>How far a sighting makes a contact out: its type, its class (taken for a similar one by chance), its name
     /// (and its class put right). Never less than it was.</summary>
-    void Identify(ref Contact c, ShipState ts, double margin, double d, ref RandomStream r, IReadOnlyList<int> classesInUse)
+    void Identify(ref Contact c, byte by, ShipState ts, double margin, double d, ref RandomStream r, IReadOnlyList<int> classesInUse)
     {
         int truth = ts.ClassIndex;
+        bool typed = c.Level >= ContactLevel.Type;
         if (d <= settings.SightNameM && margin >= settings.SightClassMargin)
         {
             c.Level = ContactLevel.Name;
@@ -970,9 +972,25 @@ public sealed class Sightings
         if (c.Level >= ContactLevel.Type)
         {
             c.Type = types.Of(c.TakenFor >= 0 && Registry?.Get(c.TakenFor) is { } taken ? taken : ts.Handling.Class);
+            Size(ref c, by, ts, margin, typed);
             if (c.Level >= ContactLevel.Class || margin >= SideMargin(lookNight.SkyCdM2))
                 c.Foe = true;   // her colours by day, her build in the dark: whose she is (docs/battle/night.md Q6, Q12e)
         }
+    }
+
+    /// <summary>Her size as the lookouts estimate it (docs/battle/allocation.md AL7b): what she shows side on, off by a draw of hers for
+    /// the navy (its own stream, so no other draw moves) times the error at the best margin she's been made out at, the
+    /// lookout's <see cref="SimSettings.SightSizeSigma"/> at the type's margin to none at the class's; and whether she's
+    /// armed (a main battery: <see cref="ShipTypes.IsMerchant"/>).</summary>
+    void Size(ref Contact c, byte by, ShipState ts, double margin, bool typed)
+    {
+        var cls = ts.Handling.Class;
+        double span = Math.Max(settings.SightClassMargin - settings.SightTypeMargin, 1e-9);
+        double sigma = settings.SightSizeSigma * Math.Clamp((settings.SightClassMargin - margin) / span, 0, 1);
+        if (typed && c.SizeM2 > 0)
+            sigma = Math.Min(sigma, c.SizeSigma);
+        double z = sizeStream.Derive((ulong)by << 32 ^ (uint)ts.Entity).NextGaussian();
+        (c.SizeM2, c.SizeSigma, c.Armed) = (ShipTypes.SideAreaM2(cls) * Math.Exp(z * sigma), sigma, !ShipTypes.IsMerchant(cls));
     }
 
     /// <summary>The margin whose a ship is made out at under a sky (cd/m²): the type's by day, the class's in the dark,

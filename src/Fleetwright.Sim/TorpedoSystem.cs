@@ -437,7 +437,8 @@ public sealed class TorpedoSystem : IWorldSystem
     }
 
     /// <summary>A target as its navy takes it: its length (the spread's width) and the depth set for it, from the class
-    /// it's taken for, else by its type (the dev's: as it is).</summary>
+    /// it's taken for, else of ships her estimated size (docs/battle/allocation.md AL7b), else the
+    /// warships' mean (the dev's: as it is).</summary>
     (double LengthM, double DepthM) Target(World world, int side, int target, bool truth)
     {
         var pic = world.Sightings.Of(side);
@@ -450,8 +451,10 @@ public sealed class TorpedoSystem : IWorldSystem
             ref readonly var c = ref pic![ci];
             if (c.TakenFor >= 0 && ships.Registry.Get(c.TakenFor) is { } taken)
                 (length, draught) = (taken.Length, taken.Vertical.Draught);
+            else if (c.Level >= ContactLevel.Type && c.SizeM2 > 0)   // ships of her size as estimated (AL7b)
+                (length, draught) = world.Types.At(c.SizeM2, Math.Max(c.SizeSigma, settings.SightSizeFloor), c.Armed);
             else
-                (length, draught) = world.Types.Typical(c.Type);   // the ships at sea reported as her type, on average
+                (length, draught) = world.Types.Mean();   // not yet made out to her type: the warships at sea, on average
         }
         return (length, Math.Clamp(settings.TorpedoDepthShare * draught, settings.TorpedoDepthMinM, settings.TorpedoDepthMaxM));
     }

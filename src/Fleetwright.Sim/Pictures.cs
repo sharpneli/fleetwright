@@ -78,7 +78,20 @@ public struct Contact
     public Vec3d Position, Velocity;
     public Cov4 P;
     public ContactLevel Level;
+
+    /// <summary>What she's reported as: the map's and the reports' word (docs/battle/allocation.md AL7), read by no
+    /// decision. What's estimated of her is <see cref="SizeM"/> and <see cref="Armed"/>.</summary>
     public ShipType Type;
+
+    /// <summary>Her size as her navy's lookouts estimate it once she's made out to her type (docs/battle/allocation.md
+    /// AL7b): what she shows side on above the water, m² (0 before); <see cref="SizeSigma"/> its error now, the log's
+    /// standard deviation: the lookout's (<see cref="SimSettings.SightSizeSigma"/>) at the type's margin, shrinking as he
+    /// makes her out better and none at the class's. The error's draw is hers for each navy, so the estimate only comes
+    /// nearer the truth. What's estimated from her (her side's classes near that size, a torpedo's aim) reads it.</summary>
+    public double SizeM2, SizeSigma;
+
+    /// <summary>Whether she's made out to carry guns (a main battery), once made out to her type: a merchant or not.</summary>
+    public bool Armed;
 
     /// <summary>How well her shape was made out at the last sighting: the best margin on it (not her bow wave or her
     /// lights: under 1 when she was made out by them alone). The torpedo officer's judgement reads it
@@ -263,6 +276,12 @@ public sealed class Picture
             h.Add(c.P.VeVe);
             h.Add((int)c.Level | (int)c.Seen << 8);
             h.Add(c.TakenFor);
+            if (c.Level >= ContactLevel.Type)
+            {
+                h.Add(c.SizeM2);
+                h.Add(c.SizeSigma);
+                h.Add(c.Armed);
+            }
             h.Add(c.QuietMs);
             h.Add(c.Shape);
             if (c.MountsQuiet != 0)

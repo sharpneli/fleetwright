@@ -12,6 +12,19 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-17 - How well lookouts judged a ship's size before her class was made out, 1890-1925 first
+- Question: (1) How far off were lookouts and officers of the watch on a ship's size (length, height, what she showed side on;
+  "a large ship", "a cruiser", "a destroyer") when they'd made out her type but not her class: errors by day, in haze and at
+  night, and how fast they closed as she came nearer. (2) The record's cases of a ship taken for a bigger or smaller kind (a
+  destroyer for a cruiser at night, a light cruiser for a battlecruiser, a merchant for a warship, Jutland's night reports
+  and others), and what made the mistake (her aspect, smoke, haze, expectation). (3) What lookouts were trained to judge
+  size by (the masthead height on a range-finder, funnels, freeboard), and anything numerical.
+- Context / relevant files: `docs/battle/allocation.md` AL7b (a contact made out to her type carries an estimate of what she
+  shows side on, off by a log-normal error of `SightSizeSigma` 0.35 [EST] at the type's margin, none at the class's),
+  `src/Fleetwright.Sim/Sightings.cs` (`Size`), `src/Fleetwright.Sim.Ai/Knowledge/Matchups.cs` (`Weigh`).
+- Wanted output: an error figure (log-sd or a typical factor) for size by day and by night with tags, how it shrinks with
+  range or margin, and a short list of cases.
+
 ### 2026-11-14 - Holes in plate from a charge or a shell at a distance from it, in air and under water
 - Question: (1) Measured holes (area, or a tear's length) in steel plate from a charge or a shell's burst at a known standoff from
   it, against the same in contact: trials (ship target trials, plate trials, Hopkinson-era and WWII), and war damage with a
