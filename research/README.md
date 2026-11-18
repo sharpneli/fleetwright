@@ -70,6 +70,7 @@ Raw appendices in [simulation/fire-control-research/](simulation/fire-control-re
 | [early-hit-rates.md](simulation/fire-control-research/early-hit-rates.md) | Historical hit rates, 1860–1910, for calibration |
 | [emergency-eyeball.md](simulation/fire-control-research/emergency-eyeball.md) | Emergency and local-control gunnery, 1914–1990 |
 | [component-costs.md](simulation/fire-control-research/component-costs.md) | Mass, size, crew, power and height of fire-control components, 1900–1990 |
+| [whose-salvo.md](simulation/fire-control-research/whose-salvo.md) | Telling your own salvo from another ship's on one target, 1905-1925 first: cases, doctrine, a timing model ([whose_salvo_ref.py](simulation/whose_salvo_ref.py)) |
 
 Ship motion and speed in [simulation/ship-motion/](simulation/ship-motion/) (2026-10-12):
 

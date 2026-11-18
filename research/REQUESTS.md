@@ -12,20 +12,6 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
-### 2026-11-18 - Telling your own salvo from another ship's on the same target, 1905-1925 first
-- Question: (1) When two or more ships fired at one target, how often did spotters mistake another ship's salvo for their
-  own, or lose their own, and how did it depend on how many ships were on her, the calibres (same or different), the
-  salvos' timing, and the range? Cases: Tiger on Lion's splashes at the Dogger Bank, the BCF on Lützow and Derfflinger at
-  Jutland, the Grand Fleet's concentrations, the Germans on Defence and Warrior, Rodney and KGV on Bismarck. (2) What the
-  navies did about it: the RN's concentration-of-fire procedures (one ship controlling, alternate salvos, the TOF buzzer and
-  clock), dye in the shells, staggered firing intervals, and what doctrine said about how many ships to put on one. (3)
-  Whether a salvo of three or more shells was ever reliably known for one's own by its pattern or timing alone.
-- Context / relevant files: `docs/battle/shell-consumption.md` SC2; `SimSettings.SplashConfusion` (a lone shell told with
-  1/(1 + 0.6 N)), `SalvoIdentifiedShells` 3 (a salvo of 3+ always told: so the heavy guns pay nothing for crowding),
-  `SplashWindowMs` 3 s, `SplashCalibreBand` 0.15, `SplashNearM` 1 km (from `manual-gunnery-research.md` §5).
-- Wanted output: the chance a spotter tells his own salvo with N others on the target, by calibre mix and timing, with tags;
-  what each navy's procedures bought; the cases.
-
 ### 2026-11-17 - How well lookouts judged a ship's size before her class was made out, 1890-1925 first
 - Question: (1) How far off were lookouts and officers of the watch on a ship's size (length, height, what she showed side on;
   "a large ship", "a cruiser", "a destroyer") when they'd made out her type but not her class: errors by day, in haze and at
@@ -333,6 +319,23 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: a table of the ratios per ship, and a recommended range for `strength` and `knuckle`.
 
 ## Done
+
+### 2026-11-18 - Telling your own salvo from another ship's on the same target, 1905-1925 first
+- Done 2026-11-18 (draft): [simulation/fire-control-research/whose-salvo.md](simulation/fire-control-research/whose-salvo.md) with
+  [whose_salvo_ref.py](simulation/whose_salvo_ref.py). No navy's count of misidentified salvos was found; the answer is the cases,
+  the orders and a timing model. **Salvos of 3+ were not always told:** with two ships of near one calibre and no timing scheme,
+  confusion every time it's looked for (Tiger on Lion's at the Dogger Bank, ~3,000 yd over, her time-of-flight arrangements unused;
+  Tiger and New Zealand on Moltke, Brooks; Ajax on Achilles' for 25 min, 1939; KGV's radar on Rodney's, 1941), and as misreads,
+  not doubts. With timing (GF pairs with director and TOF watches, GIC slots, the 1918 US pairs' half-minute sectors, Hood/PoW
+  1941) none reported; the Germans' three on Lion (16 hits) by spotting single salvos, then rapid fire. **Identity is time:** a
+  heavy column stands 10-15 s (Soviet 1927); ships' salvos 15-20 s apart without a clock (Bernotti 1914), 5 s with one (USN
+  1930s). Pattern: no case, and the RN in 1939 found nine 16 in splashes a burden. Calibre: 12-15% no help. **Doctrine:** pairs
+  everywhere (Bernotti; GFG&TO 1915; GFBO 1916; USN c. 1908 rules three worth less than two; RN 1922 rules 3 x2.5, 4 x3). Dye
+  none before 1930 (USN 1930, IJN 1941, RN late 1942). **Proposed:** for any salvo, 1/(1 + 0.6 k), k the other ships' salvos of
+  its band in +/-W, W 15 s without a clock in use and 5 s with; the told share times the ships with a clock gives x1.81, x2.48,
+  x3.02, against 1922's x2, x2.5, x3. A misread read from the other ship's fall (sticky by itself, Tiger); GIC slots ~20 s as a
+  1916+ doctrine (rate, not confusion); `SplashCalibreBand` maybe 0.25-0.3. Not reached: GFG&TOs and C.B. 272 themselves,
+  Schleihauf 1998, German spotters on Defence and Warrior.
 
 ### 2026-11-13 - Shells skipping off the water: what a ricochet kept, where it went, and whether it hit
 - Done 2026-11-13 (draft): [simulation/damage-research/16-water-ricochet.md](simulation/damage-research/16-water-ricochet.md) with
