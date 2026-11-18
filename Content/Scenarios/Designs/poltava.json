@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "poltava",
  "name": "Poltava-like (Petropavlovsk class, Port Arthur 1904)",
  "type": "BB",
@@ -472,7 +472,8 @@
     "first_step_m": 366,
     "mass_t": 0.2,
     "crew": 3,
-    "power_kw": 0
+    "power_kw": 0,
+    "fall_clock": 0
    }
   },
   "Telescopic sights, fired on the roll": {

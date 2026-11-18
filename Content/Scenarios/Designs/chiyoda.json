@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "chiyoda",
  "name": "Chiyoda-like belted cruiser (1890)",
  "type": "CL",
@@ -465,7 +465,8 @@
     "first_step_m": 366,
     "mass_t": 0.2,
     "crew": 3,
-    "power_kw": 0
+    "power_kw": 0,
+    "fall_clock": 0
    }
   },
   "Early telescopic sights": {

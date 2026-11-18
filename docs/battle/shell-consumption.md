@@ -1,6 +1,6 @@
 # Shell consumption: firing what the record fired
 
-Agreed with the user 2026-11-18. Steps SC1-SC4 (SC4 built before SC2-SC3, at the user's question on pacing).
+Agreed with the user 2026-11-18. Steps SC1-SC4 (SC4 built before SC2-SC3, at the user's question on pacing; SC2 the same day).
 
 **The complaint (the user):** "Historically ships didn't really shoot as much as they did here which is the reason why our
 ships run dry so fast and why the fights are so much deadlier." And: "in cases where I have my usual congaline of doom and
@@ -49,7 +49,7 @@ Capital ships' chief batteries:
 - **The pile-on:** squadrons put 31% of their chief shells on a target 4-5 ships were firing at (Dogger Bank 15%). They hit
   well (7-8%): the waste is not misses but shells into a ship already done for. Two causes: each other battery on her made
   her count only 25% further off (`FireCrowdShare`), and a salvo of 3 or more is always told from the others' splashes
-  (`SalvoIdentifiedShells`), so the heavy guns pay nothing for crowding.
+  (`SalvoIdentifiedShells`, gone in SC2), so the heavy guns pay nothing for crowding.
 - The spots are seldom the leak: fire for effect's are 84-92% seen and told.
 
 ## The steps
@@ -79,11 +79,58 @@ Capital ships' chief batteries:
   that's left deadlier: SC3 and SC4 are what cut the volume, and the gunnery's accepted 3.5x over the record
   (error-sources.md) stays the other half of the deadliness.
 
-### SC2 Spotting under concentration (research first)
+### SC2 Spotting under concentration: whose salvo
 
 A salvo's splashes confused with another ship's salvo landing about her at the same moment, not only single shells (Tiger
-on Lion's at the Dogger Bank). `SalvoIdentifiedShells` came from the research (manual-gunnery-research.md §5); check it
-before changing it.
+on Lion's at the Dogger Bank). The research (`research/simulation/fire-control-research/whose-salvo.md`, 2026-11-18): no
+salvo was ever told by its pattern alone; the record's confusions (Tiger on Lion's, Tiger and New Zealand on Moltke, Ajax
+on Achilles', KGV on Rodney's) were all near calibres without a timing scheme in use, and all misreads, not doubts; what
+told a salvo was its time (Bernotti's 15-20 s between ships' salvos without a clock, the USN's 5 s with one); dye only
+from 1930 (USN), 1941 (IJN), late 1942 (RN). Started 2026-11-18 at the user's word ("go to SC2, also think of shell dyes
+now").
+
+- **Built 2026-11-18.**
+  - *No free pass for salvos.* `SalvoIdentifiedShells` (3 or more always told) is gone; a spotter tells his own fall with
+    1/(1 + Σc) over the other ships' salvos of its calibre band near her in his window (each counted once, by its salvo),
+    `SplashConfusion` 0.6 each. A fall of fewer than `SalvoPatternShells` (3) is no group to look for: each other shell
+    counts, as before. Hits are still his own; point blank is still the layers' own.
+  - *The window by the clock.* `SplashWindowMs` 3 s → `SplashWindowS` 15 s either way by the watch, down to
+    `SplashWindowClockS` 5 s as far as his computer's **fall-of-shot clock** times it (`fall_clock`, a new fact of each
+    computer block: none on the hand plot and judgement, 0.5 on the Dumaresq and Vickers clock and the German EU-Anzeiger,
+    0.8 the Dreyer Mk I, 0.6 the German clock and plot (the electric indicators "far from reliable"), 1 the Dreyer Mk III-V,
+    the Argo and everything after [EST]) and his crew use it (`GunneryCrew.ClockUse`: green 0.5 (Tiger in 1915), average
+    0.75, trained 0.9, elite 1 [EST]). Design format 23 (`DesignFormat.FallClocks`: a block named as a template takes its
+    value), `ShipDesign.Version` 65 (the goldens' only change the version and the key).
+  - *Falls after his call don't count.* He calls `SpotDelayMs` after his own fall; a consort's landing later can't change
+    it, and he took the first group he saw for his own. So the window is in effect the watch's before his fall and 6 s
+    after, narrower than the research's symmetric model (§6), and the told shares are higher than its S1 table.
+  - *A misread takes the other's fall.* Not told, `SplashMisreadShare` (0.3) of the time he reads the other salvo, the
+    likeliest (the same colour, the nearest in time), as if his own: over, short or straddling along his line from where its
+    shells fell from her. A consort's straddle read as his own holds him at the wrong range (Tiger's, the research's
+    "sticky" misread, with no stickiness constant); the coin flip is gone.
+  - *Dye.* A ship's dye load (`ShipSystem.Dye`, a scenario's `"dye"`/`"dyes"`; drawn since docs/visuals/splashes.md P5)
+    now rides on her salvos into the splash ring: another colour's salvo counts `SplashConfusionDyed` 0.1, not 0.6 [EST: the
+    research's "about 0.1, not zero: colours fade at long range and in poor light"]. Plain splashes are all one colour.
+  - The ring of splashes about each ship holds 64 now (four ships' eight-gun salvos in about half a minute), with each
+    splash's salvo, where it fell from her and its dye.
+  - `SplashTests.A_consorts_salvos_on_her_cost_the_spotter_his_own_unless_timed_or_dyed`: two battleships on one at 14 km;
+    alone 100% told, with a consort 90% by the watch, 99% with the clock, 99% dyed. `Salvos_are_always_told` is gone.
+- **Measured** (`--ammo`, the same 2 seeds, SC4 → SC2): the pace doesn't move (rounds a gun a minute while firing within
+  noise); concentration now costs hits. Fire for effect's spots seen but not told: squadrons 1% → 16%, Dogger Bank 1% → 3%,
+  Tsushima 9% → 15%. Chief shells' hits by the ships firing on her target, Dogger Bank 1 / 2 / 3 / 4: 5.6 / 13.4 / 15.6 /
+  16.3% → 3.4 / 7.3 / 4.9 / 6.6%; Tsushima 18.1 / 16.5 / 13.4 / 11.0% → 12.5 / 11.2 / 7.4 / 6.1%. British hits at the
+  Dogger Bank 564 → 266, German losses 10.5 → 7.0 a seed (record 1); Tsushima's Russian 10.5 → 6.5, Japanese 6.0 → 4.5.
+  Two seeds of fights that go differently (the lone shooter's hit rate moves too, at other ranges): the balance panel is the
+  reading.
+- **Open, for the user (dye):**
+  - *Who carries it.* Today a scenario or the dev command gives a ship her dye; no scenario does (none before 1930). For the
+    later cuts: a dye bag as a fact of the shell block (the USN's from 1930, the IJN's 1941, the RN's K shells late 1942),
+    the colours handed out a ship each within her squadron at the start (as the navies did), a scenario's own kept.
+  - *Light.* Dye's 0.1 is daylight's; at night or in poor light a colour is hardly a colour. A rule on the light at the
+    splash (the night's sky brightness, docs/battle/night.md) would fade it toward 0.6.
+- **Left from the research:** sequence firing as a doctrine (rec. 5: pairs in alternate slots, always told with a clock,
+  each at most once in two slots); the allocation weighing a third ship's spoiled spots (rec. 7: SC1's share does part of
+  it); fc-history's concentration cases (rec. 8).
 
 ### SC3 Ammunition as a command concern
 

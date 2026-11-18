@@ -831,17 +831,27 @@ public sealed record SimSettings
     /// line is corrected. The line's correction is an angle, so it holds as the range changes.</summary>
     public double SpotLineMarginM { get; init; } = 25;
 
-    /// <summary>Whose splash (docs/battle/balance.md BL1c, fire-control.md F7; research/simulation/manual-gunnery-research.md
-    /// §5): a spotter tells his own fall of one or two shells from the others falling about the target with the chance
-    /// 1/(1 + <see cref="SplashConfusion"/>·N), N the other splashes of its calibre band (within <see cref="SplashCalibreBand"/>
-    /// of its calibre either way) that come down within <see cref="SplashNearM"/> of her and <see cref="SplashWindowMs"/>
-    /// of his own (other ships': his own ship's guns firing independently he reads as one group); a salvo of
-    /// <see cref="SalvoIdentifiedShells"/> or more he always knows (the research's 0.6 and 3). Not told apart, his spot is
-    /// doubtful, or a <see cref="SplashMisreadShare"/> of the time read from the wrong fall (KGV ranging on Rodney's
-    /// splashes). The window, band, reach and misread share are [EST].</summary>
+    /// <summary>Whose splash (docs/battle/balance.md BL1c, fire-control.md F7, shell-consumption.md SC2;
+    /// research/simulation/fire-control-research/whose-salvo.md): a spotter tells his own fall from the others about the
+    /// target with the chance 1/(1 + Σc), a c for each other ship's salvo of its calibre band (within
+    /// <see cref="SplashCalibreBand"/> of its calibre either way) that comes down within <see cref="SplashNearM"/> of her and
+    /// within his window of his own: <see cref="SplashConfusion"/> for one of the same colour (plain splashes all are one),
+    /// <see cref="SplashConfusionDyed"/> for one of another dye. A fall of fewer than <see cref="SalvoPatternShells"/> shells
+    /// is no group to look for, so each other shell counts. His own ship's guns firing independently he reads as one group.
+    /// His window is the uncertainty of when his own is due: <see cref="SplashWindowS"/> either way by the watch, down to
+    /// <see cref="SplashWindowClockS"/> as far as his computer's fall-of-shot clock times it and his crew use it
+    /// (<see cref="GunneryCrew.ClockUse"/>); falls after his call don't count. Not told apart, his spot is doubtful, or a
+    /// <see cref="SplashMisreadShare"/> of the time read from the other's fall as if his own (Tiger on Lion's, KGV ranging on
+    /// Rodney's: a consort's straddle read as one's own holds the wrong range) [SRC: no salvo told by its pattern alone, and
+    /// confusion in every case of near calibres without a timing scheme (whose-salvo.md §2, §5); Bernotti's 15-20 s between
+    /// ships' salvos without a clock, the USN's 5 s with one, a heavy column standing 10-15 s; c 0.6 checked against the RN's
+    /// 1922 war-game factors for 2-4 ships (§6 S3); with dye about 0.1, colours fading at long range and in poor light (§6
+    /// rec. 6). The band, reach and misread share EST].</summary>
     public double SplashConfusion { get; init; } = 0.6;
-    public int SalvoIdentifiedShells { get; init; } = 3;
-    public long SplashWindowMs { get; init; } = 3000;
+    public double SplashConfusionDyed { get; init; } = 0.1;
+    public int SalvoPatternShells { get; init; } = 3;
+    public double SplashWindowS { get; init; } = 15;
+    public double SplashWindowClockS { get; init; } = 5;
     public double SplashCalibreBand { get; init; } = 0.15;
     public double SplashNearM { get; init; } = 1000;
     public double SplashMisreadShare { get; init; } = 0.3;
@@ -3220,6 +3230,9 @@ public readonly record struct GunneryCrew
     /// <summary>The layer's timing lag at the roll against a trained man's (docs/battle/balance.md BL1b): USNI 1900's
     /// untrained pointer 0.3 s against the trained 0.1 s, so 3 for the green [EST].</summary>
     public double RollTiming { get; init; } = 1;
+    /// <summary>The share of the fall-of-shot clock's timing the spotter uses (docs/battle/shell-consumption.md SC2): Tiger's
+    /// new crew at the Dogger Bank didn't use her time-of-flight arrangements (whose-salvo.md §3.1) [EST].</summary>
+    public double ClockUse { get; init; } = 1;
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,

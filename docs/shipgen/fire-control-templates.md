@@ -71,13 +71,13 @@ own numbers. Mass t, crew, power kW.
 
 | Block | Tracker | Latency | q | Limits | Prior | Ballistics | Own lags | Step | Filter | t, crew, kW |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Judgement | judgement | 5 | 0 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | looks again 60 s | 0, 0, 0 |
-| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | -; rates by the plot alone; no clock | 0.2, 3, 0 |
-| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | - | 0.8, 4, 0 |
-| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | - | 0.8, 4, 0 |
-| Dreyer table Mk I | rate_clock | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 0 | 366 | - | 4, 10, 1 |
+| Judgement | judgement | 5 | 0 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | looks again 60 s; no fall-of-shot clock | 0, 0, 0 |
+| Hand plot | rate_clock | 15 | 0.02 | - | 4, 25 | none 0 kn, 1.5%, 1% | -, 0 | 366 | -; rates by the plot alone; no clock; no fall-of-shot clock | 0.2, 3, 0 |
+| Dumaresq and Vickers clock | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | -; fall-of-shot clock 0.5 | 0.8, 4, 0 |
+| German range clock (EU-Anzeiger) | rate_clock | 15 | 0.03 | 18.3, 0 | 3, 20 | deck 3 kn, 1%, 0.8% | -, 0 | 366 | -; fall-of-shot clock 0.5 | 0.8, 4, 0 |
+| Dreyer table Mk I | rate_clock | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 0 | 366 | -; fall-of-shot clock 0.8 | 4, 10, 1 |
 | Dreyer table Mk III-V | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 4, 10, 1 |
-| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 4, 10, 1 |
+| German clock and plot (EU-Anzeiger, C12) | rate_clock, helm-free | 15 | 0.03 | 18.3, 0.25 | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | -; fall-of-shot clock 0.6 | 4, 10, 1 |
 | Argo clock Mk IV | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 2 kn, 0.7%, 0.6% | -, 30 | 366 | - | 2, 4, 1 |
 | Admiralty Fire Control Table | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | - | 5, 8, 5 |
 | Admiralty Fire Control Clock | true_course, helm-free | 8 | 0.03 | - | 3, 20 | deck 1.5 kn, 0.4%, 0.3% | -, 3 | 366 | - | 3, 4, 3 |

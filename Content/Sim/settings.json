@@ -266,8 +266,10 @@
   "SpotDeflectionGain": 0.5,
   "SpotLineMarginM": 25,
   "SplashConfusion": 0.6,
-  "SalvoIdentifiedShells": 3,
-  "SplashWindowMs": 3000,
+  "SplashConfusionDyed": 0.1,
+  "SalvoPatternShells": 3,
+  "SplashWindowS": 15,
+  "SplashWindowClockS": 5,
   "SplashCalibreBand": 0.15,
   "SplashNearM": 1000,
   "SplashMisreadShare": 0.3,
@@ -307,10 +309,10 @@
   "FireWorthLowRounds": 0.25,
   "SteadyForGunsDeg": 5,
   "GunneryCrews": [
-    { "Name": "green", "Operator": 2, "Lay": 1.3, "Pyramid": 0.25, "Load": 1.5, "RollTiming": 3 },
-    { "Name": "average", "Operator": 1.5, "Lay": 1.15, "Pyramid": 0.1, "Load": 1.35, "RollTiming": 2 },
-    { "Name": "trained", "Operator": 1, "Lay": 1, "Pyramid": 0.03, "Load": 1.2, "RollTiming": 1 },
-    { "Name": "elite", "Operator": 0.85, "Lay": 0.9, "Pyramid": 0, "Load": 1.1, "RollTiming": 0.8 }
+    { "Name": "green", "Operator": 2, "Lay": 1.3, "Pyramid": 0.25, "Load": 1.5, "RollTiming": 3, "ClockUse": 0.5 },
+    { "Name": "average", "Operator": 1.5, "Lay": 1.15, "Pyramid": 0.1, "Load": 1.35, "RollTiming": 2, "ClockUse": 0.75 },
+    { "Name": "trained", "Operator": 1, "Lay": 1, "Pyramid": 0.03, "Load": 1.2, "RollTiming": 1, "ClockUse": 0.9 },
+    { "Name": "elite", "Operator": 0.85, "Lay": 0.9, "Pyramid": 0, "Load": 1.1, "RollTiming": 0.8, "ClockUse": 1 }
   ],
   "WorkUpGunneryShare": 0.3,
   "FireReachShare": 1.1,

@@ -12,7 +12,7 @@ namespace Fleetwright.Shipgen;
 public static class DesignFormat
 {
     /// <summary>The version this build writes.</summary>
-    public const int Current = 22;
+    public const int Current = 23;
 
     /// <summary>Steps[v] upgrades a version v design to v + 1, adding what it couldn't tell to the warnings.</summary>
     static readonly Action<JsonObject, List<string>>[] Steps =
@@ -39,7 +39,25 @@ public static class DesignFormat
         (d, _) => StabilisedSingleBase(d), // 19 → 20: the interwar single-base told from the early (docs/battle/magazines.md "Too safe")
         (d, _) => MagazineCases(d),    // 20 → 21: packaging's "clarkson" named a metal magazine case (research 12-charge-bed.md §1)
         Warheads,                      // 21 → 22: a torpedo's warhead as a store aboard (docs/battle/explosions.md EX6c)
+        (d, w) => FallClocks(d, w),    // 22 → 23: a computer's fall-of-shot clock (docs/battle/shell-consumption.md SC2)
     ];
+
+    /// <summary>22 → 23: a computer block says its fall-of-shot clock, the share of salvos it times for the spotter
+    /// (docs/battle/shell-consumption.md SC2). A block named as a template takes the template's; another none, with a warning.
+    /// Nothing read it before.</summary>
+    static void FallClocks(JsonObject d, List<string> warnings)
+    {
+        if (d["fire_control_tech"] is not JsonObject table)
+            return;
+        foreach (var (name, b) in table)
+            if (b is JsonObject bo && bo["computer"] is JsonObject c && !c.ContainsKey("fall_clock"))
+            {
+                double? known = FireControlTemplates.Get(name)?.Value.Computer?.FallClock;
+                c["fall_clock"] = known ?? 0;
+                if (known is null)
+                    warnings.Add($"fire_control_tech \"{name}\": no fall-of-shot clock (fall_clock 0), as no template has its name");
+            }
+    }
 
     /// <summary>21 → 22: a torpedo block says its warhead's filler, its case's wall and whether its flask holds oxygen (a store
     /// aboard: docs/battle/explosions.md EX6c). A block named as a template takes the template's; another TNT's in a 6 mm case,

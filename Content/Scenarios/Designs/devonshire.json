@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "devonshire",
  "name": "Devonshire-like (1905)",
  "type": "CA",
@@ -446,7 +446,8 @@
     "first_step_m": 366,
     "mass_t": 0.8,
     "crew": 4,
-    "power_kw": 0
+    "power_kw": 0,
+    "fall_clock": 0.5
    }
   },
   "Telescopic sights": {

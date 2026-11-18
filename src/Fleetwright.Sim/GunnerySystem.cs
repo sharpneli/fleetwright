@@ -358,6 +358,8 @@ public sealed class GunnerySystem : IWorldSystem
         public double CalibreMm;
         public int Shooter;
         public long FirstDownMs, LastDownMs;
+        /// <summary>Its shells' dye (SC2): a splash of another colour is seldom taken for it.</summary>
+        public Dye Dye;
     }
 
     /// <summary>A salvo's fall, for tools (not world state): when it was fired and by whom, its range and shells, where
@@ -434,14 +436,18 @@ public sealed class GunnerySystem : IWorldSystem
     readonly Stack<int> freeSalvo;
     int highSalvo;
     // the splashes about each ship (BL1c), by her slot: a ring of the last few, when each came down, its calibre and the
-    // ship that fired it, and where it came down with its column's peak (ES2: 0 for a hit, which throws none); grown with
-    // the ships' slots when a battery engages (never in a fall)
-    const int SplashRing = 32;
+    // ship that fired it, and where it came down with its column's peak (ES2: 0 for a hit, which throws none); its salvo
+    // (slot and generation), where it fell from her as she was then and its dye (SC2: whose salvo); grown with the ships'
+    // slots when a battery engages (never in a fall). 64: four ships' eight-gun salvos in about half a minute
+    const int SplashRing = 64;
     long[] splashMs = new long[64 * SplashRing];
     int[] splashShooter = new int[64 * SplashRing];
     float[] splashCal = new float[64 * SplashRing];
     Vec3d[] splashAt = new Vec3d[64 * SplashRing];
     float[] splashPeak = new float[64 * SplashRing];
+    long[] splashGroup = new long[64 * SplashRing];
+    Vec3d[] splashRel = new Vec3d[64 * SplashRing];
+    Dye[] splashDye = new Dye[64 * SplashRing];
     int[] splashHead = new int[64];
     bool ticking, ever;
     // each side's men's experience in thousandths (docs/battle/crew.md decision 6: whole numbers in commands, so a replay
@@ -1965,6 +1971,7 @@ public sealed class GunnerySystem : IWorldSystem
             AimErrM = Vec3d.Dot(p - truth, u), AimErrAcrossM = Vec3d.Dot(p - truth, w), Phase = phase, LadderM = ladder,
             PointBlank = pointBlank, TrueRangeM = Earth.Distance(ship.Position, tgt.Position), PbCorrR = fc.PbCorrR,
             CalibreMm = row.CalibreMm, Shooter = fc.Shooter, FirstDownMs = -1, YawDegS = (float)double.RadiansToDegrees(ship.YawRate),
+            Dye = ship.Dye,
         };
         int salvo = shells.NewSalvo();
         for (int j = 0; j < mounts.Length; j++)
@@ -2043,23 +2050,74 @@ public sealed class GunnerySystem : IWorldSystem
         Array.Resize(ref splashCal, n * SplashRing);
         Array.Resize(ref splashAt, n * SplashRing);
         Array.Resize(ref splashPeak, n * SplashRing);
+        Array.Resize(ref splashGroup, n * SplashRing);
+        Array.Resize(ref splashRel, n * SplashRing);
+        Array.Resize(ref splashDye, n * SplashRing);
     }
 
-    /// <summary>Whether a spotter tells a salvo's fall from the others about its target (BL1c): a salvo of
-    /// <see cref="SimSettings.SalvoIdentifiedShells"/> or more always, one of fewer shells with the chance
-    /// 1/(1 + k·N), N the other ships' falls of its calibre band near her within the window of its own (his own ship's
-    /// guns firing independently he reads as one group, from the balance of their overs and shorts: research §5).</summary>
-    bool Told(in Salvo sv, int tslot, ref RandomStream r)
+    /// <summary>The spotter's window about his own salvo's fall, ms (SC2): the watch's, narrowed as far as his computer's
+    /// fall-of-shot clock times it and his crew use it.</summary>
+    long WindowMs(in Fc fc, in GunneryCrew crew) => (long)(1000 * (settings.SplashWindowS -
+        (settings.SplashWindowS - settings.SplashWindowClockS) * Math.Clamp(fc.Fit.Computer.FallClock * crew.ClockUse, 0, 1)));
+
+    /// <summary>Whether a spotter tells a salvo's fall from the others about its target (BL1c, SC2): with the chance
+    /// 1/(1 + Σc) over the other ships' salvos of its calibre band near her within his window of its own (each other shell
+    /// for a fall too small to be a group), c by their colour against its own (his own ship's guns firing independently he
+    /// reads as one group, from the balance of their overs and shorts). The other salvo he'd take for his own, the most like
+    /// it and nearest in time, comes back in <paramref name="other"/> (a ring index, -1 none).</summary>
+    bool Told(in Salvo sv, int tslot, long windowMs, ref RandomStream r, out int other)
     {
-        if (sv.Landed >= settings.SalvoIdentifiedShells || tslot < 0 || tslot >= splashHead.Length)
+        other = -1;
+        if (tslot < 0 || tslot >= splashHead.Length)
             return true;
-        int n = 0, at = tslot * SplashRing;
-        long lo = sv.FirstDownMs - settings.SplashWindowMs, hi = sv.LastDownMs + settings.SplashWindowMs;
+        int at = tslot * SplashRing;
+        bool groups = sv.Landed >= settings.SalvoPatternShells;
+        long lo = sv.FirstDownMs - windowMs, hi = sv.LastDownMs + windowMs;
+        double sum = 0, bestC = 0;
+        long bestGap = long.MaxValue;
         for (int k = 0; k < SplashRing; k++)
-            if (splashShooter[at + k] != sv.Shooter && splashMs[at + k] >= lo && splashMs[at + k] <= hi && splashMs[at + k] > 0 &&
-                Math.Abs(splashCal[at + k] / sv.CalibreMm - 1) <= settings.SplashCalibreBand)
-                n++;
-        return n == 0 || r.NextDouble() < 1 / (1 + settings.SplashConfusion * n);
+        {
+            int j = at + k;
+            if (!Near(j, sv, lo, hi))
+                continue;
+            if (groups)
+            {
+                bool counted = false;   // a salvo once, at its first shell in the ring
+                for (int m = 0; m < k && !counted; m++)
+                    counted = splashGroup[at + m] == splashGroup[j] && splashShooter[at + m] == splashShooter[j] && Near(at + m, sv, lo, hi);
+                if (counted)
+                    continue;
+            }
+            double c = splashDye[j] == sv.Dye ? settings.SplashConfusion : settings.SplashConfusionDyed;
+            long gap = Math.Abs(splashMs[j] - sv.FirstDownMs);
+            sum += c;
+            if (c > bestC || c == bestC && gap < bestGap)
+                (bestC, bestGap, other) = (c, gap, j);
+        }
+        return sum == 0 || r.NextDouble() < 1 / (1 + sum);
+    }
+
+    /// <summary>Whether a fall in the ring might be taken for a salvo's: another ship's, of its calibre band, in the window.</summary>
+    bool Near(int j, in Salvo sv, long lo, long hi) =>
+        splashMs[j] > 0 && splashMs[j] >= lo && splashMs[j] <= hi && splashShooter[j] != sv.Shooter &&
+        Math.Abs(splashCal[j] / sv.CalibreMm - 1) <= settings.SplashCalibreBand;
+
+    /// <summary>Another salvo's fall read as if it were a salvo's own (SC2's misread): over, short or straddling along the
+    /// spotter's line, from its shells in the ring (a hit among them, a straddle).</summary>
+    FireControl.Sign SignOf(int j, in Salvo sv, int tslot)
+    {
+        int at = tslot * SplashRing, over = 0, shorts = 0;
+        for (int k = 0; k < SplashRing; k++)
+        {
+            int i = at + k;
+            if (splashGroup[i] != splashGroup[j] || splashShooter[i] != splashShooter[j] || splashMs[i] <= 0)
+                continue;
+            if (splashPeak[i] == 0)
+                return FireControl.Sign.Straddle;
+            double x = Vec3d.Dot(splashRel[i], sv.U);
+            (over, shorts) = (over + (x > 0 ? 1 : 0), shorts + (x < 0 ? 1 : 0));
+        }
+        return over > 0 && shorts > 0 ? FireControl.Sign.Straddle : over > 0 ? FireControl.Sign.Over : shorts > 0 ? FireControl.Sign.Short : FireControl.Sign.Doubtful;
     }
 
     int AllocateSalvo()
@@ -2114,6 +2172,7 @@ public sealed class GunnerySystem : IWorldSystem
                 int k = tslot * SplashRing + splashHead[tslot];
                 (splashMs[k], splashShooter[k], splashCal[k]) = (down, sv.Shooter, (float)sv.CalibreMm);
                 (splashAt[k], splashPeak[k]) = (end, hit >= 0 ? 0 : (float)SplashColumn.PeakM(sv.CalibreMm, fallDeg));
+                (splashGroup[k], splashRel[k], splashDye[k]) = (((long)si << 32) | (uint)sv.Generation, d, sv.Dye);
                 splashHead[tslot] = (splashHead[tslot] + 1) % SplashRing;
             }
             sv.SumY += y;
@@ -2187,9 +2246,9 @@ public sealed class GunnerySystem : IWorldSystem
             if (sees && !sv.PointBlank && sv.Hits == 0)
             {
                 var rw = stream.Derive(0x5B0Cu).Derive((ulong)si).Derive((ulong)sv.Generation);
-                told = Told(sv, tslot, ref rw);
-                if (!told)
-                    sign = rw.NextDouble() < settings.SplashMisreadShare ? (rw.NextDouble() < 0.5 ? FireControl.Sign.Over : FireControl.Sign.Short) : FireControl.Sign.Doubtful;
+                told = Told(sv, tslot, WindowMs(fc, CrewOf(ship)), ref rw, out int other);
+                if (!told)   // misread, the other's fall as if his own (SC2), else doubtful
+                    sign = other >= 0 && rw.NextDouble() < settings.SplashMisreadShare ? SignOf(other, sv, tslot) : FireControl.Sign.Doubtful;
             }
             if (sees && !sv.PointBlank)
             {

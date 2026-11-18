@@ -1008,6 +1008,9 @@ public sealed record ComputerTechInput
     public double? OwnCourseLagS { get; init; }
     public double? OwnSpeedLagS { get; init; }
     public double? FirstStepM { get; init; }
+    /// <summary>Its fall-of-shot clock (docs/battle/shell-consumption.md SC2): the share of salvos whose fall it times for
+    /// the spotter (a time-of-flight clock or buzzer, 0-1; 0 none), so he looks for his own in a narrow window.</summary>
+    public double? FallClock { get; init; }
     public double? MassT { get; init; }
     public double? Crew { get; init; }
     public double? PowerKw { get; init; }

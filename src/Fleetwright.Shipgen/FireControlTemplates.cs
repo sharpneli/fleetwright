@@ -40,7 +40,23 @@ public static class FireControlTemplates
             },
         });
 
-    static Template C(string name, ComputerTechInput c, string note) => new(name, "computer", note, new FcTechInput { Computer = c });
+    static Template C(string name, ComputerTechInput c, string note) =>
+        new(name, "computer", note, new FcTechInput { Computer = c with { FallClock = FallClockOf(name) } });
+
+    /// <summary>A computer's fall-of-shot clock (docs/battle/shell-consumption.md SC2), the share of salvos it times for the
+    /// spotter: the time-of-flight watch, clock or buzzer that came with the transmitting station's clocks
+    /// [research/simulation/fire-control-research/whose-salvo.md §3: none at Tsushima worth the name (the Russians' stopwatches
+    /// couldn't pick out their own splashes); the RN's time-of-flight watches "fundamental" with director firing by 1915; the
+    /// German electric fall-of-shot indicators "far from reliable" (Brooks n. 41) and impossible in frequent manoeuvres
+    /// (Seydlitz after Jutland); a hooter in the directors by the Second War. The shares EST].</summary>
+    static double FallClockOf(string name) => name switch
+    {
+        "Judgement" or "Hand plot" => 0,
+        "Dumaresq and Vickers clock" or "German range clock (EU-Anzeiger)" => 0.5,
+        "Dreyer table Mk I" => 0.8,
+        "German clock and plot (EU-Anzeiger, C12)" => 0.6,
+        _ => 1,
+    };
 
     static Template M(string name, bool director, double lay, string note, bool stable = false) =>
         new(name, "mount", note, new FcTechInput

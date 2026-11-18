@@ -235,6 +235,7 @@
      "mv_err_pct": 1,
      "own_speed_lag_s": 0,
      "first_step_m": 366,
+     "fall_clock": 0,
      "mass_t": 0,
      "crew": 0,
      "power_kw": 0
@@ -269,6 +270,7 @@
      "mv_err_pct": 1,
      "own_speed_lag_s": 0,
      "first_step_m": 366,
+     "fall_clock": 0,
      "mass_t": 0.2,
      "crew": 3,
      "power_kw": 0
@@ -301,6 +303,7 @@
      "mv_err_pct": 0.8,
      "own_speed_lag_s": 0,
      "first_step_m": 366,
+     "fall_clock": 0.5,
      "mass_t": 0.8,
      "crew": 4,
      "power_kw": 0
@@ -333,6 +336,7 @@
      "mv_err_pct": 0.8,
      "own_speed_lag_s": 0,
      "first_step_m": 366,
+     "fall_clock": 0.5,
      "mass_t": 0.8,
      "crew": 4,
      "power_kw": 0
@@ -365,6 +369,7 @@
      "mv_err_pct": 0.6,
      "own_speed_lag_s": 0,
      "first_step_m": 366,
+     "fall_clock": 0.8,
      "mass_t": 4,
      "crew": 10,
      "power_kw": 1
@@ -397,6 +402,7 @@
      "mv_err_pct": 0.6,
      "own_speed_lag_s": 30,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 4,
      "crew": 10,
      "power_kw": 1
@@ -429,6 +435,7 @@
      "mv_err_pct": 0.6,
      "own_speed_lag_s": 30,
      "first_step_m": 366,
+     "fall_clock": 0.6,
      "mass_t": 4,
      "crew": 10,
      "power_kw": 1
@@ -461,6 +468,7 @@
      "mv_err_pct": 0.6,
      "own_speed_lag_s": 30,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 2,
      "crew": 4,
      "power_kw": 1
@@ -493,6 +501,7 @@
      "mv_err_pct": 0.3,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 5,
      "crew": 8,
      "power_kw": 5
@@ -525,6 +534,7 @@
      "mv_err_pct": 0.3,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 3,
      "crew": 4,
      "power_kw": 3
@@ -557,6 +567,7 @@
      "mv_err_pct": 0.3,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 5,
      "crew": 8,
      "power_kw": 5
@@ -589,6 +600,7 @@
      "mv_err_pct": 0.3,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 5,
      "crew": 8,
      "power_kw": 5
@@ -622,6 +634,7 @@
      "own_course_lag_s": 0.5,
      "own_speed_lag_s": 20,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 4,
      "crew": 15,
      "power_kw": 2
@@ -654,6 +667,7 @@
      "mv_err_pct": 0.25,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 3,
      "crew": 4,
      "power_kw": 10
@@ -686,6 +700,7 @@
      "mv_err_pct": 0.25,
      "own_speed_lag_s": 3,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 3,
      "crew": 4,
      "power_kw": 10
@@ -718,6 +733,7 @@
      "mv_err_pct": 0.25,
      "own_speed_lag_s": 2,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 2.5,
      "crew": 3,
      "power_kw": 10
@@ -750,6 +766,7 @@
      "mv_err_pct": 0.1,
      "own_speed_lag_s": 1,
      "first_step_m": 366,
+     "fall_clock": 1,
      "mass_t": 0.8,
      "crew": 2,
      "power_kw": 8

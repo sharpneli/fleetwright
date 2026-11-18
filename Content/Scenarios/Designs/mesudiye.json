@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "mesudiye",
  "name": "Mesudiye-like central battery ironclad (1875)",
  "type": "BB",
@@ -432,7 +432,8 @@
     "first_step_m": 366,
     "mass_t": 0.2,
     "crew": 3,
-    "power_kw": 0
+    "power_kw": 0,
+    "fall_clock": 0
    }
   },
   "Telescopic sights, fired on the roll": {

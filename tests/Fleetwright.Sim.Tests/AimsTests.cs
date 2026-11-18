@@ -239,7 +239,9 @@ public class AimsTests(ITestOutputHelper output)
             output.WriteLine($"{(l.Ms - T0) / 60_000.0,5:0} min  {l.Kind} {l.Other}");
         Assert.DoesNotContain(end.Timeline, l => l.Kind == PlayEvent.Ordered && l.Side == 0 && (CommanderWhy)(l.Other % 256) == CommanderWhy.Outmatched);
         Assert.Contains(task, new[] { TaskKind.Withdraw, TaskKind.GoTo });   // home is her zone now, or she's for it caught
-        Assert.True(lon < 4.0 - 12 / KmPerLonDeg, $"12 km west in her first 20 minutes: at {lon:0.000}°");
+        // making west-south-west at 24 kn made good; since SC2 (whose salvo, 2026-11-18) the dreadnoughts' fall lands a hit at
+        // about 17 minutes that slows her to 10 kn: 11 km
+        Assert.True(lon < 4.0 - 10 / KmPerLonDeg, $"10 km west in her first 20 minutes: at {lon:0.000}°");
     }
 
     /// <summary>A convoy for a zone 40 km west with a cruiser by it, and the cruiser's own way home 50 km north as a

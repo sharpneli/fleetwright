@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "sverige",
  "name": "Sverige-like (1917)",
  "look": {
@@ -494,7 +494,8 @@
     "first_step_m": 366,
     "mass_t": 4,
     "crew": 10,
-    "power_kw": 1
+    "power_kw": 1,
+    "fall_clock": 1
    }
   },
   "Director, follow the pointer": {

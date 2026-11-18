@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "novara",
  "name": "Novara-like scout cruiser (1915)",
  "type": "CL",
@@ -281,7 +281,8 @@
     "first_step_m": 366,
     "mass_t": 0.8,
     "crew": 4,
-    "power_kw": 0
+    "power_kw": 0,
+    "fall_clock": 0.5
    }
   },
   "Telescopic sights": {

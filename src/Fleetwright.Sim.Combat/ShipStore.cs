@@ -37,7 +37,7 @@ public sealed class ShipStore
     // identity
     internal int[] entity = [], generation = [], classIndex = [];
     internal byte[] side = [];
-    internal Dye[] dye = [];   // her shells' splash colour (docs/visuals/splashes.md): nothing reads it but the screens yet
+    internal Dye[] dye = [];   // her shells' splash colour (docs/visuals/splashes.md): the screens draw it, her spotter knows his own by it (shell-consumption.md SC2)
     internal double[] workUp = [];   // this crew in this ship, 0-1 (docs/battle/crew.md decision 6): 1 worked up
     internal bool[] lightsShown = [];   // her deck, anchor and side lights showing (docs/battle/night.md Q13): not darkened
     internal bool[] alive = [];

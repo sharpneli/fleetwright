@@ -118,7 +118,7 @@ public static class FireControlBlocks
         PowerKw = c.PowerKw ?? 0,
         Tracker = Kinds.TrackerOf(c.Tracker), HelmFree = c.HelmFree ?? false, MaxRangeRateMs = c.MaxRangeRateMs ?? 0,
         MaxBearingRateDegS = c.MaxBearingRateDegS ?? 0, AccelTauS = c.AccelTauS ?? 0, AccelSigmaMs2 = c.AccelSigmaMs2 ?? 0, TurnQ = c.TurnQ ?? 0,
-        SpeedQ = c.SpeedQ ?? 0, Detect = c.Detect ?? false, CourseRate = c.CourseRate ?? true, RangeClock = c.RangeClock ?? true, RejudgeS = c.RejudgeS ?? 0, LatencyS = N(c.LatencyS, "latency_s"), Q = c.Q ?? 0,
+        SpeedQ = c.SpeedQ ?? 0, Detect = c.Detect ?? false, CourseRate = c.CourseRate ?? true, RangeClock = c.RangeClock ?? true, FallClock = c.FallClock ?? 0, RejudgeS = c.RejudgeS ?? 0, LatencyS = N(c.LatencyS, "latency_s"), Q = c.Q ?? 0,
         PriorKn = N(c.PriorKn, "prior_kn"), PriorDeg = N(c.PriorDeg, "prior_deg"), Wind = Kinds.WindOf(c.WindInput),
         WindErrKn = c.WindErrKn ?? 0, DensityErrPct = N(c.DensityErrPct, "density_err_pct"), MvErrPct = N(c.MvErrPct, "mv_err_pct"), OwnCourseLagS = c.OwnCourseLagS ?? 0, OwnSpeedLagS = c.OwnSpeedLagS ?? 0, FirstStepM = N(c.FirstStepM, "first_step_m"),
     };

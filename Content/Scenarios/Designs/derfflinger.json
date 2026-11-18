@@ -1,5 +1,5 @@
 {
- "version": 22,
+ "version": 23,
  "id": "derfflinger",
  "name": "Derfflinger-like (1914)",
  "type": "BC",
@@ -528,7 +528,8 @@
     "first_step_m": 366,
     "mass_t": 4,
     "crew": 10,
-    "power_kw": 1
+    "power_kw": 1,
+    "fall_clock": 0.6
    }
   },
   "Director, follow the pointer": {

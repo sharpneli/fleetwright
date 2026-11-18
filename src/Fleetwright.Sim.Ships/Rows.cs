@@ -579,6 +579,8 @@ public readonly record struct ComputerRow
     /// <summary>The range runs on between readings at the rate (the Vickers clock); without (a hand plot) the range passed
     /// at each plot stays on the sights until the next (FL4).</summary>
     public bool RangeClock { get; init; }
+    /// <summary>Its fall-of-shot clock: the share of salvos it times for the spotter (docs/battle/shell-consumption.md SC2).</summary>
+    public double FallClock { get; init; }
     public double RejudgeS { get; init; }
     public double LatencyS { get; init; }
     public double Q { get; init; }

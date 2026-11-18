@@ -7,7 +7,8 @@ namespace Fleetwright.Sim.Tests;
 
 /// <summary>Whose splash (docs/battle/balance.md BL1c, fire-control.md F7; research/simulation/manual-gunnery-research.md
 /// §5): a destroyer's guns firing independently at a ship are told apart from each other's falls less often when others
-/// fire at her too, and her spots go doubtful; salvos are always told.</summary>
+/// fire at her too, and her spots go doubtful; so are salvos (docs/battle/shell-consumption.md SC2: no salvo was ever told by
+/// its pattern alone), less with a fall-of-shot clock, hardly at all when each ship's shells carry their own dye.</summary>
 public class SplashTests(ITestOutputHelper output)
 {
     static readonly SimSettings Settings = SimSettings.Load(Path.Combine(Fleet.Repo, "Content", "Sim", "settings.json")) with { Smoke = false };
@@ -59,13 +60,53 @@ public class SplashTests(ITestOutputHelper output)
         Assert.InRange((double)fourTold / four, 0.2, 0.75);
     }
 
+    /// <summary>Whose salvo (docs/battle/shell-consumption.md SC2): two battleships of one calibre on one target at 14 km.
+    /// Alone, every fall she sees is her own; with a consort's salvos landing about her too, her spotter tells his own
+    /// less often, the less the wider his window (by the watch alone, 15 s either way, against a fall-of-shot clock's
+    /// 5), and nearly always when each ship's shells carry their own dye. The research's model (whose-salvo.md §6 S1,
+    /// two heavy ships at 40 s): 0.72 without a clock, 0.91 with one; ours count only the falls before his call.</summary>
     [Fact]
-    public void Salvos_are_always_told()
+    public void A_consorts_salvos_on_her_cost_the_spotter_his_own_unless_timed_or_dyed()
     {
-        var (spots, told) = Play(4, "rn-1914");
-        output.WriteLine($"salvos: {told} of {spots} told");
-        Assert.True(spots > 5);
-        Assert.Equal(spots, told);
+        var qe = Fleet.Get("super_dreadnought").Class!;
+        double Told(SimSettings settings, int ships, bool dyed)
+        {
+            int seen = 0, told = 0;
+            for (int seed = 1; seed <= 4; seed++)
+            {
+                var w = new World(Start, (ulong)seed, settings with { HitsDoDamage = false });
+                int c = w.Ships.AddClass(qe);
+                var p = Earth.Position(Lat, Lon);
+                var f = Earth.Forward(p, 90);
+                Earth.Advance(ref p, ref f, 14_000);
+                var (tl, to) = Earth.LatLon(p);
+                w.Apply(ShipSystem.Spawn(c, tl, to, 0, 15, side: 1));   // entity 1: the target
+                for (int s = 0; s < ships; s++)
+                {
+                    var q = Earth.Position(Lat, Lon);
+                    var g = Earth.Forward(q, 180);
+                    Earth.Advance(ref q, ref g, 900 * s);
+                    var (ql, qo) = Earth.LatLon(q);
+                    w.Apply(ShipSystem.Spawn(c, ql, qo, 0, 15, side: 0));
+                    if (dyed)
+                        w.Apply(ShipSystem.Dye(2 + s, (Dye)(1 + s)));
+                    w.Apply(GunnerySystem.Engage(2 + s, 0, 1));
+                }
+                w.Gunnery.Spotted = r =>
+                {
+                    if (r.Shooter == 2 && r.Seen)
+                        (seen, told) = (seen + 1, told + (r.Told ? 1 : 0));
+                };
+                w.AdvanceTo(Start + 15 * 60_000);
+            }
+            return (double)told / Math.Max(seen, 1);
+        }
+        var noClock = Settings with { SplashWindowClockS = Settings.SplashWindowS };
+        double alone = Told(Settings, 1, false), timed = Told(Settings, 2, false), watch = Told(noClock, 2, false), dyed = Told(noClock, 2, true);
+        output.WriteLine($"told: alone {alone:P0}; with a consort, by the watch {watch:P0}, with the clock {timed:P0}, dyed (by the watch) {dyed:P0}");
+        Assert.Equal(1, alone);
+        Assert.True(watch < 0.95, "by the watch, a consort's salvos cost him his own");
+        Assert.True(timed > watch && dyed > watch && dyed > 0.95, "the clock or her own colour keeps it");
     }
 
     /// <summary>A light cruiser's battery's margin over the air on a destroyer 4.5 km off, both steaming north, in a
