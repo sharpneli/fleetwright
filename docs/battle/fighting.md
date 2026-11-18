@@ -612,8 +612,9 @@ rework, with the fire-control computers by era, revisits these):
     with a margin to track before it): bearing first, then (secondaries) the smallest type, then the nearest;
   - it keeps its target until the contact is lost (unseen for `FireLostMs`) or another is nearer by `FireSwitchShare`;
   - *nearer* (2026-10-18, after Tsushima's destroyer attack): the range she'll be at `FireLeadS` (120 s) on as the
-    picture has her going, so a boat closing comes before one turning away, and longer by `FireCrowdShare` (0.25) for
-    each other ship's battery of the kind already on her, so a line spreads its fire instead of every ship taking the
+    picture has her going, so a boat closing comes before one turning away; the fire already on her weighs as his share
+    of it, 1/(1 + the other ships' batteries of the kind on her) (since 2026-11-18, `shell-consumption.md` SC1; was
+    `FireCrowdShare` 0.25 longer a battery), so a line spreads its fire instead of every ship taking the
     nearest; the counts follow the orders of the same pass, so ships don't all pick one in the same second. A smaller
     type wins a secondary's fire only when it's made out: an unknown contact's rank is a guess (each Russian ship coming
     out of the haze took the Japanese 6" off the one before, two minutes' opening lost each time);

@@ -13,8 +13,8 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// engaged, each battery picks from its navy's contacts in sight within its reach (<see cref="SimSettings.FireReachShare"/>
 /// of the range table's): one it can fire on now first (she bears, within its guns' reach), then one it can train on,
 /// then the nearest, by the range she'll be at
-/// <see cref="SimSettings.FireLeadS"/> on, longer by <see cref="SimSettings.FireCrowdShare"/> for each other ship's battery
-/// of the kind already on her (one closing before one running; the fire spread) and, for a secondary, by
+/// <see cref="SimSettings.FireLeadS"/> on (one closing before one running), worth his share of what's done to her with
+/// other ships' batteries of the kind already on her (<see cref="OwnShare"/>: the fire spread) and, for a secondary, by
 /// <see cref="SimSettings.FireSizeShare"/> for each step of her type's size (a boat before a battleship at much her
 /// range, never one alongside). It keeps its target until it's unseen for <see cref="SimSettings.FireLostMs"/> or past
 /// <see cref="SimSettings.FireKeepShare"/> of its reach, or another it can fire on where it can't, or is nearer so than
@@ -315,6 +315,31 @@ public sealed partial class CaptainLayer
     // by target slot, the batteries on her (chief, and the rest), as the world has them at the tick
     int[] onChief = [], onOther = [];
 
+    /// <summary>Why a battery left its target or ceased (docs/battle/fire-control.md "Shell consumption"), for tools.</summary>
+    public enum ShiftWhy : byte
+    {
+        /// <summary>His fire order: hold fire, an engage order given or ended.</summary>
+        Order,
+        /// <summary>She's gone from his navy's picture, seen going down, unseen past <see cref="SimSettings.FireLostMs"/>, or no
+        /// longer one he'd open on.</summary>
+        Lost,
+        /// <summary>A friend in his line of fire.</summary>
+        Foul,
+        /// <summary>Seen done for, his side ceasing on wrecks.</summary>
+        Wreck,
+        /// <summary>Past his keeping reach, or under doctrine's floors there.</summary>
+        Reach,
+        /// <summary>Another he can fire on where he can't on her.</summary>
+        Bears,
+        /// <summary>Another better by her range to come, her size, the fire on her, worth the ranging.</summary>
+        Better,
+    }
+
+    /// <summary>The chief batteries' shifts and ceases by <see cref="ShiftWhy"/>, and the other batteries', since the layer
+    /// was made (tools: <c>scenario --play --ammo</c>).</summary>
+    public readonly long[] ChiefShifts = new long[7], OtherShifts = new long[7];
+    ShiftWhy pickWhy;
+
     /// <summary>His ship's batteries on what his fire order wants.</summary>
     void Aim(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
@@ -347,6 +372,8 @@ public sealed partial class CaptainLayer
             Shells(ctx, ref cap, own, slot, b, want, pic);
             if (want == current)
                 continue;
+            if (current != 0)
+                Interlocked.Increment(ref (cls.Batteries[b].Chief ? ChiefShifts : OtherShifts)[(int)(cap.Fire == FireOrder.AtWill && !cap.Holding ? pickWhy : ShiftWhy.Order)]);
             ctx.Issue(want == 0 ? GunnerySystem.Cease(own.Entity, b) : GunnerySystem.Engage(own.Entity, b, want));
             ownTargets[b] = want;   // a line's next ships see it once it's given: they think on later ticks (W12)
         }
@@ -873,14 +900,15 @@ public sealed partial class CaptainLayer
 
         int ci = current != 0 ? pic.IndexOf(current) : -1;
         bool keep = ci >= 0 && !pic[ci].Out && now - pic[ci].SeenMs <= s.FireLostMs && Opens(ctx, own, pic[ci], pic[ci].Position);
+        pickWhy = ShiftWhy.Lost;
         if (keep && lines.GunsFoul(ctx, own, pic.EstimateAt(ci, now, s).Position))
-            keep = false;   // a friend in the way: not while he's there
+            (keep, pickWhy) = (false, ShiftWhy.Foul);   // a friend in the way: not while he's there
         double curBy = 0, curRange = 0;
         double curRank = 0;
         int curCan = 0;
         double curDone = keep ? pic[ci].DoneFor(now, s) : 0;
         if (keep && curDone >= cease)
-            keep = false;
+            (keep, pickWhy) = (false, ShiftWhy.Wreck);
         if (keep)
         {
             var (q, v, _) = pic.EstimateAt(ci, now, s);
@@ -888,13 +916,14 @@ public sealed partial class CaptainLayer
             // held a little further than taken (by range, and by the hit floor at that much less range): no flicking at the edge
             keep = curRange <= reach * s.FireKeepShare / s.FireReachShare &&
                    (gun == null || WorthOn(ctx, gun, own.Side, pic[ci], curRange * s.FireReachShare / s.FireKeepShare, hitFloor, floor));
+            pickWhy = keep ? pickWhy : ShiftWhy.Reach;
             curCan = Can(Bears(cls, b, Earth.Bearing(p, q) - own.HeadingDeg), curRange <= guns);
             double size = Rank(ctx, own, pic[ci]);
             curRank = secondary ? size : 0;
             double curLead = Lead(own, q, v, s);
-            curBy = curLead * (1 + s.FireCrowdShare * Crowd(cls, b, current, ctx.Ships.SlotOf(current))) * Sized(s, curRank) *
-                    (heavy ? Heavy(s, size, Closing(s, p, q, v)) : 1) /
-                    (Worth(curDone) * Matters(ctx, pic[ci], p, q, v, candFinish) * Want(ctx, own, slot, pic[ci], curLead));
+            curBy = curLead * Sized(s, curRank) * (heavy ? Heavy(s, size, Closing(s, p, q, v)) : 1) /
+                    (Worth(curDone) * Matters(ctx, pic[ci], p, q, v, candFinish) * Want(ctx, own, slot, pic[ci], curLead) *
+                     OwnShare(Crowd(cls, b, current, ctx.Ships.SlotOf(current))));
         }
 
         int best = 0, bestCan = -1, bestK = -1;
@@ -908,9 +937,8 @@ public sealed partial class CaptainLayer
             if (can < bestCan)
                 continue;
             double rank = secondary ? candRank[k] : 0;
-            double by = candLead[k] * (1 + s.FireCrowdShare * Crowd(cls, b, candEntity[k], candSlot[k])) * Sized(s, rank) *
-                        (heavy ? Heavy(s, candRank[k], candClosing[k]) : 1) /
-                        (Worth(candDone[k]) * candMatters[k] * candWant[k]);
+            double by = candLead[k] * Sized(s, rank) * (heavy ? Heavy(s, candRank[k], candClosing[k]) : 1) /
+                        (Worth(candDone[k]) * candMatters[k] * candWant[k] * OwnShare(Crowd(cls, b, candEntity[k], candSlot[k])));
             // a foul line and the hit floor only rule one out: asked only of one that would be the best yet (they're the cost)
             if ((can > bestCan || by < bestBy) && (gun == null || WorthOn(ctx, gun, own.Side, pic[candPic[k]], candRange[k], hitFloor, floor)) && !Foul(ctx, own, k))
                 (best, bestCan, bestRank, bestBy, bestRange, bestK) = (candEntity[k], can, rank, by, candRange[k], k);
@@ -919,8 +947,10 @@ public sealed partial class CaptainLayer
             return best;
         if (best == 0 || best == current)
             return current;
+        pickWhy = ShiftWhy.Bears;
         if (bestCan != curCan)
             return bestCan > curCan ? best : current;
+        pickWhy = ShiftWhy.Better;
         // an unknown's smaller size is a guess: against the one held she counts as its size
         if (bestRank < curRank && bestK >= 0 && pic[candPic[bestK]].Level < ContactLevel.Type)
             bestBy *= Sized(s, curRank) / Sized(s, bestRank);
@@ -1033,6 +1063,12 @@ public sealed partial class CaptainLayer
     /// <summary>A contact's worth as a target by how done for she's seen (crew.md N5b): her range counts as much as twenty
     /// times as far, so any other in reach comes first; smoothly, no switch.</summary>
     static double Worth(double doneFor) => 1 - 0.95 * doneFor;
+
+    /// <summary>His share of what's done to a target with <paramref name="others"/> other ships' batteries of his kind already
+    /// on her (docs/battle/shell-consumption.md SC1): she can be put out of the fight once, so with the fire on her about even
+    /// his fire's worth there is his share of it, 1/(1 + others); one nobody fires on is all his. Fire spreads over the
+    /// enemy's line, and a cripple the line's already on draws no more (the Blücher, the Wiesbaden).</summary>
+    static double OwnShare(int others) => 1.0 / (1 + others);
 
     /// <summary>What a battery can do about a contact: fire on her now (2: she bears, within its guns' reach), train on her
     /// (1: she bears, beyond it), or only track her (0).</summary>

@@ -320,7 +320,6 @@
   "RangingCyclesPrior": 3.5,
   "ShellSwitchGain": 1.25,
   "FireLeadS": 120,
-  "FireCrowdShare": 0.25,
   "FireSizeShare": 0.5,
   "FireHeavyShare": 1,
   "TorpedoSizeShare": 1,

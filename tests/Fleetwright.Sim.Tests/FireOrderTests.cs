@@ -242,6 +242,23 @@ public class FireOrderTests(ITestOutputHelper output)
         Assert.DoesNotContain(4, new[] { 1, 2, 3 }.Select(e => Target(wg, e, 0)));
     }
 
+    /// <summary>The fire spread by each ship's share of it (docs/battle/shell-consumption.md SC1; the user: a cruiser slowed by a
+    /// hit drew "everyone and their dog"): four battleships in column, a dreadnought 7 km off and another 10 km off. Each is
+    /// worth a ship's share of what's done to her, so two take each; by range shifted 25% a battery, three took the near one.</summary>
+    [Fact]
+    public void A_line_at_will_spreads_its_fire_by_its_share_not_all_on_the_nearest()
+    {
+        var (w, _) = Make(new Placed("super_dreadnought", 0, 0, 0, 10, 0), new Placed("super_dreadnought", 0, 700, 0, 10, 0),
+            new Placed("super_dreadnought", 180, 700, 0, 10, 0), new Placed("super_dreadnought", 0, 1400, 0, 10, 0),
+            new Placed("dreadnought", 70, 7_000, 0, 10, 1), new Placed("dreadnought", 110, 10_000, 0, 10, 1));
+        Run(w, 30);
+        int[] on = [1, 2, 3, 4];
+        var targets = on.Select(e => Target(w, e, 0)).ToArray();
+        output.WriteLine($"targets: {string.Join(" ", targets)}");
+        Assert.Equal(2, targets.Count(t => t == 5));
+        Assert.Equal(2, targets.Count(t => t == 6));
+    }
+
     [Theory]
     [InlineData(0.1, 3)]
     [InlineData(1, 2)]

@@ -275,7 +275,7 @@ static partial class ScenarioPlay
                 for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
-                ammo?.End();
+                ammo?.End(ai);
                 foreach (var k in homeShips.Keys.Where(k => k.Seed == seed).ToList())
                     homeShips[k] = (homeShips[k].Hits, w.Ships.Store.SlotOf(k.Entity) < 0);
             }

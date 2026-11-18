@@ -76,6 +76,7 @@ twice (fc-history 9 → 5 of 23, all HIGH: the degraders come as their own syste
 | Scenarios | wave 1 and Åland built 2026-10-25; the early wave E1-E6 (1894-1908) 2026-11-09 | `docs/missions/scenarios.md` | rebalanced in BL6; open questions 1-5 for the user |
 | 6.1 Aims: reach, sink merchants, stop | A0-A6 done 2026-10-31 (benches set for balance) | `aims.md` | the user's scenario investigation |
 | The balance round | BL0-BL2 done 2026-10-30 to 11-03; BL4 (PM) 2026-11-08 | `balance.md` | BL3 started 2026-11-10 (the losses are the volume of fire: fights run all day); BL5 under way: outmatched runs, the rearguard and the swing built 2026-11-11 (6 of 14 in band; the tempers for BL6); a reach held to the end 2026-11-13 (doctrine's HoldReach); open: the Jutland's own cause; BL6 (tempers, the reach scenarios, Tsushima's reach), then the playtest alpha |
+| Shell consumption | SC1 built 2026-11-18: the fire spread by each ship's share (the pile-on gone; the volume unmoved, the Jutland deadlier); `scenario --play --ammo` | `shell-consumption.md` | SC2 (research asked), SC3 ammunition as a command concern, SC4 rapid fire earned |
 | 6 Missions | not started | `docs/missions/plan.md` | 6.1 file and objectives, 6.2 UI, 6.3 saves and replays, 6.4 generator |
 
 Beside the steps: the designer's tabs (speed, hull, fire control, crew left: `docs/designer-ui/`), the VFX plans

@@ -26,6 +26,7 @@ static partial class ScenarioPlay
         readonly Dictionary<int, Dictionary<int, long>> onTarget = [];   // a target's shooters (ships) and when each last fired at her
         readonly long[] byCrowd = new long[6], hitsByCrowd = new long[6];  // chief shells and hits by the ships firing at her: 1..5, 6+
         int minute;
+        readonly long[] chiefWhy = new long[7], otherWhy = new long[7];
 
         // every seed's, by side and type
         readonly SortedDictionary<(int Side, ShipType Type), (int Ships, long Guns, long Outfit, long Fired, long GunMinSpan, long GunMinFiring, int Third, int Dry)> rows = [];
@@ -141,9 +142,11 @@ static partial class ScenarioPlay
             minute++;
         }
 
-        /// <summary>The run's ships into the rows.</summary>
-        public void End()
+        /// <summary>The run's ships into the rows, and its captains' shifts.</summary>
+        public void End(Fleetwright.Sim.Ai.AiSystem ai)
         {
+            for (int i = 0; i < 7; i++)
+                (chiefWhy[i], otherWhy[i]) = (chiefWhy[i] + ai.Captains.ChiefShifts[i], otherWhy[i] + ai.Captains.OtherShifts[i]);
             foreach (var s in ships.Values)
             {
                 if (s.Type == ShipType.Merchant)
@@ -176,6 +179,9 @@ static partial class ScenarioPlay
             }
             Console.WriteLine($"  {salvos} salvos, {shifts} targets taken ({(double)salvos / Math.Max(shifts, 1):F1} salvos a target); ranging shells on a new target {rangingFirst}, " +
                               $"after holding her {rangingAgain}");
+            static string Whys(long[] n) => string.Join("  ", Enum.GetValues<Fleetwright.Sim.Ai.Captains.CaptainLayer.ShiftWhy>().Select(w => $"{w} {n[(int)w]}"));
+            Console.WriteLine($"  why batteries left a target: chief {Whys(chiefWhy)}");
+            Console.WriteLine($"                               other {Whys(otherWhy)}");
             long all = byCrowd.Sum();
             if (all > 0)
                 Console.WriteLine("  chief shells by the ships firing on her (within 90 s): " + string.Join("  ", Enumerable.Range(0, 6).Select(i =>

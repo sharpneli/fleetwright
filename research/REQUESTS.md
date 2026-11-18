@@ -12,6 +12,20 @@ When done, the research companion moves the entry to **Done** with a link to the
 - Wanted output: (comparison, recommendation, API notes, plan...)
 -->
 
+### 2026-11-18 - Telling your own salvo from another ship's on the same target, 1905-1925 first
+- Question: (1) When two or more ships fired at one target, how often did spotters mistake another ship's salvo for their
+  own, or lose their own, and how did it depend on how many ships were on her, the calibres (same or different), the
+  salvos' timing, and the range? Cases: Tiger on Lion's splashes at the Dogger Bank, the BCF on Lützow and Derfflinger at
+  Jutland, the Grand Fleet's concentrations, the Germans on Defence and Warrior, Rodney and KGV on Bismarck. (2) What the
+  navies did about it: the RN's concentration-of-fire procedures (one ship controlling, alternate salvos, the TOF buzzer and
+  clock), dye in the shells, staggered firing intervals, and what doctrine said about how many ships to put on one. (3)
+  Whether a salvo of three or more shells was ever reliably known for one's own by its pattern or timing alone.
+- Context / relevant files: `docs/battle/shell-consumption.md` SC2; `SimSettings.SplashConfusion` (a lone shell told with
+  1/(1 + 0.6 N)), `SalvoIdentifiedShells` 3 (a salvo of 3+ always told: so the heavy guns pay nothing for crowding),
+  `SplashWindowMs` 3 s, `SplashCalibreBand` 0.15, `SplashNearM` 1 km (from `manual-gunnery-research.md` §5).
+- Wanted output: the chance a spotter tells his own salvo with N others on the target, by calibre mix and timing, with tags;
+  what each navy's procedures bought; the cases.
+
 ### 2026-11-17 - How well lookouts judged a ship's size before her class was made out, 1890-1925 first
 - Question: (1) How far off were lookouts and officers of the watch on a ship's size (length, height, what she showed side on;
   "a large ship", "a cruiser", "a destroyer") when they'd made out her type but not her class: errors by day, in haze and at

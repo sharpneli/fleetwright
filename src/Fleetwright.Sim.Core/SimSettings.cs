@@ -1016,9 +1016,8 @@ public sealed record SimSettings
     /// <see cref="FireLostMs"/>, or another is worth the shift (<see cref="FireHorizonS"/>). Nearer is the range
     /// she'll be at <see cref="FireLeadS"/> on, as the picture has her moving [EST: a destroyer's run of 1.5-2 km], so
     /// one closing comes before one turning away (Tsushima, 2026-10-18: the line kept hammering a destroyer already
-    /// running while the others closed); and each other ship's battery of the same kind already on her counts as
-    /// <see cref="FireCrowdShare"/> more of it [EST], so a line spreads its fire rather than all taking the nearest (a
-    /// second ship's splashes confuse the first's spotting, fire-control-research.md §9).</summary>
+    /// running while the others closed). The fire already on her is weighed by his share of it, not by range
+    /// (docs/battle/shell-consumption.md SC1).</summary>
     public double FireReachShare { get; init; } = 1.1;
     public double FireKeepShare { get; init; } = 1.25;
     public long FireLostMs { get; init; } = 30_000;
@@ -1033,7 +1032,6 @@ public sealed record SimSettings
     public double RangingOpenPriorS { get; init; } = 60;
     public double RangingCyclesPrior { get; init; } = 3.5;
     public double FireLeadS { get; init; } = 120;
-    public double FireCrowdShare { get; init; } = 0.25;
 
     /// <summary>A secondary battery's range to a contact counts longer by this share for each step of her type's rank,
     /// small craft 0 to capital ships 4 [EST] (the user, 2026-10-27: the rank once came before the range, and a battleship's
