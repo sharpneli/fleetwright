@@ -122,6 +122,14 @@ now").
   Dogger Bank 564 → 266, German losses 10.5 → 7.0 a seed (record 1); Tsushima's Russian 10.5 → 6.5, Japanese 6.0 → 4.5.
   Two seeds of fights that go differently (the lone shooter's hit rate moves too, at other ranges): the balance panel is the
   reading.
+- **The balance panel** (`balance --seeds 8`, `balance/sc1.json` against `balance/sc2.json`: SC4 and SC2 together, SC4 had
+  no panel of its own): 9 → 8 of 14 sides within about twice the record, the record's loser losing more in 27 → 28 of 44.
+  The Jutland's British losses 21.8 → 9.3 a seed (record 14, in), German 37.5 → 42.3 (record 11; 19-77 over 4 seeds, still
+  the outlier); the Dogger Bank's German 7.4 → 6.9 (1); Tsushima's Japanese 6.0 → 4.6 (0), Russian 6.8 → 6.9 (7); the
+  Heligoland Bight's German 2.8 → 8.1 (4: now HIGH; fights there run longer, 5.4 → 7.3 h, British hits 255 → 867).
+  fc-history (one ship, so SC4's alone): its cases as before but for the Komandorski salvo chaser, new since SC1's panel,
+  0.2% against 0.3-1% (LOW), and a steady target over a chaser ×11.7 (want 3-10): slow fire gives a chaser longer between
+  salvos to dodge.
 - **Open, for the user (dye):**
   - *Who carries it.* Today a scenario or the dev command gives a ship her dye; no scenario does (none before 1930). For the
     later cuts: a dye bag as a fact of the shell block (the USN's from 1930, the IJN's 1941, the RN's K shells late 1942),
