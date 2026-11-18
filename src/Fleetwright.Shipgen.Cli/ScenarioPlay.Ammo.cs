@@ -23,6 +23,8 @@ static partial class ScenarioPlay
         readonly Dictionary<int, Ship> ships = [];
         readonly Dictionary<(int Shooter, int Battery), long> lastEffect = [];
         readonly Dictionary<(int Shooter, int Battery), (int Target, bool Held)> lastTarget = [];
+        readonly Dictionary<int, Dictionary<int, long>> onTarget = [];   // a target's shooters (ships) and when each last fired at her
+        readonly long[] byCrowd = new long[6], hitsByCrowd = new long[6];  // chief shells and hits by the ships firing at her: 1..5, 6+
         int minute;
 
         // every seed's, by side and type
@@ -37,6 +39,7 @@ static partial class ScenarioPlay
             ships.Clear();
             lastEffect.Clear();
             lastTarget.Clear();
+            onTarget.Clear();
             minute = 0;
             var prevR = w.Gunnery.Reported;
             w.Gunnery.Reported = r =>
@@ -52,6 +55,15 @@ static partial class ScenarioPlay
                 shells[key] = shells.GetValueOrDefault(key) + r.Shells;
                 var bk = (r.Shooter, r.Battery);
                 salvos++;
+                // the ships whose chief guns fired at her within the last 90 s, this one counted
+                if (!onTarget.TryGetValue(r.Target, out var who))
+                    onTarget[r.Target] = who = [];
+                who[r.Shooter] = r.FiredMs;
+                int crowd = 0;
+                foreach (long at in who.Values)
+                    crowd += r.FiredMs - at < 90_000 ? 1 : 0;
+                int ci = Math.Clamp(crowd, 1, 6) - 1;
+                (byCrowd[ci], hitsByCrowd[ci]) = (byCrowd[ci] + r.Shells, hitsByCrowd[ci] + r.Hits);
                 var (was, held) = lastTarget.TryGetValue(bk, out var lt) ? lt : (-1, false);
                 if (was != r.Target)
                     (shifts, held) = (shifts + 1, false);
@@ -164,6 +176,10 @@ static partial class ScenarioPlay
             }
             Console.WriteLine($"  {salvos} salvos, {shifts} targets taken ({(double)salvos / Math.Max(shifts, 1):F1} salvos a target); ranging shells on a new target {rangingFirst}, " +
                               $"after holding her {rangingAgain}");
+            long all = byCrowd.Sum();
+            if (all > 0)
+                Console.WriteLine("  chief shells by the ships firing on her (within 90 s): " + string.Join("  ", Enumerable.Range(0, 6).Select(i =>
+                    $"{(i == 5 ? "6+" : (i + 1).ToString())}: {100.0 * byCrowd[i] / all:F0}% ({100.0 * hitsByCrowd[i] / Math.Max(byCrowd[i], 1):F1}% hit)")));
             long spots = spotSeen + spotUntold + spotUnseen;
             if (spots > 0)
                 Console.WriteLine($"  fire for effect's spots: {100.0 * spotSeen / spots:F0}% seen and told, {100.0 * spotUntold / spots:F0}% seen but not told " +
