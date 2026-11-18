@@ -32,9 +32,19 @@ public enum WingChoice : byte
 /// of the world at the moment; nothing hashed; nothing allocated once grown.</summary>
 public sealed class FastWing(MatchupJudge judge, HeldGroups held, ForceMeasures measures)
 {
-    MatchupSide[] sides = [];
-    double[] strength = [];
-    bool[] line = [];
+    // the held groups' sides, made for as many groups as a big fight holds at the start (they grew mid-fight the first time
+    // a side held a third group: squadrons' allocation test, docs/battle/shell-consumption.md SC4), growing past it only
+    MatchupSide[] sides = Sides(16);
+    double[] strength = new double[16];
+    bool[] line = new bool[16];
+
+    static MatchupSide[] Sides(int n)
+    {
+        var s = new MatchupSide[n];
+        for (int k = 0; k < n; k++)
+            s[k] = new MatchupSide();
+        return s;
+    }
 
     /// <summary>The wing's choice against the groups a side holds now: what, which held group (-1: none) and the ship to
     /// close (his van, or the group's biggest). <paramref name="wing"/> is the wing's ships, <paramref name="rest"/> the

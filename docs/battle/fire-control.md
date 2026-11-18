@@ -782,7 +782,8 @@ from the parts and independent fire (items 6 and 9); F6e ammunition as a choice 
     opening as before (the track's start + `GunneryOpenS`); ranging, each salvo a partial one (`RangingGunsShare` of
     the guns that bear, at least `RangingGunsMin`, 4; the mounts taken from where the last left off, so the groups
     alternate) fired when the last one's spot is in (`InFlight`; or 15 s past its flight and the spot's delay, a spot
-    that never came); fire for effect on the spotter's straddle, full salvos as the guns load and lay, as before.
+    that never came); fire for effect on the spotter's straddle, full salvos as the guns load and lay, as before (since
+    2026-11-18 slow fire, each held for the last one's spot, until straddles earn rapid fire: `shell-consumption.md` SC4).
     Back to ranging after 3 spots in a row without a straddle (the bracket opened the way they all pointed, if they
     did), on own ship's turn (any past 0.2°/s for a plain rate clock or a judgement, past 1°/s for a computer that
     takes own ship's motion in) and when the tracker sees the target turn (`FcTracker.Turns`, the curved-course and

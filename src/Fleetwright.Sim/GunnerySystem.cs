@@ -39,8 +39,10 @@ public enum FirePhase : byte
     /// <summary>Finding the bracket: partial salvos, each fired when the last one's spot is in, so each carries something
     /// new.</summary>
     Ranging,
-    /// <summary>Fire for effect, from the spotter's straddle: full salvos as fast as the guns load and lay, the spots
-    /// walking the fall onto her; back to ranging when the range is clearly lost or the solution is disturbed.</summary>
+    /// <summary>Fire for effect, from the spotter's straddle: full salvos (or halves), the spots walking the fall onto her;
+    /// slow fire, each held for the last one's spot, until straddles in a row earn rapid fire, as fast as the guns load and
+    /// lay (docs/battle/shell-consumption.md SC4); back to ranging when the range is clearly lost or the solution is
+    /// disturbed.</summary>
     Effect,
 }
 
@@ -59,8 +61,9 @@ public enum FirePhase : byte
 /// and the spotting corrections.</item>
 /// <item><b>Lay, fire.</b> Mounts train and elevate as analytic anchors (<see cref="CombatStore"/>). The fire discipline
 /// (fire-control.md F6, <see cref="FirePhase"/>): after the opening, a battery ranges with partial salvos, each going
-/// when the last one's spot is in; on the spotter's straddle it fires for effect, a full salvo at the first instant the
-/// bearing mounts are loaded and laid. Each salvo draws one common error (the computer's salvo-to-salvo error, times
+/// when the last one's spot is in; on the spotter's straddle it fires for effect, slow fire (each salvo held for the last
+/// one's spot to reach the guns) until straddles in a row earn rapid fire, a full salvo at the first instant the bearing
+/// mounts are loaded and laid (docs/battle/shell-consumption.md SC4). Each salvo draws one common error (the computer's salvo-to-salvo error, times
 /// battle's <see cref="SimSettings.GunneryCombat"/>; the director's laying error, or each gun's for a battery without
 /// director firing), each shell its own dispersion from the gun's pattern; a ship swinging adds the computer's own-turn
 /// kick.</item>
@@ -149,6 +152,12 @@ public sealed class GunnerySystem : IWorldSystem
         public long WaitMs;
         /// <summary>In fire for effect, the spots in a row that weren't straddles.</summary>
         public int Misses;
+        /// <summary>In fire for effect, the straddles called in a row, and whether it has earned rapid fire (salvos as fast as
+        /// the guns load and lay, unspotted: docs/battle/shell-consumption.md SC4); slow fire otherwise. When the last spot's
+        /// call reaches the guns, ms: slow fire's next salvo goes no sooner (<see cref="SimSettings.SpotPassS"/>).</summary>
+        public int StraddleRun;
+        public bool Rapid;
+        public long PassMs;
         /// <summary>In fire for effect, the spots' running mean (<see cref="Walk"/>): its first step (m), the spots it has
         /// shrunk by, which way it last stepped (-1 down, +1 up, 0 none yet), and how far (m) and in how many steps it has gone
         /// that way in a row.</summary>
@@ -532,8 +541,9 @@ public sealed class GunnerySystem : IWorldSystem
     }
 
     /// <summary>A ship's battery's ranging cycle at a range, s (docs/battle/balance.md BL1ae): ranging, each salvo waits
-    /// for the last one's fall to be spotted, its flight with the spot's delay and the wait's margin, or its guns' reload
-    /// if that's longer; its lead shell's range table from a muzzle 10 m up (its reach's flight past it).</summary>
+    /// for the last one's fall to be spotted and the call to reach the guns, its flight with the spot's delay, its passage
+    /// and the layers' settle, or its guns' reload if that's longer; its lead shell's range table from a muzzle 10 m up (its
+    /// reach's flight past it).</summary>
     public double RangingCycleS(Loadout lo, int battery, double rangeM)
     {
         var cls = lo.Class;
@@ -543,7 +553,7 @@ public sealed class GunnerySystem : IWorldSystem
         var t = shells.Ballistics[shells.TableOf(lo, battery)];
         double e = t.ElevationFor(Math.Min(rangeM, ReachM(lo, battery)), 10);
         double tof = double.IsNaN(e) ? 0 : t.Fall(e, 10).Tof;
-        return Math.Max(reload, tof + (settings.SpotDelayMs + settings.RangingWaitMarginMs) / 1000.0);
+        return Math.Max(reload, tof + settings.SpotDelayMs / 1000.0 + settings.SpotPassS + settings.LayerSettleS);
     }
 
     public void Apply(World world, in Command c)
@@ -1234,8 +1244,18 @@ public sealed class GunnerySystem : IWorldSystem
         bool ranging = fc.Phase == FirePhase.Ranging && !independent, waiting = fc.InFlight > 0 && now < fc.WaitMs;
         if (ranging && dis.LadderStepM > 0 && fc.Rung >= dis.InFlight && !waiting)
             fc.Rung = 0;   // the ladder's falls all spotted: the next group
+        // fire for effect's pace (SC4): rapid fire earned by straddles called in a row, lost by misses in a row; point blank
+        // the layers fire as they lay, and independent fire is each gun's own
+        if (fc.Phase != FirePhase.Effect)
+            fc.Rapid = false;
+        else if (!fc.Rapid && dis.RapidStraddles > 0 && fc.StraddleRun >= dis.RapidStraddles)
+            fc.Rapid = true;
+        else if (fc.Rapid && fc.Misses >= dis.SlowMisses)
+            (fc.Rapid, fc.StraddleRun) = (false, 0);
+        bool slowEffect = fc.Phase == FirePhase.Effect && !fc.Rapid && !fc.PointBlank && !independent;
         if (fc.State != BatteryState.Firing || fc.SalvoPending || !sees ||
-            ranging && (dis.LadderStepM > 0 ? fc.Rung >= dis.InFlight : fc.InFlight >= dis.InFlight && waiting))
+            ranging && (dis.LadderStepM > 0 ? fc.Rung >= dis.InFlight : fc.InFlight >= dis.InFlight && waiting) ||
+            slowEffect && fc.InFlight >= dis.EffectInFlight && waiting)
         {
             store.Combat.SetFiresForEffect(slot, fc.Battery, fc.State == BatteryState.Firing && fc.Phase == FirePhase.Effect);
             return;
@@ -1277,6 +1297,8 @@ public sealed class GunnerySystem : IWorldSystem
             when = Math.Max(when, fc.LastSalvoMs + (long)(500 * cls.Mounts[mounts[0]].ReloadS));   // the halves alternate
         if (!independent)
             when = Math.Max(when, fc.SettleMs);   // the layers on again after a correction (firing independently, each his own)
+        if (ranging || slowEffect)
+            when = Math.Max(when, fc.PassMs);   // slow fire: the last spot's call at the guns
         for (int k = 0, got = 0, taken = 0; k < mounts.Length && got < need && taken < quota; k++)
         {
             int j = (fc.Group + k) % mounts.Length;
@@ -2135,7 +2157,7 @@ public sealed class GunnerySystem : IWorldSystem
         var store = ships.Store;
         bool own = fc.Alive && fc.Generation == sv.FcGeneration;
         if (own)
-            fc.InFlight = Math.Max(fc.InFlight - 1, 0);
+            (fc.InFlight, fc.PassMs) = (Math.Max(fc.InFlight - 1, 0), world.Time.Ms + (long)(1000 * settings.SpotPassS));
         int slot = own && fc.Target == sv.Target ? store.SlotOf(fc.Shooter) : -1;
         int tslot = store.SlotOf(sv.Target);
         if (slot >= 0 && tslot >= 0)
@@ -2248,6 +2270,7 @@ public sealed class GunnerySystem : IWorldSystem
                 if (sign != FireControl.Sign.Straddle)
                     fc.CorrR = 0.5 * (fc.OverAt + fc.ShortAt);
                 (fc.Phase, fc.Misses, fc.WalkStep, fc.WalkN, fc.WalkDir, fc.WalkRunM, fc.WalkRun) = (FirePhase.Effect, 0, 0.5 * width, 1, 0, 0, 0);
+                (fc.StraddleRun, fc.Rapid) = (sign == FireControl.Sign.Straddle ? 1 : 0, false);
                 (fc.OverAt, fc.ShortAt) = (double.NaN, double.NaN);
             }
         }
@@ -2275,9 +2298,10 @@ public sealed class GunnerySystem : IWorldSystem
     {
         if (sign == FireControl.Sign.Straddle)
         {
-            (fc.WalkN, fc.Misses, fc.WalkRunM, fc.WalkRun) = (fc.WalkN + 1, 0, 0, 0);
+            (fc.WalkN, fc.Misses, fc.WalkRunM, fc.WalkRun, fc.StraddleRun) = (fc.WalkN + 1, 0, 0, 0, fc.StraddleRun + 1);
             return;
         }
+        fc.StraddleRun = 0;
         int d = sign == FireControl.Sign.Over ? -1 : 1;
         if (d * (fc.CorrR - at) > 0.5)
             return;   // already moved past it that way
@@ -2552,6 +2576,9 @@ public sealed class GunnerySystem : IWorldSystem
             h.Add(fc.WalkN);
             h.Add((int)fc.Phase);
             h.Add(fc.InFlight);
+            h.Add(fc.StraddleRun);
+            h.Add(fc.Rapid ? 1 : 0);
+            h.Add(fc.PassMs);
             h.Add(fc.Salvos);
             h.Add(fc.Hits);
             h.Add(fc.PendCount);

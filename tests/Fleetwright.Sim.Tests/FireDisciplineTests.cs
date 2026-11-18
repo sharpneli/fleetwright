@@ -95,7 +95,50 @@ public class FireDisciplineTests(ITestOutputHelper output)
         Assert.True(partial * 2 >= ranging, "ranging salvos are partial");
         // each ranging salvo waited for the last one's fall and spot: its flight and the spot's delay, well over a reload
         Assert.True(shortestRanging > reload + Settings.SpotDelayMs / 1000.0, $"ranging salvos {shortestRanging:F0} s apart");
-        Assert.True(effectGap < 2 * reload, $"fire for effect at the loading rate: {effectGap:F1} s");
+        Assert.True(effectGap < 2 * reload, $"straddling, rapid fire at the loading rate: {effectGap:F1} s");
+    }
+
+    /// <summary>Slow fire (docs/battle/shell-consumption.md SC4): the same 150 mm on the destroyer with rapid fire never
+    /// earned; each salvo in fire for effect is held for the last one's spot to reach the guns, its flight (~20 s), the
+    /// spot's delay and its passage, against the reload's ~11 s; earned, rapid fire goes at the reload and the layers' settle.</summary>
+    [Fact]
+    public void Fire_for_effect_is_slow_until_straddles_earn_rapid_fire()
+    {
+        var bismarck = Fleet.Get("bismarck").Class!;
+        int bat = -1;
+        for (int k = 0; k < bismarck.Batteries.Length; k++)
+            if (bismarck.Batteries[k].Side == Side.Starboard && bismarck.Batteries[k].CalibreMm > 120)
+                bat = k;
+        var settings = Settings with { FireDisciplines = [.. Settings.FireDisciplines.Select(d => d with { RapidStraddles = 0 })] };
+        double floor = settings.SpotDelayMs / 1000.0 + settings.SpotPassS, slowMean = 0;
+        foreach (var (s, slow) in new[] { (settings, true), (Settings, false) })
+        {
+            var w = new World(Start, 3, s);
+            int a = w.Ships.AddClass(bismarck), d = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, 90);
+            Earth.Advance(ref p, ref f, 11_000);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 15, side: 0));
+            w.Apply(ShipSystem.Spawn(d, tl, to, 0, 15, side: 1));
+            var salvos = new List<GunnerySystem.SalvoReport>();
+            w.Gunnery.Reported = salvos.Add;
+            w.Apply(GunnerySystem.Engage(1, bat, 2));
+            w.AdvanceTo(Start + 12 * 60_000);
+            var gaps = new List<double>();
+            for (int i = 1; i < salvos.Count; i++)
+                if (salvos[i].Phase == FirePhase.Effect && salvos[i - 1].Phase == FirePhase.Effect)
+                    gaps.Add((salvos[i].FiredMs - salvos[i - 1].FiredMs) / 1000.0);
+            output.WriteLine($"{(slow ? "never rapid" : "rapid earned")}: {gaps.Count} salvos in fire for effect, {gaps.Min():F0}-{gaps.Max():F0} s apart, " +
+                             $"{gaps.Average():F1} on average");
+            Assert.True(gaps.Count >= 8);
+            if (slow)
+                slowMean = gaps.Average();
+            if (slow)
+                Assert.True(gaps.Min() > floor + 10, $"slow fire's salvos {gaps.Min():F0} s apart");
+            else   // straddling, rapid fire: at the reload and the layers' settle
+                Assert.True(gaps.Average() < 0.6 * slowMean, $"rapid fire {gaps.Average():F1} s apart against slow fire's {slowMean:F1}");
+        }
     }
 
     [Fact]

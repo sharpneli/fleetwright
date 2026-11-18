@@ -491,7 +491,8 @@ between cells), its thickness, material and normal.
   - **solve:** the target where it'll be after the time of flight (iterated through the range table, from last
     second's), the gun laid by `FireControl.Solve` with its ship's motion in (trained off the line by the motion across
     it, the elevation whose flight at the speed and angle the two give falls at the range), every second on a grid;
-  - **lay, fire:** a salvo at the first instant the bearing mounts are loaded and laid; the level's salvo-to-salvo
+  - **lay, fire:** a salvo at the first instant the bearing mounts are loaded and laid (since 2026-11-18 slow fire held for
+    the spots until straddles earn rapid fire, `shell-consumption.md` SC4); the level's salvo-to-salvo
     error times battle's 1.5, the director's common laying error (each gun's for levels 0-2 and local control, as
     dispersion), the engagement's residual biases, the own-turn kick while swinging; each shell laid for its own point
     (the gun's pattern by guns in the salvo, `FireControl.Dispersion`);

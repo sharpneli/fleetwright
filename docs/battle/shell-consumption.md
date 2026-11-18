@@ -1,6 +1,6 @@
 # Shell consumption: firing what the record fired
 
-Agreed with the user 2026-11-18. Steps SC1-SC4.
+Agreed with the user 2026-11-18. Steps SC1-SC4 (SC4 built before SC2-SC3, at the user's question on pacing).
 
 **The complaint (the user):** "Historically ships didn't really shoot as much as they did here which is the reason why our
 ships run dry so fast and why the fights are so much deadlier." And: "in cases where I have my usual congaline of doom and
@@ -38,9 +38,10 @@ Capital ships' chief batteries:
 | Jutland, Germany | 42% | 0.23 | 0.56 | 12 of 54 | 1 |
 | Squadrons, Germany | 83% | 0.72 | 0.83 | 8 of 10 | 3 |
 
-- **The rate is mostly in band.** Fire for effect is not fire at the loading rate: a gun's cycle there is 1.4-1.5 drill
-  reloads (median; the officer's worth, the roll, the settle, the hoists), and over an action the capital ships fire
-  0.23-0.40 a gun a minute (squadrons' 0.72 the exception).
+- **Over an action the rate looks in band**, 0.23-0.40 a gun a minute for the capital ships (squadrons' 0.72 the
+  exception), but **while firing for effect it is the loading rate**: a gun's cycle there is 1.2 / 1.5 / 2.4 drill reloads
+  at the quartiles, the lowest a trained crew's loading (`GunneryCrew.Load` 1.2) exactly; the record's practice
+  intervals were 2-3.5 times the loading (SC4).
 - **The fights are long** (BL3's finding): the Dogger Bank runs to its 7:10 clock against the record's three-hour chase.
 - **Targets churn:** at the Dogger Bank a battery takes a new target every 10 salvos (578 in 2 seeds), and ranging on a new
   target is 5,269 of its ~14,300 chief shells (37%); ranging again after holding the range only 1,145. Of 1,735 chief
@@ -89,10 +90,50 @@ before changing it.
 The officer's worth floor rises as the magazines empty from `FireWorthLowRounds` (a quarter left today); the research has
 ships firing below about a third only while straddling or close in.
 
-### SC4 Rapid fire earned
+### SC4 Slow fire, rapid fire earned
 
-Firing for effect after a miss, the next salvo waits on the corrected salvo's spot (slow fire: "held back to apply spots");
-at the loading rate only while straddling. Mostly the medium guns: a heavy gun's spot cycle is about its reload.
+The user (2026-11-18): "I'm more after why are we firing so rapidly. Are we pacing the salvoes correctly?" No: ranging
+waited on each spot, but fire for effect fired every gun the instant it was loaded and laid, the spots only correcting
+the aim. The record: slow fire the rule, each salvo held for the last one's spot (Iron Duke's spotted salvos at Jutland
+35-50 s apart; New York's 66 s against 31 s loading; Idaho's 84 against 24); rapid unspotted salvos only once
+consistently straddling (the Germans' routine, whose-salvo.md §3.2, Brooks). The research of whose-salvo.md (SC2's)
+bears on this only so: the German routine, the 40 s of deliberate heavy fire, and the Dogger Bank's rates (Seydlitz and
+Moltke about 14 rounds a minute between them, ~0.7 a gun; Lion 2, 0.25 a gun).
+
+- **Built 2026-11-18.**
+  - *Slow fire* is fire for effect's default: the next salvo waits on the spots of the last `EffectInFlight` (the
+    discipline's: 1, the RN after Jutland 2) and then for the call to reach the guns.
+  - *The spot's passage* `SpotPassS` 12 s [EST]: the spotter's call to the transmitting station, set on the table, sent
+    to the sights, after his judgement (`SpotDelayMs` 6 s) and before the layers' settle (`LayerSettleS` 7 s). From
+    Iron Duke's 35-50 s at about 11 km (a 16 s flight leaves 19-34 s from the fall, 13 past the spot and the settle at
+    the middle) and New York's 66 s (12-15 s at a 35-38 s flight). Ranging waits for it too (it is the same call);
+    `RangingCycleS`, the captain's cost of a shift, takes flight + spot + passage + settle, not the old 15 s timeout.
+  - *Rapid fire earned*: `RapidStraddles` (2) straddles called in a row and the battery fires as fast as its guns load and
+    lay, unspotted; `SlowMisses` (2) calls in a row that miss and it's slow again. Point blank and independent fire are
+    as before. The counts are [EST], every navy's alike until the research on each navy's fire for effect (the request of
+    2026-10-18).
+  - `FireDisciplineTests.Fire_for_effect_is_slow_until_straddles_earn_rapid_fire`: Bismarck's 150 mm on a destroyer at
+    11 km, never rapid 38-47 s apart (41.6 on average), rapid earned 19.2 (the 11 s reload and the settle).
+  - Found on the way: the fast wing's chooser (`FastWing`, AL5) grew its buffers mid-fight the first time a side held a
+    third enemy group (squadrons' allocation test, 4,760 B at 16:00); they're made for 16 groups now.
+- **Measured.** `duel lion derfflinger --runs 8 --minutes 30`, rounds a gun a minute (hits, shells a hit):
+
+  | | 11 km | 14 km | 18 km |
+  |---|---|---|---|
+  | before (SC1) | 1.07 (27.7%, 3.6) | 1.08 (18.3%, 5.5) | 1.08 (8.1%, 12.3) |
+  | SC4, rapid earned after 2 straddles | 1.03 (27.4%, 3.7) | 1.02 (17.5%, 5.7) | 1.02 (8.7%, 11.5) |
+  | SC4, never rapid | 0.74 (26.4%, 3.8) | 0.64 (17.4%, 5.7) | 0.53 (7.7%, 13.0) |
+
+  Slow fire alone puts a half salvo out every 41 s at 11 km (the record's 35-50), 47 s at 14 km, 58 s at 18; shells a hit
+  don't move. **Rapid fire, as built, gives almost all of it back in a clean duel:** 54-75% of the salvos straddle there,
+  so it's earned at once and seldom lost. The record's fastest long-range battle rate, the Germans' rapid fire at the
+  Dogger Bank, ~0.7 a gun, is our slow fire's, not our rapid's.
+
+  Scenarios (`--ammo`, 2 seeds; capital ships' outfit fired, SC1 → SC4 rapid earned / never rapid): squadrons Britain
+  63% → 49% / 54%, Germany 74% → 43% / 34%; Dogger Bank Britain 72% → 59% / 70%, Germany 81% → 76% / 46% (dry 4 → 1 / 0);
+  Tsushima Russia 62% → 50% / 52%, Japan 68% → 43% / 69% (dry 6 → 3 / 6). Two seeds of fights that go very differently:
+  the duel is the clean reading.
+- **Open, for the user:** how readily rapid fire is earned (`RapidStraddles`), per navy or for all; 0 is never.
 
 Not here: how long the sides fight (BL5's, the commanders' judgement); no fight in progress is cut short.
 

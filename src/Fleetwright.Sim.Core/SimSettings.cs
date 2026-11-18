@@ -891,11 +891,20 @@ public sealed record SimSettings
     public FireDiscipline[] FireDisciplines { get; init; } =
     [
         new() { Name = "rn-1914", InFlight = 1, GunsShare = 0.5, GunsMin = 4, EffectHalves = true },
-        new() { Name = "rn-1917", InFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true },
+        new() { Name = "rn-1917", InFlight = 2, EffectInFlight = 2, GunsShare = 0.5, GunsMin = 4, EffectHalves = true },
         new() { Name = "german", InFlight = 3, LadderStepM = 366, GunsShare = 0.2, GunsMin = 2, EffectHalves = true },
         new() { Name = "usn", InFlight = 1, GunsShare = 0.5, GunsMin = 4 },
         new() { Name = "independent", InFlight = 1, GunsShare = 0.5, GunsMin = 4, IndependentWithinM = 5_500 },
     ];
+
+    /// <summary>Slow fire's spot reaching the guns (docs/battle/shell-consumption.md SC4): after the spotter's judgement
+    /// (<see cref="SpotDelayMs"/>) his call goes to the transmitting station, is set on the table and sent to the sights
+    /// before the next salvo held for it may go, s, besides the layers' settle on a correction (<see cref="LayerSettleS"/>)
+    /// [EST: Iron Duke's spotted salvos at Jutland 35-50 s apart at about 11 km, a 13.5" flight of about 16 s
+    /// (whose-salvo.md §6, Brooks), leave 19-34 s from the fall, 13 of them past the spot and the settle at the middle;
+    /// New York's 66 s of 1930-31 with 31 s loading and 10 s at the director (computing.md §2.5), at a long range's
+    /// 35-38 s flight, 12-15].</summary>
+    public double SpotPassS { get; init; } = 12;
 
     /// <summary>A shell's dispersion across the line of fire as a share of its dispersion along it (Gun.defl_ratio).</summary>
     public double DispersionDeflectionRatio { get; init; } = 0.4;
@@ -3093,10 +3102,22 @@ public sealed record GunneryErrorScale
         $"readings {Readings:G}, prior {Prior:G}, bias {Bias:G}, laying {Laying:G}, own {Own:G}, dispersion {Dispersion:G}, spotting {Spotting:G}, masking {Masking:G}, wind {Wind:G}, spray {Spray:G}, seaway {Seaway:G}, smoke {Smoke:G}, charges {Charges:G}");
 }
 
+/// <summary>A side's fire discipline (docs/battle/fire-control.md F6; <see cref="SimSettings.FireDisciplines"/>): ranging,
+/// the salvos in the air before the next waits on their spots, a ladder's step, the guns a ranging salvo takes (a share, a
+/// least); firing for effect, halves or full salvos, and its pace (docs/battle/shell-consumption.md SC4): slow fire, the next
+/// salvo held for the spot of the last <see cref="EffectInFlight"/>, until <see cref="RapidStraddles"/> straddles called in a
+/// row earn rapid fire, unspotted salvos as fast as the guns load and lay (0: never), lost again after
+/// <see cref="SlowMisses"/> calls in a row that miss [SRC: the Germans' "single salvos to find the target, each spotted
+/// before the next; rapid unspotted salvos once consistently straddling", whose-salvo.md §3.2, Brooks; the manual's
+/// "slow fire is fire held back on purpose, to apply spots"; the counts EST, every navy's alike until the research on each
+/// navy's fire for effect]; the quick-firers' independent fire within a range.</summary>
 public sealed record FireDiscipline
 {
     public string Name { get; init; } = "";
     public int InFlight { get; init; } = 1;
+    public int EffectInFlight { get; init; } = 1;
+    public int RapidStraddles { get; init; } = 2;
+    public int SlowMisses { get; init; } = 2;
     public double LadderStepM { get; init; }
     public double GunsShare { get; init; } = 0.5;
     public int GunsMin { get; init; } = 4;
