@@ -16,7 +16,7 @@ namespace Fleetwright.Shipgen.Cli;
 /// tier, by default; <c>--tier coarse</c> asks <see cref="CoarseParity.CoarseSpeed"/>: an encounter opening drops to it at
 /// the event, by the interest rule for others' encounters), and <paramref name="fast"/> otherwise. The speed asked only
 /// picks the tiers here; the run goes at full tilt either way.</summary>
-static class ScenarioPlay
+static partial class ScenarioPlay
 {
     /// <summary>The fire table's "steady": under this rate of turn, °/s (BL1m).</summary>
     const double SteadyYawDegS = 0.2;
@@ -75,6 +75,7 @@ static class ScenarioPlay
 
         var runs = new List<(ulong Seed, ScenarioEnd End, SideResult[] Result, double Wall)>();
         var all = new MainGuns();
+        var ammo = Ammo ? new AmmoTally() : null;
         int crashed = 0;
         for (int i = 0; i < seeds; i++)
         {
@@ -209,6 +210,7 @@ static class ScenarioPlay
                 };
             if (salvoLog != null)
                 LogSalvos(w, seed, salvoLog);
+            ammo?.Begin(w);
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
             var names = new Dictionary<int, string>(start.ShipNames);
@@ -248,6 +250,7 @@ static class ScenarioPlay
                     if ((w.Time.Ms - hour0) / 3_600_000 > hours.Count)
                         hours.Add(sw.Elapsed.TotalSeconds);
                     guns.Read(w);
+                    ammo?.Sample(w);
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
@@ -272,6 +275,7 @@ static class ScenarioPlay
                 for (int slot = 0; slot < w.Ships.Store.Slots; slot++)
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
+                ammo?.End();
                 foreach (var k in homeShips.Keys.Where(k => k.Seed == seed).ToList())
                     homeShips[k] = (homeShips[k].Hits, w.Ships.Store.SlotOf(k.Entity) < 0);
             }
@@ -318,6 +322,7 @@ static class ScenarioPlay
             Console.WriteLine($"over {runs.Count} seeds:");
             all.Print("  ");
         }
+        ammo?.Print(s, runs.Count);
         if (fireTable && fire.Count > 0)
         {
             string[] cals = ["under 120 mm", "120-200 mm", "200-300 mm", "300 mm and over"];
@@ -630,10 +635,11 @@ static class ScenarioPlay
     static void LogSalvos(World w, ulong seed, TextWriter log)
     {
         var prev = w.Gunnery.Reported;
+        var prevSpot = w.Gunnery.Spotted;
         // its spot, a line of its own six seconds on: S, the salvo's time, whose, the call, the correction it leaves
-        w.Gunnery.Spotted = p => log.WriteLine(string.Join(",", "S", seed, p.FiredMs / 1000.0, p.Shooter, p.Battery, p.Seen ? p.Sign.ToString() : "unseen",
+        w.Gunnery.Spotted = p => { prevSpot?.Invoke(p); log.WriteLine(string.Join(",", "S", seed, p.FiredMs / 1000.0, p.Shooter, p.Battery, p.Seen ? p.Sign.ToString() : "unseen",
             Math.Round(p.Lo), Math.Round(p.Hi), Math.Round(p.Next), p.Phase,
-            Math.Round(p.DriftMs, 2), Math.Round(p.PosSigmaM), (TrackerKind)p.Tracker, Math.Round(p.SpotSigmaM), Math.Round(p.SpotHeightM, 1)));
+            Math.Round(p.DriftMs, 2), Math.Round(p.PosSigmaM), (TrackerKind)p.Tracker, Math.Round(p.SpotSigmaM), Math.Round(p.SpotHeightM, 1))); };
         w.Gunnery.Reported = r =>
         {
             prev?.Invoke(r);
