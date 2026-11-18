@@ -95,12 +95,14 @@ public class FireDisciplineTests(ITestOutputHelper output)
         Assert.True(partial * 2 >= ranging, "ranging salvos are partial");
         // each ranging salvo waited for the last one's fall and spot: its flight and the spot's delay, well over a reload
         Assert.True(shortestRanging > reload + Settings.SpotDelayMs / 1000.0, $"ranging salvos {shortestRanging:F0} s apart");
-        Assert.True(effectGap < 2 * reload, $"straddling, rapid fire at the loading rate: {effectGap:F1} s");
+        // slow fire (SC4): each salvo in fire for effect held for the last one's spot to reach the guns
+        Assert.True(effectGap > reload + (Settings.SpotDelayMs / 1000.0 + Settings.SpotPassS), $"slow fire: {effectGap:F1} s");
     }
 
-    /// <summary>Slow fire (docs/battle/shell-consumption.md SC4): the same 150 mm on the destroyer with rapid fire never
-    /// earned; each salvo in fire for effect is held for the last one's spot to reach the guns, its flight (~20 s), the
-    /// spot's delay and its passage, against the reload's ~11 s; earned, rapid fire goes at the reload and the layers' settle.</summary>
+    /// <summary>Slow fire (docs/battle/shell-consumption.md SC4): the same 150 mm on the destroyer as every navy fires (rapid
+    /// fire never earned at long range); each salvo in fire for effect is held for the last one's spot to reach the guns, its
+    /// flight (~20 s), the spot's delay and its passage, against the reload's ~11 s; with a discipline that earns it by two
+    /// straddles, rapid fire goes at the reload and the layers' settle.</summary>
     [Fact]
     public void Fire_for_effect_is_slow_until_straddles_earn_rapid_fire()
     {
@@ -109,9 +111,9 @@ public class FireDisciplineTests(ITestOutputHelper output)
         for (int k = 0; k < bismarck.Batteries.Length; k++)
             if (bismarck.Batteries[k].Side == Side.Starboard && bismarck.Batteries[k].CalibreMm > 120)
                 bat = k;
-        var settings = Settings with { FireDisciplines = [.. Settings.FireDisciplines.Select(d => d with { RapidStraddles = 0 })] };
-        double floor = settings.SpotDelayMs / 1000.0 + settings.SpotPassS, slowMean = 0;
-        foreach (var (s, slow) in new[] { (settings, true), (Settings, false) })
+        var rapid = Rapid(Settings);
+        double floor = Settings.SpotDelayMs / 1000.0 + Settings.SpotPassS, slowMean = 0;
+        foreach (var (s, slow) in new[] { (Settings, true), (rapid, false) })
         {
             var w = new World(Start, 3, s);
             int a = w.Ships.AddClass(bismarck), d = w.Ships.AddClass(Fleet.Get("destroyer").Class!);
@@ -210,13 +212,19 @@ public class FireDisciplineTests(ITestOutputHelper output)
     /// a salvo or so: at 14 km the fire control's cadence (a salvo every ~55 s, the 15" reloads in ~40) holds both, so the
     /// faster crew gains little (104 rounds against 100; 104 against 92 while her own gun smoke still hung on her line,
     /// before docs/battle/smoke.md T5).</summary>
+    /// <summary>The settings with every discipline earning rapid fire by two straddles in a row (docs/battle/shell-consumption.md
+    /// SC4; none does since the user's decision): for tests of what only shows while the loading sets the pace.</summary>
+    static SimSettings Rapid(SimSettings s) => s with { FireDisciplines = [.. s.FireDisciplines.Select(d => d with { RapidStraddles = 2 })] };
+
+    /// <summary>Hurrying the loading tells only while the loading sets the pace: in rapid fire (slow fire waits on the spots,
+    /// docs/battle/shell-consumption.md SC4).</summary>
     [Fact]
     public void Rate_first_fires_more_rounds_in_a_fight_than_drill()
     {
         var qe = Fleet.Get("super_dreadnought").Class!;
         int Rounds(double share)
         {
-            var w = new World(Start, 1, Settings);
+            var w = new World(Start, 1, Rapid(Settings));
             int c = w.Ships.AddClass(qe);
             var p = Earth.Position(Lat, Lon);
             var f = Earth.Forward(p, 90);
@@ -318,7 +326,7 @@ public class FireDisciplineTests(ITestOutputHelper output)
                 w.AdvanceTo(Start + 15 * 60_000);
                 reports.Sort((x, y) => x.FiredMs.CompareTo(y.FiredMs));
                 for (int i = 1; i < reports.Count; i++)
-                    if (reports[i - 1].Hits > 0 && reports[i].FiredMs - reports[i - 1].FiredMs <= 40_000)
+                    if (reports[i - 1].Hits > 0 && reports[i].FiredMs - reports[i - 1].FiredMs <= 90_000)   // slow fire's gap (SC4)
                         moves.Add(Math.Abs(reports[i].LaidErrM - reports[i - 1].LaidErrM));
             }
             double mean = moves.Count > 0 ? moves.Average() : 0;

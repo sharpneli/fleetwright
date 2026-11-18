@@ -281,11 +281,11 @@
   "LayerSettleS": 7,
   "QuickFirerReloadS": 16,
   "FireDisciplines": [
-    { "Name": "rn-1914", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 2, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
-    { "Name": "rn-1917", "InFlight": 2, "EffectInFlight": 2, "RapidStraddles": 2, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
-    { "Name": "german", "InFlight": 3, "EffectInFlight": 1, "RapidStraddles": 2, "SlowMisses": 2, "LadderStepM": 366, "GunsShare": 0.2, "GunsMin": 2, "EffectHalves": true, "IndependentWithinM": 0 },
-    { "Name": "usn", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 2, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 0 },
-    { "Name": "independent", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 2, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 5500 }
+    { "Name": "rn-1914", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 0, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "rn-1917", "InFlight": 2, "EffectInFlight": 2, "RapidStraddles": 0, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "german", "InFlight": 3, "EffectInFlight": 1, "RapidStraddles": 0, "SlowMisses": 2, "LadderStepM": 366, "GunsShare": 0.2, "GunsMin": 2, "EffectHalves": true, "IndependentWithinM": 0 },
+    { "Name": "usn", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 0, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 0 },
+    { "Name": "independent", "InFlight": 1, "EffectInFlight": 1, "RapidStraddles": 0, "SlowMisses": 2, "LadderStepM": 0, "GunsShare": 0.5, "GunsMin": 4, "EffectHalves": false, "IndependentWithinM": 5500 }
   ],
   "SpotPassS": 12,
   "DispersionDeflectionRatio": 0.4,

@@ -133,7 +133,12 @@ Moltke about 14 rounds a minute between them, ~0.7 a gun; Lion 2, 0.25 a gun).
   63% → 49% / 54%, Germany 74% → 43% / 34%; Dogger Bank Britain 72% → 59% / 70%, Germany 81% → 76% / 46% (dry 4 → 1 / 0);
   Tsushima Russia 62% → 50% / 52%, Japan 68% → 43% / 69% (dry 6 → 3 / 6). Two seeds of fights that go very differently:
   the duel is the clean reading.
-- **Open, for the user:** how readily rapid fire is earned (`RapidStraddles`), per navy or for all; 0 is never.
+- **Decided (the user, 2026-11-18): never at long range.** "Full yolo tier shooting is when you don't really have any
+  doubts": that's point blank, which fires as the layers lay as before. `RapidStraddles` 0 for every discipline; the
+  mechanism stays (a discipline may earn it again). The duel's "never rapid" row and the scenarios' "never rapid" column
+  above are what plays. Tests of what shows only while the loading sets the pace (rate first's hurried loading, the splash
+  columns' holds) take a discipline that earns it (`FireDisciplineTests.Rapid`); the lay after a hit is judged over
+  slow fire's gap (90 s, not 40).
 
 Not here: how long the sides fight (BL5's, the commanders' judgement); no fight in progress is cut short.
 

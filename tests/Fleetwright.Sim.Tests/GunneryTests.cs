@@ -956,9 +956,11 @@ public class GunneryTests(ITestOutputHelper output)
     {
         var b97 = Fleet.Scenario("b97");
         var v25 = Fleet.Scenario("v25");
-        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 96);
-        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings, n: 96);
-        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, Settings with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 96);
+        // rapid fire earned (docs/battle/shell-consumption.md SC4): slow fire's wait on the spots would hide the layers' holds
+        var rapid = Settings with { FireDisciplines = [.. Settings.FireDisciplines.Select(d => d with { RapidStraddles = 2 })] };
+        var off = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, rapid with { GunneryErrors = new GunneryErrorScale { Masking = 0 } }, n: 96);
+        var real = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, rapid, n: 96);
+        var strong = EngagedHits(b97, v25, 90, 4_000, 0, 25, 10, rapid with { GunneryErrors = new GunneryErrorScale { Masking = 40 } }, n: 96);
         output.WriteLine($"masking off {off.Hits} hits of {off.Shells}, at size {real.Hits} of {real.Shells}, forty times {strong.Hits} of {strong.Shells}");
         // at their own size the run follows masking off but for the falls' chaos (a column now and then over her end on)
         Assert.InRange(real.Shells, 0.97 * off.Shells, 1.03 * off.Shells);

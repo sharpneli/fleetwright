@@ -3106,17 +3106,18 @@ public sealed record GunneryErrorScale
 /// the salvos in the air before the next waits on their spots, a ladder's step, the guns a ranging salvo takes (a share, a
 /// least); firing for effect, halves or full salvos, and its pace (docs/battle/shell-consumption.md SC4): slow fire, the next
 /// salvo held for the spot of the last <see cref="EffectInFlight"/>, until <see cref="RapidStraddles"/> straddles called in a
-/// row earn rapid fire, unspotted salvos as fast as the guns load and lay (0: never), lost again after
-/// <see cref="SlowMisses"/> calls in a row that miss [SRC: the Germans' "single salvos to find the target, each spotted
-/// before the next; rapid unspotted salvos once consistently straddling", whose-salvo.md §3.2, Brooks; the manual's
-/// "slow fire is fire held back on purpose, to apply spots"; the counts EST, every navy's alike until the research on each
-/// navy's fire for effect]; the quick-firers' independent fire within a range.</summary>
+/// row earn rapid fire, unspotted salvos as fast as the guns load and lay (0: never, every navy's since 2026-11-18: the
+/// user, "full yolo tier shooting is when you don't really have any doubts", which is point blank; the record's fastest
+/// long-range battle rates are our slow fire's), lost again after <see cref="SlowMisses"/> calls in a row that miss [SRC:
+/// the Germans' "single salvos to find the target, each spotted before the next; rapid unspotted salvos once consistently
+/// straddling", whose-salvo.md §3.2, Brooks; the manual's "slow fire is fire held back on purpose, to apply spots"; the
+/// counts EST]; the quick-firers' independent fire within a range.</summary>
 public sealed record FireDiscipline
 {
     public string Name { get; init; } = "";
     public int InFlight { get; init; } = 1;
     public int EffectInFlight { get; init; } = 1;
-    public int RapidStraddles { get; init; } = 2;
+    public int RapidStraddles { get; init; }
     public int SlowMisses { get; init; } = 2;
     public double LadderStepM { get; init; }
     public double GunsShare { get; init; } = 0.5;
