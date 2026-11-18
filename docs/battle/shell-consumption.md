@@ -169,6 +169,11 @@ quarter of the floor made of.
   12% of Tsushima's, close in (quartiles 5.1 / 7.0 / 8.8 km and 3.3 / 4.5 / 5.3 km) and hitting: fire for effect 27% and
   23%, point blank 81% and 73%. The rule holds; what empties the magazines is the length of the fights (the Dogger Bank
   7 h against the record's three-hour chase, Tsushima 19-21 h), the commanders' (BL5), not this.
+- **The balance panel** (`balance/sc2.json` → `balance/sc3.json`): within the noise. 8 → 7 of 14 sides within about twice
+  the record (Coronel's German 1.0 → 1.4 a seed against the record's 0), the record's loser losing more in 28 → 26 of 44;
+  the Heligoland Bight and the Dover Strait unchanged to the shell (no magazine ran low there); the Dogger Bank's German
+  6.9 → 6.4 (1), Tsushima's Japanese 4.6 → 6.4 (0), the Jutland's German 42.3 → 48.3 (11; 27-68 over 4 seeds, the British
+  heavy hits fewer, their torpedo hits 3.0 → 6.3); fc-history unchanged (one ship, full magazines).
 
 ### SC4 Slow fire, rapid fire earned
 
