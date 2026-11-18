@@ -1276,8 +1276,11 @@ public sealed class GunnerySystem : IWorldSystem
         if (!fc.PointBlank && guns > 0)
         {
             var (pNow, pSteady, pCould) = Worth(fc, cls, ship, frame, store[tslot], row, mounts, guns, crew, now);
-            double floor = settings.FireWorthFloorPct / 100 / Math.Max(RoundsShare(slot, cls, mounts), settings.FireWorthLowRounds);
-            if (pCould < settings.FireWorthHoldShare * floor)
+            double floor = settings.FireWorthFloorPct / 100;
+            // ammunition as a command concern (SC3): the worth he holds fire under rises as the magazines empty; while
+            // straddling, the full magazines' (below a third, only straddling or close in)
+            bool straddling = fc.Phase == FirePhase.Effect && fc.StraddleRun > 0;
+            if (pCould < (straddling ? settings.FireWorthHoldShare * floor : HoldWorth(RoundsShare(slot, cls, mounts))))
             {
                 fc.State = BatteryState.Holding;
                 store.Combat.SetFiresForEffect(slot, fc.Battery, false);
@@ -2498,6 +2501,15 @@ public sealed class GunnerySystem : IWorldSystem
         return (Matchup.ShellChance(danger, depth, width, Math.Sqrt(rSteady + kick * kick), Math.Sqrt(lSteady + kick * kick)),
             Matchup.ShellChance(danger, depth, width, Math.Sqrt(rSteady), Math.Sqrt(lSteady)),
             Matchup.ShellChance(danger, depth, width, Math.Sqrt(rCould), Math.Sqrt(lSteady)));
+    }
+
+    /// <summary>The worth a shell he holds fire under with this share of the battery's rounds left (SC3): the full magazines'
+    /// hold, rising in proportion to the close-in worth at <see cref="SimSettings.FireConserveRounds"/> left.</summary>
+    double HoldWorth(double roundsLeft)
+    {
+        double full = settings.FireWorthHoldShare * settings.FireWorthFloorPct / 100, close = settings.FireCloseInPct / 100;
+        double t = Math.Clamp((1 - roundsLeft) / Math.Max(1 - settings.FireConserveRounds, 1e-9), 0, 1);
+        return full * Math.Pow(Math.Max(close / full, 1), t);
     }
 
     /// <summary>The share of a battery's mounts' rounds still in them (their stowage's).</summary>

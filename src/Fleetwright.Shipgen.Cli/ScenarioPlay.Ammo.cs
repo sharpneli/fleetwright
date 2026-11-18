@@ -34,6 +34,9 @@ static partial class ScenarioPlay
         readonly List<double> effectGap = [];   // fire for effect: the time from one salvo to the next over the drill reload
         long spotSeen, spotUntold, spotUnseen;  // fire for effect's spots
         long shifts, salvos, rangingFirst, rangingAgain;   // targets shifted to, salvos; ranging shells on a new target, and after holding her
+        readonly long[] lowShells = new long[3], lowHits = new long[3];   // fired with under a third left (SC3): ranging, effect, point blank
+        readonly List<double> lowRangeKm = [];
+        long chiefShells;
 
         public void Begin(World w)
         {
@@ -54,6 +57,13 @@ static partial class ScenarioPlay
                     return;
                 var key = (store[ss].Side, r.Phase, r.PointBlank);
                 shells[key] = shells.GetValueOrDefault(key) + r.Shells;
+                chiefShells += r.Shells;
+                if (ships.TryGetValue(r.Shooter, out var sh) && sh.Left < sh.Outfit / 3.0)
+                {
+                    int pi = r.PointBlank ? 2 : r.Phase == FirePhase.Effect ? 1 : 0;
+                    (lowShells[pi], lowHits[pi]) = (lowShells[pi] + r.Shells, lowHits[pi] + r.Hits);
+                    lowRangeKm.Add(r.TrueRangeM / 1000);
+                }
                 var bk = (r.Shooter, r.Battery);
                 salvos++;
                 // the ships whose chief guns fired at her within the last 90 s, this one counted
@@ -186,6 +196,14 @@ static partial class ScenarioPlay
             if (all > 0)
                 Console.WriteLine("  chief shells by the ships firing on her (within 90 s): " + string.Join("  ", Enumerable.Range(0, 6).Select(i =>
                     $"{(i == 5 ? "6+" : (i + 1).ToString())}: {100.0 * byCrowd[i] / all:F0}% ({100.0 * hitsByCrowd[i] / Math.Max(byCrowd[i], 1):F1}% hit)")));
+            if (lowRangeKm.Count > 0)
+            {
+                lowRangeKm.Sort();
+                double Q(double p) => lowRangeKm[Math.Min((int)(p * lowRangeKm.Count), lowRangeKm.Count - 1)];
+                string P(int i) => $"{lowShells[i]} ({100.0 * lowHits[i] / Math.Max(lowShells[i], 1):F1}% hit)";
+                Console.WriteLine($"  chief shells fired with under a third left: {lowShells.Sum()} of {chiefShells} ({100.0 * lowShells.Sum() / Math.Max(chiefShells, 1):F0}%): " +
+                                  $"ranging {P(0)}, fire for effect {P(1)}, point blank {P(2)}; at {Q(0.25):F1} / {Q(0.5):F1} / {Q(0.75):F1} km (quartiles)");
+            }
             long spots = spotSeen + spotUntold + spotUnseen;
             if (spots > 0)
                 Console.WriteLine($"  fire for effect's spots: {100.0 * spotSeen / spots:F0}% seen and told, {100.0 * spotUntold / spots:F0}% seen but not told " +

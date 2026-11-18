@@ -306,7 +306,8 @@
   "FireWorthWaitReloads": 1,
   "FireWorthFloorPct": 1,
   "FireWorthHoldShare": 0.25,
-  "FireWorthLowRounds": 0.25,
+  "FireConserveRounds": 0.3333333333333333,
+  "FireCloseInPct": 25,
   "SteadyForGunsDeg": 5,
   "GunneryCrews": [
     { "Name": "green", "Operator": 2, "Lay": 1.3, "Pyramid": 0.25, "Load": 1.5, "RollTiming": 3, "ClockUse": 0.5 },

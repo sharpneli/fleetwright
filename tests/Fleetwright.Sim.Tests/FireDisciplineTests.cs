@@ -212,6 +212,75 @@ public class FireDisciplineTests(ITestOutputHelper output)
     /// a salvo or so: at 14 km the fire control's cadence (a salvo every ~55 s, the 15" reloads in ~40) holds both, so the
     /// faster crew gains little (104 rounds against 100; 104 against 92 while her own gun smoke still hung on her line,
     /// before docs/battle/smoke.md T5).</summary>
+    /// <summary>Ammunition as a command concern (docs/battle/shell-consumption.md SC3): Lion on Derfflinger, her main
+    /// battery's magazines full, at two thirds, half and a third, at 8, 11, 14 and 18 km. Full, she fires at any of them;
+    /// emptier, the worth she asks of a shell rises, and with a third left she opens fire only close in. Her magazines run
+    /// below a third while she's on her (straddling), she keeps firing.</summary>
+    [Fact]
+    public void As_her_magazines_empty_she_asks_more_of_a_shell_and_below_a_third_fires_only_close_in_or_straddling()
+    {
+        var lion = Fleet.Get("lion").Class!;
+        var derf = Fleet.Scenario("derfflinger");
+        var mounts = lion.Links(lion.Batteries[0].Mounts).ToArray();
+        (World W, int Slot) Make(double rangeM, ulong seed)
+        {
+            var w = new World(Start, seed, Settings);
+            int a = w.Ships.AddClass(lion), b = w.Ships.AddClass(derf);
+            var p = Earth.Position(Lat, Lon);
+            var f = Earth.Forward(p, 80);
+            Earth.Advance(ref p, ref f, rangeM);
+            var (tl, to) = Earth.LatLon(p);
+            w.Apply(ShipSystem.Spawn(a, Lat, Lon, 0, 15, side: 0));
+            w.Apply(ShipSystem.Spawn(b, tl, to, 0, 15, side: 1));
+            return (w, w.Ships.Store.SlotOf(1));
+        }
+        void Leave(World w, int slot, double share)
+        {
+            foreach (int m in mounts)
+                w.Ships.Store.Combat.Mount(slot, m).Rounds = (int)Math.Round(share * lion.Mounts[m].Rounds);
+        }
+        int Shells(double rangeM, double share)
+        {
+            int n = 0;
+            for (ulong seed = 1; seed <= 2; seed++)
+            {
+                var (w, slot) = Make(rangeM, seed);
+                Leave(w, slot, share);
+                w.Gunnery.Reported = r => n += r.Shells;
+                w.Apply(GunnerySystem.Engage(1, 0, 2));
+                w.AdvanceTo(Start + 10 * 60_000);
+            }
+            return n;
+        }
+        double[] ranges = [8_000, 11_000, 14_000, 18_000], shares = [1, 2.0 / 3, 0.5, 1.0 / 3];
+        var fired = new int[shares.Length, ranges.Length];
+        for (int s = 0; s < shares.Length; s++)
+        {
+            for (int r = 0; r < ranges.Length; r++)
+                fired[s, r] = Shells(ranges[r], shares[s]);
+            output.WriteLine($"{shares[s]:P0} left: {string.Join(", ", ranges.Select((x, r) => $"{x / 1000:0} km {fired[s, r]}"))} shells in 10 min");
+        }
+        Assert.All(Enumerable.Range(0, ranges.Length), r => Assert.True(fired[0, r] > 0, "full, she fires at any of them"));
+        for (int r = 0; r < ranges.Length; r++)
+            for (int s = 1; s < shares.Length; s++)
+                Assert.True(fired[s, r] <= fired[s - 1, r], "emptier, never more");
+        Assert.True(fired[3, 0] > 0 && fired[3, 2] == 0 && fired[3, 3] == 0, "a third left: close in only");
+
+        // on her at 14 km with her magazines full, then down to a quarter: she keeps on while she straddles
+        int after = 0, straddles = 0;
+        for (ulong seed = 1; seed <= 2; seed++)
+        {
+            var (w, slot) = Make(14_000, seed);
+            w.Apply(GunnerySystem.Engage(1, 0, 2));
+            w.AdvanceTo(Start + 6 * 60_000);
+            Leave(w, slot, 0.25);
+            w.Gunnery.Reported = r => (after, straddles) = (after + r.Shells, straddles + (r.Straddle ? 1 : 0));
+            w.AdvanceTo(Start + 12 * 60_000);
+        }
+        output.WriteLine($"a quarter left while on her at 14 km: {after} shells, {straddles} salvos straddling, in 6 min");
+        Assert.True(after > 0, "straddling, she keeps firing");
+    }
+
     /// <summary>The settings with every discipline earning rapid fire by two straddles in a row (docs/battle/shell-consumption.md
     /// SC4; none does since the user's decision): for tests of what only shows while the loading sets the pace.</summary>
     static SimSettings Rapid(SimSettings s) => s with { FireDisciplines = [.. s.FireDisciplines.Select(d => d with { RapidStraddles = 2 })] };

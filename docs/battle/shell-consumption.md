@@ -130,7 +130,8 @@ now").
   fc-history (one ship, so SC4's alone): its cases as before but for the Komandorski salvo chaser, new since SC1's panel,
   0.2% against 0.3-1% (LOW), and a steady target over a chaser ×11.7 (want 3-10): slow fire gives a chaser longer between
   salvos to dodge.
-- **Open, for the user (dye):**
+- **Dye left as it is (the user, 2026-11-18, not binding):** mostly out of the first cut's years; the real game may
+  bring it in earlier. What was open:
   - *Who carries it.* Today a scenario or the dev command gives a ship her dye; no scenario does (none before 1930). For the
     later cuts: a dye bag as a fact of the shell block (the USN's from 1930, the IJN's 1941, the RN's K shells late 1942),
     the colours handed out a ship each within her squadron at the start (as the navies did), a scenario's own kept.
@@ -142,8 +143,32 @@ now").
 
 ### SC3 Ammunition as a command concern
 
-The officer's worth floor rises as the magazines empty from `FireWorthLowRounds` (a quarter left today); the research has
-ships firing below about a third only while straddling or close in.
+The research companion (2026-11-18): "Make the threshold depend on ammunition left. With a full magazine, ships fire for a
+reasonable chance of hits. Below about a third left, they fire only while straddling or at close range"; after the
+Heligoland Bight an order to take more care before using ammunition; a ship engaged all day ends it with about half her
+ammunition, only a Falklands-style chase empties her. Before, the officer's worth floor rose as 1/(rounds left) from a
+quarter left (`FireWorthLowRounds`), a mild slope that "one salvo at a time" (moot since SC4's slow fire) and a hold at a
+quarter of the floor made of.
+
+- **Built 2026-11-18.** The worth he holds fire under (`GunnerySystem.HoldWorth`) rises as the battery's magazines empty,
+  steadily in proportion from the full magazines' (a quarter of `FireWorthFloorPct`, 0.25% a shell) to the close-in worth
+  `FireCloseInPct` (25% a shell [EST]) at `FireConserveRounds` (a third) left, and stays there. While straddling (firing
+  for effect, his last call a straddle or a hit) the full magazines' hold stands: below a third, then, only straddling or
+  close in. `FireWorthLowRounds` is gone.
+  - *Close in as a shell's worth,* not a range: it follows the guns, the fire control and the target. 25%, not the 10% I
+    first took from BL1p's Dreadnought: in the sim's gunnery (about 3.5 times the record's, error-sources.md) Lion's shells
+    on Derfflinger are worth 15% at 14 km, so 10% let her fire there with a third left; at 25% she holds out of about 10 km
+    (23% at 11 km, 50% at 7 in SC4's duel). When the gunnery comes down to the record, this comes down with it.
+  - `FireDisciplineTests.As_her_magazines_empty_she_asks_more_of_a_shell_and_below_a_third_fires_only_close_in_or_straddling`:
+    Lion on Derfflinger at 8 / 11 / 14 / 18 km, 10 minutes: full and two thirds left she fires at all four; half left she
+    holds at 18; a third left she fires only at 8. On her at 14 km and down to a quarter, she kept on while she straddled
+    (16 shells in 6 minutes) and stopped when the calls missed.
+- **Measured** (`--ammo`, 2 seeds, SC2 → SC3; `--ammo` now also prints the chief shells fired with under a third left):
+  capital ships' outfit fired, the Dogger Bank Britain 67% → 63%, Germany 68% → 58%; Tsushima Japan 66% → 56%, Russia
+  53% → 70% (two seeds of fights that went differently). With under a third left, 6% of the Dogger Bank's chief shells and
+  12% of Tsushima's, close in (quartiles 5.1 / 7.0 / 8.8 km and 3.3 / 4.5 / 5.3 km) and hitting: fire for effect 27% and
+  23%, point blank 81% and 73%. The rule holds; what empties the magazines is the length of the fights (the Dogger Bank
+  7 h against the record's three-hour chase, Tsushima 19-21 h), the commanders' (BL5), not this.
 
 ### SC4 Slow fire, rapid fire earned
 

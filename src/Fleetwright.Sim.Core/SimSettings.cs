@@ -973,12 +973,24 @@ public sealed record SimSettings
     public double FireWorthWaitReloads { get; init; } = 1;
 
     /// <summary>A shell's worth, % a shell: fire for effect from here (his aim at the bracket's floor, steady) under this, and
-    /// he pares back the same way; under <see cref="FireWorthHoldShare"/> of it, he holds fire (not worth a shell). The
-    /// floor rises as her magazines empty: over the rounds-left share, from <see cref="FireWorthLowRounds"/> left on (the
+    /// he pares back the same way; under <see cref="FireWorthHoldShare"/> of it, he holds fire (not worth a shell) (the
     /// user, 2026-11-01: "shell usage should be reasonably optimized") [EST].</summary>
     public double FireWorthFloorPct { get; init; } = 1;
     public double FireWorthHoldShare { get; init; } = 0.25;
-    public double FireWorthLowRounds { get; init; } = 0.25;
+
+    /// <summary>Ammunition as a command concern (docs/battle/shell-consumption.md SC3): the worth he holds fire under rises
+    /// as the battery's magazines empty, steadily (in proportion) from the full magazines' (<see cref="FireWorthHoldShare"/>
+    /// of <see cref="FireWorthFloorPct"/>) to <see cref="FireCloseInPct"/> a shell, close in, at
+    /// <see cref="FireConserveRounds"/> of its rounds left, and stays there; while straddling (firing for effect, the last
+    /// call a straddle or a hit) the full magazines' holds [SRC: the research companion, 2026-11-18: "with a full magazine,
+    /// ships fire for a reasonable chance of hits; below about a third left, they fire only while straddling or at close
+    /// range"; after the Heligoland Bight an order to take more care before using ammunition; a ship engaged all day ends it
+    /// with about half her ammunition, only a Falklands-style chase empties her. Close in as a shell's worth, 25% [EST]: in
+    /// the sim's gunnery (about 3.5 times the record's, error-sources.md) Lion hits Derfflinger with 50% of her shells at
+    /// 7 km, 23% at 11, 15% at 14 (shell-consumption.md SC4's duel), so about 10 km for her; closer for older fire control
+    /// or a smaller target. A shell's worth, not a range: it follows the guns, the fire control and the target].</summary>
+    public double FireConserveRounds { get; init; } = 1.0 / 3;
+    public double FireCloseInPct { get; init; } = 25;
 
     /// <summary>A station keeper whose chief battery fires for effect holds his course for the guns while the correction
     /// his station wants is under this, degrees (docs/battle/balance.md BL1q: at 20 kn about 100 m off the line) [EST].</summary>
