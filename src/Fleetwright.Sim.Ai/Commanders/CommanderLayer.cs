@@ -648,7 +648,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
 
     /// <summary>How the balance stands (docs/battle/command.md 5.1g): his losses against doctrine's break off (for good once
     /// past it); and his side's matchup against all he holds: under doctrine's bar by
-    /// <see cref="SimSettings.CommanderMarginShare"/> he declines, whether or not his ships can outrun the enemy (balance.md
+    /// <see cref="SimSettings.CommanderMarginShare"/> he declines (by day judged on the ships he's made out to their type, a
+    /// minute's wait at most: a ship not made out yet is any of the enemy's at sea, battlecruisers among them, and a decline
+    /// on one lasts out of sight, so Heligoland's Germans ran from the first blip in the mist, balance.md P11; by night a
+    /// shape may be all he gets, and he judges shapes), whether or not his ships can outrun the enemy (balance.md
     /// BL5, the user 2026-11-10: "outmatched runs"; a stern chase brings fewer guns to bear on both and closes only at the
     /// speed gap, and a ship overhauled is her captain's: Blücher at the Dogger Bank); over it by as much against what he
     /// holds and against what he declined (the gravest he's held since: a fleet seen in part later is still the fleet he
@@ -671,8 +674,9 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (t.Side == side && t.Role is not (UnitRole.None or UnitRole.Auxiliary))
                 AddTop(ctx, t, mine);
         enemy.Clear();
+        bool day = at.LengthSquared < 1 || !AiNight.At(ctx, at, ctx.World.Time);   // no main body: his place unknown, day
         foreach (ref readonly var g in held)
-            AddGroup(ctx, side, g, enemy);
+            AddGroup(ctx, side, g, enemy, madeOut: day);
         if (enemy.Count == 0 || mine.Count == 0)
         {
             s.Confidence = 0;
@@ -952,11 +956,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         }
     }
 
-    void AddGroup(in AiContext ctx, byte side, in HeldGroup g, MatchupSide into)
+    /// <summary>An enemy group's contacts into a side of a matchup, as they're taken; with <paramref name="madeOut"/>, only
+    /// those made out to their type.</summary>
+    void AddGroup(in AiContext ctx, byte side, in HeldGroup g, MatchupSide into, bool madeOut = false)
     {
         var pic = ctx.World.Sightings.Of(side)!;
         foreach (int i in Held.Members(side, g))
-            into.AddContact(ctx.World, Judge.Matchups, side, pic[i]);
+            if (!madeOut || pic[i].Level >= ContactLevel.Type)
+                into.AddContact(ctx.World, Judge.Matchups, side, pic[i]);
     }
 
     /// <summary>The enemy lost: his main body searches about where he was last held (the picture's estimate now, while

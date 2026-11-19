@@ -306,7 +306,7 @@ static partial class ScenarioPlay
             }
             else
                 Console.WriteLine($"  seed {seed,6}: {Why(end.Reason),-7} at {Clock(s, end.EndMs)}  " +
-                                  string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}, score {r.Score:0.00}")) +
+                                  string.Join("   ", result.Select(r => $"{r.Name} lost {r.Lost}/{r.Ships} ({r.LostTonnes:0} t){(r.AimsMet ? ", aims met" : "")}, score {r.Score:0.00}, hits {r.Hits}")) +
                                   Causes(end) + $"   {w.ComputeHash():x16}   ({wall:F1} s)" + (end.Missed > 0 ? $"   {end.Missed} log lines missed" : ""));
             if (seeds > 1)
             {
@@ -420,7 +420,16 @@ static partial class ScenarioPlay
             public readonly HashSet<int> Struck = [];
             public double LostT, StruckT, TakenT;
             public int LostBoats;
+            // P11's gain under fire: the boats' flank speed, the target's way while gaining and running in (sums of samples),
+            // the boats out by the phase they went out in, and what began it (the unit's task and its reason)
+            public double BoatKn, GainKn, RunKn, ReachM, FireM2, UnderS, UnderKn, UnderOwnKn;
+            public int GainN, RunN, OutNow;
+            public readonly int[] OutBy = new int[5];
+            public string Why = "";
+            public long LoggedMs;
         }
+
+        static readonly bool AttackLog = Environment.GetEnvironmentVariable("P11_ATTACK_LOG") != null;
 
         /// <summary>An attack's outcome is read this long after it ends: its torpedoes run, its cripples fallen out.</summary>
         const long SettleMs = 15 * 60_000;
@@ -475,11 +484,24 @@ static partial class ScenarioPlay
                     active[key] = run = new Run { StartMs = w.Time.Ms, Boats = g.Line.Count, Night = Light.SunElevationDeg(store[slot].Position, w.Time) < -6,
                         Seed = seed, Side = store[slot].Side };
                     Forecast(w, ai, g, target, run);
+                    var task = ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(g.GroupId));
+                    var top = w.Groups.TopOf(g);
+                    var topTask = ai.Tasks.Of(Fleetwright.Sim.Ai.Unit.Group(top.GroupId));
+                    run.Why = $"{task.Kind}/{task.Reason}" + (top.GroupId != g.GroupId ? $" top {topTask.Kind}/{topTask.Reason}" : "");
                 }
                 int gs = store.SlotOf(w.Groups.GuideShip(g));
                 if (gs < 0)
                     continue;
                 var guide = store[gs];
+                run.BoatKn = guide.Handling.Class.Motion.MaxSpeedKn;
+                // the boats gone out since the last sample, put down to the phase they were in
+                int outNow = 0;
+                foreach (int m in run.Members)
+                    if (Out(w, ai, m, out _))
+                        outNow++;
+                if (outNow > run.OutNow)
+                    run.OutBy[(int)run.Last] += outNow - run.OutNow;
+                run.OutNow = outNow;
                 double dt = (w.Time.Ms - Math.Max(run.LastMs, run.StartMs)) / 1000.0;
                 switch (run.Last)
                 {
@@ -487,12 +509,39 @@ static partial class ScenarioPlay
                     case AttackPhase.Run: run.RunS += dt; break;
                     case AttackPhase.Away: run.AwayS += dt; break;
                 }
+                if (AttackLog && store.SlotOf(target) is int ls and >= 0 && w.Time.Ms - run.LoggedMs >= 60_000)
+                {
+                    // P11_ATTACK_LOG: each attack minute by minute (the gain under fire)
+                    run.LoggedMs = w.Time.Ms;
+                    var tg = store[ls];
+                    var rel = guide.Position - tg.Position;
+                    double off = Math.Acos(Math.Clamp(Vec3d.Dot(rel, tg.Forward) / Math.Max(rel.Length, 1), -1, 1)) * 180 / Math.PI;
+                    Console.WriteLine($"ATTACK {seed} g{g.GroupId} {TimeOf(w.Time.Ms)} {phase,-5} range {rel.Length / 1000,5:0.0} km off his bow {off,4:0}° " +
+                                      $"heavy {Nearest(w.Types, store, guide.Position, guide.Side, false, Heavy) / 1000,5:0.0} km; guide {guide.Speed / Handling.MsPerKnot,4:0.0} kn " +
+                                      $"hdg {guide.HeadingDeg,4:0} order {ai.Captains.Of(guide.Entity).Order} adm {ai.Admirals.Of(g.GroupId).Order}; " +
+                                      $"target {tg.Handling.Class.Name[..Math.Min(14, tg.Handling.Class.Name.Length)]} {tg.Speed / Handling.MsPerKnot,4:0.0} kn hdg {tg.HeadingDeg,4:0}; " +
+                                      $"line {g.Line.Count}");
+                }
                 if (store.SlotOf(target) is int tslot and >= 0)
                 {
                     double rt = (store[tslot].Position - guide.Position).Length;
                     run.MinTarget = Math.Min(run.MinTarget, rt);
+                    double tkn = store[tslot].Speed / Handling.MsPerKnot;
+                    if (phase == AttackPhase.Gain)
+                        (run.GainKn, run.GainN) = (run.GainKn + tkn, run.GainN + 1);
+                    else if (phase == AttackPhase.Run)
+                        (run.RunKn, run.RunN) = (run.RunKn + tkn, run.RunN + 1);
                     if (phase == AttackPhase.Fire && double.IsNaN(run.FireM))
                         run.FireM = rt;
+                }
+                if (run.Last is AttackPhase.Gain or AttackPhase.Run && run.ReachM > 0 &&
+                    Nearest(w.Types, store, guide.Position, guide.Side, false, Heavy) <= run.ReachM)
+                {
+                    // under the defence's guns on the way in: the time, and the target's way meanwhile
+                    run.UnderS += dt;
+                    run.UnderOwnKn += dt * guide.Speed / Handling.MsPerKnot;
+                    if (store.SlotOf(target) is int us and >= 0)
+                        run.UnderKn += dt * store[us].Speed / Handling.MsPerKnot;
                 }
                 if (phase is AttackPhase.Gain or AttackPhase.Run)
                 {
@@ -549,6 +598,14 @@ static partial class ScenarioPlay
             run.RangeM = r.Terms.RangeM;
             run.Light = light;
             run.Forecast = Matchup.Engage(run.A, run.B, run.RangeM, MatchupStyle.AttackByA, s, light);
+            // the defence's guns' reach and the boats' firing range, as the forecast's run in takes them
+            foreach (var e in run.B)
+                foreach (var gun in e.Profile.Guns)
+                    run.ReachM = Math.Max(run.ReachM, gun.KindsReachM);
+            run.FireM2 = double.PositiveInfinity;
+            foreach (var e in run.A)
+                if (e.Profile.Torpedo.FastRangeM > 0)
+                    run.FireM2 = Math.Min(run.FireM2, e.Profile.AttackRangeM(s, run.Night));
         }
 
         /// <summary>The enemy defending the target: his ships within this of her, m.</summary>
@@ -693,6 +750,34 @@ static partial class ScenarioPlay
                                   $"real {rs.Sum(r => r.LostT) / Math.Max(rs.Sum(r => r.MembersT), 1):P0} of the boats ({rs.Sum(r => r.LostBoats)} of {rs.Sum(r => r.Members.Count)}); " +
                                   $"taken forecast {rs.Sum(r => r.Forecast.AttackTakenT):0} t, real {rs.Sum(r => r.TakenT):0} t (struck {rs.Sum(r => r.StruckT):0} t); " +
                                   $"{rs.Sum(r => r.Torpedoes)} torpedoes, {rs.Sum(r => r.TorpedoHits)} hits");
+                // P11's gain under fire: each attack's speed margin over its target, its minutes gaining and running in
+                // against the forecast's straight run in (from the defence's reach to the firing range at the boats' speed),
+                // and its boats out by phase
+                Console.WriteLine($"  the gain under fire: {"seed",6} {"start",5} {"boat kn",7} {"tgt gain",8} {"tgt run",7} {"gain min",8} {"run min",7} {"fc in min",9} {"under",5} {"tgt kn",6} {"own kn",6}  hits g/r/f/a  out g/r/f/a  why");
+                foreach (var r in rs.OrderBy(r => r.Seed).ThenBy(r => r.StartMs))
+                {
+                    double reach = 0, fire = double.PositiveInfinity;
+                    foreach (var e in r.B)
+                        foreach (var g in e.Profile.Guns)
+                            reach = Math.Max(reach, g.KindsReachM);
+                    for (int i = 0; i < r.A.Length; i++)
+                        if ((r.Forecast.AttackersA >> i & 1) != 0)
+                            fire = Math.Min(fire, r.A[i].Profile.AttackRangeM(s, night));
+                    if (!double.IsFinite(fire))
+                        foreach (var e in r.A)
+                            if (e.Profile.Torpedo.FastRangeM > 0)
+                                fire = Math.Min(fire, e.Profile.AttackRangeM(s, night));
+                    // the forecast's run in (Matchup.RunIn): at the boats' speed to where the defence turns away, then at their
+                    // speed less hers (her slowest ship's)
+                    double defKn = r.B.Where(e => e.Count > 0 && e.SpeedKn > 0).Select(e => e.SpeedKn).DefaultIfEmpty(0).Min();
+                    double turn = Math.Clamp(s.TorpedoThreatM, Math.Min(fire, reach), Math.Max(reach, fire));
+                    double fcIn = double.IsFinite(fire) && r.BoatKn > 0
+                        ? (Math.Max(reach, fire) - turn) / (r.BoatKn * Handling.MsPerKnot) / 60 +
+                          (turn - fire) / (Math.Max(r.BoatKn - defKn, s.MatchupSpeedMarginKn) * Handling.MsPerKnot) / 60
+                        : double.NaN;
+                    Console.WriteLine($"  {"",20} {r.Seed,6} {TimeOf(r.StartMs),5} {r.BoatKn,7:0.0} {r.GainKn / Math.Max(r.GainN, 1),8:0.0} {r.RunKn / Math.Max(r.RunN, 1),7:0.0} " +
+                                      $"{r.GainS / 60,8:0.0} {r.RunS / 60,7:0.0} {fcIn,9:0.0} {r.UnderS / 60,5:0.0} {r.UnderKn / Math.Max(r.UnderS, 1),6:0.0} {r.UnderOwnKn / Math.Max(r.UnderS, 1),6:0.0}  {string.Join("/", r.Hits[1..])}  {string.Join("/", r.OutBy[1..])}  {r.Why}");
+                }
                 // the forecast again at other run-in hit shares (MatchupRunInHitShare), each attack on its own terms
                 foreach (double share in new[] { 0.2, 0.4, 0.6, 0.8, 1.0 })
                 {

@@ -763,12 +763,14 @@ public static class Matchup
                 continue;
             sel.Clear();
             sel[i] = true;
-            var (inMin, midM) = RunIn(Math.Min(reachB, seenA[i]), e.SpeedKn, fireM);
+            var run = RunIn(Math.Min(reachB, seenA[i]), e.SpeedKn, SpeedOf(b), fireM, s);
             outB.Clear();
             Torpedoes(a, sel, b, fireM, s, outB, none, 1, !dark);
             double torpedoes = Lost(b, outB);
             outB.Clear();
-            Guns(a, sel, default, b, default, default, midM, midM, midM, 2 * inMin, seenB, s, outB);
+            Guns(a, sel, default, b, default, default, run.FarMidM, run.FarMidM, run.FarMidM, run.FarMin, seenB, s, outB);
+            Guns(a, sel, default, b, default, default, run.NearMidM, run.NearMidM, run.NearMidM, run.NearMin, seenB, s, outB);
+            Guns(a, sel, default, b, default, default, run.OutMidM, run.OutMidM, run.OutMidM, run.OutMin, seenB, s, outB);
             Guns(a, sel, default, b, default, default, fireM, fireM, fireM, s.MatchupTorpedoFireMin, seenB, s, outB);
             if (torpedoes > Lost(b, outB))
                 mask |= 1UL << i;
@@ -818,21 +820,24 @@ public static class Matchup
         // the lines closing to the range from where the fight opened, under fire through the ranges between (opening it
         // is turning away: what a faster pursuer makes of that is who picks the range); the attackers run in on their own,
         // below
-        var (closeMin, closeMid) = openM > rangeM ? RunIn(openM, closeKn, rangeM) : (0, rangeM);
+        var (closeMin, closeMid) = openM > rangeM ? ((openM - rangeM) / (Math.Max(closeKn, 1) * Handling.MsPerKnot) / 60, (openM + rangeM) / 2) : (0, rangeM);
         Guns(a, lineA, default, b, lineB, default, closeMid, closeMid, closeMid, closeMin, seenB, s, outB);
         Guns(b, lineB, default, a, lineA, default, closeMid, closeMid, closeMid, closeMin, seenA, s, outA);
 
-        // the attacks: in, the salvo, fired, and out; the lines fighting on beside them
-        double inMinA = 0, inMinB = 0, midA = rangeM, midB = rangeM;
+        // the attacks: in (to where the defence turns away, then in on her as she does), the salvo, fired, and out; the lines
+        // fighting on beside them
+        RunInTimes runA = new(0, rangeM, 0, rangeM, 0, rangeM), runB = runA;
         if (attackA > 0)
-            (inMinA, midA) = RunIn(a, inA, b, attackA, seenA);
+            runA = RunIn(a, inA, b, attackA, seenA, s);
         if (attackB > 0)
-            (inMinB, midB) = RunIn(b, inB, a, attackB, seenB);
-        double inMin = Math.Max(inMinA, inMinB), fireMin = attackA > 0 || attackB > 0 ? s.MatchupTorpedoFireMin : 0, runIn = 0;
+            runB = RunIn(b, inB, a, attackB, seenB, s);
+        double farMin = Math.Max(runA.FarMin, runB.FarMin), nearMin = Math.Max(runA.NearMin, runB.NearMin), outMin = Math.Max(runA.OutMin, runB.OutMin);
+        double fireMin = attackA > 0 || attackB > 0 ? s.MatchupTorpedoFireMin : 0, runIn = 0;
         double torpOnA = 0, torpOnB = 0, takenT = 0, lostT = 0;
         if (attackA > 0 || attackB > 0)
         {
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
+            Phase(a, inA, b, inB, rangeM, runA.FarMidM, runB.FarMidM, farMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
+            Phase(a, inA, b, inB, rangeM, runA.NearMidM, runB.NearMidM, nearMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
             runIn = Sum(outA, inA) + Sum(outB, inB);
             // the salvos are fired at once: each side's boats still in it as they were before either
             outA.CopyTo(preA);
@@ -850,12 +855,12 @@ public static class Matchup
             if (attackB > 0)
                 torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1, !dark);
             Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, seenA, seenB, s, outA, outB);
-            Phase(a, inA, b, inB, rangeM, midA, midB, inMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
+            Phase(a, inA, b, inB, rangeM, runA.OutMidM, runB.OutMidM, outMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
             if (attackA > 0)
                 lostT = Tonnes(a, outA, inA);
         }
         // the attackers are out of it: the lines alone for the rest of the fight
-        double attackMin = 2 * inMin + fireMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
+        double attackMin = farMin + nearMin + fireMin + outMin, rest = Math.Max(s.MatchupFightMin - attackMin, 0);
         LinesFight(a, lineA, b, lineB, rangeM, rest, seenA, seenB, s, outA, outB);
         outA.CopyTo(preA);
         outB.CopyTo(preB);
@@ -891,23 +896,46 @@ public static class Matchup
         return r;
     }
 
-    /// <summary>An attack's run in: minutes from where the defence's guns open (their reach, or where the first of the
-    /// attackers is made out if that's less) to the firing range at the attackers' speed, and the mean range on the way.</summary>
-    static (double Minutes, double MidM) RunIn(ReadOnlySpan<MatchupEntry> att, ReadOnlySpan<bool> inAtt, ReadOnlySpan<MatchupEntry> def, double fireM,
-        ReadOnlySpan<double> seenAtt)
+    /// <summary>An attack's run in and out, each stretch's minutes and mean range
+    /// (<see cref="RunIn(double, double, double, double, SimSettings)"/>).</summary>
+    readonly record struct RunInTimes(double FarMin, double FarMidM, double NearMin, double NearMidM, double OutMin, double OutMidM);
+
+    /// <summary>An attack's run in and out (<see cref="RunIn(double, double, double, double, SimSettings)"/>): from where the
+    /// defence's guns open (their reach, or where the first of the attackers is made out if that's less), at the slowest
+    /// attacker's speed, on the defence at its slowest ship's.</summary>
+    static RunInTimes RunIn(ReadOnlySpan<MatchupEntry> att, ReadOnlySpan<bool> inAtt, ReadOnlySpan<MatchupEntry> def, double fireM,
+        ReadOnlySpan<double> seenAtt, SimSettings s)
     {
         double kn = double.MaxValue, seen = 0;
         for (int i = 0; i < att.Length; i++)
             if (inAtt[i])
                 (kn, seen) = (Math.Min(kn, att[i].SpeedKn), Math.Max(seen, seenAtt[i]));
-        return RunIn(Math.Min(MaxReach(def), seen), kn == double.MaxValue ? 1 : kn, fireM);
+        return RunIn(Math.Min(MaxReach(def), seen), kn == double.MaxValue ? 1 : kn, SpeedOf(def), fireM, s);
     }
 
-    /// <summary>A run in at a speed from where the defence's guns open to the firing range: its minutes, and its mean range.</summary>
-    static (double Minutes, double MidM) RunIn(double openM, double kn, double fireM)
+    /// <summary>A run in from where the defence's guns open to the firing range, and out again (docs/battle/balance.md P11,
+    /// "the gain under fire"): at the attackers' speed to where the defence sees the attack coming
+    /// (<see cref="SimSettings.TorpedoThreatM"/>) and turns away from it (doctrine's TurnAwayDeg; every navy's), then in on
+    /// her as she does at their speed less hers (as the torpedo law times the run: the Bosporus's 24 kn boats on 13 kn
+    /// ironclads were under fire three times what a straight run gave, most of it at the short range); out again straight at
+    /// their own. Each stretch's minutes and mean range.</summary>
+    static RunInTimes RunIn(double openM, double kn, double defKn, double fireM, SimSettings s)
     {
         double ms = Math.Max(kn, 1) * Handling.MsPerKnot;
-        return (Math.Max(openM - fireM, 0) / ms / 60, (Math.Max(openM, fireM) + fireM) / 2);
+        double closing = Math.Max(kn - defKn, s.MatchupSpeedMarginKn) * Handling.MsPerKnot;
+        double far = Math.Max(openM, fireM), turn = Math.Clamp(s.TorpedoThreatM, fireM, far);
+        return new RunInTimes((far - turn) / ms / 60, (far + turn) / 2, (turn - fireM) / closing / 60, (turn + fireM) / 2,
+            (far - fireM) / ms / 60, (far + fireM) / 2);
+    }
+
+    /// <summary>A side's speed as it steams together: its slowest ship's under way, kn (0 with none).</summary>
+    static double SpeedOf(ReadOnlySpan<MatchupEntry> side)
+    {
+        double kn = double.MaxValue;
+        foreach (ref readonly var e in side)
+            if (e.Count > 0 && e.SpeedKn > 0)
+                kn = Math.Min(kn, e.SpeedKn);
+        return kn == double.MaxValue ? 0 : kn;
     }
 
     /// <summary>A stretch of an attack: every ship of both sides fires (the lines at each other at the lines' range, at

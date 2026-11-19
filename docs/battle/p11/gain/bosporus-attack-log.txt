@@ -1,0 +1,472 @@
+The Bosporus coup, 1896: 23 ships, 2 sides, from 1896-12-15 05:30:00.000 until 1896-12-15 14:45:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+ATTACK 1896 g6 07:15 Gain  range  13.4 km off his bow   45° heavy  11.2 km; guide 18.4 kn hdg  348 order Course adm Fight; target Ekaterina II-l 12.4 kn hdg  285; line 6
+ATTACK 1896 g6 07:16 Gain  range  12.5 km off his bow   35° heavy  10.4 km; guide 21.8 kn hdg   62 order Course adm Fight; target Ekaterina II-l 12.7 kn hdg  275; line 6
+ATTACK 1896 g6 07:17 Gain  range  11.6 km off his bow   48° heavy   9.5 km; guide 22.0 kn hdg   61 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  286; line 6
+ATTACK 1896 g6 07:18 Gain  range  10.6 km off his bow   51° heavy   8.7 km; guide 22.0 kn hdg   58 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  287; line 6
+ATTACK 1896 g6 07:19 Gain  range   9.7 km off his bow   51° heavy   8.0 km; guide 22.0 kn hdg   56 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  286; line 6
+ATTACK 1896 g6 07:20 Gain  range   8.8 km off his bow   68° heavy   7.2 km; guide 22.0 kn hdg   54 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  300; line 6
+ATTACK 1896 g6 07:21 Gain  range   8.1 km off his bow   93° heavy   6.6 km; guide 22.0 kn hdg   50 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  322; line 6
+ATTACK 1896 g6 07:22 Gain  range   7.4 km off his bow   98° heavy   6.1 km; guide 22.0 kn hdg   40 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  325; line 6
+ATTACK 1896 g6 07:23 Gain  range   6.8 km off his bow  101° heavy   5.6 km; guide 22.0 kn hdg   31 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:24 Gain  range   6.3 km off his bow  102° heavy   5.2 km; guide 22.0 kn hdg   22 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:25 Gain  range   5.8 km off his bow  103° heavy   4.9 km; guide 18.9 kn hdg  315 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:26 Gain  range   6.2 km off his bow  101° heavy   5.4 km; guide 21.9 kn hdg  284 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:27 Gain  range   6.6 km off his bow   99° heavy   5.9 km; guide 22.0 kn hdg  285 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:28 Gain  range   7.0 km off his bow   98° heavy   6.4 km; guide 22.0 kn hdg  287 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:29 Gain  range   7.4 km off his bow   96° heavy   7.0 km; guide 22.0 kn hdg  288 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:30 Run   range   7.3 km off his bow   95° heavy   7.0 km; guide 21.5 kn hdg   14 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:31 Run   range   6.7 km off his bow   96° heavy   6.7 km; guide 22.0 kn hdg   17 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:32 Run   range   6.2 km off his bow   96° heavy   6.2 km; guide 22.0 kn hdg   17 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:33 Run   range   5.7 km off his bow   96° heavy   5.7 km; guide 22.0 kn hdg   17 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g6 07:34 Run   range   5.2 km off his bow   97° heavy   5.2 km; guide 22.0 kn hdg   15 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g4 07:35 Gain  range  19.2 km off his bow  131° heavy  19.1 km; guide 21.6 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:35 Gain  range  19.6 km off his bow  119° heavy  19.6 km; guide 21.8 kn hdg    7 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:35 Run   range   4.6 km off his bow   97° heavy   4.6 km; guide 22.0 kn hdg   16 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g4 07:36 Gain  range  18.8 km off his bow  131° heavy  18.7 km; guide 22.0 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:36 Gain  range  19.1 km off his bow  119° heavy  19.1 km; guide 22.0 kn hdg    6 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:36 Run   range   4.1 km off his bow   97° heavy   4.1 km; guide 22.0 kn hdg   16 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g4 07:37 Gain  range  18.4 km off his bow  131° heavy  18.4 km; guide 22.0 kn hdg  353 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:37 Gain  range  18.7 km off his bow  119° heavy  18.7 km; guide 22.0 kn hdg    5 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:37 Run   range   3.6 km off his bow   98° heavy   3.6 km; guide 20.0 kn hdg   15 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g4 07:38 Gain  range  18.0 km off his bow  131° heavy  18.0 km; guide 22.0 kn hdg  353 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:38 Gain  range  18.3 km off his bow  120° heavy  18.3 km; guide 22.0 kn hdg    4 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:38 Run   range   3.1 km off his bow   99° heavy   3.1 km; guide 19.8 kn hdg   14 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 6
+ATTACK 1896 g4 07:39 Gain  range  17.7 km off his bow  131° heavy  17.7 km; guide 22.0 kn hdg  352 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:39 Gain  range  17.8 km off his bow  120° heavy  17.8 km; guide 22.0 kn hdg    4 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:39 Run   range   2.7 km off his bow  101° heavy   2.7 km; guide 19.7 kn hdg   13 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:40 Gain  range  17.3 km off his bow  132° heavy  17.3 km; guide 22.0 kn hdg  352 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:40 Gain  range  17.4 km off his bow  120° heavy  17.4 km; guide 22.0 kn hdg    3 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:40 Run   range   2.3 km off his bow  103° heavy   2.3 km; guide 19.6 kn hdg   12 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:41 Gain  range  17.0 km off his bow  132° heavy  16.9 km; guide 22.0 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:41 Gain  range  17.0 km off his bow  121° heavy  17.0 km; guide 22.0 kn hdg    2 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:41 Away  range   1.8 km off his bow  105° heavy   1.8 km; guide 18.9 kn hdg  358 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:42 Gain  range  16.6 km off his bow  132° heavy  16.6 km; guide 22.0 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:42 Gain  range  16.6 km off his bow  121° heavy  16.6 km; guide 22.0 kn hdg    1 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:42 Away  range   2.1 km off his bow  105° heavy   2.1 km; guide 17.7 kn hdg  231 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:43 Gain  range  16.2 km off his bow  132° heavy  16.2 km; guide 22.0 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:43 Gain  range  16.1 km off his bow  121° heavy  16.1 km; guide 22.0 kn hdg    1 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:43 Away  range   2.8 km off his bow  113° heavy   2.8 km; guide 19.4 kn hdg  215 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:44 Gain  range  15.9 km off his bow  132° heavy  15.9 km; guide 22.0 kn hdg  350 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:44 Gain  range  15.7 km off his bow  122° heavy  15.7 km; guide 22.0 kn hdg  360 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:44 Gain  range   3.6 km off his bow  119° heavy   3.6 km; guide 18.9 kn hdg  220 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:45 Gain  range  15.5 km off his bow  132° heavy  15.5 km; guide 22.0 kn hdg  349 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:45 Gain  range  15.3 km off his bow  122° heavy  15.3 km; guide 22.0 kn hdg  359 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:45 Gain  range   4.1 km off his bow  118° heavy   4.1 km; guide 19.2 kn hdg  282 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:46 Gain  range  15.2 km off his bow  132° heavy  15.2 km; guide 22.0 kn hdg  348 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:46 Gain  range  14.9 km off his bow  122° heavy  14.9 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:46 Gain  range   4.4 km off his bow  115° heavy   4.4 km; guide 19.4 kn hdg  283 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:47 Gain  range  14.8 km off his bow  132° heavy  14.8 km; guide 22.0 kn hdg  348 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:47 Gain  range  14.5 km off his bow  122° heavy  14.5 km; guide 22.0 kn hdg  357 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:47 Gain  range   4.7 km off his bow  112° heavy   4.7 km; guide 18.7 kn hdg  285 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:48 Gain  range  14.5 km off his bow  132° heavy  14.5 km; guide 22.0 kn hdg  347 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g5 07:48 Gain  range  14.1 km off his bow  122° heavy  14.1 km; guide 22.0 kn hdg  356 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 3
+ATTACK 1896 g6 07:48 Gain  range   5.1 km off his bow  110° heavy   5.1 km; guide 18.6 kn hdg  286 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  325; line 5
+ATTACK 1896 g4 07:49 Gain  range  14.1 km off his bow  103° heavy  14.1 km; guide 22.0 kn hdg  346 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  296; line 3
+ATTACK 1896 g5 07:49 Gain  range  13.7 km off his bow   93° heavy  13.7 km; guide 22.0 kn hdg  355 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  296; line 3
+ATTACK 1896 g6 07:49 Gain  range   5.3 km off his bow   79° heavy   5.3 km; guide 18.6 kn hdg  287 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  296; line 5
+ATTACK 1896 g4 07:50 Away  range  14.0 km off his bow   74° heavy  14.0 km; guide 19.2 kn hdg  212 order Run adm Fight; target Ekaterina II-l 12.8 kn hdg  267; line 3
+ATTACK 1896 g5 07:50 Away  range  13.6 km off his bow   64° heavy  13.6 km; guide 19.2 kn hdg  221 order Run adm Fight; target Ekaterina II-l 12.8 kn hdg  267; line 3
+ATTACK 1896 g6 07:50 Gain  range   5.4 km off his bow   48° heavy   5.4 km; guide 18.6 kn hdg  288 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  267; line 5
+ATTACK 1896 g4 07:51 Away  range  14.5 km off his bow   59° heavy  14.5 km; guide 22.0 kn hdg  192 order Run adm Fight; target Ekaterina II-l 12.8 kn hdg  251; line 3
+ATTACK 1896 g5 07:51 Away  range  14.0 km off his bow   49° heavy  14.0 km; guide 22.0 kn hdg  202 order Run adm Fight; target Ekaterina II-l 12.8 kn hdg  251; line 3
+ATTACK 1896 g6 07:51 Run   range   5.0 km off his bow   29° heavy   5.0 km; guide 17.1 kn hdg  359 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  251; line 5
+ATTACK 1896 g4 07:52 Away  range  15.0 km off his bow   68° heavy  15.0 km; guide 22.0 kn hdg  191 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  259; line 3
+ATTACK 1896 g5 07:52 Away  range  14.4 km off his bow   58° heavy  14.4 km; guide 22.0 kn hdg  201 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  259; line 3
+ATTACK 1896 g6 07:52 Run   range   4.2 km off his bow   37° heavy   4.2 km; guide 18.5 kn hdg   27 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  259; line 5
+ATTACK 1896 g4 07:53 Gain  range  15.2 km off his bow  101° heavy  15.2 km; guide 19.1 kn hdg  324 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  292; line 3
+ATTACK 1896 g5 07:53 Gain  range  14.7 km off his bow   91° heavy  14.7 km; guide 18.6 kn hdg  325 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  292; line 3
+ATTACK 1896 g6 07:53 Run   range   3.4 km off his bow   72° heavy   3.4 km; guide 18.4 kn hdg   13 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  292; line 5
+ATTACK 1896 g4 07:54 Gain  range  14.8 km off his bow  106° heavy  14.8 km; guide 22.0 kn hdg  344 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  297; line 3
+ATTACK 1896 g5 07:54 Gain  range  14.1 km off his bow   97° heavy  14.1 km; guide 22.0 kn hdg  353 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  297; line 3
+ATTACK 1896 g6 07:54 Run   range   4.5 km off his bow   88° heavy   4.5 km; guide 15.2 kn hdg  346 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  297; line 4
+ATTACK 1896 g4 07:55 Gain  range  14.3 km off his bow  107° heavy  14.3 km; guide 22.0 kn hdg  342 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 07:55 Gain  range  13.6 km off his bow   98° heavy  13.6 km; guide 22.0 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 07:55 Run   range   4.1 km off his bow   90° heavy   4.1 km; guide 16.0 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 07:56 Gain  range  13.8 km off his bow  108° heavy  13.8 km; guide 22.0 kn hdg  342 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 07:56 Gain  range  13.1 km off his bow   98° heavy  13.1 km; guide 22.0 kn hdg  350 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 07:56 Run   range   3.6 km off his bow   92° heavy   3.6 km; guide 16.0 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 07:57 Gain  range  13.3 km off his bow  108° heavy  13.3 km; guide 22.0 kn hdg  341 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 07:57 Gain  range  12.5 km off his bow   98° heavy  12.5 km; guide 22.0 kn hdg  349 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 07:57 Run   range   3.2 km off his bow   94° heavy   3.2 km; guide 15.9 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 07:58 Gain  range  12.9 km off his bow  108° heavy  12.9 km; guide 22.0 kn hdg  339 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 07:58 Gain  range  12.0 km off his bow   98° heavy  12.0 km; guide 22.0 kn hdg  347 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 07:58 Run   range   2.9 km off his bow   97° heavy   2.9 km; guide 13.7 kn hdg  349 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 07:59 Gain  range  12.4 km off his bow  108° heavy  12.4 km; guide 22.0 kn hdg  338 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 07:59 Gain  range  11.5 km off his bow   98° heavy  11.5 km; guide 22.0 kn hdg  345 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 07:59 Run   range   2.6 km off his bow  101° heavy   2.6 km; guide 13.1 kn hdg  346 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 08:00 Gain  range  12.0 km off his bow  108° heavy  12.0 km; guide 22.0 kn hdg  336 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:00 Gain  range  11.0 km off his bow   99° heavy  11.0 km; guide 22.0 kn hdg  343 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:00 Run   range   2.3 km off his bow  105° heavy   2.3 km; guide 13.0 kn hdg  342 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 4
+ATTACK 1896 g4 08:01 Gain  range  11.5 km off his bow  109° heavy  11.5 km; guide 22.0 kn hdg  335 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:01 Gain  range  10.5 km off his bow   98° heavy  10.5 km; guide 22.0 kn hdg  341 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:01 Away  range   2.4 km off his bow  113° heavy   2.4 km; guide 15.4 kn hdg  333 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g4 08:02 Gain  range  11.1 km off his bow  108° heavy  11.1 km; guide 22.0 kn hdg  334 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:02 Gain  range  10.0 km off his bow   98° heavy  10.0 km; guide 22.0 kn hdg  339 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:02 Away  range   2.6 km off his bow  112° heavy   2.6 km; guide 19.8 kn hdg  198 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g4 08:03 Gain  range  10.7 km off his bow  108° heavy  10.7 km; guide 22.0 kn hdg  332 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:03 Gain  range   9.6 km off his bow   98° heavy   9.6 km; guide 22.0 kn hdg  337 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:03 Away  range   3.4 km off his bow  118° heavy   3.4 km; guide 22.0 kn hdg  181 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g4 08:04 Gain  range  10.2 km off his bow  108° heavy  10.2 km; guide 22.0 kn hdg  331 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:04 Gain  range   9.1 km off his bow   98° heavy   9.1 km; guide 22.0 kn hdg  335 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:04 Gain  range   4.3 km off his bow  123° heavy   4.3 km; guide 20.1 kn hdg  205 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g4 08:05 Gain  range   9.9 km off his bow  108° heavy   9.9 km; guide 22.0 kn hdg  329 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g5 08:05 Gain  range   8.7 km off his bow   97° heavy   8.7 km; guide 22.0 kn hdg  333 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g6 08:05 Gain  range   4.8 km off his bow  120° heavy   4.8 km; guide 21.9 kn hdg  250 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  297; line 3
+ATTACK 1896 g4 08:06 Gain  range   9.5 km off his bow  104° heavy   9.5 km; guide 22.0 kn hdg  327 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:06 Gain  range   8.6 km off his bow   93° heavy   8.6 km; guide 21.4 kn hdg  269 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:06 Gain  range   5.2 km off his bow  114° heavy   5.2 km; guide 22.0 kn hdg  252 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:07 Gain  range   8.9 km off his bow   72° heavy   8.9 km; guide 22.0 kn hdg  325 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  262; line 3
+ATTACK 1896 g5 08:07 Gain  range   8.7 km off his bow   59° heavy   8.7 km; guide 21.5 kn hdg  297 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  262; line 3
+ATTACK 1896 g6 08:07 Gain  range   5.4 km off his bow   79° heavy   5.4 km; guide 22.0 kn hdg  254 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  262; line 3
+ATTACK 1896 g4 08:08 Run   range   8.3 km off his bow   62° heavy   8.3 km; guide 22.0 kn hdg  329 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  253; line 3
+ATTACK 1896 g5 08:08 Run   range   8.2 km off his bow   49° heavy   8.2 km; guide 21.6 kn hdg  341 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  253; line 3
+ATTACK 1896 g6 08:08 Gain  range   5.6 km off his bow   67° heavy   5.6 km; guide 22.0 kn hdg  255 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  253; line 3
+ATTACK 1896 g4 08:09 Run   range   7.6 km off his bow   89° heavy   7.6 km; guide 22.0 kn hdg  342 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  280; line 3
+ATTACK 1896 g5 08:09 Run   range   7.4 km off his bow   75° heavy   7.4 km; guide 22.0 kn hdg  360 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  280; line 3
+ATTACK 1896 g6 08:09 Gain  range   5.7 km off his bow   91° heavy   5.7 km; guide 22.0 kn hdg  257 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  280; line 3
+ATTACK 1896 g4 08:10 Run   range   7.0 km off his bow  101° heavy   7.0 km; guide 22.0 kn hdg  343 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  292; line 3
+ATTACK 1896 g5 08:10 Run   range   6.8 km off his bow   88° heavy   6.8 km; guide 22.0 kn hdg    1 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  292; line 3
+ATTACK 1896 g6 08:10 Gain  range   6.0 km off his bow  101° heavy   6.0 km; guide 22.0 kn hdg  255 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  292; line 3
+ATTACK 1896 g4 08:11 Run   range   6.5 km off his bow  103° heavy   6.5 km; guide 22.0 kn hdg  338 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 3
+ATTACK 1896 g5 08:11 Run   range   6.2 km off his bow   90° heavy   6.2 km; guide 22.0 kn hdg  352 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 3
+ATTACK 1896 g6 08:11 Gain  range   6.4 km off his bow  101° heavy   6.4 km; guide 21.0 kn hdg  275 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 3
+ATTACK 1896 g4 08:12 Run   range   6.1 km off his bow  104° heavy   6.1 km; guide 22.0 kn hdg  337 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:12 Run   range   5.6 km off his bow   91° heavy   5.6 km; guide 22.0 kn hdg  351 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:12 Gain  range   6.3 km off his bow   98° heavy   6.3 km; guide 22.0 kn hdg  301 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:13 Run   range   5.6 km off his bow  104° heavy   5.6 km; guide 22.0 kn hdg  336 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:13 Run   range   5.0 km off his bow   91° heavy   5.0 km; guide 22.0 kn hdg  350 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:13 Gain  range   6.3 km off his bow   96° heavy   6.3 km; guide 21.0 kn hdg  266 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:14 Run   range   5.1 km off his bow  104° heavy   5.1 km; guide 22.0 kn hdg  337 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:14 Run   range   4.5 km off his bow   92° heavy   4.5 km; guide 22.0 kn hdg  350 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:14 Gain  range   6.7 km off his bow   94° heavy   6.7 km; guide 22.0 kn hdg  258 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:15 Run   range   4.7 km off his bow  104° heavy   4.7 km; guide 22.0 kn hdg  336 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:15 Run   range   3.9 km off his bow   92° heavy   3.9 km; guide 22.0 kn hdg  349 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:15 Gain  range   6.9 km off his bow   93° heavy   6.9 km; guide 21.3 kn hdg  288 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:16 Run   range   4.2 km off his bow  104° heavy   4.2 km; guide 22.0 kn hdg  336 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:16 Run   range   3.4 km off his bow   93° heavy   3.4 km; guide 22.0 kn hdg  349 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:16 Gain  range   6.9 km off his bow   90° heavy   6.9 km; guide 21.8 kn hdg  297 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:17 Run   range   3.7 km off his bow  105° heavy   3.7 km; guide 22.0 kn hdg  337 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:17 Run   range   2.8 km off his bow   93° heavy   2.8 km; guide 21.8 kn hdg  347 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:17 Gain  range   6.8 km off his bow   88° heavy   6.8 km; guide 22.0 kn hdg  306 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:18 Away  range   3.7 km off his bow  104° heavy   3.7 km; guide 18.5 kn hdg  221 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:18 Run   range   2.3 km off his bow   95° heavy   2.3 km; guide 20.0 kn hdg  347 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:18 Gain  range   6.7 km off his bow   86° heavy   6.7 km; guide 22.0 kn hdg  305 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:19 Away  range   4.4 km off his bow  108° heavy   4.4 km; guide 21.9 kn hdg  187 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:19 Run   range   1.8 km off his bow   97° heavy   1.8 km; guide 19.9 kn hdg  346 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:19 Run   range   6.6 km off his bow   84° heavy   6.6 km; guide 20.3 kn hdg  326 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:20 Away  range   5.2 km off his bow  112° heavy   5.2 km; guide 22.0 kn hdg  183 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:20 Run   range   1.4 km off his bow  100° heavy   1.4 km; guide 19.5 kn hdg  342 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g6 08:20 Run   range   6.0 km off his bow   84° heavy   6.0 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g4 08:21 Gain  range   5.9 km off his bow  115° heavy   5.9 km; guide 21.5 kn hdg  248 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  296; line 3
+ATTACK 1896 g5 08:21 Fire  range   1.5 km off his bow  128° heavy   1.5 km; guide 18.6 kn hdg   64 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  296; line 2
+ATTACK 1896 g6 08:21 Run   range   5.4 km off his bow   86° heavy   5.4 km; guide 22.0 kn hdg  357 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  296; line 3
+ATTACK 1896 g4 08:22 Gain  range   6.3 km off his bow  144° heavy   6.3 km; guide 21.3 kn hdg  290 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  329; line 3
+ATTACK 1896 g5 08:22 Away  range   2.1 km off his bow  178° heavy   2.1 km; guide 19.0 kn hdg  148 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  329; line 2
+ATTACK 1896 g6 08:22 Away  range   4.9 km off his bow  119° heavy   4.9 km; guide 21.2 kn hdg  348 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  329; line 3
+ATTACK 1896 g4 08:23 Gain  range   6.3 km off his bow  146° heavy   6.3 km; guide 22.0 kn hdg  299 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  334; line 3
+ATTACK 1896 g5 08:23 Away  range   3.1 km off his bow  177° heavy   3.0 km; guide 19.7 kn hdg  151 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  334; line 2
+ATTACK 1896 g6 08:23 Away  range   5.4 km off his bow  124° heavy   5.4 km; guide 20.8 kn hdg  216 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  334; line 3
+ATTACK 1896 g4 08:24 Gain  range   6.4 km off his bow  141° heavy   6.4 km; guide 22.0 kn hdg  302 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  332; line 3
+ATTACK 1896 g5 08:24 Away  range   4.2 km off his bow  179° heavy   3.8 km; guide 19.6 kn hdg  151 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  332; line 2
+ATTACK 1896 g6 08:24 Away  range   6.3 km off his bow  125° heavy   6.3 km; guide 22.0 kn hdg  208 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  332; line 3
+ATTACK 1896 g4 08:25 Gain  range   6.4 km off his bow  106° heavy   6.4 km; guide 22.0 kn hdg  305 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  300; line 3
+ATTACK 1896 g5 08:25 Gain  range   5.1 km off his bow  152° heavy   4.6 km; guide 19.1 kn hdg  104 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  300; line 2
+ATTACK 1896 g6 08:25 Gain  range   7.1 km off his bow   95° heavy   7.1 km; guide 21.1 kn hdg  220 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  300; line 3
+ATTACK 1896 g4 08:26 Gain  range   6.3 km off his bow   98° heavy   6.3 km; guide 21.1 kn hdg  281 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 3
+ATTACK 1896 g5 08:26 Gain  range   6.0 km off his bow  152° heavy   5.4 km; guide 23.9 kn hdg   94 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 1
+ATTACK 1896 g6 08:26 Gain  range   7.4 km off his bow   89° heavy   7.4 km; guide 21.9 kn hdg  273 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  294; line 3
+ATTACK 1896 g4 08:27 Gain  range   6.2 km off his bow   95° heavy   6.2 km; guide 21.9 kn hdg  303 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:27 Gain  range   6.9 km off his bow  158° heavy   6.2 km; guide 24.0 kn hdg   85 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 1
+ATTACK 1896 g6 08:27 Gain  range   7.5 km off his bow   87° heavy   7.5 km; guide 20.9 kn hdg  320 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 2
+ATTACK 1896 g4 08:28 Gain  range   6.2 km off his bow   93° heavy   6.2 km; guide 21.7 kn hdg  302 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:28 Gain  range   7.7 km off his bow  164° heavy   6.9 km; guide 22.4 kn hdg   48 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 1
+ATTACK 1896 g6 08:28 Gain  range   7.2 km off his bow   85° heavy   7.2 km; guide 22.0 kn hdg  325 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 2
+ATTACK 1896 g4 08:29 Gain  range   6.2 km off his bow   90° heavy   6.2 km; guide 21.7 kn hdg  273 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:29 Gain  range   7.9 km off his bow  170° heavy   7.1 km; guide 24.0 kn hdg   20 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 1
+ATTACK 1896 g6 08:29 Gain  range   6.9 km off his bow   84° heavy   6.9 km; guide 22.0 kn hdg  320 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 2
+ATTACK 1896 g4 08:30 Gain  range   6.5 km off his bow   88° heavy   6.5 km; guide 22.0 kn hdg  272 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 3
+ATTACK 1896 g5 08:30 Gain  range   8.1 km off his bow  175° heavy   7.2 km; guide 24.0 kn hdg   11 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 1
+ATTACK 1896 g6 08:30 Gain  range   6.9 km off his bow   82° heavy   6.9 km; guide 21.9 kn hdg  279 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  294; line 2
+ATTACK 1896 g4 08:31 Gain  range   6.6 km off his bow   55° heavy   6.6 km; guide 21.7 kn hdg  296 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  263; line 3
+ATTACK 1896 g5 08:31 Gain  range   8.3 km off his bow  150° heavy   7.3 km; guide 24.0 kn hdg    4 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  263; line 1
+ATTACK 1896 g6 08:31 Gain  range   7.0 km off his bow   48° heavy   7.0 km; guide 22.0 kn hdg  279 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  263; line 2
+ATTACK 1896 g4 08:32 Gain  range   6.4 km off his bow   40° heavy   6.4 km; guide 21.7 kn hdg  304 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  251; line 3
+ATTACK 1896 g5 08:32 Gain  range   8.8 km off his bow  144° heavy   7.8 km; guide 23.9 kn hdg   54 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  251; line 1
+ATTACK 1896 g6 08:32 Gain  range   7.0 km off his bow   34° heavy   7.0 km; guide 22.0 kn hdg  281 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  251; line 2
+ATTACK 1896 g4 08:33 Run   range   6.1 km off his bow   33° heavy   6.1 km; guide 19.1 kn hdg    0 order Course adm Fight; target Ekaterina II-l 12.7 kn hdg  247; line 3
+ATTACK 1896 g5 08:33 Gain  range   9.5 km off his bow  145° heavy   8.5 km; guide 23.9 kn hdg   49 order Course adm Fight; target Ekaterina II-l 12.7 kn hdg  247; line 1
+ATTACK 1896 g6 08:33 Gain  range   7.0 km off his bow   28° heavy   7.0 km; guide 18.5 kn hdg  203 order Course adm Fight; target Ekaterina II-l 12.7 kn hdg  247; line 2
+ATTACK 1896 g4 08:34 Run   range   5.2 km off his bow   48° heavy   5.2 km; guide 22.0 kn hdg   14 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  262; line 3
+ATTACK 1896 g5 08:34 Gain  range  10.3 km off his bow  165° heavy   9.3 km; guide 23.9 kn hdg   43 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  262; line 1
+ATTACK 1896 g6 08:34 Run   range   6.9 km off his bow   48° heavy   6.9 km; guide 18.3 kn hdg   73 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  262; line 2
+ATTACK 1896 g4 08:35 Run   range   4.4 km off his bow   82° heavy   4.4 km; guide 22.0 kn hdg    4 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  295; line 3
+ATTACK 1896 g5 08:35 Gain  range  10.9 km off his bow  159° heavy   9.9 km; guide 21.8 kn hdg  338 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  295; line 1
+ATTACK 1896 g6 08:35 Run   range   6.2 km off his bow   84° heavy   6.2 km; guide 21.8 kn hdg    3 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  295; line 2
+ATTACK 1896 g4 08:36 Run   range   3.8 km off his bow   89° heavy   3.8 km; guide 22.0 kn hdg  360 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  301; line 3
+ATTACK 1896 g5 08:36 Gain  range  10.8 km off his bow  151° heavy   9.7 km; guide 23.9 kn hdg  316 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  301; line 1
+ATTACK 1896 g6 08:36 Run   range   5.6 km off his bow   90° heavy   5.6 km; guide 22.0 kn hdg  359 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  301; line 2
+ATTACK 1896 g4 08:37 Run   range   3.2 km off his bow   91° heavy   3.2 km; guide 22.0 kn hdg  359 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  302; line 3
+ATTACK 1896 g5 08:37 Gain  range  10.6 km off his bow  149° heavy   9.5 km; guide 23.9 kn hdg  316 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  302; line 1
+ATTACK 1896 g6 08:37 Run   range   5.0 km off his bow   91° heavy   5.0 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  302; line 2
+ATTACK 1896 g4 08:38 Run   range   2.6 km off his bow   91° heavy   2.6 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 3
+ATTACK 1896 g5 08:38 Gain  range  10.4 km off his bow  147° heavy   9.3 km; guide 23.9 kn hdg  315 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:38 Run   range   4.5 km off his bow   92° heavy   4.5 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g4 08:39 Run   range   2.1 km off his bow   92° heavy   2.1 km; guide 22.0 kn hdg  357 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 3
+ATTACK 1896 g5 08:39 Gain  range  10.3 km off his bow  145° heavy   9.1 km; guide 23.9 kn hdg  315 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:39 Run   range   3.9 km off his bow   92° heavy   3.9 km; guide 22.0 kn hdg  357 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g4 08:40 Run   range   1.5 km off his bow   93° heavy   1.5 km; guide 22.0 kn hdg  356 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:40 Away  range  10.5 km off his bow  143° heavy   9.3 km; guide 20.8 kn hdg   66 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:40 Run   range   3.3 km off his bow   93° heavy   3.3 km; guide 22.0 kn hdg  357 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:41 Away  range  11.6 km off his bow  144° heavy  10.4 km; guide 23.9 kn hdg   86 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:41 Run   range   2.8 km off his bow   94° heavy   2.8 km; guide 22.0 kn hdg  358 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:42 Away  range  12.6 km off his bow  145° heavy  11.4 km; guide 23.9 kn hdg   87 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:42 Run   range   2.2 km off his bow   95° heavy   2.2 km; guide 22.0 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:43 Gain  range  13.4 km off his bow  145° heavy  12.2 km; guide 20.1 kn hdg  332 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:43 Run   range   1.7 km off his bow   96° heavy   1.7 km; guide 22.0 kn hdg  354 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:44 Gain  range  13.2 km off his bow  144° heavy  12.0 km; guide 23.8 kn hdg  300 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g6 08:44 Fire  range   1.2 km off his bow   99° heavy   1.2 km; guide 18.5 kn hdg   17 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 2
+ATTACK 1896 g5 08:45 Gain  range  12.9 km off his bow  143° heavy  11.7 km; guide 23.9 kn hdg  300 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:46 Gain  range  12.6 km off his bow  143° heavy  11.4 km; guide 23.9 kn hdg  300 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:47 Gain  range  12.3 km off his bow  142° heavy  11.1 km; guide 23.9 kn hdg  300 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:48 Gain  range  12.1 km off his bow  141° heavy  10.6 km; guide 23.9 kn hdg  302 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:49 Gain  range  11.8 km off his bow  140° heavy  10.1 km; guide 23.9 kn hdg  305 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:50 Gain  range  11.6 km off his bow  139° heavy   9.9 km; guide 23.9 kn hdg  305 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  302; line 1
+ATTACK 1896 g5 08:51 Gain  range  11.3 km off his bow  117° heavy   9.8 km; guide 23.9 kn hdg  305 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  322; line 1
+ATTACK 1896 g5 08:52 Gain  range  11.0 km off his bow  152° heavy   9.6 km; guide 23.9 kn hdg  304 order Course adm Fight; target Ekaterina II-l 12.7 kn hdg  286; line 1
+ATTACK 1896 g5 08:53 Gain  range  10.8 km off his bow  127° heavy   9.5 km; guide 23.9 kn hdg  302 order Course adm Fight; target Ekaterina II-l 12.8 kn hdg  310; line 1
+ATTACK 1896 g5 08:54 Gain  range  10.5 km off his bow  122° heavy   9.3 km; guide 23.9 kn hdg  299 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  314; line 1
+ATTACK 1896 g5 08:55 Gain  range  10.2 km off his bow  125° heavy   9.0 km; guide 23.9 kn hdg  300 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  310; line 1
+ATTACK 1896 g5 08:56 Gain  range   9.9 km off his bow  129° heavy   8.7 km; guide 23.9 kn hdg  302 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  305; line 1
+ATTACK 1896 g5 08:57 Gain  range   9.7 km off his bow  128° heavy   8.5 km; guide 23.9 kn hdg  303 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  304; line 1
+ATTACK 1896 g5 08:58 Away  range   9.9 km off his bow  135° heavy   8.7 km; guide 20.7 kn hdg   49 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  296; line 1
+ATTACK 1896 g5 08:59 Away  range  10.9 km off his bow  136° heavy   9.7 km; guide 23.9 kn hdg   72 order Run adm Fight; target Ekaterina II-l 13.0 kn hdg  296; line 1
+ATTACK 1896 g5 09:00 Away  range  11.8 km off his bow  116° heavy  10.7 km; guide 23.9 kn hdg   73 order Run adm Fight; target Ekaterina II-l 12.9 kn hdg  318; line 1
+ATTACK 1896 g5 09:01 Gain  range  12.5 km off his bow  113° heavy  11.3 km; guide 19.8 kn hdg  323 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  321; line 1
+ATTACK 1896 g5 09:02 Gain  range  12.0 km off his bow  115° heavy  10.9 km; guide 23.8 kn hdg  267 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  319; line 1
+ATTACK 1896 g5 09:03 Gain  range  11.6 km off his bow  141° heavy  10.4 km; guide 23.9 kn hdg  268 order Course adm Fight; target Ekaterina II-l 12.9 kn hdg  295; line 1
+ATTACK 1896 g5 09:04 Gain  range  11.2 km off his bow  144° heavy   9.9 km; guide 23.9 kn hdg  269 order Course adm Fight; target Ekaterina II-l 13.0 kn hdg  291; line 1
+
+the timeline:
+  05:30 (+0:00)  Ottoman Empire's commander: 3rd Torpedo Boat Division to screen Armoured Squadron (idle)
+  05:30 (+0:00)  Ottoman Empire's commander: 2nd Torpedo Boat Division to screen Armoured Squadron (idle)
+  05:30 (+0:00)  Ottoman Empire's commander: 1st Torpedo Boat Division to screen Armoured Squadron (idle)
+  05:30 (+0:00)  Ottoman Empire's commander: Armoured Squadron to search (idle)
+  05:31 (+0:01)  the sides meet (the first encounter opens)
+  05:31 (+0:01)  Ottoman Empire's commander: no contact
+  05:31 (+0:01)  Russia's commander: Transports to go to (reach)
+  05:32 (+0:02)  Russia's commander: no contact
+  07:12 (+1:42)  Russia sights Avnillah
+  07:13 (+1:43)  Russia's commander: Transports to withdraw (reach)
+  07:13 (+1:43)  Ottoman Empire sights Ekaterina II
+  07:14 (+1:44)  Russia's commander: battle
+  07:14 (+1:44)  Ottoman Empire's commander: 3rd Torpedo Boat Division to attack (battle)
+  07:15 (+1:45)  Ottoman Empire's commander: battle
+  07:17 (+1:47)  Russia opens fire: Sinop at Sahab
+  07:25 (+1:55)  Russia's first hit: Ekaterina II on Galata
+  07:34 (+2:04)  Ottoman Empire's commander: 2nd Torpedo Boat Division to attack (battle)
+  07:34 (+2:04)  Ottoman Empire's commander: 1st Torpedo Boat Division to attack (battle)
+  07:39 (+2:09)  Ottoman Empire's Satvet falls out: her steering gone
+  07:54 (+2:24)  Ottoman Empire's Sahab falls out: listing
+  07:58 (+2:28)  Ottoman Empire's Sahab: ABANDONED
+  08:01 (+2:31)  Ottoman Empire's Galata falls out: listing
+  08:06 (+2:36)  LOST: Ottoman Empire's Galata, capsized (last hit by Ekaterina II)
+  08:06 (+2:36)  Ottoman Empire's Satvet: ABANDONED
+  08:19 (+2:49)  LOST: Ottoman Empire's Satvet, foundered (last hit by Sinop)
+  08:20 (+2:50)  Ottoman Empire's first torpedoes: Tayyar, 1 at Ekaterina II
+  08:21 (+2:51)  Ottoman Empire's Berk-i Efsan falls out: her main guns out
+  08:26 (+2:56)  Ottoman Empire's Tayyar falls out: her main guns out
+  08:27 (+2:57)  Ottoman Empire's Musul falls out: listing
+  08:38 (+3:08)  Russia's Transports: withdraw done (home)
+  08:40 (+3:10)  Ottoman Empire's Pelengderya falls out: listing
+  08:40 (+3:10)  Ottoman Empire's commander: Armoured Squadron to withdraw (outmatched)
+  08:40 (+3:10)  Ottoman Empire's commander: Sahab to withdraw (outmatched)
+  08:41 (+3:11)  Ottoman Empire's 1st Torpedo Boat Division: attack done (fired)
+  08:41 (+3:11)  Ottoman Empire's commander: retiring (outmatched)
+  08:41 (+3:11)  Ottoman Empire's commander: 1st Torpedo Boat Division to withdraw (outmatched)
+  08:45 (+3:15)  Ottoman Empire's Sultanhisar falls out: her main guns out
+  08:45 (+3:15)  Ottoman Empire's 3rd Torpedo Boat Division: attack done (fired)
+  08:45 (+3:15)  Ottoman Empire's commander: 3rd Torpedo Boat Division to withdraw (outmatched)
+  08:45 (+3:15)  Ottoman Empire's 3rd Torpedo Boat Division (1 ship) regroups into 1st Torpedo Boat Division
+  08:46 (+3:16)  Ottoman Empire's Demirhisar: ABANDONED
+  08:47 (+3:17)  Ottoman Empire's commander: Demirhisar to withdraw (outmatched)
+  08:48 (+3:18)  Ottoman Empire's Ejder falls out: too slow
+  08:50 (+3:20)  Russia's commander: Battleships to withdraw (aims decided)
+  08:51 (+3:21)  Russia's commander: home (aims decided)
+  08:51 (+3:21)  Ottoman Empire's commander: home (aims decided)
+  08:52 (+3:22)  Ottoman Empire's Ejder: ABANDONED
+  08:53 (+3:23)  Ottoman Empire's commander: Ejder to withdraw (aims decided)
+  08:55 (+3:25)  Ottoman Empire's Berk-i Efsan: ABANDONED
+  08:56 (+3:26)  Ottoman Empire's commander: Berk-i Efsan to withdraw (aims decided)
+  08:56 (+3:26)  Ottoman Empire's Pelengderya: ABANDONED
+  08:57 (+3:27)  Ottoman Empire's commander: Pelengderya to withdraw (aims decided)
+  08:58 (+3:28)  LOST: Ottoman Empire's Berk-i Efsan, capsized (last hit by Ekaterina II)
+  09:04 (+3:34)  Ottoman Empire's 2nd Torpedo Boat Division: attack done (lostcontact)
+  09:04 (+3:34)  Ottoman Empire's commander: 2nd Torpedo Boat Division to withdraw (aims decided)
+  09:39 (+4:09)  LOST: Ottoman Empire's Ejder, foundered (last hit by Ekaterina II)
+  09:50 (+4:20)  LOST: Ottoman Empire's Demirhisar, foundered (last hit by Sinop)
+  09:53 (+4:23)  LOST: Ottoman Empire's Pelengderya, capsized (last hit by Ekaterina II)
+  10:01 (+4:31)  Ottoman Empire's Musul: ABANDONED
+  10:02 (+4:32)  Ottoman Empire's commander: Musul to withdraw (aims decided)
+  10:23 (+4:53)  LOST: Ottoman Empire's Musul, capsized (last hit by Chesma)
+  11:21 (+5:51)  LOST: Ottoman Empire's Sahab, foundered (last hit by Chesma)
+  12:26 (+6:56)  LOST: Ottoman Empire's Sultanhisar, foundered (last hit by Sinop)
+  14:27 (+8:57)  LOST: Ottoman Empire's Tayyar, foundered (last hit by Chesma)
+  14:45 (+9:15)  the end: time
+
+the result (time at 14:45 (+9:15), played in 23.0 s):
+  Russia          7 ships     41393 t   lost   0 (      0 t)   damaged afloat   0   afloat   7   hits made  136   torpedoes   0   aims met, score 1.00   men lost 0, saved 0
+  Ottoman Empire   16 ships     27936 t   lost  10 (   4480 t)   damaged afloat   2   afloat   6   hits made    0   torpedoes  10   aims not met, score 0.00   of the lost: taken 0, struck 0, scuttled 0, abandoned 7   men lost 638, saved 143
+  Russia       at the end: 1 units on a task, 1 home, 0 on their first orders, 0 idle; 0 fallen out
+  Ottoman Empire at the end: 1 units on a task, 2 home, 0 on their first orders, 0 idle; 0 fallen out
+  Russia       done? home (aims decided); 4 of 7 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 314 km)
+  Ottoman Empire done? home (aims decided); 2 of 6 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 100 km)
+  at the end 0 units held by the player, 0 out of their lines on tasks; 0 notices raised
+where the time went (3.7 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
+  Commands                    0.02 %      0.000     4447.7 µs   (4.45 ms)
+  Smoke looks                 0.34 %      1.792        1.3 µs   (0.73 ms)
+  Ships: step                35.63 %     19.964       12.3 µs   (0.94 ms)
+  Ships: step, all threads   35.40 %     19.964       12.2 µs   (0.94 ms)
+  Ships: contacts             0.01 %      0.200        0.3 µs   (0.46 ms)
+  Ships: rails check          0.33 %      0.200       11.4 µs   (1.89 ms)
+  Encounters                  0.19 %      0.200        6.6 µs   (3.82 ms)
+  Sighting                   11.52 %      0.998       79.6 µs   (12.13 ms)
+  Ships: coarse               0.09 %      0.001     1065.5 µs   (19.65 ms)
+  ShipSystem                 47.92 %     19.965       16.6 µs   (19.65 ms)
+  ShellSystem                 0.95 %      0.103       63.7 µs   (33.66 ms)
+  GunnerySystem               5.15 %      0.241      147.4 µs   (17.62 ms)
+  DamageSystem                5.84 %      1.588       25.4 µs   (16.77 ms)
+  TorpedoSystem               0.02 %      0.029        5.2 µs   (2.31 ms)
+  Smoke index                 2.14 %      0.400       37.0 µs   (2.79 ms)
+  Smoke merge                 0.90 %      0.998        6.2 µs   (3.57 ms)
+  Smoke queries               1.09 %      0.497       15.1 µs   (4.59 ms)
+  SmokeSystem                 4.56 %      0.999       31.5 µs   (19.73 ms)
+  AI: CommanderLayer          2.14 %     20.000        0.7 µs   (43.00 ms)
+  AI: TaskLayer               0.69 %     19.964        0.2 µs   (0.35 ms)
+  AI: AdmiralLayer            7.53 %     19.964        2.6 µs   (7.83 ms)
+  AI: CaptainLayer           22.20 %     19.964        7.7 µs   (23.32 ms)
+  AiSystem                   34.57 %     79.892        3.0 µs   (43.26 ms)
+  AI: captains, prepared      1.84 %     19.964        0.6 µs   (5.09 ms)
+  AI: captains, the job      19.26 %     19.964        6.7 µs   (13.17 ms)
+  the speed hour by hour: 1207x 1061x 754x 1284x 1735x 1852x 2509x 2308x 2338x
+  main guns: 3 fell out for them, main mounts out 3 of 3 (3 of 3 guns): magazine flooded by the sea 3
+             at the end, 13 ships afloat: main mounts out 0 of 23 (0 of 32 guns)
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 1153 fired, 0 at ships seen done for
+  the state at the end: df5c2c2d5abfa22a
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  day    small  120-200 mm       0-2 km                    61     10   16.4%
+  day    small  120-200 mm       0-2 km          pb        33     20   60.6%
+  day    small  120-200 mm       2-4 km                   394     54   13.7%
+  day    small  120-200 mm       4-6 km                   152      2    1.3%
+  day    small  120-200 mm       6-10 km                   12      0    0.0%
+  day    small  300 mm and over  0-2 km                     4      0    0.0%
+  day    small  300 mm and over  0-2 km          pb        16      3   18.8%
+  day    small  300 mm and over  2-4 km                   172     31   18.0%
+  day    small  300 mm and over  4-6 km                   132      4    3.0%
+  day    small  300 mm and over  6-10 km                  126      3    2.4%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  day Course (Superior) / admiral Fight / task None None                                                    307     81
+  day Station (Superior) / admiral Fight / task None None                                                   373     37
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  0.2-0.5 deg/s          50  11.5%      2    4.0%
+  0.5-1 deg/s            24   5.5%      0    0.0%
+  steady                360  82.9%     36   10.0%
+  under helm, by what she was doing (shells, hits):
+    0.2-0.5 deg/s: Station (Superior) / admiral Fight / in the line                                          16      1
+    0.2-0.5 deg/s: Course (Superior) / admiral Fight / in the line                                           10      0
+    0.5-1 deg/s: Course (Superior) / admiral Fight / in the line                                             10      0
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / the guide                                             8      0
+    0.2-0.5 deg/s: Course (Superior) / admiral Fight / the guide                                              8      0
+    0.2-0.5 deg/s: Fight (Superior) / admiral Fight / the guide                                               8      1
+    0.5-1 deg/s: Course (Superior) / admiral Fight / the guide                                                8      0
+    0.5-1 deg/s: Station (Superior) / admiral Fight / in the line                                             4      0
+    0.5-1 deg/s: Fight (Superior) / admiral Fight / the guide                                                 2      0
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Fight Run                                 157     38
+  day range/band <1/3 vis >12 km / target Course / her admiral Fight Run                                     36     13
+  day range/band 1/3-2/3 vis >12 km / target Home                                                           109     12
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Fight Run                                126     11
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Fight Away                                42     10
+  day range/band <1/3 vis >12 km / target Course / her admiral Fight Fire                                    33      7
+  day range/band <1/3 vis >12 km / target Home                                                                8      5
+  day range/band 1/3-2/3 vis >12 km / target Course                                                          31      4
+  day range/band <1/3 vis >12 km / target away / her admiral Fight                                            4      4
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Fight Gain                                32      3
+  day range/band >2/3 vis >12 km / target Station / her admiral Fight Run                                    31      3
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Fight Fire                                 14      2
+  day range/band 1/3-2/3 vis >12 km / target Run / her admiral Fight Away                                    12      2
+  day range/band <1/3 vis >12 km / target Station / her admiral Course                                       10      2
+  day range/band <1/3 vis >12 km / target Course / her admiral Course                                         4      1
+  day range/band >2/3 vis >12 km / target Course / her admiral Fight Run                                     18      1
+  day range/band <1/3 vis >12 km / target Run / her admiral Fight Away                                        3      0
+  day range/band <1/3 vis >12 km / target Station / her admiral Fight                                         2      0
+  day range/band <1/3 vis >12 km / target fighting / her admiral Fight                                        4      0
+  day range/band >2/3 vis >12 km / target Home                                                                4      0
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+  day: 3 attacks, 12 boats; stopped in Run 1, stopped in Fire 1, stopped in Gain 1
+    gaining  2760 s, running  1020 s; nearest the target  1.4, an enemy heavy ship  1.5, an enemy boat    - km; the signal at  1.5 km (2 made it)
+    hits 6/72/9/12, fallen out 0/0/0/0
+the day attacks' exchange (P11): forecast at their start (the force's: boats and heavy ships within 30 km of the target, on the enemy within 10 km of her; truth) against what they came to 15 min after; lost = the tonnes of its boats out, taken = the tonnes struck by its torpedoes and out
+    seed start boats                  line km lost: fc   real taken: fc    real exch fc   real  torps hits  end
+    1896 07:15 6 Ottoman torpedo boat (Schichau, 1890s)     5.8      NaN   83 %         0       0     NaN   0.00      2    0  stopped in Fire
+    1896 07:35 3 Ottoman torpedo boat (Schichau, 1890s)     5.8      5 %   67 %      1446       0    1.13   0.00      4    0  stopped in Run
+    1896 07:35 3 Ottoman torpedo boat (Schichau, 1890s)     5.8      5 %   67 %      1446       0    1.13   0.00      4    0  stopped in Gain
+  all 3: boats lost forecast 5 % of the attackers, real 75 % of the boats (9 of 12); taken forecast 2892 t, real 0 t (struck 0 t); 10 torpedoes, 0 hits
+  the gain under fire:   seed start boat kn tgt gain tgt run gain min run min fc in min under tgt kn own kn  hits g/r/f/a  out g/r/f/a  why
+                         1896 07:15    24.0     12.9    13.0     46.0    34.0      10.9  78.0   13.0   20.4  6/37/3/11  1/2/0/1  Attack/None
+                         1896 07:35    24.0     13.0    12.9     42.0    17.0      10.9  31.0   12.9   21.7  0/11/3/0  0/0/0/0  Attack/None
+                         1896 07:35    24.0     12.9    13.0     63.0    13.0      10.9  35.0   12.9   22.4  0/24/3/1  1/0/0/1  Attack/None
+    at a run-in share of 0.2: boats lost 4 %, taken 3110 t, the exchange 1.51
+    at a run-in share of 0.4: boats lost 5 %, taken 2892 t, the exchange 1.13
+    at a run-in share of 0.6: boats lost 6 %, taken 2698 t, the exchange 0.90
+    at a run-in share of 0.8: boats lost 7 %, taken 2530 t, the exchange 0.76
+    at a run-in share of 1.0: boats lost 8 %, taken 2389 t, the exchange 0.66
+every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
+  day:
+    2-4 min                        10     0    0.0% (+0 others)  forecast   6.6%   range   1.3 km, set   24 kn, target   13 kn
+    all                            10     0    0.0% (+0 others)  forecast   6.6%   range   1.3 km, set   24 kn, target   13 kn
+    a 30 kn torpedo                10     0    0.0% (+0 others)  forecast   6.6%   range   1.3 km, set   24 kn, target   13 kn
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+  day admiral Fight / task Attack / attack Run / hit by a Capital's secondary guns     49  own 20.0  enemy heavy  2.7  enemy boat    -
+  day admiral Fight / task Attack / attack Run / hit by a Capital's chief guns         23  own 19.8  enemy heavy  2.6  enemy boat    -
+  day going home                                                                       17  own 20.2  enemy heavy  2.7  enemy boat    -
+  day admiral Fight / task Attack / attack Away / hit by a Capital's chief guns         9  own 19.8  enemy heavy  2.7  enemy boat    -
+  day admiral Fight / task Attack / attack Fire / hit by a Capital's secondary guns      7  own 21.2  enemy heavy  1.3  enemy boat    -
+  day admiral Fight / task Attack / its guide fights a Capital / hit by a Capital's secondary guns      4  own 21.7  enemy heavy  1.1  enemy boat    -
+  day alone                                                                             4  own 20.6  enemy heavy  3.1  enemy boat    -
+  day admiral Course / task Withdraw / its guide fights a Capital / hit by a Capital's secondary guns      3  own 21.6  enemy heavy  1.2  enemy boat    -
+  day admiral Fight / task Attack / attack Gain / hit by a Capital's chief guns         3  own 16.8  enemy heavy  6.8  enemy boat    -
+  day admiral Fight / task Attack / attack Gain / hit by a Capital's secondary guns      3  own 20.3  enemy heavy  2.2  enemy boat    -
+  day admiral Fight / task Attack / attack Away / hit by a Capital's secondary guns      2  own 20.8  enemy heavy  2.2  enemy boat    -
+  day admiral Fight / task Attack / attack Fire / hit by a Capital's chief guns         2  own 20.6  enemy heavy  1.8  enemy boat    -
+  day admiral Fight / task Attack / attack Away / its guide fights a Capital / hit by a Capital's secondary guns      1  own 20.9  enemy heavy  1.8  enemy boat    -
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Destroyer by heavier Capital at 2-4 km                                                         8      72    20.4
+  Destroyer by heavier Capital at 0-2 km                                                         1       9    11.0
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutList                                                  3      33    27.4
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutGuns                                                  2       5    27.1
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutGuns                                                   1      23     6.7
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutList                                                   1       7    17.8
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutSpeed                                                  1       9    11.0
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutSteering                                              1       4     2.7
+ships going home under fire: 6 (6 lost by the end), 17 hits on them going home (median 2, the top quarter from 4, the most 10); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 128 shells, 17 hits
+  with none other in reach: 0 shells, 0 hits
+    a fighting enemy in reach seen silent                   128     17
+  a fighting enemy in reach seen silent      day 0-2 km   opening she's quick / Course / admiral Fight / task None                          5      4
+  a fighting enemy in reach seen silent      day 2-4 km   holding she's slow / Course / admiral Fight / task None                          13      4
+  a fighting enemy in reach seen silent      day 0-2 km   opening she's quick / Station / admiral Fight / task None                         3      2
+  a fighting enemy in reach seen silent      day 2-4 km   closing she's slow / Course / admiral Fight / task None                          21      2
+  a fighting enemy in reach seen silent      day 2-4 km   opening she's slow / Station / admiral Fight / task None                         29      2
+  a fighting enemy in reach seen silent      day 2-4 km   closing she's quick / Course / admiral Fight / task None                          5      1
+  a fighting enemy in reach seen silent      day 2-4 km   holding she's slow / Station / admiral Fight / task None                          7      1
+  a fighting enemy in reach seen silent      day 2-4 km   opening she's slow / Course / admiral Fight / task None                          13      1
+  a fighting enemy in reach seen silent      day 0-2 km   closing she's quick / Station / admiral Fight / task None                         4      0
+  a fighting enemy in reach seen silent      day 2-4 km   closing she's quick / Station / admiral Fight / task None                         3      0
+  a fighting enemy in reach seen silent      day 2-4 km   opening she's quick / Station / admiral Fight / task None                        18      0
+  a fighting enemy in reach seen silent      day 4-6 km   holding she's quick / Station / admiral Fight / task None                         4      0
+  a fighting enemy in reach seen silent      day 4-6 km   opening she's slow / Course / admiral Fight / task None                           3      0

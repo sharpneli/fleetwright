@@ -220,6 +220,20 @@ runs 5-7, after its fix, and the Debug run had none.
 
 ## The AI
 
+- [ ] **A flotilla spends the night torpedoing a crippled boat** (found 2026-11-19 in P11's attack log, the Jutland seed
+  1916, 21:51-23:21). A British flotilla of 15 attacks a V1 making 1-5 kn: gains, runs in, fires from 3 km astern of her,
+  turns away and runs in again, five signals over 90 minutes, then takes a König 25 km off. `AdmiralLayer.Biggest` picks
+  the contact by range weighed by `CaptainLayer.TorpedoSized` (a small ship's range counts longer), so a cripple close by
+  beats a battleship far off; and nothing stops an attack on a target its guns would finish. Not chased: the target choice
+  is the allocation's (allocation.md AL7c).
+- [x] **A commander declined, and sent flotillas in, on a contact he hadn't made out** (found 2026-11-19 in P11). A ship
+  seen but not yet made out to her type is weighed as any of the enemy's at sea (Matchups.AddContact, AL7a), so
+  Heligoland's Germans took the first blip in the mist for one-ninth of a battlecruiser and declined at once (0.08 against
+  a bar of 0.4, the whole morning, 7 games in 8), and the Bosporus's commander sent his boats in a minute after first
+  sighting Ekaterina II as if at a troopship (4 of Russia's 7). Fixed: by day his balance (`CommanderLayer.Balance`) and
+  the flotillas' send-in (`FlotillaAttacks.Worth`) judge only what's made out to its type; by night shapes, as before
+  (balance.md "P11").
+
 - [x] **A commander judged his side by its battle line alone** (found 2026-11-16 in BL6, the Yalu: the Beiyang Fleet declined
   at first sight in 16 of 16 seeds). His balance put each top unit in the matchup by its line (`MatchupJudge.AddGroup`),
   and once the force's admiral took its cruiser squadrons off the line as its screen only the two Dingyuans were counted:

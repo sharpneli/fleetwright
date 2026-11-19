@@ -1,0 +1,61 @@
+Coronel: 8 ships, 2 sides, from 1914-11-01 22:00:00.000 until 1914-11-02 05:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1914: time    at 05:00 (+7:00)  Britain lost 1/3 (3827 t), score 0.54, hits 268   Germany lost 3/5 (24234 t), score 0.14, hits 287   (foundered 1, capsized 2, broke in two 1)   00c9585afab68ba8   (22.2 s)
+           main guns: 2 fell out for them, main mounts out 6 of 7 (6 of 7 guns): gunhouse destroyed 4, gunhouse out of action 1, guns out 1
+                      at the end, 4 ships afloat: main mounts out 10 of 20 (11 of 26 guns): magazine flooded by order 5, magazine flooded by the sea 2, gunhouse out of action 2, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3887 fired, 0 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 2 afloat home, 2 not (0 in an encounter, 1 stopped, 1 dead in the water, the farthest 316 km)
+           Germany      done? retiring (broken off); 0 of 2 afloat home, 2 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 293 km)
+  seed   1915: done    at 02:21 (+4:21)  Britain lost 1/3 (3827 t), score 0.08, hits 93   Germany lost 1/5 (3790 t), score 0.14, hits 99   (broke in two 1)   98184b2a8d3cabf0   (11.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 7 ships afloat: main mounts out 2 of 30 (2 of 42 guns): magazine flooded by the sea 1, gunhouse destroyed 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 2770 fired, 0 at ships seen done for
+  seed   1916: quiet   at 04:27 (+6:27)  Britain lost 1/3 (3827 t), score 0.88, hits 224   Germany lost 4/5 (39462 t), score 0.14, hits 118   (foundered 2, broke in two 3)   404d45bcad5d5cfd   (11.0 s)
+           main guns: 2 fell out for them, main mounts out 9 of 11 (15 of 17 guns): magazine spent (its race) 5, gunhouse destroyed 2, magazine flooded by the sea 1, gunhouse out of action 1
+                      at the end, 3 ships afloat: main mounts out 0 of 14 (0 of 14 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3276 fired, 0 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 2 afloat home, 2 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 316 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 143 km)
+  seed   1917: done    at 01:39 (+3:39)  Britain lost 1/3 (3827 t), score 0.08, hits 162   Germany lost 1/5 (3790 t), score 0.14, hits 287   (capsized 1, broke in two 1)   fdcaf4a35f65ec47   (7.6 s)
+           main guns: 2 fell out for them, main mounts out 5 of 8 (10 of 14 guns): magazine flooded by order 4, magazine flooded by the sea 1
+                      at the end, 6 ships afloat: main mounts out 6 of 28 (11 of 40 guns): magazine flooded by order 4, magazine flooded by the sea 1, barbette out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3258 fired, 0 at ships seen done for
+  seed   1918: done    at 01:24 (+3:24)  Britain lost 1/3 (3827 t), score 0.00, hits 188   Germany lost 0/5 (0 t), score 0.14, hits 155   (broke in two 1)   ba1a544a9a2907a3   (8.8 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 7 ships afloat: main mounts out 5 of 30 (8 of 42 guns): magazine flooded by order 2, magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3343 fired, 0 at ships seen done for
+  seed   1919: decided at 02:59 (+4:59)  Britain lost 3/3 (28193 t), score 0.00, hits 96   Germany lost 0/5 (0 t), aims met, score 1.00, hits 155   (broke in two 2)   125343b0813a1b91   (15.7 s)
+           main guns: 1 fell out for them, main mounts out 5 of 6 (5 of 6 guns): magazine spent (its race) 5
+                      at the end, 6 ships afloat: main mounts out 7 of 24 (7 of 36 guns): guns out 4, magazine flooded by the sea 1, gunhouse destroyed 1, jammed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2756 fired, 0 at ships seen done for
+           Britain      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Germany      done? lost (lost contact); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 427 km)
+  seed   1920: done    at 02:31 (+4:31)  Britain lost 0/3 (0 t), score 0.00, hits 16   Germany lost 0/5 (0 t), score 0.00, hits 5   1f8b5e60a5406575   (8.6 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 0 of 35 (0 of 47 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 769 fired, 0 at ships seen done for
+  seed   1921: done    at 01:53 (+3:53)  Britain lost 0/3 (0 t), score 0.00, hits 7   Germany lost 0/5 (0 t), score 0.00, hits 1   d9b56b9e2cf55765   (7.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 0 of 35 (0 of 47 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 689 fired, 0 at ships seen done for
+
+over 8 seeds:
+  ended time      1 times, after 7:00 on average
+  ended decided   1 times, after 4:59 on average
+  ended quiet     1 times, after 6:27 on average
+  ended done      5 times, after 3:57 on average
+  Britain      lost 1.0 of 3 ships (from 0 to 3), 5916 t; made 132 hits, fired 0.8 torpedoes; aims met 0 times, score 0.20
+  Germany      lost 1.1 of 5 ships (from 0 to 4), 8910 t; made 138 hits, fired 1.0 torpedoes; aims met 1 times, score 0.21
+over 8 seeds:
+  main guns: 7 fell out for them, main mounts out 25 of 32 (36 of 44 guns): magazine spent (its race) 10, gunhouse destroyed 6, magazine flooded by order 4, magazine flooded by the sea 2, gunhouse out of action 2, guns out 1
+             at the end, 49 ships afloat: main mounts out 30 of 216 (39 of 294 guns): magazine flooded by order 11, magazine flooded by the sea 6, gunhouse destroyed 4, guns out 4, gunhouse out of action 3, barbette out 1, jammed 1
+  blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+  shells: 20748 fired, 0 at ships seen done for

@@ -160,9 +160,13 @@ public sealed class FlotillaAttacks(MatchupJudge judge, HeldGroups held, Doctrin
                     else if (!units[k].IsGroup && ctx.Ships.SlotOf(units[k].Entity) is int hs and >= 0)
                         one.AddOwn(ctx.World, judge.Matchups, hs);
                 }
+            // by day, the enemy he's made out to their type (a minute's wait at most): a ship not made out yet is any of the
+            // enemy's at sea, troopships among them, and the Bosporus's boats went in at a first blip as if at a transport
+            // (balance.md P11); by night a shape may be all he ever gets, and boats attack shapes
             enemy.Clear();
             foreach (int i in held.Members(side, g))
-                enemy.AddContact(ctx.World, judge.Matchups, side, pic[i]);
+                if (engaging == null || pic[i].Level >= ContactLevel.Type)
+                    enemy.AddContact(ctx.World, judge.Matchups, side, pic[i]);
             if (one.Count == 0 || enemy.Count == 0)
                 continue;
             var r = judge.Judge(ctx, 0, side, at, one, enemy);
