@@ -55,10 +55,13 @@ public enum FallOutCause : byte
 /// test: the captain's, and the matchup's toughness (the hits that put a ship out of the fight, 5.1g).</summary>
 public readonly record struct FallOutRule(double SpeedShare, double GunsShare, double ListDeg, double WaterShare)
 {
-    public FallOutCause Of(in Fitness f) =>
+    /// <param name="torpedoes">Her torpedoes her weapon now (on a torpedo attack, a tube working with torpedoes left): her
+    /// guns aren't what she's there for, so she doesn't fall out for them (the user, 2026-11-19: what the ship is doing; a
+    /// torpedo boat's one 47 mm gun had taken boats with their tubes whole out of their attack, allocation.md AL8).</param>
+    public FallOutCause Of(in Fitness f, bool torpedoes = false) =>
         SpeedShare > 0 && f.Steering is Steering.Jammed or Steering.Lost or Steering.Engines ? FallOutCause.Steering
         : f.SpeedShare <= 0 || f.SpeedShare < SpeedShare ? FallOutCause.Speed
-        : f.MainGunsShare < GunsShare ? FallOutCause.Guns
+        : !torpedoes && f.MainGunsShare < GunsShare ? FallOutCause.Guns
         : f.ListDeg > ListDeg ? FallOutCause.List
         : f.WaterShare > WaterShare ? FallOutCause.Water
         : FallOutCause.None;

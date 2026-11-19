@@ -1,0 +1,231 @@
+how ships are lost: jutland, 8 seeds each, on 16 threads
+  jutland seed 1920: 25 lost of 250, ended time after 14.0 h (732 s)
+  jutland seed 1922: 43 lost of 250, ended time after 14.0 h (936 s)
+  jutland seed 1919: 111 lost of 250, ended time after 14.0 h (959 s)
+  jutland seed 1917: 40 lost of 250, ended time after 14.0 h (1079 s)
+  jutland seed 1918: 66 lost of 250, ended time after 14.0 h (1090 s)
+  jutland seed 1923: 36 lost of 250, ended time after 14.0 h (1105 s)
+  jutland seed 1921: 57 lost of 250, ended time after 14.0 h (1190 s)
+  jutland seed 1916: 80 lost of 250, ended time after 14.0 h (1354 s)
+
+Jutland, 8 seeds: lost a seed by side and type (of the ships she has), tonnage in brackets
+  Britain         16.1 lost (119005 t): Capital 4.0/45, Cruiser 3.5/26, Destroyer 8.6/79, Merchant 0.0/1
+  Germany         41.1 lost (200939 t): Capital 6.4/27, Cruiser 7.8/17, Destroyer 27.0/55
+  how they went: BrokeInTwo 49%, Capsized 32%, Foundered 17%, Magazine 2%, None 1%; fates: Sunk 313, Abandoned 128, Scuttled 13, Struck 4
+  magazines, a seed: 1424 heavy hits, 78.3 hits lit charges in a train; set off by a hit: Contained 0.1, BurnedOut 0.5, Breached 9.9, Severed 1.0, TwoGroups 0.0; by a fire: Contained 0.1, BurnedOut 0.0, Breached 0.8, Severed 0.0, TwoGroups 0.0
+  magazines' valves, a seed: 35.5 opened; smoke there: 0.9 got through, 1.8 driven back
+    Britain        Capital   MagazineCase ships set off   2.6 a seed, broken by it  0.0, lost any way  2.0; the races: Contained 1, BurnedOut 2, Breached 19
+    Britain        Cruiser   MagazineCase ships set off   0.3 a seed, broken by it  0.0, lost any way  0.1; the races: Breached 2
+    Britain        Destroyer MagazineCase ships set off   1.1 a seed, broken by it  0.1, lost any way  0.9; the races: Breached 8, Severed 1
+    Germany        Capital   Brass    ships set off   2.3 a seed, broken by it  0.0, lost any way  2.0; the races: BurnedOut 2, Breached 17
+    Germany        Cruiser   Brass    ships set off   1.6 a seed, broken by it  0.1, lost any way  1.5; the races: Breached 12, Severed 1
+    Germany        Destroyer Brass    ships set off   4.3 a seed, broken by it  0.8, lost any way  3.8; the races: Contained 1, Breached 27, Severed 6
+  causes (a seed; share; of them capital/cruiser/destroyer-small; the medians: shell hits, of those after she was out, minutes first struck to the end, out to the end, the last half hour's range):
+    every side:
+      Cripple finished off    26.8   47%   27/ 43/144  hits   33 ( 21 after)     42 min  out    20 min  at   3.3 km
+      Flooding ran away       10.1   18%   34/ 13/ 34  hits   24 (  2 after)    146 min  out    54 min  at   5.2 km
+      Point-blank brawl        7.3   13%    4/  8/ 46  hits   19 (  7 after)      8 min  out     2 min  at   1.8 km
+      Torpedoed                4.4    8%   11/ 12/ 12  hits  124 ( 53 after)     55 min  out    11 min  at   2.5 km
+      Stayed too long          3.8    7%    6/  8/ 16  hits   13 (  0 after)     37 min  out     2 min  at   5.4 km
+      Fair fight               2.3    4%    1/  2/ 15  hits    3 (  0 after)      4 min  out     1 min  at  10.0 km
+      Fed in piecemeal         1.8    3%    0/  3/ 11  hits    8 (  0 after)      3 min  out     1 min  at   4.2 km
+      Magazine                 1.0    2%    0/  1/  7  hits   17 (  6 after)     15 min  out     1 min  at   3.8 km
+    Britain:
+      Cripple finished off     6.0   37%   11/  9/ 28  hits   57 ( 37 after)     33 min  out    20 min  at   2.8 km
+      Flooding ran away        4.5   28%   10/  7/ 19  hits   31 (  7 after)     99 min  out    62 min  at   4.3 km
+      Torpedoed                2.3   14%    8/  5/  5  hits  127 ( 52 after)     75 min  out    11 min  at   2.6 km
+      Point-blank brawl        1.4    9%    1/  3/  7  hits   25 ( 10 after)      6 min  out     3 min  at   1.7 km
+      Stayed too long          0.8    5%    1/  2/  3  hits   37 (  4 after)     45 min  out     3 min  at   5.9 km
+      Fed in piecemeal         0.6    4%    0/  1/  4  hits   13 (  0 after)      5 min  out     1 min  at   3.7 km
+      Fair fight               0.5    3%    1/  1/  2  hits    4 (  0 after)      6 min  out     5 min  at   7.7 km
+      Magazine                 0.1    1%    0/  0/  1  hits   22 (  0 after)    170 min  out     1 min  at   1.7 km
+    Germany:
+      Cripple finished off    20.8   50%   16/ 34/116  hits   25 ( 17 after)     48 min  out    21 min  at   3.5 km
+      Point-blank brawl        5.9   14%    3/  5/ 39  hits   18 (  6 after)      9 min  out     2 min  at   1.8 km
+      Flooding ran away        5.6   14%   24/  6/ 15  hits   22 (  0 after)    169 min  out    35 min  at   6.4 km
+      Stayed too long          3.0    7%    5/  6/ 13  hits   11 (  0 after)     37 min  out     2 min  at   5.4 km
+      Torpedoed                2.1    5%    3/  7/  7  hits  124 ( 56 after)     35 min  out    13 min  at   2.3 km
+      Fair fight               1.8    4%    0/  1/ 13  hits    2 (  0 after)      3 min  out     1 min  at  11.1 km
+      Fed in piecemeal         1.1    3%    0/  2/  7  hits    5 (  0 after)      1 min  out     2 min  at   4.2 km
+      Magazine                 0.9    2%    0/  1/  6  hits   15 (  6 after)      3 min  out   115 min  at   3.9 km
+  the slow deaths (no hit in 40 min or more, a seed 5.9): the medians halfway through, sea in by what could stop it, t/min:
+    Capital     2.4      76 min after the hit; enemy  13.2 km; water   2264 t, holes  18.4 m2; sea in   18.1 (reachable 1.8, no access 4.8, worked 1.6, mat 0.2, beyond 0.0, deck 0.0); pumps 4.1 t/min; parties 9, busy 8; men 625;   14 kn
+      all the sea coming in, the shares: reachable 26%, no access 29%, worked 19%, mat 26%, beyond 0%, deck 0%; ships with none coming in 0%; pumps could beat it in 26%
+    Cruiser     0.8     128 min after the hit; enemy  16.4 km; water   2382 t, holes  16.1 m2; sea in   62.4 (reachable 1.6, no access 2.0, worked 2.6, mat 32.3, beyond 0.0, deck 0.0); pumps 0.5 t/min; parties 4, busy 4; men 182;   12 kn
+      all the sea coming in, the shares: reachable 3%, no access 2%, worked 1%, mat 15%, beyond 80%, deck 0%; ships with none coming in 0%; pumps could beat it in 0%
+    Destroyer   2.8      85 min after the hit; enemy  15.3 km; water    711 t, holes  15.8 m2; sea in   93.6 (reachable 4.0, no access 3.1, worked 0.7, mat 22.9, beyond 0.0, deck 0.0); pumps 0.2 t/min; parties 4, busy 3; men 102;    2 kn
+      all the sea coming in, the shares: reachable 6%, no access 9%, worked 1%, mat 77%, beyond 7%, deck 0%; ships with none coming in 0%; pumps could beat it in 0%
+  causes against how she went (a seed):
+    Cripple finished off  BrokeInTwo 12.8, Capsized 10.8, Foundered 3.3
+    Flooding ran away     Capsized 4.3, Foundered 3.8, BrokeInTwo 1.9, None 0.3
+    Point-blank brawl     BrokeInTwo 5.3, Capsized 1.4, Foundered 0.6
+    Torpedoed             BrokeInTwo 2.6, Foundered 1.4, Capsized 0.3, None 0.1
+    Stayed too long       BrokeInTwo 2.3, Capsized 0.9, Foundered 0.6
+    Fair fight            BrokeInTwo 2.0, Capsized 0.3
+    Fed in piecemeal      BrokeInTwo 1.1, Capsized 0.6
+    Magazine              Magazine 1.0
+  falling out and being lost (ships a seed; lost of them):
+    Capital   never fell out   58.9    1.1 (2%)
+    Capital   fell out         13.1    9.3 (70%)
+    Cruiser   never fell out   27.4    1.1 (4%)
+    Cruiser   fell out         15.6   10.1 (65%)
+    Destroyer never fell out   83.9    5.1 (6%)
+    Destroyer fell out         50.1   30.5 (61%)
+    Merchant  never fell out    1.0    0.0 (0%)
+  why they fell out (ships a seed; lost of them):
+    OutSpeed           34.5   26.3 (76%)
+    OutGuns            28.4   12.0 (42%)
+    OutSteering        11.4    7.5 (66%)
+    OutList             4.3    3.8 (88%)
+    OutWater            0.4    0.4 (100%)
+  what the lost were doing when first struck (a seed; top 15):
+    Destroyer Station, task Attack attack Gain                              10.1
+    Destroyer Station, task Attack attack Run                                7.4
+    Destroyer Course, task Attack attack Fire                                4.3
+    Destroyer Station, task Attack attack Away                               4.1
+    Capital Station, task Scout                                              2.3
+    Destroyer Station, task Screen                                           1.9
+    Capital Station, task Withdraw                                           1.8
+    Capital Station, task Screen                                             1.8
+    Cruiser Station, task Shadow                                             1.6
+    Cruiser Station, task Scout                                              1.6
+    Destroyer Course, task Attack attack Run                                 1.5
+    Cruiser Station, task Withdraw                                           1.4
+    Cruiser Shadow, task Shadow                                              1.1
+    Capital Station, task Join                                               1.0
+    Destroyer Course, task Attack attack Gain                                1.0
+  where the fire went, a seed: 32259 shells, 4114 hits; 11390 heavy hits, 0 hits that reached a magazine, all seeds. By range:
+    0-2 km        1971 shells   1479 hits  75.0%  (36% of the hits)
+    10-15km       6098 shells    172 hits   2.8%  (4% of the hits)
+    15+ km        5282 shells     86 hits   1.6%  (2% of the hits)
+    2-4 km        5057 shells   1503 hits  29.7%  (37% of the hits)
+    4-6 km        5061 shells    471 hits   9.3%  (11% of the hits)
+    6-10 km       8791 shells    404 hits   4.6%  (10% of the hits)
+    the top rows (shells, hits, hit %):
+    Destroyer chief at Capital   fighting     2-4 km            974    248  25.4%
+    Capital   other at Cruiser   going home   0-2 km            280    204  72.7%
+    Destroyer chief at Cruiser   going home   0-2 km            224    168  75.0%
+    Capital   chief at Capital   fighting     2-4 km            244    151  61.7%
+    Capital   other at Capital   fighting     2-4 km            468    133  28.5%
+    Capital   other at Capital   fighting     0-2 km            147    116  78.9%
+    Capital   chief at Capital   fighting    6-10 km            761    110  14.4%
+    Destroyer chief at Destroyer going home   0-2 km            156    102  65.6%
+    Capital   other at Cruiser   going home   2-4 km            411    101  24.7%
+    Capital   other at Destroyer going home   0-2 km            167     98  58.8%
+    Cruiser   chief at Capital   fighting     2-4 km            197     89  44.9%
+    Capital   chief at Capital   fighting    10-15km           1786     82   4.6%
+    Destroyer chief at Capital   fighting     4-6 km           1380     76   5.5%
+    Capital   chief at Capital   fighting     4-6 km            245     76  31.2%
+    Capital   chief at Capital   going home   2-4 km            121     76  63.2%
+    Cruiser   chief at Destroyer going home   0-2 km             86     70  81.6%
+    Destroyer chief at Capital   fighting     0-2 km             93     69  73.6%
+    Destroyer chief at Destroyer going home   2-4 km            302     67  22.2%
+    Capital   other at Destroyer going home   2-4 km            367     67  18.3%
+    Destroyer chief at Cruiser   going home   2-4 km            209     67  31.9%
+    Capital   chief at Cruiser   going home   2-4 km            126     64  50.3%
+    Capital   other at Capital   going home   2-4 km            174     63  36.3%
+    Capital   other at Capital   going home   0-2 km             69     60  87.5%
+    Capital   chief at Capital   going home  6-10 km            367     58  15.8%
+    Destroyer chief at Cruiser   fighting     0-2 km             76     56  74.2%
+    Capital   chief at Destroyer going home   0-2 km             62     53  86.6%
+    Capital   chief at Capital   fighting    15+ km            2356     52   2.2%
+    Capital   chief at Destroyer going home   2-4 km            107     46  43.3%
+    Cruiser   chief at Capital   fighting     0-2 km             49     46  93.6%
+    Capital   other at Capital   fighting     4-6 km            457     45   9.9%
+  the fighting capital ships' nearest enemy heavy ship, by the quarter hour from the start (median km; ship-minutes a seed):
+    +285 min   28.4 km  (  108)
+    +300 min   24.5 km  (  254)
+    +315 min   23.6 km  (  311)
+    +330 min   25.2 km  (  347)
+    +345 min   25.8 km  (  500)
+    +360 min   24.8 km  (  637)
+    +375 min   23.6 km  (  745)
+    +390 min   22.0 km  (  852)
+    +405 min   19.8 km  (  864)
+    +420 min   19.1 km  (  883)
+    +435 min   18.3 km  (  864)
+    +450 min   18.4 km  (  785)
+    +465 min   17.9 km  (  741)
+    +480 min   15.8 km  (  722)
+    +495 min   12.8 km  (  681)
+    +510 min   11.6 km  (  648)
+    +525 min   11.2 km  (  602)
+    +540 min   11.1 km  (  582)
+    +555 min   11.6 km  (  572)
+    +570 min   13.0 km  (  550)
+    +585 min   13.5 km  (  492)
+    +600 min   12.8 km  (  454)
+    +615 min   12.5 km  (  424)
+    +630 min   12.5 km  (  393)
+    +645 min   14.2 km  (  379)
+    +660 min   16.7 km  (  328)
+    +675 min   17.1 km  (  266)
+    +690 min   16.8 km  (  203)
+    +705 min   16.2 km  (  181)
+    +720 min   17.0 km  (  172)
+    +735 min   15.7 km  (  185)
+    +750 min   15.6 km  (  185)
+    +765 min   17.1 km  (  190)
+    +780 min   16.6 km  (  201)
+    +795 min   18.0 km  (  203)
+    +810 min   20.8 km  (  213)
+    +825 min   22.5 km  (  234)
+    +840 min   24.7 km  (   18)
+  ship-minutes a seed with an enemy heavy ship within 30 km, top rows:
+    Destroyer Station, task Screen                          15+ km                   7904
+    Capital   Station, task Intercept                       15+ km                   3448
+    Capital   Station, task Withdraw                        15+ km                   2140
+    Capital   Station, task Scout                           15+ km                   1665
+    Destroyer Station, task Attack attack Gain              15+ km                   1659
+    Destroyer Station, task Attack attack Gain              10-15km                  1506
+    Destroyer Station, task Screen                          10-15km                  1335
+    Destroyer Home (OutGuns), out of her line               15+ km                   1039
+    Destroyer Station, task Attack attack Gain              6-10 km                  1011
+    Cruiser   Station, task Scout                           15+ km                   1008
+    Capital   Station, task Scout                           10-15km                   740
+    Cruiser   Station, task Screen                          15+ km                    651
+    Capital   Station, task Withdraw                        10-15km                   620
+    Capital   Station, task Join                            15+ km                    607
+    Capital   Station, task Scout                           6-10 km                   599
+    Destroyer Home (OutSpeed), out of her line              15+ km                    558
+    Destroyer Station, task Withdraw                        15+ km                    470
+    Destroyer Home (OutGuns), out of her line               10-15km                   455
+    Capital   Course, task Withdraw                         15+ km                    429
+    Capital   Course, task Intercept                        15+ km                    428
+    Capital   Station, task Join                            10-15km                   424
+    Destroyer Station, task Attack attack Run               6-10 km                   408
+    Cruiser   Shadow, task Scout                            15+ km                    382
+    Capital   Shadow, task Scout                            15+ km                    353
+    Capital   Station, task Screen                          15+ km                    323
+    Destroyer Station, task Attack attack Run               10-15km                   315
+    Capital   Station, task Join                            6-10 km                   312
+    Destroyer Home (OutSpeed), out of her line              6-10 km                   309
+    Capital   Station, task Withdraw                        6-10 km                   303
+    Capital   Fight band, task Intercept                    15+ km                    287
+    Destroyer Station, task Attack attack Away              15+ km                    286
+    Capital   Station, task Intercept                       10-15km                   279
+    Destroyer Home (OutSpeed), out of her line              10-15km                   278
+    Cruiser   Station, task Scout                           10-15km                   273
+    Destroyer Station, task Attack attack Away              10-15km                   269
+    Destroyer Station, task Attack                          15+ km                    265
+    Destroyer Station, task Screen                          6-10 km                   264
+    Destroyer Station, task Attack attack Away              6-10 km                   261
+    Destroyer Station, task Join                            15+ km                    243
+    Cruiser   Station, task Intercept                       15+ km                    239
+  who struck her most in her last half hour, and from how far (a seed):
+    Destroyer by Capital at   2-4 km                     8.4
+    Destroyer by Capital at   0-2 km                     4.8
+    Destroyer by Capital at  10-15km                     3.8
+    Destroyer by Capital at  6-10 km                     3.4
+    Cruiser by Capital at   2-4 km                       2.9
+    Capital by Capital at no shells                      2.8
+    Cruiser by Capital at   0-2 km                       2.4
+    Destroyer by Capital at   4-6 km                     2.4
+    Destroyer by Destroyer at   2-4 km                   2.1
+    Destroyer by Destroyer at   0-2 km                   2.1
+    Destroyer by Cruiser at   0-2 km                     1.9
+    Capital by Capital at   2-4 km                       1.9
+    Capital by Capital at  6-10 km                       1.8
+    Cruiser by Capital at  15+ km                        1.5
+    Destroyer by Capital at  15+ km                      1.3
+kept in C:/Users/teemu/AppData/Local/Temp/claude/72b2a98822c61602/8fe7a231-fa8e-4177-9591-64e02f67cc40/scratchpad/al8/j8-after

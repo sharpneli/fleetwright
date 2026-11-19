@@ -151,6 +151,45 @@ public class FallOutTests(ITestOutputHelper output)
         }
     }
 
+    /// <summary>What the ship is doing (the user, 2026-11-19; allocation.md AL8): on a torpedo attack with torpedoes left, her
+    /// torpedoes are her weapon, so her guns out don't take her out of it (the Bosporus's boats had fallen out for their one
+    /// 47 mm gun, tubes whole); her tubes wrecked too, she's judged by her guns again and falls out.</summary>
+    [Fact]
+    public void On_a_torpedo_attack_she_falls_out_by_her_tubes_not_her_guns()
+    {
+        var w = new World(Start, 7, Settings);
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(25_000));
+        int d = w.Ships.AddClass(Fleet.Get("destroyer").Class!), b = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        w.Apply(ShipSystem.Spawn(d, 56.0, 4.0, 90, 25, 0));
+        w.Apply(ShipSystem.Spawn(b, 56.0, 4.15, 0, 12, 1));
+        w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.FallOutGunsShare, 0.6));
+        w.Apply(ai.Orders.Home(0, 57.0, 3.0));
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(2)));
+        w.Apply(ai.Orders.Attack(Unit.Ship(1), 2));
+        w.AdvanceTo(w.Time + 20_000);
+        Assert.True(ai.Captains.FightOf(1).Attacking, "she's on her attack");
+
+        var cls = Ship(w, 1).Handling.Class;
+        foreach (ref readonly var bat in cls.Batteries)
+            if (bat.Chief)
+                foreach (int m in cls.Links(bat.Mounts))
+                    w.Apply(DamageSystem.Wreck(1, cls.Mounts[m].Component, PartState.Destroyed));
+        w.AdvanceTo(w.Time + 5_000);
+        var fit = Fitness.Of(cls, w.Ships.Store.Combat.Condition(w.Ships.Store.SlotOf(1)), 1000);
+        output.WriteLine($"guns wrecked: main guns {fit.MainGunsShare:P0}, {ai.Captains.Of(1).Order}, {ai.Captains.ReasonOf(1)}");
+        Assert.Equal(0, fit.MainGunsShare);
+        Assert.NotEqual(CaptainOrder.Home, ai.Captains.Of(1).Order);
+        Assert.Equal(CaptainReason.None, ai.Captains.ReasonOf(1));
+
+        foreach (ref readonly var l in cls.Launchers)
+            w.Apply(DamageSystem.Wreck(1, l.Component, PartState.Destroyed));
+        w.AdvanceTo(w.Time + 5_000);
+        output.WriteLine($"tubes wrecked too: {ai.Captains.Of(1).Order}, {ai.Captains.ReasonOf(1)}");
+        Assert.Equal(CaptainOrder.Home, ai.Captains.Of(1).Order);
+        Assert.Equal(CaptainReason.OutGuns, ai.Captains.ReasonOf(1));
+    }
+
     [Fact]
     public void A_ship_going_home_under_fire_covers_her_retreat_with_smoke_and_stops_out_of_touch()
     {

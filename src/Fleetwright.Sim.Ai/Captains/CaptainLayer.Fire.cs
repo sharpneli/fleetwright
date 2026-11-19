@@ -1337,25 +1337,29 @@ public sealed partial class CaptainLayer
 
     /// <summary>Whether his ship is past doctrine's fall-out (docs/battle/command.md 5.1a), judged when its condition
     /// changes: too slow, too few main guns, listing too far, too much water, or (when doctrine falls out at all) unable to
-    /// steer. Then she leaves her group (the line closes up behind her: going-down ships leave the same way) and goes
-    /// home, his own order, firing at will as she goes. Not once the player has ordered her on after it
-    /// (<see cref="Captain.Overruled"/>), nor while the player holds her (<see cref="Whose.Player"/>) or has the conn of
-    /// her line (judged again once she's let go).</summary>
+    /// steer. On a torpedo attack with torpedoes left her torpedoes are her weapon, not her guns (the user, 2026-11-19:
+    /// what the ship is doing), judged again once that changes. Then she leaves her group (the line closes up behind her:
+    /// going-down ships leave the same way) and goes home, his own order, firing at will as she goes. Not once the player
+    /// has ordered her on after it (<see cref="Captain.Overruled"/>), nor while the player holds her
+    /// (<see cref="Whose.Player"/>) or has the conn of her line (judged again once she's let go).</summary>
     void FallOut(in AiContext ctx, ref Captain cap, ShipState own, int slot)
     {
         var k = ctx.Ships.Combat.Condition(slot);
         if (cap.Overruled || cap.Whose == Whose.Player || cap.Order == CaptainOrder.Home || cap.Reason == CaptainReason.Rearguard || !k.Damaged
-            || k.Version == cap.FitVersion || k.Status != ShipStatus.Afloat
+            || k.Status != ShipStatus.Afloat
             || Book?.Reaching(own.Side, own.Entity) == true && HoldsReach(own.Entity, own.Side)   // a held reach's ship presses on for its zone at what she can make (balance.md BL5)
             || Admirals?.LineConned(own.Entity) == true)   // her line's conn: she stays in it
             return;
-        cap.FitVersion = k.Version;
+        bool torpedoes = OnAttack(cap, own) && TorpedoesLeft(ctx, own, slot);
+        if (k.Version == cap.FitVersion && torpedoes == cap.FitTorpedoes)
+            return;
+        (cap.FitVersion, cap.FitTorpedoes) = (k.Version, torpedoes);
         var cls = own.Handling.Class;
         var fit = Fitness.Of(cls, k, ctx.World.Damage.Flood(cls).ReserveT);
         double D(DoctrineField f) => doctrine.Of(own.Entity, own.Side, f);
         var rule = new FallOutRule(D(DoctrineField.FallOutSpeedShare), D(DoctrineField.FallOutGunsShare), D(DoctrineField.FallOutListDeg),
             D(DoctrineField.FallOutWaterShare));
-        var why = rule.Of(fit) switch
+        var why = rule.Of(fit, torpedoes) switch
         {
             FallOutCause.Steering => CaptainReason.OutSteering,
             FallOutCause.Speed => CaptainReason.OutSpeed,
@@ -1367,6 +1371,12 @@ public sealed partial class CaptainLayer
         if (why != CaptainReason.None)
             GoHome(ctx, ref cap, own, why);
     }
+
+    /// <summary>Whether his ship is on a torpedo attack: his own (pressing it), or her flotilla's (her torpedoes held for its
+    /// signal, or its attack under way).</summary>
+    bool OnAttack(in Captain cap, ShipState own) =>
+        cap.Attacking || cap.TorpedoHeld ||
+        groups.Of(own.Entity) is { } g && Admirals?.AttackOf(g.GroupId).Phase is not (null or Fleetwright.Sim.Ai.Admirals.AttackPhase.None);
 
     /// <summary>Out of the fight by his own judgement: out of his line (it closes up behind her), his superior's limits
     /// gone, and home.</summary>

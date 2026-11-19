@@ -142,6 +142,7 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public bool Conn;               // the player has the conn: nothing but the player's helm orders moves her
         public sbyte Tracks;            // the conn's lookouts: a torpedo's track seen coming at her, its side (1 starboard, -1 port; 0 none)
         public int FitVersion;          // his ship's condition's version when he last judged its fitness
+        public bool FitTorpedoes;       // and whether her torpedoes were her weapon then (on an attack, torpedoes left: her guns not judged)
         public long HeldUntilMs;        // a course held until then (0: none): combing a torpedo's track, or away from a light (HeldFor)
         public double HeldDeg, HeldBackDeg;   // the course held, and the course ordered before it
         public CaptainReason HeldFor;   // why it's held: Combing or Lit
@@ -742,6 +743,8 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
             if (c.Overruled)
                 h.Add(true);   // only then: worlds without an overrule hash as before
             h.Add(c.FitVersion);
+            if (c.FitTorpedoes)
+                h.Add(0x7095u);   // only then: worlds without a ship judged on an attack hash as before
             h.Add(c.HeldUntilMs);
             h.Add(c.HeldDeg);
             h.Add(c.HeldBackDeg);

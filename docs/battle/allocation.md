@@ -498,7 +498,22 @@ one German flotilla attack shows in the timeline (III, beaten off) and the II Fl
 battleships at 22:06-22:33 as the High Seas Fleet retires. Their run-ins and their fall-out on their guns are P11's too;
 the gunnery's accepted 3.5x over the record (error-sources.md) is the rest.
 
-Nothing changed in the scenarios or the code: AL8 hands the Bosporus and the Jutland's light forces to P11.
+Nothing changed in the scenarios: AL8 hands the Bosporus and the Jutland's light forces to P11.
+
+**Falling out on a torpedo attack** (the user, 2026-11-19: "What the ship is doing"). On a torpedo attack with torpedoes
+left (her own, pressing it, or her flotilla's: her torpedoes held for its signal, or its attack under way) her torpedoes
+are her weapon, so doctrine's guns share doesn't take her out (`FallOutRule.Of`'s `torpedoes`; the captain judges again
+when that changes: `Captain.FitTorpedoes`). Her tubes wrecked or her torpedoes gone, she's judged by her guns again: a boat
+with guns but no torpedoes keeps her station in the run, the diversion, and one with neither falls out
+(`FallOutTests.On_a_torpedo_attack_she_falls_out_by_her_tubes_not_her_guns`). The user: a boat without torpedoes isn't torpedo
+craft, and whether she goes in as a diversion is her squadron admiral's call; a squadron with no torpedoes left never starts
+a rush (it doesn't: `FlotillaAttacks.Free` and the admiral's attack read `AnyTorpedoes`, working tubes with torpedoes). The
+admiral's call on a boat without torpedoes (does she draw more fire from the torpedo boats than she costs) is the run-in's
+exchange P11 measures, so it's built there.
+What it moved (`al8/tubes/`): the Bosporus's boats no longer fall out for their gun (none of 16 seeds), 12.1 torpedoes a game
+(10.0), Russia lands 11 of 16 (13); Åland 9, Pungdo 7, Port Arthur 9 (8, 8, 8); the Jutland at 8 seeds against the same
+code before it (`jutland8-before` / `-after`): Britain 13.0 → 16.1, Germany 42.4 → 41.1, capital ships 2.9 / 6.5 → 4.0 / 6.4,
+within its spread (25-111 lost a seed).
 
 ## Questions for the user
 
