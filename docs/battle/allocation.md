@@ -141,7 +141,7 @@ aims' kinds) reads her matchup instead.
 | AL5 | **At contact:** the enemy's main body by strength, the fast wing's choice, the line by guns | **done 2026-11-17** (below) |
 | AL6 | **Regrouping** the worn-down squadrons | **done 2026-11-17** (below) |
 | AL7 | **The types out of decisions:** contacts' size estimate, every consumer onto the matchup | **done 2026-11-17**: AL7a a contact not made out is one not yet accounted for; AL7b the size estimate, the matchup by it; AL7c every decision by the matchup |
-| AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | |
+| AL8 | **The panel and the early wave**, the prizes' war and the Bosporus looked at again | **done 2026-11-19** (below): Åland back in balance by itself; the Bosporus and the Jutland's German light forces to P11 |
 
 ### AL0 The bench (built 2026-11-16)
 
@@ -451,6 +451,54 @@ that found side area wanting): 8 of 14 sides within 2x (7); the record's loser l
 2.6 (1.9); Cape Sarych's Russia 1.5 (2.5). The early wave as AL6's within a seed or two (Pungdo's reach 4 of 16, Port
 Arthur's 6, Manila's 5; the Bosporus's Russia 13; the prizes' war fights, 0.4 v 0.8 of 16), but for Åland: Sweden meets
 her aims in 14 of 16 (8), Finland losing 6.2 of 13 to her 1.9 of 8 (5.6 v 3.8), the lean AL7b began; for AL8.
+
+### AL8 The panel and the early wave, again (2026-11-19)
+
+On today's code (AL7c, then the shell consumption's SC1-SC4: `shell-consumption.md`), the early wave at 16 seeds and the
+Jutland through the loss bench (`allocation/al8/`). The user: in scenarios only inspired by history (Åland and the rest of
+the hypotheticals) the ship counts are ours to tweak.
+
+**The panel** is `balance/sc3.json`'s: 7 of 14 sides within about twice the record, the record's loser losing more in 26
+of 44 seeds.
+
+**The reach scenarios** (the reaching side's aims met, of 16):
+
+| Scenario | AL7c | Now | |
+|---|---|---|---|
+| Åland (Sweden) | 14 | **8** | Finland 5.6 of 13 lost, Sweden 3.1 of 8: back in balance with no change (the lean AL7b began is gone with the slower fire) |
+| Pungdo (China) | 4 | 8 | scores 0.50 / 0.50 |
+| Port Arthur (Russia) | 6 | 8 | |
+| Manila (Spain / the US) | 5 | 7 / 6 | |
+| The Bosporus (Russia) | 13 | **13** | Russia 0.6 of 7 lost, the Ottomans 7.7 of 16 |
+
+**The Bosporus doesn't answer to ship counts.** Two more Ottoman ironclads (Orhaniye, Mahmudiye): Russia lands 14 of 16;
+a fourth division of three boats: 13; one ironclad and three boats: 11, Russia still losing 0.0-0.1 ships
+(`al8/bosporus-a`, `-b`, `-c`). As BL6 found for the Russian side, the landing hardly reads the forces. The timeline
+(`al8/bosporus.txt`'s seed 1896, one of the three the Ottomans win) shows why: at first sight, 07:14 in daylight, the
+commander sends all twelve boats at the three battleships; within the hour nine fall out (five for **their 47 mm gun**,
+the torpedo boat's tubes untouched: `Fitness` counts the chief gun battery only) and two divisions are beaten off, a
+torpedo or two fired; the ironclads then stop the landing alone. The matchup's forecast for that attack
+(`shipgen matchup ottoman_tb:12 ekaterina:3`): 36% of the boats lost and 1.15 torpedo hits, 3.5 t taken for each tonne
+lost; in play 75% lost and nothing hit before they're beaten off. `MatchupRunInHitShare` 0.4 was set when "the fine
+model's flotilla loses about half its boats over a whole run"; the fine model has moved since. That's P11
+(`balance.md`: measure the run-in's exchange as the day attack now is, then decide), and the boats' fall-out on their gun.
+
+**The prizes' war** fights and is even (each side 0.6 of 6 lost; seed 1920, `al8/prizes-1920.txt`: both commanders choose
+battle, the cruisers fight from 08:30 to 10:48, 6,094 shells for 137 hits and nothing sunk, then Italy withdraws
+outmatched and France chases a faster enemy to the clock). Hours of light-cruiser gunnery with nobody sunk is the
+record's too (the Otranto Straits, 1917); a chase that can't close kept up for four hours is BL5's (fights that run to the
+clock).
+
+**The Jutland** (`al8/jutland-losses.txt`, 4 seeds): Britain 9.0 lost, Germany 48.3 (record 14 and 11). Germany's capital
+ships are in the record's range (2.3 a seed of 27); the excess is her light forces, cruisers 12.0 of 17 and destroyers
+34.0 of 55, lost from the sixth hour to the eleventh (19:00-01:00), most of them first struck on an attack (Gain, Fire,
+Run, Away) and slowed (OutSpeed), then finished off as cripples (21.8 a seed). Not new: the loss bench had Germany at
+40-45 since BL3 (`bl3/baseline`, `bl6/baseline`); AL7c's 27.8 was the low one. In the seed played (`al8/jutland-1916.txt`)
+one German flotilla attack shows in the timeline (III, beaten off) and the II Flotilla's big boats are broken in two by British
+battleships at 22:06-22:33 as the High Seas Fleet retires. Their run-ins and their fall-out on their guns are P11's too;
+the gunnery's accepted 3.5x over the record (error-sources.md) is the rest.
+
+Nothing changed in the scenarios or the code: AL8 hands the Bosporus and the Jutland's light forces to P11.
 
 ## Questions for the user
 

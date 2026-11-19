@@ -1,0 +1,35 @@
+Cámara at Manila, 1898: 9 ships, 2 sides, from 1898-08-19 22:30:00.000 until 1898-08-20 10:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1898: time    at 10:00 (+11:30)  Spain lost 1/5 (1083 t), aims met, score 1.00   United States lost 0/4 (0 t), score 0.00   (capsized 1)   1e34f92fe12e5477   (22.3 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (3 of 4 guns): magazine spent (its race) 1, gunhouse out of action 1, guns out 1
+                      at the end, 8 ships afloat: main mounts out 3 of 18 (3 of 26 guns): magazine flooded by the sea 1, magazine spent (its race) 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1103 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 2 of 4 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 38 km)
+           United States done? home (aims decided); 1 of 4 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 18 km)
+  seed   1899: time    at 10:00 (+11:30)  Spain lost 3/5 (14171 t), aims met, score 1.00   United States lost 0/4 (0 t), score 0.00   (capsized 2, broke in two 1)   995c4a43cfadec04   (20.4 s)
+           main guns: 3 fell out for them, main mounts out 7 of 8 (7 of 8 guns): magazine flooded by order 2, magazine flooded by the sea 2, gunhouse out of action 1, barbette out 1, guns out 1
+                      at the end, 6 ships afloat: main mounts out 2 of 12 (3 of 20 guns): magazine flooded by the sea 2
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 2509 fired, 0 at ships seen done for
+           Spain        done? home (aims decided); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 30 km)
+           United States done? home (aims decided); 4 of 4 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1900: done    at 09:50 (+11:20)  Spain lost 3/5 (3249 t), aims met, score 1.00   United States lost 0/4 (0 t), score 0.00   (capsized 3)   0ebdc2bc3f0953f1   (18.5 s)
+           main guns: 1 fell out for them, main mounts out 1 of 2 (1 of 2 guns): guns out 1
+                      at the end, 6 ships afloat: main mounts out 2 of 14 (4 of 22 guns): magazine flooded by the sea 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2590 fired, 8 at ships seen done for
+  seed   1901: time    at 10:00 (+11:30)  Spain lost 3/5 (8030 t), aims met, score 1.00   United States lost 1/4 (5154 t), score 0.00   (foundered 2, capsized 1, broke in two 1)   79d678bd16ffc038   (14.0 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 5 ships afloat: main mounts out 3 of 12 (4 of 18 guns): magazine flooded by order 2, magazine flooded by the sea 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2989 fired, 3 at ships seen done for
+           Spain        done? home (aims decided); 1 of 2 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 148 km)
+           United States done? home (aims decided); 2 of 3 afloat home, 1 not (1 in an encounter, 1 stopped, 1 dead in the water, the farthest 13 km)
+  seed   1902: time    at 10:00 (+11:30)  Spain lost 1/5 (1083 t), score 0.50   United States lost 0/4 (0 t), score 0.50   (capsized 1)   b41e95a6a6469c7c   (18.7 s)
+           main guns: 3 fell out for them, main mounts out 4 of 6 (6 of 8 guns): guns out 2, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 8 ships afloat: main mounts out 8 of 18 (11 of 26 guns): magazine flooded by the sea 4, guns out 2, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2477 fired, 0 at ships seen done for
+           Spain        done? battle; 1 of 4 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 97 km)
+           United States done? contact; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 41 km)
