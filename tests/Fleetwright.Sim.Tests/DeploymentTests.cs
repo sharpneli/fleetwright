@@ -47,13 +47,13 @@ public class DeploymentTests(ITestOutputHelper output)
 
     /// <summary>Four columns of three dreadnoughts a mile apart abreast, heading south-east at 14 kn; an enemy line of six
     /// steaming north, its van 26 km to the south-south-west of the force's guide.</summary>
-    internal static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy, string design = "dreadnought")
+    internal static (World W, AiSystem Ai, int Force, int Enemy) Make(bool deploy, string design = "dreadnought", bool scenario = false)
     {
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
         w.Apply(ai.Orders.SideDoctrine(0, DoctrineField.Deploy, deploy ? 1 : 0));
-        int bb = w.Ships.AddClass(Fleet.Get(design).Class!), enemyClass = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
+        int bb = w.Ships.AddClass(scenario ? Fleet.Scenario(design) : Fleet.Get(design).Class!), enemyClass = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
         var at = Earth.Position(Lat, Lon);
         int first = Column(w, ai, bb, at, 135, 3);
         w.Apply(GroupSystem.Form(first, Formation.LineAbreast, 1_850));
@@ -113,11 +113,14 @@ public class DeploymentTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void A_force_of_light_cruisers_keeps_its_columns()
+    public void A_force_of_destroyers_keeps_its_columns()
     {
-        var (w, _, force, _) = Make(deploy: true, design: "light_cruiser");
+        // a force whose torpedoes are its weapon against his battle line doesn't form a line of battle (AL5). Light cruisers
+        // did until P11 (docs/battle/balance.md): by day their torpedoes, on the slow setting after a battleship turning
+        // away, now do less than their 6" guns, so a force of them deploys as a battle force would; never by type
+        var (w, _, force, _) = Make(deploy: true, design: "v25", scenario: true);
         w.AdvanceTo(w.Time + 20 * 60_000);
-        Assert.Equal(Formation.LineAbreast, w.Groups.Get(force)!.Formation);   // a battle force deploys; cruisers don't
+        Assert.Equal(Formation.LineAbreast, w.Groups.Get(force)!.Formation);   // a battle force deploys; a flotilla doesn't
     }
 
     [Fact]

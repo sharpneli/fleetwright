@@ -996,6 +996,69 @@ The early wave (16 seeds): the Yalu 0.3 / 1.9 lost (0.6 / 1.7), scores 0.11 / 0.
 Conrad's war 2.4 / 2.0 (2.9 / 3.8). Two scenarios want the user: the prizes' war, which fought only because each
 cruiser-and-destroyer force read as one flotilla (bugs.md), and the Bosporus's re-balance now its boats attack.
 
+## P11 The day attack's exchange, measured (2026-11-19)
+
+The user: "go ahead with P11". P11's question, how light forces should judge a run in under fire, asked first what a day
+attack costs and gains in play now against what `FlotillaAttacks.Worth` forecasts. Kept in `p11/`.
+
+**The bench.** `scenario X --play --fire-table` now also gives (`ScenarioPlay.AttackTrace`):
+- **The exchange table.** Each flotilla attack's forecast at its start, made on the truth as the force judges it by day (its boats and its side's heavy ships within 30 km of the target, on the enemy within 10 km of her), against what it came to 15 minutes after. Lost is the boats gone, going down or fallen out; taken is the tonnes its torpedoes struck and put out. A sweep of `MatchupRunInHitShare` is beside it.
+- **Every spread fired** (`ScenarioPlay.TorpedoTally`), read at its launch: range, setting and the target's speed, by day or night, and the hits on her or another ship. `P11_SPREADS=FILE` writes them as a CSV for `tools/torpedo_fit.py`.
+
+The attack trace's sample clock carried over from one seed to the next, so it read the first seed only. That had been so since the fire table's attack trace was built; fixed.
+
+**What it found: the torpedoes, not the run in.** The Bosporus (8 seeds, AL8's forces):
+- **Forecast:** 25 day attacks forecast 91% of their boats lost and 39,600 t taken.
+- **Play:** 65% of the boats lost; 82 torpedoes made 1 hit, nothing put out.
+- **Why:** 77 of the 85 spreads needed a 2-4 minute run from 1.6 km. The battleships turned away as the boats came in, and the boats, 24 kn against 15, ended up firing stern chases with the 1890s torpedo's 24 kn setting.
+
+The old law read a torpedo at 13% there, by 350 m over the range times 0.6 for her evading. It also had a speed factor, (its fast speed less hers) over (its fast speed less 18 kn), which scores a slow torpedo best. The matchup also fired the attack from 0.7 of the fast setting's range, while the captains fire by day from the slow one (BL5).
+
+Over every torpedo fired in 17 scenarios (2,562, day and night, 24-41 kn; `p11/fitdata`), the hit chance goes with the run's time, steeply:
+
+| The run, as she turns away | Torpedoes | Hits | % | The fit |
+|---|---:|---:|---:|---:|
+| under 45 s | 90 | 31 | 34 | 36 |
+| 45-90 s | 154 | 42 | 27 | 27 |
+| 1.5-3 min | 440 | 39 | 9 | 11 |
+| 3-6 min | 467 | 20 | 4.3 | 5.2 |
+| 6-12 min | 647 | 22 | 3.4 | 2.6 |
+| over 12 min | 735 | 7 | 1.0 | 0.7 |
+
+**The refit** (`Matchup.TorpedoHit`):
+- **The chance:** (min(0.4, (28 s / t)^1.4) + 0.005) × √(her length / 150 m).
+- **The run's time t:** the range over the torpedo's speed less hers, as she turns away from it.
+- **The setting:** the one the torpedo system picks for a shot on her beam (`Matchup.Setting`): the fast one if it reaches, else the slow one on a day attack.
+- **The attack's range** (`MatchupProfile.AttackRangeM`): TorpedoAttackShare of the setting the captains attack on, by day the slow one at TorpedoDayShare of its range.
+
+Timing the run as she turns away fits play better than a shot on her beam (log-likelihood −487 against −502). The floor is a spread fired into a formation finding some ship: the flotilla scenario's day attack on four battleships at 64 seeds put 319 torpedoes in from 7-8 km for 3 hits.
+
+The constants sit within 0.6 of the likelihood's best (24 s, 1.2, no floor) and stay. Per scenario the fit reads the Bosporus at 3.8 hits for its 2, the Dogger Bank 16 for 21, the 4th flotilla's night 52 for 37, Southampton's 19 for 26.
+
+**What the AI judges now:**
+- **Twelve Schichau boats on three barbette ships** (`matchup ottoman_tb:12 ekaterina:3`): the attack takes 1,771 t for 1,724 t of boats (1.03; it was 1.92).
+- **V25s on a lone Iron Duke by day:** about 34 make a match (twenty since PM, `MatchupTests`).
+- **Beside four dreadnoughts on one:** 24 M-class are worth sending in (0.6 against doctrine's 0.5), 8 aren't (0.16).
+- **By night:** four V25s are still a match for her.
+
+**What it moved** (8 seeds a scenario, `p11/csv` before, `p11/after` after; lost a seed):
+
+| | Before | After |
+|---|---|---|
+| The Bosporus: Russia / the Ottomans | 0.1 / 8.8 | 1.0 / 2.4 |
+| Heligoland: Britain / Germany | 0.5 / 5.6 | 0.0 / 0.5 |
+| The Dogger Bank | 1.4 / 6.0 | 0.2 / 1.4 (5 seeds) |
+| The Yalu: Japan / China | 0.5 / 1.5 | 1.6 / 3.5 |
+| Cape Sarych: Russia / the Ottomans | 1.2 / 0.6 | 2.2 / 0.4 |
+| Åland: Finland / Sweden | 6.4 / 2.8 | 6.9 / 3.9 |
+
+The rest are within noise. Detail:
+- **The Bosporus:** the Ottoman commander sends 2 day attacks in 8 games, not 25. Their torpedoes hit 9.1% against a forecast 10.2%. Russia still lands every time.
+- **Heligoland** now ends without a fight in 7 of 8 (`p11/after/heligoland-1914.txt` against `-before.txt`). Germany's commander judges the British force too strong for his and withdraws at first sight: his boats' torpedoes, on the slow setting after a 28 kn cruiser turning away, are worth what play gives them. Britain's 3rd Flotilla loses contact and the British commander goes home at 07:31. A scenario question (where the Germans start, Britain's pursuit), not one for the matchup.
+- **Light cruisers by day** no longer count their torpedoes as their weapon against a battle line, so a force of them forms a line of battle as a battle force would (AL5, never by type; `DeploymentTests` now has destroyers keep their columns).
+
+**Tests restated:** `MatchupTests` (the day anchor 20 → 36; 28 under parity) and the play tests' packs 16 → 36; the commander's and the force's flotillas 8 → 24 boats; `DeploymentTests`' cruisers → V25s.
+
 ## Decided (the user, 2026-10-30)
 
 1. **Gunnery closes the gap with the systems,** not a gameplay exception: "we need the systems in place. We can
@@ -1066,7 +1129,7 @@ answered today; the rest are best answered when their step has measured.
 | P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | decided (5) |
 | P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | decided (5) |
 | P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | decided (5) |
-| P11 | `explosions.md` EX7 | Light forces now stand off by day: once the matchup expected a torpedo to put a light cruiser out about 60% of the time (not 85%) and the guns at 8 km to grind slowly, the prizes' war fought at 7.8 km for 90 minutes before its boats ran in (0:39 before); PM eased it (6.6 km). How should light forces judge a run in under fire? | BL5's: measure the run-in's own exchange as the flotilla's day attack now is (`FlotillaAttacks.Worth`), then decide. AL8 (2026-11-19, `allocation.md`): the Bosporus's boats sent in at first sight by day, forecast 36% lost and 1.15 torpedo hits, played 75% lost and none; boats falling out for their one gun, tubes whole; the Jutland's German destroyers 34 of 55 lost a seed | with BL5; next |
+| P11 | `explosions.md` EX7 | Light forces now stand off by day: once the matchup expected a torpedo to put a light cruiser out about 60% of the time (not 85%) and the guns at 8 km to grind slowly, the prizes' war fought at 7.8 km for 90 minutes before its boats ran in (0:39 before); PM eased it (6.6 km). How should light forces judge a run in under fire? | BL5's: measure the run-in's own exchange as the flotilla's day attack now is (`FlotillaAttacks.Worth`), then decide. AL8 (2026-11-19, `allocation.md`): the Bosporus's boats sent in at first sight by day, forecast 36% lost and 1.15 torpedo hits, played 75% lost and none; boats falling out for their one gun, tubes whole; the Jutland's German destroyers 34 of 55 lost a seed. **Measured 2026-11-19 ("P11" above): the torpedoes were the error, not the run in; the matchup's torpedo hit chance refitted to play** | torpedoes refitted; the run in and the admiral's call on a boat without torpedoes next |
 
 ## The balance log
 

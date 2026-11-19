@@ -1,0 +1,123 @@
+Heligoland Bight: 60 ships, 2 sides, from 1914-08-28 06:50:00.000 until 1914-08-28 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+
+the timeline:
+  06:51 (+0:01)  the sides meet (the first encounter opens)
+  06:51 (+0:01)  Germany's commander: no contact
+  06:51 (+0:01)  Germany sights Arethusa
+  06:52 (+0:02)  Britain's commander: no contact
+  06:52 (+0:02)  Germany's commander: II. Scouting Group to intercept Arethusa (contact)
+  06:52 (+0:02)  Germany's commander: Stettin to intercept Arethusa (wing)
+  06:52 (+0:02)  Germany's commander: Frauenlob to intercept Arethusa (contact)
+  06:52 (+0:02)  Germany's commander: Mainz to intercept Arethusa (wing)
+  06:52 (+0:02)  Germany's commander: Danzig to join II. Scouting Group (idle)
+  06:52 (+0:02)  Britain sights V188
+  06:52 (+0:02)  Britain's first torpedoes: Arethusa, 2 at V188
+  06:52 (+0:02)  Britain opens fire: Arethusa at V188
+  06:53 (+0:03)  Germany's commander: battle
+  06:53 (+0:03)  Germany opens fire: V188 at Arethusa
+  06:53 (+0:03)  Germany's first hit: V188 on Arethusa
+  06:54 (+0:04)  Britain's commander: battle
+  06:55 (+0:05)  Britain's first hit: Arethusa on G196
+  06:56 (+0:06)  Germany's G196 falls out: her steering gone
+  06:58 (+0:08)  Germany's first torpedoes: V187, 2 at Arethusa
+  07:00 (+0:10)  Germany's commander: Stettin to intercept Fearless (wing)
+  07:00 (+0:10)  Germany's commander: Mainz to intercept Fearless (wing)
+  07:02 (+0:12)  Germany's commander: II. Scouting Group to search (idle)
+  07:02 (+0:12)  Germany's commander: Frauenlob to join II. Scouting Group (idle)
+  07:05 (+0:15)  Germany's commander: contact
+  07:06 (+0:16)  Germany's commander: battle
+  07:08 (+0:18)  Germany's V187 falls out: her main guns out
+  07:08 (+0:18)  Germany's commander: Stettin to search (idle)
+  07:08 (+0:18)  Germany's commander: Mainz to scout Stettin (idle)
+  07:14 (+0:24)  Germany's V188 falls out: her main guns out
+  07:14 (+0:24)  Germany's commander: contact
+  07:16 (+0:26)  Germany's commander: battle
+  07:16 (+0:26)  Germany's commander: II. Scouting Group to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: V. Flotilla to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: I. Flotilla to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: Stettin to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: Frauenlob to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: Mainz to withdraw (outmatched)
+  07:16 (+0:26)  Germany's commander: Danzig to withdraw (outmatched)
+  07:17 (+0:27)  Germany's Danzig: withdraw done (home)
+  07:17 (+0:27)  Germany's commander: retiring (outmatched)
+  07:17 (+0:27)  Britain's commander: 1st Light Cruiser Squadron to screen 1st Flotilla (idle)
+  07:17 (+0:27)  Britain's commander: 1st Flotilla to intercept G196 (contact)
+  07:17 (+0:27)  Britain's commander: 3rd Flotilla to intercept V188 (contact)
+  07:18 (+0:28)  Britain's commander: contact
+  07:22 (+0:32)  Germany's II. Scouting Group: withdraw done (home)
+  07:22 (+0:32)  Britain's commander: battle
+  07:26 (+0:36)  Britain's commander: contact
+  07:28 (+0:38)  Germany's G194 falls out: her main guns out
+  07:28 (+0:38)  Britain's commander: 1st Flotilla to intercept G194 (contact)
+  07:30 (+0:40)  Britain's commander: battle
+  07:37 (+0:47)  Germany's Frauenlob: withdraw done (home)
+  07:47 (+0:57)  Britain's commander: contact
+  07:48 (+0:58)  Britain's commander: battle
+  07:49 (+0:59)  Britain's commander: contact
+  07:50 (+1:00)  Britain's commander: battle
+  07:52 (+1:02)  Britain's commander: contact
+  07:54 (+1:04)  Britain's commander: battle
+  07:55 (+1:05)  Germany's V. Flotilla: withdraw done (home)
+  07:55 (+1:05)  Germany's Stettin: withdraw done (home)
+  07:55 (+1:05)  Britain's commander: contact
+  07:56 (+1:06)  Britain's commander: battle
+  08:02 (+1:12)  LOST: Germany's V188, capsized (last hit by Legion)
+  08:03 (+1:13)  Britain's commander: 3rd Flotilla to intercept V187 (contact)
+  08:04 (+1:14)  Britain's commander: contact
+  08:13 (+1:23)  Britain's 3rd Flotilla: intercept can't (lostcontact)
+  08:13 (+1:23)  Britain's commander: 3rd Flotilla to scout Battlecruisers (idle)
+  08:14 (+1:24)  Britain's 1st Light Cruiser Squadron I: intercept can't (lostcontact)
+  08:14 (+1:24)  Britain's 1st Battlecruiser Squadron: intercept can't (lostcontact)
+  08:14 (+1:24)  Britain's 1st Flotilla: intercept can't (lostcontact)
+  08:14 (+1:24)  Britain's commander: Battlecruisers to withdraw (gave up)
+  08:14 (+1:24)  Britain's commander: 1st Light Cruiser Squadron to withdraw (gave up)
+  08:14 (+1:24)  Britain's commander: 1st Flotilla to withdraw (gave up)
+  08:14 (+1:24)  Britain's commander: 3rd Flotilla to withdraw (gave up)
+  08:15 (+1:25)  Britain's commander: home (gave up)
+  09:09 (+2:19)  Germany's Mainz: withdraw done (home)
+  10:32 (+3:42)  LOST: Germany's V187, capsized (last hit by Fearless)
+  10:36 (+3:46)  the end: done
+
+the result (done at 10:36 (+3:46), played in 25.7 s):
+  Britain        44 ships    256065 t   lost   0 (      0 t)   damaged afloat   3   afloat  44   hits made  195   torpedoes  32   aims not met, score 0.06   men lost 22, saved 0
+  Germany        16 ships     55372 t   lost   2 (   3144 t)   damaged afloat   2   afloat  14   hits made    8   torpedoes   5   aims not met, score 0.00   men lost 196, saved 66
+  Britain      at the end: 4 units on a task, 0 home, 0 on their first orders, 0 idle; 0 fallen out
+  Germany      at the end: 0 units on a task, 6 home, 0 on their first orders, 0 idle; 2 fallen out
+  Britain      done? home (gave up); 0 of 44 afloat home, 44 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 224 km)
+  Germany      done? retiring (outmatched); 14 of 14 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  at the end 0 units held by the player, 2 out of their lines on tasks; 0 notices raised
+where the time went (12.1 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
+  Commands                    0.04 %      0.000    10575.4 µs   (10.58 ms)
+  Smoke looks                 0.32 %     13.777        0.4 µs   (0.67 ms)
+  Ships: step                20.43 %     19.912       19.5 µs   (3.88 ms)
+  Ships: step, all threads   20.33 %     19.912       19.4 µs   (1.64 ms)
+  Ships: contacts             0.01 %      0.199        0.7 µs   (0.70 ms)
+  Ships: rails check          0.56 %      0.199       53.6 µs   (3.55 ms)
+  Encounters                  0.24 %      0.199       23.1 µs   (6.08 ms)
+  Sighting                    6.90 %      0.991      132.1 µs   (21.54 ms)
+  Ships: coarse               0.14 %      0.003      798.9 µs   (33.85 ms)
+  ShipSystem                 28.29 %     19.915       27.0 µs   (33.85 ms)
+  ShellSystem                 0.64 %      0.169       72.0 µs   (33.34 ms)
+  GunnerySystem              10.09 %      0.375      510.9 µs   (19.28 ms)
+  DamageSystem                2.21 %      1.150       36.5 µs   (22.37 ms)
+  TorpedoSystem               0.06 %      0.685        1.8 µs   (1.88 ms)
+  Smoke index                 4.34 %      0.400      206.1 µs   (16.71 ms)
+  Smoke merge                 2.87 %      0.996       54.6 µs   (23.57 ms)
+  Smoke queries               0.49 %      0.552       16.7 µs   (3.30 ms)
+  SmokeSystem                 9.50 %      0.997      180.9 µs   (80.62 ms)
+  ChallengeSystem             0.00 %      0.000      252.0 µs   (0.25 ms)
+  AI: CommanderLayer          2.29 %     20.000        2.2 µs   (54.26 ms)
+  AI: TaskLayer               0.63 %     19.912        0.6 µs   (0.34 ms)
+  AI: AdmiralLayer           11.21 %     19.912       10.7 µs   (11.97 ms)
+  AI: CaptainLayer           33.58 %     19.912       32.0 µs   (25.73 ms)
+  AiSystem                   48.69 %     79.735       11.6 µs   (54.68 ms)
+  AI: captains, prepared      2.56 %     19.912        2.4 µs   (6.77 ms)
+  AI: captains, the job      29.72 %     19.912       28.3 µs   (16.72 ms)
+  the speed hour by hour: 268x 650x 925x
+  main guns: 3 fell out for them, main mounts out 8 of 9 (8 of 9 guns): guns out 5, magazine flooded by the sea 2, gunhouse destroyed 1
+             at the end, 58 ships afloat: main mounts out 1 of 187 (1 of 207 guns): gunhouse destroyed 1
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 908 fired, 0 at ships seen done for
+  the state at the end: 76f090780fdac407

@@ -179,12 +179,13 @@ public class CommanderTests(ITestOutputHelper output)
     [Fact]
     public void Flotillas_are_sent_in_on_an_enemy_line_their_heavy_units_engage()
     {
-        // eight destroyers against one dreadnought: an attack worth making (docs/battle/command.md 5.1g; by day four aren't
-        // since the torpedo officer's judgement, docs/battle/night.md Q12f)
+        // twenty-four destroyers beside four dreadnoughts against one: an attack worth making (docs/battle/command.md 5.1g; by
+        // day eight aren't since P11, docs/battle/balance.md: the torpedoes as play gives them, the force's exchange 0.16 for
+        // eight, 0.6 for twenty-four against doctrine's 0.5)
         var (w, ai) = Make();
         int bb = Class(w, "dreadnought"), dd = Class(w, "m_class");
         var line = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);
-        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 8, side: 0);
+        var flotilla = Column(w, ai, dd, Off(270, 3_000), 180, 24, side: 0);
         var enemy = Column(w, ai, bb, Off(90, 16_000), 180, 1, side: 1);
         w.Apply(ai.Orders.FireAtWill(flotilla));
         w.Apply(ai.Orders.Screen(flotilla, line, 3_000));

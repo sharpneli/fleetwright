@@ -18,8 +18,9 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
    on today's code (one explosion, night Q13-Q16 since its findings), the slow deaths (losses with no hit in their last
    20 minutes, destroyers lolled past the capsize line) tested by a counterfactual, then the cause it names; fire on
    ships going home; the gunnery gap (some 3.5 times the record) stays accepted (error-sources.md).
-2. **BL5, the AI's judgement and the ends:** P11 (light forces' run-in by day), fights that run to the clock (the Yalu,
-   Port Arthur).
+2. **BL5, the AI's judgement and the ends:** P11 (light forces' run-in by day: the matchup's torpedoes refitted to play
+   2026-11-19, balance.md "P11"; the run in and the admiral's call on a boat without torpedoes next), fights that run to
+   the clock (the Yalu, Port Arthur).
 3. **BL6, the scenarios rebalanced** (wave 1, Åland, the early wave E1-E6): done 2026-11-16 by ship counts, Tsushima's
    reach and one AI fix (balance.md "BL6"); the coarse sync the same day; then **the user's playtest alpha**.
 

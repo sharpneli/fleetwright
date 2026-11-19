@@ -1,0 +1,232 @@
+Night: Southampton, Jutland 1916: 9 ships, 2 sides, from 1916-05-31 21:30:00.000 until 1916-05-31 23:30:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1916: time    at 23:30 (+2:00)  Britain lost 1/4 (3827 t), score 0.21   Germany lost 1/5 (5216 t), score 0.24   (broke in two 1)   8425cb7df6528a07   (11.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 8 of 25 (8 of 25 guns): magazine flooded by the sea 4, guns out 2, gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 2 ships blacked out
+           shells: 429 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 1 dead in the water, the farthest 454 km)
+           Germany      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 216 km)
+  seed   1917: time    at 23:30 (+2:00)  Britain lost 0/4 (0 t), score 0.21   Germany lost 1/5 (5216 t), score 0.00   (foundered 1)   5b987324f2e6d480   (3.9 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 8 of 28 (8 of 28 guns): gunhouse out of action 4, magazine flooded by the sea 2, gunhouse destroyed 2
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 434 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 2 stopped, 1 dead in the water, the farthest 459 km)
+           Germany      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 183 km)
+  seed   1918: time    at 23:30 (+2:00)  Britain lost 0/4 (0 t), score 0.37   Germany lost 2/5 (9006 t), score 0.00   (broke in two 2)   b5528c38a373fc29   (5.8 s)
+           main guns: 1 fell out for them, main mounts out 1 of 2 (1 of 2 guns): guns out 1
+                      at the end, 7 ships afloat: main mounts out 3 of 26 (3 of 26 guns): magazine flooded by the sea 1, magazine put out by a hit 1, gunhouse destroyed 1
+           blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 208 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 446 km)
+           Germany      done? retiring (broken off); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 204 km)
+  seed   1919: time    at 23:30 (+2:00)  Britain lost 0/4 (0 t), score 0.00   Germany lost 0/5 (0 t), score 0.00   9213446c7c252890   (5.1 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 9 ships afloat: main mounts out 2 of 30 (2 of 30 guns): gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 475 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 442 km)
+           Germany      done? battle; 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 1 dead in the water, the farthest 242 km)
+  seed   1920: decided at 22:41 (+1:11)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 5/5 (24654 t), score 0.00   (foundered 1, broke in two 2)   bb06f44baaf37e03   (4.8 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 7 ships afloat: main mounts out 12 of 26 (12 of 26 guns): guns out 5, gunhouse out of action 4, magazine flooded by order 1, magazine spent (its race) 1, magazine put out by a hit 1
+           blackouts: 3 ship-wide (3 by a hit's shock, 0 by near misses), 2 ships blacked out
+           shells: 659 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 460 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1921: time    at 23:30 (+2:00)  Britain lost 0/4 (0 t), score 0.15   Germany lost 1/5 (3790 t), score 0.00   (broke in two 1)   82812869084b8f43   (4.8 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 4 of 28 (4 of 28 guns): gunhouse destroyed 3, gunhouse out of action 1
+           blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 394 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 454 km)
+           Germany      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 179 km)
+  seed   1922: time    at 23:30 (+2:00)  Britain lost 0/4 (0 t), score 0.00   Germany lost 0/5 (0 t), score 0.00   b7eb075b8e4b5408   (6.0 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 9 ships afloat: main mounts out 4 of 30 (4 of 30 guns): gunhouse destroyed 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 363 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 1 dead in the water, the farthest 450 km)
+           Germany      done? retiring (outmatched); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 222 km)
+  seed   1923: time    at 23:30 (+2:00)  Britain lost 1/4 (4198 t), score 0.21   Germany lost 1/5 (5216 t), score 0.26   (broke in two 2)   db04bf34764cb592   (5.3 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 7 ships afloat: main mounts out 2 of 23 (2 of 23 guns): gunhouse destroyed 2
+           blackouts: 2 ship-wide (2 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 496 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 1 dead in the water, the farthest 450 km)
+           Germany      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 200 km)
+
+over 8 seeds:
+  ended time      7 times, after 2:00 on average
+  ended decided   1 times, after 1:11 on average
+  Britain      lost 0.2 of 4 ships (from 0 to 1), 1003 t; made 93 hits, fired 20.0 torpedoes; aims met 1 times, score 0.27
+  Germany      lost 1.4 of 5 ships (from 0 to 5), 6637 t; made 166 hits, fired 8.0 torpedoes; aims met 0 times, score 0.06
+over 8 seeds:
+  main guns: 1 fell out for them, main mounts out 1 of 2 (1 of 2 guns): guns out 1
+             at the end, 63 ships afloat: main mounts out 43 of 216 (43 of 216 guns): gunhouse out of action 13, gunhouse destroyed 12, magazine flooded by the sea 7, guns out 7, magazine put out by a hit 2, magazine flooded by order 1, magazine spent (its race) 1
+  blackouts: 12 ship-wide (12 by a hit's shock, 0 by near misses), 8 ships blacked out
+  shells: 3458 fired, 0 at ships seen done for
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  night  large  under 120 mm     0-2 km          pb      1322   1012   76.6%
+  night  large  under 120 mm     2-4 km                   934    202   21.6%
+  night  large  under 120 mm     2-4 km          pb       112     51   45.5%
+  night  large  under 120 mm     4-6 km                   145      9    6.2%
+  night  large  under 120 mm     6-10 km                    4      0    0.0%
+  night  large  120-200 mm       0-2 km          pb       606    555   91.6%
+  night  large  120-200 mm       2-4 km                    44     13   29.5%
+  night  large  120-200 mm       2-4 km          pb       156    122   78.2%
+  night  large  120-200 mm       4-6 km                    16      4   25.0%
+  night  large  120-200 mm       6-10 km                    4      0    0.0%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  night Home (Own)                                                                                          773    592
+  night Course (Superior) / admiral Course / task Withdraw OnTask                                           630    370
+  night Station (Superior) / admiral Course / task Withdraw OnTask                                          554    266
+  night Course (Superior) / admiral Course / task Intercept Done                                            452    241
+  night Course (Superior) / admiral Fight / task Intercept Engaged                                          111    107
+  night Station (Superior) / admiral Course / task Intercept Done                                           193     94
+  night Station (Superior) / admiral Fight / task Intercept Engaged                                          80     73
+  night Course (Superior) / admiral Course / task Intercept OnTask                                           52     49
+  night Course (Superior) / admiral Fight / task Intercept Done / attack Fire                                53     45
+  night Course (Superior) / admiral Route / task Search Done                                                135     42
+  night Station (Superior) / admiral Course / task Intercept OnTask                                          37     34
+  night Station (Superior) / admiral Route / task Withdraw OnTask                                            14     12
+  night Route (Superior) / admiral Route / task Withdraw OnTask                                              10     10
+  night Fight in the band (Superior) / admiral Fight / task Intercept Engaged                                 6      6
+  night Fight in the band (Superior) / admiral Fight / task Intercept Done                                    5      5
+  night Run (Superior) / admiral Fight / task Intercept Done / attack Away                                   20      5
+  night Station (Superior) / admiral Fight / task Intercept Done                                              3      3
+  night Station (Superior) / admiral Fight / task Intercept Done / attack Away                               20      1
+  night Station (Superior) / admiral Route / task Search Done                                                26      0
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  under helm, by what she was doing (shells, hits):
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+  Germany night [he closes]: Home (Own, OutSpeed)                                                                    22
+  Britain night [she closes]: Home (Own, OutSpeed)                                                                   11
+  Britain night [she closes]: Home (Own, OutSteering)                                                                 7
+  Germany night [both closing]: Course (Superior, None) / admiral Course / task Withdraw                              5
+  Germany night [neither]: Home (Own, OutSpeed)                                                                       5
+  Germany night [neither]: Station (Superior, None) / admiral Course / task Withdraw                                  5
+  Britain night [neither]: Home (Own, OutSteering)                                                                    4
+  Germany night [both closing]: Course (Superior, Combing) / admiral Course / task Withdraw                           4
+  Britain night [both closing]: Course (Superior, None) / admiral Course / task Intercept                             3
+  Britain night [she closes]: Course (Superior, None) / admiral Course / task Intercept                               3
+  Britain night [she closes]: Course (Superior, None) / admiral Fight / task Intercept                                3
+  Germany night [both closing]: Home (Own, OutSteering)                                                               3
+  Germany night [he closes]: Course (Superior, None) / admiral Course / task Withdraw                                 3
+  Germany night [neither]: Home (Own, OutSteering)                                                                    3
+  Britain night [both closing]: Course (Superior, None) / admiral Fight / task Intercept                              2
+  Britain night [he closes]: Course (Superior, None) / admiral Fight / task Intercept                                 2
+  Britain night [neither]: Course (Superior, None) / admiral Course / task Intercept                                  2
+  Britain night [she closes]: Station (Superior, Combing) / admiral Fight / task Intercept                            2
+  Britain night [she closes]: Station (Superior, None) / admiral Fight / task Intercept                               2
+  Germany night [both closing]: Course (Superior, None) / admiral Fight Fire / task Intercept                         2
+  Germany night [he closes]: Course (Superior, Combing) / admiral Course / task Withdraw                              2
+  Germany night [neither]: Course (Superior, None) / admiral Course / task Withdraw                                   2
+  Britain night [both closing]: Course (Superior, Lit) / admiral Course / task Withdraw                               1
+  Britain night [both closing]: Course (Superior, None) / admiral Course / task Withdraw                              1
+  Britain night [both closing]: Home (Own, OutSteering)                                                               1
+  Britain night [both closing]: Station (Superior, None) / admiral Fight / task Intercept                             1
+  Britain night [he closes]: Course (Superior, Combing) / admiral Fight / task Intercept                              1
+  Britain night [he closes]: Home (Own, OutSpeed)                                                                     1
+  Britain night [neither]: Course (Superior, None) / admiral Fight / task Intercept                                   1
+  Britain night [neither]: Station (Superior, None) / admiral Course / task Withdraw                                  1
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  night range/band <1/3 vis 6-12 km / target Home                                                           884    766
+  night range/band <1/3 vis 6-12 km / target Course / her admiral Course                                    487    375
+  night range/band <1/3 vis 6-12 km / target Course / her admiral Fight                                     305    218
+  night range/band <1/3 vis 6-12 km / target Station / her admiral Course                                   152    124
+  night range/band 1/3-2/3 vis 6-12 km / target Course / her admiral Course                                 406     90
+  night range/band <1/3 vis 6-12 km / target Station / her admiral Fight                                    113     86
+  night range/band 1/3-2/3 vis 6-12 km / target Home                                                        289     85
+  night range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Course                                193     52
+  night range/band <1/3 vis 6-12 km / target Station / her admiral Route                                     77     39
+  night range/band <1/3 vis 6-12 km / target Course / her admiral Route                                      29     26
+  night range/band <1/3 vis 6-12 km / target fighting / her admiral Fight                                    33     16
+  night range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Fight                                  85     15
+  night range/band <1/3 vis 6-12 km / target Route / her admiral Route                                       17     15
+  night range/band <1/3 vis 6-12 km / target Course / her admiral Fight Fire                                 14     14
+  night range/band 1/3-2/3 vis 6-12 km / target Route / her admiral Route                                    21     10
+  night range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Route                                  35      8
+  night range/band 1/3-2/3 vis 6-12 km / target Course / her admiral Fight                                   23      7
+  night range/band 1/3-2/3 vis 6-12 km / target Course / her admiral Route                                    5      5
+  night range/band <1/3 vis 6-12 km / target Run / her admiral Fight Away                                     6      4
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
+  night:
+    under 1 min                    39    10   25.6% (+5 others)  forecast  10.5%   range   0.8 km, set   41 kn, target   19 kn
+    1-2 min                        84     3    3.6% (+4 others)  forecast   7.9%   range   2.4 km, set   41 kn, target   20 kn
+    2-4 min                        65     3    4.6% (+1 others)  forecast   7.6%   range   2.9 km, set   41 kn, target   16 kn
+    4-8 min                         7     0    0.0% (+0 others)  forecast   6.9%   range   2.7 km, set   28 kn, target   19 kn
+    8 min and over                 17     0    0.0% (+0 others)  forecast   6.4%   range   2.9 km, set   28 kn, target   19 kn
+    out of reach on the truth      12     0    0.0% (+0 others)  forecast   5.7%   range   3.4 km, set  NaN kn, target   20 kn
+    all                           224    16    7.1% (+10 others)  forecast   8.0%   range   2.4 km, set   41 kn, target   19 kn
+    a 41 kn torpedo               224    16    7.1% (+10 others)  forecast   8.0%   range   2.4 km, set   41 kn, target   19 kn
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Capital by her match Capital at 0-2 km                                                        20     727    16.1
+  Capital by her match Capital at 2-4 km                                                         7     101     6.4
+  Capital: no gunfire hits                                                                       4       0     0.0
+  the 4 with no shell landed while fighting: 18 hits on them by the damage model's count (torpedoes, mines, collisions); main mounts out: main mounts out 2 of 8 (2 of 8 guns): magazine spent (its race) 1, magazine put out by a hit 1
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Capital OutSpeed: no gunfire hits (torpedoes, a collision, or the sea)                                                       2       0     0.0
+    Capital OutSteering: no gunfire hits (torpedoes, a collision, or the sea)                                                    2       0     0.0
+    Capital night Course / admiral Course / task Intercept (firing) -> OutSpeed                                                  2      95    35.1
+    Capital night Course / admiral Course / task Intercept (firing) -> OutSteering                                               2      56     2.1
+    Capital night Course / admiral Course / task Intercept (not firing) -> OutSteering                                           2      37    16.1
+    Capital night Course / admiral Fight / task Intercept (not firing) -> OutSpeed                                               2     135    18.2
+    Capital night Course / admiral Route / task Search (firing) -> OutSpeed                                                      2      33     2.2
+    Capital night Station / admiral Course / task Intercept (not firing) -> OutSteering                                          2     111    26.3
+    Capital night Station / admiral Course / task Withdraw (firing) -> OutSpeed                                                  2      20    10.6
+    Capital night Station / admiral Fight / task Intercept (firing) -> OutSpeed                                                  2      32     0.8
+    Capital night Course / admiral Course / task Intercept (not firing) -> OutSpeed                                              1      87    20.9
+    Capital night Course / admiral Course / task Withdraw (firing) -> OutList                                                    1      41    12.5
+    Capital night Course / admiral Course / task Withdraw (firing) -> OutSteering                                                1       9     1.5
+    Capital night Course / admiral Course / task Withdraw (not firing) -> OutSpeed                                               1       8     0.8
+    Capital night Course / admiral Fight / task Intercept (not firing) -> OutSteering                                            1      45     3.6
+    Capital night Route / admiral Route / task Withdraw (firing) -> OutList                                                      1      15    57.4
+    Capital night Route / admiral Route / task Withdraw (firing) -> OutSpeed                                                     1       7     3.3
+    Capital night Station / admiral Course / task Intercept (firing) -> OutSteering                                              1      23     0.8
+    Capital night Station / admiral Course / task Withdraw (firing) -> OutSteering                                               1      50    24.0
+    Capital night Station / admiral Fight / task Intercept (not firing) -> OutSpeed                                              1      15     2.0
+    Capital night Station / admiral Route / task Withdraw (not firing) -> OutGuns                                                1       9    17.6
+ships going home under fire: 22 (7 lost by the end), 853 hits on them going home (median 31, the top quarter from 54, the most 154); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 596 shells, 387 hits
+  with none other in reach: 626 shells, 466 hits
+    no other in reach       seen half silent                269    239
+    a fighting enemy in reach seen half silent              218    196
+    no other in reach       seen silent                     292    185
+    a fighting enemy in reach seen silent                   312    149
+    a fighting enemy in reach seen fighting                  66     42
+    no other in reach       seen fighting                    65     42
+  a fighting enemy in reach seen silent      night 0-2 km   closing she's slow / Home                                                      55     52
+  no other in reach       seen half silent night 0-2 km   opening she's slow / Course / admiral Course / task Withdraw                     46     41
+  no other in reach       seen silent      night 0-2 km   closing she's slow / Home                                                        42     41
+  a fighting enemy in reach seen half silent night 0-2 km   opening she's slow / Home                                                      36     35
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Home                                                        38     35
+  no other in reach       seen half silent night 0-2 km   opening she's slow / Course / admiral Course / task Intercept                    37     34
+  a fighting enemy in reach seen half silent night 0-2 km   closing she's quick / Course / admiral Fight / task Intercept                  30     30
+  no other in reach       seen half silent night 0-2 km   opening she's slow / Home                                                        33     30
+  a fighting enemy in reach seen half silent night 0-2 km   closing she's slow / Home                                                      28     28
+  a fighting enemy in reach seen half silent night 0-2 km   holding she's slow / Home                                                      29     28
+  no other in reach       seen half silent night 0-2 km   closing she's slow / Course / admiral Course / task Intercept                    28     28
+  no other in reach       seen half silent night 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                    37     25
+  no other in reach       seen half silent night 0-2 km   opening she's quick / Course / admiral Course / task Withdraw                    21     20
+  no other in reach       seen half silent night 0-2 km   opening she's slow / Station / admiral Course / task Intercept                   21     20
+  no other in reach       seen silent      night 0-2 km   holding she's quick / Station / admiral Course / task Withdraw                   24     19
+  no other in reach       seen silent      night 0-2 km   holding she's slow / Home                                                        18     17
+  a fighting enemy in reach seen silent      night 0-2 km   holding she's slow / Home                                                      16     16
+  a fighting enemy in reach seen silent      night 2-4 km   opening she's slow / Station / admiral Course / task Withdraw                  78     16
+  no other in reach       seen fighting    night 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                    20     16
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Course / admiral Course / task Intercept                    16     16
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Course / admiral Course / task Withdraw                     22     15
+  a fighting enemy in reach seen half silent night 0-2 km   opening she's quick / Course / admiral Fight / task Intercept                  14     14
+  a fighting enemy in reach seen half silent night 0-2 km   opening she's slow / Station / admiral Fight / task Intercept                  12     12
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's slow / Station / admiral Fight / task Intercept                  12     12
+  no other in reach       seen silent      night 0-2 km   closing she's slow / Course / admiral Course / task Intercept                    13     12
+  no other in reach       seen half silent night 0-2 km   holding she's slow / Home                                                        10     10
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's slow / Home                                                       9      9
+  a fighting enemy in reach seen silent      night 2-4 km   opening she's slow / Course / admiral Course / task Intercept                  45      9
+  no other in reach       seen fighting    night 0-2 km   holding she's quick / Course / admiral Course / task Intercept                    9      8
+  no other in reach       seen fighting    night 0-2 km   opening she's slow / Course / admiral Course / task Withdraw                      9      8

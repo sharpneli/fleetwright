@@ -1,0 +1,169 @@
+Night: Tsushima 1905: 11 ships, 2 sides, from 1905-05-27 10:45:00.000 until 1905-05-27 12:45:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1905: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   (capsized 1)   8ca4934f4cf5ee70   (8.3 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 2
+                      at the end, 10 ships afloat: main mounts out 1 of 20 (1 of 26 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 761 fired, 0 at ships seen done for
+           Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 865 km)
+           Japan        done? contact; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 253 km)
+  seed   1906: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   f155842bd2beaae8   (4.4 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 0 fired, 0 at ships seen done for
+           Russia       done? no contact; 0 of 3 afloat home, 3 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 859 km)
+           Japan        done? retiring (outmatched); 0 of 8 afloat home, 8 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 155 km)
+  seed   1907: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   ea6d630fe10c9f9e   (5.3 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 11 ships afloat: main mounts out 2 of 22 (2 of 28 guns): guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 150 fired, 0 at ships seen done for
+           Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 862 km)
+           Japan        done? battle; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 239 km)
+  seed   1908: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.25   Japan lost 2/8 (1568 t), score 0.00   (capsized 1)   6a5059519c0f6bb3   (5.7 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
+                      at the end, 10 ships afloat: main mounts out 2 of 20 (2 of 26 guns): magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 311 fired, 0 at ships seen done for
+           Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 854 km)
+           Japan        done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 1 dead in the water, the farthest 248 km)
+  seed   1909: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   0c238bfd1a264a47   (5.4 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 33 fired, 0 at ships seen done for
+           Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 861 km)
+           Japan        done? battle; 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 252 km)
+  seed   1910: done    at 12:42 (+1:57)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   97264a1cd73dfcc5   (3.6 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 0 fired, 0 at ships seen done for
+  seed   1911: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   948094eb4217eb23   (2.6 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 0 fired, 0 at ships seen done for
+           Russia       done? no contact; 0 of 3 afloat home, 3 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 859 km)
+           Japan        done? retiring (outmatched); 0 of 8 afloat home, 8 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 155 km)
+  seed   1912: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   efddc427bdced58e   (5.1 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 11 ships afloat: main mounts out 2 of 22 (2 of 28 guns): magazine flooded by the sea 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 303 fired, 0 at ships seen done for
+           Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 856 km)
+           Japan        done? battle; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 246 km)
+
+over 8 seeds:
+  ended time      7 times, after 2:00 on average
+  ended done      1 times, after 1:57 on average
+  Russia       lost 0.0 of 3 ships (from 0 to 0), 0 t; made 29 hits, fired 0.0 torpedoes; aims met 0 times, score 0.08
+  Japan        lost 0.6 of 8 ships (from 0 to 2), 490 t; made 0 hits, fired 0.0 torpedoes; aims met 0 times, score 0.00; regrouped 0.2 squadrons
+over 8 seeds:
+  main guns: 3 fell out for them, main mounts out 6 of 6 (6 of 6 guns): guns out 4, gunhouse out of action 2
+             at the end, 86 ships afloat: main mounts out 7 of 172 (7 of 220 guns): magazine flooded by the sea 3, guns out 3, gunhouse out of action 1
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 1558 fired, 0 at ships seen done for
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  night  small  under 120 mm     0-2 km                    72     23   31.9%
+  night  small  under 120 mm     0-2 km          pb        25     14   56.0%
+  night  small  under 120 mm     2-4 km                   839     72    8.6%
+  night  small  under 120 mm     4-6 km                   108      1    0.9%
+  night  small  120-200 mm       0-2 km                    17      1    5.9%
+  night  small  120-200 mm       0-2 km          pb        22     12   54.5%
+  night  small  120-200 mm       2-4 km                   258     33   12.8%
+  night  small  120-200 mm       4-6 km                    33      4   12.1%
+  night  small  200-300 mm       0-2 km          pb        22     17   77.3%
+  night  small  200-300 mm       2-4 km                    58      7   12.1%
+  night  small  200-300 mm       2-4 km          pb        36     11   30.6%
+  night  small  200-300 mm       4-6 km                    18      1    5.6%
+  night  small  200-300 mm       6-10 km                   14      0    0.0%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  night Station (Superior) / admiral Course / task Withdraw OnTask                                         1090    136
+  night Course (Superior) / admiral Course / task Withdraw OnTask                                           245     48
+  night Station (Superior) / admiral Route / task Withdraw OnTask                                             9      4
+  night Course (Superior) / admiral Route / task Withdraw OnTask                                              5      2
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  0.2-0.5 deg/s          18  20.0%      0    0.0%
+  0.5-1 deg/s             8   8.9%      0    0.0%
+  over 1 deg/s           12  13.3%      5   41.7%
+  steady                 52  57.8%      3    5.8%
+  under helm, by what she was doing (shells, hits):
+    over 1 deg/s: Course (Superior) / admiral Course / in the line                                           12      5
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / in the line                                           8      0
+    0.2-0.5 deg/s: Station (Superior) / admiral Course / in the line                                          6      0
+    0.5-1 deg/s: Station (Superior) / admiral Course / in the line                                            6      0
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / the guide                                             2      0
+    0.2-0.5 deg/s: Route (Superior) / admiral Route / the guide                                               2      0
+    0.5-1 deg/s: Course (Superior) / admiral Course / in the line                                             2      0
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+  Japan night [she closes]: Shadow (Superior, None) / admiral Shadow / task Shadow                                    1
+  Russia night [he closes]: Station (Superior, None) / admiral Route / task Withdraw                                  1
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  night range/band 1/3-2/3 vis >12 km / target Home                                                         853     78
+  night range/band <1/3 vis >12 km / target Home                                                            209     65
+  night range/band 1/3-2/3 vis >12 km / target Shadow / her admiral Shadow                                  127     13
+  night range/band <1/3 vis >12 km / target Shadow / her admiral Shadow                                      24     11
+  night range/band <1/3 vis >12 km / target Course / her admiral Course                                      30      9
+  night range/band <1/3 vis >12 km / target Station / her admiral Shadow                                     10      7
+  night range/band 1/3-2/3 vis >12 km / target Station / her admiral Shadow                                  91      6
+  night range/band 1/3-2/3 vis >12 km / target Course / her admiral Course                                    4      1
+  night range/band <1/3 vis >12 km / target Course / her admiral Fight Run                                    1      0
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+  night: 4 attacks, 15 boats; still on in Gain at the end 3, fired and away 1
+    gaining   960 s, running   240 s; nearest the target 10.5, an enemy heavy ship  7.0, an enemy boat    - km; the signal at    - km (0 made it)
+    hits 0/0/0/0, fallen out 0/0/0/0
+the night attacks' exchange (P11): forecast at their start (the force's: boats and heavy ships within 30 km of the target, on the enemy within 10 km of her; truth) against what they came to 15 min after; lost = the tonnes of its boats out, taken = the tonnes struck by its torpedoes and out
+    seed start boats                  line km lost: fc   real taken: fc    real exch fc   real  torps hits  end
+    1907 12:22 3 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      2835       0 2834.69   0.00      0    0  still on in Gain at the end
+    1907 12:22 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      3493       0 3492.60   0.00      0    0  still on in Gain at the end
+    1908 12:17 4 Ikazuchi-like destroyer (1899)     0.7      0 %   25 %      4654       0 4653.92   0.00      0    0  fired and away
+    1909 12:45 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      4913       0 4912.62   0.00      0    0  still on in Gain at the end
+  all 4: boats lost forecast 0 % of the attackers, real 7 % of the boats (1 of 15); taken forecast 15894 t, real 0 t (struck 0 t); 0 torpedoes, 0 hits
+    at a run-in share of 0.2: boats lost 0 %, taken 15894 t, the exchange 15893.82
+    at a run-in share of 0.4: boats lost 0 %, taken 15894 t, the exchange 15893.82
+    at a run-in share of 0.6: boats lost 0 %, taken 15894 t, the exchange 15893.82
+    at a run-in share of 0.8: boats lost 0 %, taken 15894 t, the exchange 15893.82
+    at a run-in share of 1.0: boats lost 0 %, taken 15894 t, the exchange 15893.82
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+  night going home                                                                    149  own    -  enemy heavy  2.4  enemy boat    -
+  night admiral Shadow / task Shadow / its guide fights a Capital / hit by a Capital's secondary guns     20  own    -  enemy heavy  2.4  enemy boat    -
+  night admiral Shadow / task Shadow / its guide fights a Capital / hit by a Capital's chief guns     15  own    -  enemy heavy  2.3  enemy boat    -
+  night admiral Course / task Intercept / hit by a Capital's secondary guns             5  own    -  enemy heavy  1.1  enemy boat    -
+  night admiral Course / task Intercept / its guide fights a Capital / hit by a Capital's secondary guns      4  own    -  enemy heavy  2.2  enemy boat    -
+  night admiral Shadow / task Shadow / hit by a Capital's chief guns                    2  own    -  enemy heavy  1.0  enemy boat    -
+  night admiral Course / task Intercept / its guide fights a Capital / hit by a Capital's chief guns      1  own    -  enemy heavy  2.7  enemy boat    -
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Destroyer by heavier Capital at 0-2 km                                                         3      20     5.9
+  Destroyer by heavier Capital at 2-4 km                                                         3      19     6.4
+  Destroyer: no gunfire hits                                                                     1       0     0.0
+  the 1 with no shell landed while fighting: 19 hits on them by the damage model's count (torpedoes, mines, collisions); main mounts out: main mounts out 0 of 2 (0 of 2 guns)
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Destroyer night Shadow / admiral Shadow / task Shadow (not firing) -> OutGuns                                                2      20    16.5
+    Destroyer night Station / admiral Shadow / task Shadow (not firing) -> OutSpeed                                              2      10     0.9
+    Destroyer OutSpeed: no gunfire hits (torpedoes, a collision, or the sea)                                                     1       0     0.0
+    Destroyer night Shadow / admiral Shadow / task Shadow (not firing) -> OutSpeed                                               1       6     0.7
+    Destroyer night Station / admiral Shadow / task Shadow (not firing) -> OutGuns                                               1       3     1.5
+ships going home under fire: 5 (2 lost by the end), 149 hits on them going home (median 34, the top quarter from 42, the most 47); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 218 shells, 47 hits
+  with none other in reach: 997 shells, 102 hits
+    no other in reach       seen silent                     997    102
+    a fighting enemy in reach seen silent                   218     47
+  no other in reach       seen silent      night 2-4 km   opening she's slow / Station / admiral Course / task Withdraw                   697     59
+  a fighting enemy in reach seen silent      night 2-4 km   opening she's slow / Station / admiral Course / task Withdraw                 201     39
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Course / admiral Course / task Withdraw                     47     17
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                    38     13
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                   9      6
+  no other in reach       seen silent      night 4-6 km   opening she's slow / Station / admiral Course / task Withdraw                   142      6
+  no other in reach       seen silent      night 0-2 km   holding she's slow / Course / admiral Course / task Withdraw                      6      4
+  no other in reach       seen silent      night 0-2 km   opening she's slow / Station / admiral Route / task Withdraw                      4      2
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's quick / Station / admiral Course / task Withdraw                  2      1
+  a fighting enemy in reach seen silent      night 2-4 km   holding she's slow / Station / admiral Course / task Withdraw                   4      1
+  no other in reach       seen silent      night 0-2 km   closing she's quick / Course / admiral Course / task Withdraw                    10      1
+  a fighting enemy in reach seen silent      night 2-4 km   closing she's slow / Station / admiral Course / task Withdraw                   2      0
+  no other in reach       seen silent      night 0-2 km   closing she's slow / Course / admiral Course / task Withdraw                      2      0
+  no other in reach       seen silent      night 2-4 km   opening she's slow / Course / admiral Course / task Withdraw                     38      0
+  no other in reach       seen silent      night 2-4 km   opening she's slow / Station / admiral Route / task Withdraw                      2      0
+  no other in reach       seen silent      night 4-6 km   opening she's slow / Station / admiral Route / task Withdraw                     11      0

@@ -147,9 +147,12 @@ public sealed class MatchupProfile
         TorpedoDud = Torpedo.DudShare;
     }
 
-    /// <summary>The torpedo attack's firing range (<see cref="SimSettings.TorpedoAttackShare"/> of the fast setting), 0
-    /// with no tubes bearing. Whether it attacks is the matchup's, against the enemy (<see cref="Matchup.Attackers"/>).</summary>
-    public double AttackRangeM(SimSettings s) => TubesBearing > 0 ? s.TorpedoAttackShare * Torpedo.FastRangeM : 0;
+    /// <summary>The torpedo attack's firing range, 0 with no tubes bearing: <see cref="SimSettings.TorpedoAttackShare"/> of
+    /// the setting the captains attack on (CaptainLayer.AttackSetting): in the dark the fast one; by day the slow one at
+    /// <see cref="SimSettings.TorpedoDayShare"/> of its range where that's further (docs/battle/balance.md BL5, P11).
+    /// Whether it attacks is the matchup's, against the enemy (<see cref="Matchup.Attackers"/>).</summary>
+    public double AttackRangeM(SimSettings s, bool dark) =>
+        TubesBearing == 0 ? 0 : s.TorpedoAttackShare * (dark ? Torpedo.FastRangeM : Math.Max(Torpedo.FastRangeM, s.TorpedoDayShare * Torpedo.SlowRangeM));
 
     /// <summary>The side between the waterline and the main deck, sampled along its length and up it: the thickest plate
     /// over each point (by its material's quality), shares of the face by thickness.</summary>
@@ -697,6 +700,18 @@ public static class Matchup
         return (bandA, bandB);
     }
 
+    /// <summary>Whether the matchup is judged in the dark: a side made out only so far (<see cref="Seen"/>).</summary>
+    static bool Dark(ReadOnlySpan<double> seenA, ReadOnlySpan<double> seenB)
+    {
+        foreach (double m in seenA)
+            if (double.IsFinite(m))
+                return true;
+        foreach (double m in seenB)
+            if (double.IsFinite(m))
+                return true;
+        return false;
+    }
+
     /// <summary>How far each entry of a side is made out in the light (unlimited by day or with none).</summary>
     static void Seen(ReadOnlySpan<MatchupEntry> side, MatchupLight? light, SimSettings s, Span<double> seen)
     {
@@ -738,18 +753,19 @@ public static class Matchup
         Span<double> none = stackalloc double[a.Length], outB = stackalloc double[b.Length];
         none.Clear();
         ulong mask = 0;
+        bool dark = Dark(seenA, seenB);
         double reachB = MaxReach(b);
         for (int i = 0; i < a.Length; i++)
         {
             ref readonly var e = ref a[i];
-            double fireM = e.Profile.AttackRangeM(s);
+            double fireM = e.Profile.AttackRangeM(s, dark);
             if (e.Count <= 0 || e.TorpedoesLeft <= 0 || fireM <= 0 || e.SpeedKn <= s.MatchupSpeedMarginKn)
                 continue;
             sel.Clear();
             sel[i] = true;
             var (inMin, midM) = RunIn(Math.Min(reachB, seenA[i]), e.SpeedKn, fireM);
             outB.Clear();
-            Torpedoes(a, sel, b, fireM, s, outB, none, 1);
+            Torpedoes(a, sel, b, fireM, s, outB, none, 1, !dark);
             double torpedoes = Lost(b, outB);
             outB.Clear();
             Guns(a, sel, default, b, default, default, midM, midM, midM, 2 * inMin, seenB, s, outB);
@@ -790,8 +806,9 @@ public static class Matchup
         outB.Clear();
         inA.Clear();
         inB.Clear();
-        double attackA = (style & MatchupStyle.AttackByA) != 0 ? AttackRange(a, byA, inA, s) : 0;
-        double attackB = (style & MatchupStyle.AttackByB) != 0 ? AttackRange(b, byB, inB, s) : 0;
+        bool dark = Dark(seenA, seenB);
+        double attackA = (style & MatchupStyle.AttackByA) != 0 ? AttackRange(a, byA, inA, s, dark) : 0;
+        double attackB = (style & MatchupStyle.AttackByB) != 0 ? AttackRange(b, byB, inB, s, dark) : 0;
         Span<bool> lineA = stackalloc bool[a.Length], lineB = stackalloc bool[b.Length];
         for (int i = 0; i < a.Length; i++)
             lineA[i] = !inA[i];
@@ -825,13 +842,13 @@ public static class Matchup
                 // A's salvo apart, for the attack's own exchange
                 Span<double> salvo = stackalloc double[b.Length];
                 salvo.Clear();
-                torpOnB += Torpedoes(a, inA, b, attackA, s, salvo, preA, 1);
+                torpOnB += Torpedoes(a, inA, b, attackA, s, salvo, preA, 1, !dark);
                 for (int j = 0; j < b.Length; j++)
                     outB[j] += salvo[j];
                 takenT = Tonnes(b, salvo, default);
             }
             if (attackB > 0)
-                torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1);
+                torpOnA += Torpedoes(b, inB, a, attackB, s, outA, preB, 1, !dark);
             Phase(a, inA, b, inB, rangeM, attackA > 0 ? attackA : rangeM, attackB > 0 ? attackB : rangeM, fireMin, seenA, seenB, s, outA, outB);
             Phase(a, inA, b, inB, rangeM, midA, midB, inMin, seenA, seenB, s, outA, outB, s.MatchupRunInHitShare);
             if (attackA > 0)
@@ -861,7 +878,7 @@ public static class Matchup
 
     /// <summary>A side's attackers (<paramref name="attackers"/>, by bit) marked, and their firing range: the shortest of
     /// theirs; 0 with none.</summary>
-    static double AttackRange(ReadOnlySpan<MatchupEntry> side, ulong attackers, Span<bool> mark, SimSettings s)
+    static double AttackRange(ReadOnlySpan<MatchupEntry> side, ulong attackers, Span<bool> mark, SimSettings s, bool dark)
     {
         double r = 0;
         for (int i = 0; i < side.Length; i++)
@@ -869,7 +886,7 @@ public static class Matchup
             ref readonly var e = ref side[i];
             mark[i] = (attackers >> i & 1) != 0;
             if (mark[i])
-                r = r == 0 ? e.Profile.AttackRangeM(s) : Math.Min(r, e.Profile.AttackRangeM(s));
+                r = r == 0 ? e.Profile.AttackRangeM(s, dark) : Math.Min(r, e.Profile.AttackRangeM(s, dark));
         }
         return r;
     }
@@ -1057,10 +1074,17 @@ public static class Matchup
     }
 
     /// <summary>One salvo of torpedoes from every ship of <paramref name="from"/> marked (an attack's, or a line's firing
-    /// at will) with torpedoes left and the range within their fast setting's reach (the captains', at its share), from the share of its ships still in the fight (<paramref name="outFrom"/> so far), at the biggest of
-    /// <paramref name="to"/>'s classes; what they put out, added into <paramref name="outTo"/>.</summary>
+    /// at will) with torpedoes left, from the share of its ships still in the fight (<paramref name="outFrom"/> so far), at
+    /// the biggest of <paramref name="to"/>'s classes; what they put out, added into <paramref name="outTo"/>. Each torpedo
+    /// runs on the setting the torpedo system picks for a shot on her beam (<see cref="Setting"/>): the fast one if its run
+    /// is within <paramref name="reachShare"/> of its range, else (an attack by day, <paramref name="slow"/>: the captains'
+    /// long setting, docs/battle/balance.md BL5) the slow one; none if neither reaches her. Its chance is the play's
+    /// (docs/battle/balance.md P11, fitted on every torpedo fired in 17 scenarios): by its run's time t as she turns away
+    /// (<see cref="TorpedoHit"/>), (<see cref="SimSettings.MatchupTorpedoHitS"/> / t)^<see cref="SimSettings.MatchupTorpedoHitPower"/>, at most
+    /// <see cref="SimSettings.MatchupTorpedoHitMax"/>, by the square root of her length over
+    /// <see cref="SimSettings.MatchupTorpedoLengthM"/>: the aim's errors and her turning away grow with the time she has.</summary>
     static double Torpedoes(ReadOnlySpan<MatchupEntry> from, ReadOnlySpan<bool> sel, ReadOnlySpan<MatchupEntry> to, double rangeM, SimSettings s,
-        Span<double> outTo, ReadOnlySpan<double> outFrom, double reachShare)
+        Span<double> outTo, ReadOnlySpan<double> outFrom, double reachShare, bool slow = false)
     {
         int target = -1;
         for (int j = 0; j < to.Length; j++)
@@ -1069,25 +1093,56 @@ public static class Matchup
         if (target < 0)
             return 0;
         var tp = to[target].Profile;
-        double near = Math.Min(s.MatchupTorpedoHitMax, s.MatchupTorpedoHitM / Math.Max(rangeM, 1)) * Math.Sqrt(tp.LengthM / s.MatchupTorpedoLengthM)
-                      * s.MatchupTorpedoEvadedShare;
+        double vg = to[target].SpeedKn * Handling.MsPerKnot;
         double total = 0;
         for (int i = 0; i < from.Length; i++)
         {
             ref readonly var e = ref from[i];
             var pr = e.Profile;
-            if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0 || rangeM > reachShare * pr.Torpedo.FastRangeM)
-                continue;   // the captains' fast setting (CaptainLayer.FastSetting): no one fires the slow at will (docs/battle/night.md Q7)
+            if (!sel[i] || pr.TubesBearing == 0 || e.TorpedoesLeft <= 0)
+                continue;
+            double hit = TorpedoHit(pr.Torpedo, rangeM, vg, tp.LengthM, s, reachShare, slow);
+            if (hit <= 0)
+                continue;   // out of her reach on any setting she'd fire
             double left = Left(e, outFrom[i]);
             // a firing is the captains' spread (TorpedoSpread), not the whole broadside
             double fired = Math.Min(Math.Min(pr.TubesBearing, s.TorpedoSpread), pr.Torpedoes * e.TorpedoesLeft) * left;
-            // a target turning away outruns a torpedo the faster she is beside it (the bench's target steamed at the reference speed)
-            double kn = pr.Torpedo.FastKn, run = Math.Clamp((kn - to[target].SpeedKn) / Math.Max(kn - s.MatchupTorpedoRefKn, 1), 0, 1.5);
             double q = (1 - pr.TorpedoDud) * Harm(TorpedoExponent(pr.Torpedo.ChargeKg, tp.DisplacementT, s), to[target].Toughness);
-            total += fired * near * run * q;
+            total += fired * hit * q;
         }
         outTo[target] += total;
         return total;
+    }
+
+    /// <summary>A torpedo's chance to hit a ship at a range (her speed <paramref name="targetMs"/>, her length
+    /// <paramref name="lengthM"/>), on the setting <see cref="Setting"/> picks; 0 out of its reach (<see cref="Torpedoes"/>).
+    /// Its run is timed as she turns away from it (docs/battle/balance.md P11: the lines and captains comb and turn from
+    /// the tracks, and play reads that better than a shot on her beam): the range over its speed less hers; and beside
+    /// that, the floor a spread into her formation has of finding some ship.</summary>
+    public static double TorpedoHit(in TorpedoRow t, double rangeM, double targetMs, double lengthM, SimSettings s, double reachShare = 1, bool slow = false)
+    {
+        double v = Setting(t, rangeM, targetMs, reachShare, slow), closing = Math.Max(v - targetMs, 0);
+        if (v <= 0)
+            return 0;
+        // a spread fired into her formation finds a ship now and then however she turns (MatchupTorpedoHitFloor)
+        double aimed = Math.Min(s.MatchupTorpedoHitMax, Math.Pow(s.MatchupTorpedoHitS * closing / rangeM, s.MatchupTorpedoHitPower));
+        return (aimed + s.MatchupTorpedoHitFloor) * Math.Sqrt(lengthM / s.MatchupTorpedoLengthM);
+    }
+
+    /// <summary>The setting a torpedo is fired on at a ship on its beam at a range (her speed <paramref name="targetMs"/>),
+    /// its speed, m/s, as <c>TorpedoAim.Setting</c> picks it: the fast one if the run there (it meets her where its speed
+    /// across her track closes the range) is within <paramref name="reachShare"/> of its range, else the slow one if
+    /// <paramref name="slow"/> and it reaches; 0 if neither does (or she's as fast as it).</summary>
+    public static double Setting(in TorpedoRow t, double rangeM, double targetMs, double reachShare = 1, bool slow = false)
+    {
+        double fast = Reaches(t.FastKn, t.FastRangeM * reachShare, rangeM, targetMs);
+        return fast > 0 || !slow ? fast : Reaches(t.SlowKn, t.SlowRangeM * reachShare, rangeM, targetMs);
+
+        static double Reaches(double kn, double reach, double rangeM, double targetMs)
+        {
+            double v = kn * Handling.MsPerKnot, across = Math.Sqrt(Math.Max(v * v - targetMs * targetMs, 0));
+            return across > 0 && rangeM * v / across <= reach ? v : 0;
+        }
     }
 
     /// <summary>What a torpedo that goes off does to a ship, as a shell's <see cref="OutExponent"/>: K x its charge in tonnes

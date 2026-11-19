@@ -1,0 +1,266 @@
+Cape Sarych: 9 ships, 2 sides, from 1914-11-18 09:50:00.000 until 1914-11-18 16:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed   1914: time    at 16:00 (+6:10)  Russia lost 1/7 (3674 t), score 0.00   Ottoman Empire lost 0/2 (0 t), score 0.05   (foundered 1)   a6efd4ab65add5ed   (21.1 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (4 of 4 guns): gunhouse out of action 1, down: a crew stunned 1
+                      at the end, 8 ships afloat: main mounts out 6 of 37 (10 of 70 guns): magazine flooded by order 3, magazine flooded by the sea 2, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 6095 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 5 of 6 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 19 km)
+           Ottoman Empire done? retiring (outmatched); 0 of 2 afloat home, 2 not (2 in an encounter, 1 stopped, 1 dead in the water, the farthest 523 km)
+  seed   1915: decided at 13:30 (+3:40)  Russia lost 0/7 (0 t), aims met, score 1.00   Ottoman Empire lost 2/2 (41169 t), score 0.00   (foundered 1)   01ef4029e967f582   (9.3 s)
+           main guns: 1 fell out for them, main mounts out 1 of 2 (1 of 2 guns): guns out 1
+                      at the end, 8 ships afloat: main mounts out 2 of 34 (2 of 62 guns): guns out 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2576 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 1 of 7 afloat home, 6 not (6 in an encounter, 0 stopped, 0 dead in the water, the farthest 25 km)
+           Ottoman Empire done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed   1916: done    at 14:14 (+4:24)  Russia lost 0/7 (0 t), score 0.00   Ottoman Empire lost 0/2 (0 t), score 0.00   4f720a973820b56e   (7.3 s)
+           main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 1, guns out 1
+                      at the end, 9 ships afloat: main mounts out 9 of 39 (17 of 72 guns): magazine flooded by order 4, magazine spent (its race) 3, magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1103 fired, 0 at ships seen done for
+  seed   1917: time    at 16:00 (+6:10)  Russia lost 0/7 (0 t), score 0.81   Ottoman Empire lost 1/2 (33280 t), score 0.00   (capsized 1)   366b3bd8430f032b   (11.9 s)
+           main guns: 2 fell out for them, main mounts out 4 of 4 (6 of 6 guns): gunhouse out of action 2, magazine flooded by order 1, guns out 1
+                      at the end, 8 ships afloat: main mounts out 3 of 34 (4 of 62 guns): magazine flooded by order 1, magazine flooded by the sea 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3580 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 5 of 7 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 24 km)
+           Ottoman Empire done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 440 km)
+  seed   1918: time    at 16:00 (+6:10)  Russia lost 1/7 (9540 t), score 0.19   Ottoman Empire lost 1/2 (7889 t), score 0.14   (foundered 1)   10eb2bfe1f264e56   (14.6 s)
+           main guns: 2 fell out for them, main mounts out 5 of 7 (9 of 12 guns): magazine flooded by order 3, barbette out 1, guns out 1
+                      at the end, 8 ships afloat: main mounts out 13 of 37 (26 of 70 guns): magazine flooded by order 10, magazine flooded by the sea 2, guns out 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 4581 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 5 of 6 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 13 km)
+           Ottoman Empire done? lost (lost contact); 0 of 1 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 416 km)
+  seed   1919: done    at 15:24 (+5:34)  Russia lost 4/7 (26428 t), score 0.19   Ottoman Empire lost 1/2 (7889 t), score 0.39   (foundered 1, capsized 4)   6648e09728c42733   (11.6 s)
+           main guns: 1 fell out for them, main mounts out 6 of 8 (12 of 16 guns): magazine flooded by order 3, magazine flooded by the sea 2, barbette out 1
+                      at the end, 4 ships afloat: main mounts out 11 of 29 (22 of 58 guns): magazine flooded by order 7, magazine flooded by the sea 2, gunhouse out of action 1, barbette out 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 3857 fired, 0 at ships seen done for
+  seed   1920: time    at 16:00 (+6:10)  Russia lost 2/7 (7348 t), score 0.00   Ottoman Empire lost 0/2 (0 t), score 0.11   (foundered 2)   b4b46d20fa82b439   (11.6 s)
+           main guns: 1 fell out for them, main mounts out 4 of 5 (8 of 10 guns): gunhouse out of action 2, magazine flooded by order 1, barbette out 1
+                      at the end, 7 ships afloat: main mounts out 9 of 35 (17 of 68 guns): magazine flooded by order 5, gunhouse out of action 2, gunhouse destroyed 1, barbette out 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 4125 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 5 of 5 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+           Ottoman Empire done? lost (lost contact); 0 of 2 afloat home, 2 not (2 in an encounter, 1 stopped, 1 dead in the water, the farthest 512 km)
+  seed   1921: time    at 16:00 (+6:10)  Russia lost 2/7 (7348 t), score 0.00   Ottoman Empire lost 0/2 (0 t), score 0.11   (foundered 1, capsized 1)   ec3f095e597c4030   (9.6 s)
+           main guns: 2 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 2, gunhouse destroyed 1
+                      at the end, 7 ships afloat: main mounts out 1 of 35 (1 of 68 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1438 fired, 0 at ships seen done for
+           Russia       done? retiring (outmatched); 4 of 5 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 10 km)
+           Ottoman Empire done? home (gave up); 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 519 km)
+
+over 8 seeds:
+  ended time      5 times, after 6:10 on average
+  ended decided   1 times, after 3:40 on average
+  ended done      2 times, after 4:59 on average
+  Russia       lost 1.2 of 7 ships (from 0 to 4), 6792 t; made 674 hits, fired 0.4 torpedoes; aims met 1 times, score 0.27; regrouped 0.1 squadrons
+  Ottoman Empire lost 0.6 of 2 ships (from 0 to 2), 11278 t; made 192 hits, fired 2.8 torpedoes; aims met 0 times, score 0.10
+over 8 seeds:
+  main guns: 11 fell out for them, main mounts out 27 of 34 (45 of 56 guns): magazine flooded by order 8, gunhouse out of action 8, guns out 4, barbette out 3, magazine flooded by the sea 2, gunhouse destroyed 1, down: a crew stunned 1
+             at the end, 59 ships afloat: main mounts out 54 of 280 (99 of 530 guns): magazine flooded by order 30, magazine flooded by the sea 8, gunhouse out of action 7, magazine spent (its race) 3, guns out 3, barbette out 2, gunhouse destroyed 1
+  blackouts: 3 ship-wide (3 by a hit's shock, 0 by near misses), 3 ships blacked out
+  shells: 27355 fired, 0 at ships seen done for
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  day    large  under 120 mm     0-2 km                   191    114   59.7%
+  day    large  under 120 mm     0-2 km          pb      1172   1011   86.3%
+  day    large  under 120 mm     2-4 km                  1842    410   22.3%
+  day    large  under 120 mm     2-4 km          pb        91     55   60.4%
+  day    large  under 120 mm     4-6 km                  2616    163    6.2%
+  day    large  under 120 mm     6-10 km                  397     18    4.5%
+  day    large  120-200 mm       0-2 km                     5      5  100.0%
+  day    large  120-200 mm       0-2 km          pb       670    605   90.3%
+  day    large  120-200 mm       2-4 km                  1993    511   25.6%
+  day    large  120-200 mm       2-4 km          pb       966    620   64.2%
+  day    large  120-200 mm       4-6 km                  6364    853   13.4%
+  day    large  120-200 mm       4-6 km          pb         2      0    0.0%
+  day    large  120-200 mm       6-10 km                 5695    332    5.8%
+  day    large  120-200 mm       6-10 km         pb        20      0    0.0%
+  day    large  200-300 mm       0-2 km          pb       206    191   92.7%
+  day    large  200-300 mm       2-4 km                    90     41   45.6%
+  day    large  200-300 mm       2-4 km          pb       372    246   66.1%
+  day    large  200-300 mm       4-6 km                   950    248   26.1%
+  day    large  200-300 mm       4-6 km          pb        60     30   50.0%
+  day    large  200-300 mm       6-10 km                 1514    183   12.1%
+  day    large  300 mm and over  0-2 km          pb        82     82  100.0%
+  day    large  300 mm and over  2-4 km                    58     27   46.6%
+  day    large  300 mm and over  2-4 km          pb        96     72   75.0%
+  day    large  300 mm and over  4-6 km                   404     92   22.8%
+  day    large  300 mm and over  6-10 km                 1100     92    8.4%
+  day    large  300 mm and over  6-10 km         pb         2      0    0.0%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  day Station (Superior) / admiral Course / task Withdraw OnTask                                           3417   1329
+  day Course (Superior) / admiral Course / task Withdraw OnTask                                             933    708
+  day Course (Superior) / admiral Course / task Intercept Done                                              795    613
+  day Station (Superior) / admiral Screen / task Screen OnTask                                             1217    448
+  day Course (Superior) / admiral Course / task Intercept OnTask                                            533    269
+  day Course (Superior) / admiral Fight / task Intercept Done                                               194    194
+  day Home (Own)                                                                                            260    190
+  day Station (Superior) / admiral Course / task Intercept Done                                             174    125
+  day Station (Superior) / admiral Fight / task Intercept Done                                               39     38
+  day Station (Superior) / admiral Course / task Intercept OnTask                                           100     29
+  day Course (Superior) / admiral Course / task Join OnTask                                                  74     25
+  day Course (Superior) / admiral Course / task Intercept Cant                                               15     11
+  day Shadow (Superior) / admiral Shadow / task Scout InContact                                              73      8
+  day Course (Superior) / admiral Fight / task Join Engaged / attack Run                                      7      2
+  day Station (Superior) / admiral Shadow / task Scout InContact                                              1      1
+  day Station (Superior) / admiral Route / task Withdraw OnTask                                               2      0
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  0.2-0.5 deg/s         664  16.1%    104   15.7%
+  0.5-1 deg/s           474  11.5%     58   12.2%
+  over 1 deg/s           56   1.4%      5    8.9%
+  steady               2922  71.0%    516   17.7%
+  under helm, by what she was doing (shells, hits):
+    0.2-0.5 deg/s: Station (Superior) / admiral Course / in the line                                        274     47
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / in the line                                         170     22
+    0.5-1 deg/s: Station (Superior) / admiral Course / in the line                                          166     17
+    0.2-0.5 deg/s: Fight (Superior) / admiral Fight / the guide                                             112     16
+    0.5-1 deg/s: Course (Superior) / admiral Course / in the line                                           110     10
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / the guide                                            94     17
+    0.5-1 deg/s: Fight (Superior) / admiral Fight / the guide                                                88     16
+    0.5-1 deg/s: Course (Superior) / admiral Course / the guide                                              78     11
+    over 1 deg/s: Course (Superior) / admiral Course / in the line                                           34      2
+    0.5-1 deg/s: Home (Own)                                                                                  30      4
+    0.2-0.5 deg/s: Home (Own)                                                                                14      2
+    over 1 deg/s: Home (Own)                                                                                 12      3
+    over 1 deg/s: Station (Superior) / admiral Course / in the line                                           6      0
+    over 1 deg/s: Course (Superior) / admiral Course / the guide                                              4      0
+    0.5-1 deg/s: Station (Superior) / admiral Route / in the line                                             2      0
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+  Russia day [he closes]: Course (Superior, None) / admiral Course / task Withdraw                                   12
+  Russia day [he closes]: Station (Superior, None) / admiral Course / task Withdraw                                   9
+  Ottoman Empire day [she closes]: Course (Superior, None) / admiral Course / task Intercept                          8
+  Ottoman Empire day [she closes]: Station (Superior, None) / admiral Course / task Intercept                         7
+  Ottoman Empire day [neither]: Course (Superior, None) / admiral Course / task Intercept                             5
+  Russia day [she closes]: Course (Superior, None) / admiral Course / task Withdraw                                   4
+  Russia day [neither]: Course (Superior, None) / admiral Course / task Withdraw                                      3
+  Russia day [neither]: Home (Own, OutSpeed)                                                                          3
+  Ottoman Empire day [he closes]: Course (Superior, None) / admiral Course / task Intercept                           2
+  Russia day [he closes]: Course (Superior, None) / admiral Fight / task Intercept                                    2
+  Russia day [he closes]: Home (Own, OutSpeed)                                                                        2
+  Russia day [neither]: Course (Superior, None) / admiral Fight / task Intercept                                      2
+  Ottoman Empire day [both closing]: Course (Superior, None) / admiral Course / task Intercept                        1
+  Ottoman Empire day [both closing]: Station (Superior, None) / admiral Course / task Intercept                       1
+  Ottoman Empire day [he closes]: Home (Own, OutSpeed)                                                                1
+  Ottoman Empire day [neither]: Home (Own, OutSpeed)                                                                  1
+  Ottoman Empire day [neither]: Station (Superior, None) / admiral Course / task Intercept                            1
+  Russia day [both closing]: Home (Own, OutSpeed)                                                                     1
+  Russia day [both closing]: Station (Superior, None) / admiral Course / task Withdraw                                1
+  Russia day [he closes]: Station (Superior, Combing) / admiral Course / task Withdraw                                1
+  Russia day [neither]: Station (Superior, None) / admiral Course / task Withdraw                                     1
+  Russia day [she closes]: Home (Own, OutSpeed)                                                                       1
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  day range/band <1/3 vis 6-12 km / target Course / her admiral Course                                     1142   1098
+  day range/band 1/3-2/3 vis 6-12 km / target Course / her admiral Course                                  2064    908
+  day range/band <1/3 vis 6-12 km / target Station / her admiral Course                                     894    592
+  day range/band 1/3-2/3 vis 6-12 km / target Home                                                         1477    556
+  day range/band <1/3 vis 6-12 km / target Home                                                             597    425
+  day range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Course                                 1113    213
+  day range/band <1/3 vis 6-12 km / target Station / her admiral Screen                                     131     65
+  day range/band <1/3 vis 6-12 km / target None                                                             112     47
+  day range/band <1/3 vis 6-12 km / target Course / her admiral Fight                                        30     28
+  day range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Screen                                   53     19
+  day range/band >2/3 vis 6-12 km / target Course / her admiral Course                                       88     15
+  day range/band 1/3-2/3 vis 6-12 km / target None                                                           47     10
+  day range/band >2/3 vis 6-12 km / target Home                                                              44      6
+  day range/band <1/3 vis 6-12 km / target Station / her admiral Fight                                        4      4
+  day range/band 1/3-2/3 vis 6-12 km / target Station / her admiral Shadow                                    6      2
+  day range/band <1/3 vis 6-12 km / target Course / her admiral Fight Run                                     4      2
+  day range/band 1/3-2/3 vis 6-12 km / target Course / her admiral Fight Run                                  2      0
+  day range/band >2/3 vis 6-12 km / target Station / her admiral Course                                      26      0
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
+  day:
+    under 1 min                     4     2   50.0% (+0 others)  forecast  10.1%   range   1.1 km, set   41 kn, target   23 kn
+    1-2 min                         5     0    0.0% (+0 others)  forecast  11.9%   range   1.3 km, set   41 kn, target   13 kn
+    2-4 min                         3     0    0.0% (+0 others)  forecast   8.7%   range   2.3 km, set   41 kn, target   16 kn
+    4-8 min                         7     0    0.0% (+0 others)  forecast   4.6%   range   5.7 km, set   28 kn, target   15 kn
+    8 min and over                  1     0    0.0% (+0 others)  forecast   4.7%   range   5.4 km, set   28 kn, target    9 kn
+    out of reach on the truth       5     0    0.0% (+0 others)  forecast   3.4%   range   7.3 km, set  NaN kn, target   13 kn
+    all                            25     2    8.0% (+0 others)  forecast   7.2%   range   4.0 km, set   30 kn, target   13 kn
+    a 30 kn torpedo                 3     0    0.0% (+0 others)  forecast   8.2%   range   1.6 km, set   30 kn, target   23 kn
+    a 41 kn torpedo                22     2    9.1% (+0 others)  forecast   7.0%   range   4.5 km, set   41 kn, target   13 kn
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Cruiser by heavier Capital at 4-6 km                                                           6      64    42.2
+  Capital by heavier Capital at 2-4 km                                                           4     171    41.0
+  Cruiser by heavier Capital at 2-4 km                                                           3     113    10.5
+  Capital by heavier Capital at 0-2 km                                                           2     123    82.1
+  Capital by lighter Capital at 2-4 km                                                           2    1068    72.4
+  Cruiser by heavier Capital at 6-10 km                                                          2      60    21.4
+  Cruiser by her match Capital at 4-6 km                                                         2     167    65.4
+  Cruiser by her match Capital at 6-10 km                                                        2      97    98.1
+  Capital by heavier Capital at 4-6 km                                                           1      29    21.0
+  Capital by lighter Capital at 0-2 km                                                           1     449    29.9
+  Capital by lighter Capital at 4-6 km                                                           1     491    66.2
+  Capital by lighter Capital at 6-10 km                                                          1     180    43.8
+  Cruiser by her match Capital at 0-2 km                                                         1     271    21.0
+  Cruiser by her match Capital at 2-4 km                                                         1     136    18.6
+  Cruiser by lighter Cruiser at 2-4 km                                                           1      83    22.5
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Capital day Station / admiral Course / task Withdraw (firing) -> OutSpeed                                                    3     218    28.0
+    Capital day Fight finishing / admiral Fight / task None (firing) -> OutSteering                                              2    1177    54.2
+    Capital day Station / admiral Course / task Withdraw (firing) -> OutGuns                                                     2      38    23.3
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutSpeed                                                   2     407    19.8
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutGuns                                                       2      49    15.5
+    Capital day Course / admiral Course / task Withdraw (firing) -> OutGuns                                                      1       8    69.4
+    Capital day Fight finishing / admiral Fight / task Intercept (not firing) -> OutGuns                                         1     449    29.9
+    Capital day Fight finishing / admiral Fight / task Intercept (not firing) -> OutSpeed                                        1     180    43.8
+    Capital day Fight finishing / admiral Fight / task None (firing) -> OutGuns                                                  1     382   102.5
+    Capital day Station / admiral Course / task Withdraw (firing) -> OutSteering                                                 1      59   149.3
+    Cruiser day Course / admiral Fight / task Attack (firing) -> OutList                                                         1      11    56.0
+    Cruiser day Course / admiral Fight / task Attack (firing) -> OutSpeed                                                        1      13    32.4
+    Cruiser day Shadow / admiral Course / task Withdraw (firing) -> OutList                                                      1      19    27.0
+    Cruiser day Shadow / admiral Shadow / task Scout (not firing) -> OutGuns                                                     1      23    39.2
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutGuns                                                    1      83    22.5
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutSteering                                                1     131    59.0
+    Cruiser day Station / admiral Fight / task Attack (firing) -> OutList                                                        1      11    88.6
+    Cruiser day Station / admiral Fight / task Intercept (firing) -> OutGuns                                                     1      24    17.2
+    Cruiser day Station / admiral Fight / task Intercept (firing) -> OutList                                                     1      73   179.0
+    Cruiser day Station / admiral Fight / task None (firing) -> OutSpeed                                                         1      36    71.8
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutList                                                       1      10    14.0
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutSpeed                                                      1      58     6.4
+    Cruiser day Station / admiral Screen / task Screen (not firing) -> OutGuns                                                   1       2    16.9
+    Cruiser day Station / admiral Shadow / task Scout (firing) -> OutSpeed                                                       1      41    15.8
+ships going home under fire: 18 (10 lost by the end), 1185 hits on them going home (median 38, the top quarter from 63, the most 482); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 864 shells, 413 hits
+  with none other in reach: 3207 shells, 772 hits
+    no other in reach       seen silent                    3109    761
+    a fighting enemy in reach seen half silent              340    189
+    a fighting enemy in reach seen silent                   463    167
+    a fighting enemy in reach seen fighting                  61     57
+    no other in reach       seen half silent                 98     11
+  no other in reach       seen silent      day 2-4 km   opening she's slow / Station / admiral Screen / task Screen                       428    140
+  no other in reach       seen silent      day 2-4 km   closing she's slow / Station / admiral Screen / task Screen                       256     71
+  no other in reach       seen silent      day 0-2 km   opening she's slow / Station / admiral Screen / task Screen                        86     62
+  no other in reach       seen silent      day 2-4 km   opening she's quick / Course / admiral Course / task Withdraw                      97     56
+  a fighting enemy in reach seen silent      day 0-2 km   opening she's slow / Course / admiral Course / task Intercept                   105     50
+  no other in reach       seen silent      day 4-6 km   opening she's slow / Station / admiral Course / task Withdraw                     354     44
+  no other in reach       seen silent      day 0-2 km   closing she's slow / Station / admiral Screen / task Screen                        70     42
+  no other in reach       seen silent      day 2-4 km   opening she's slow / Station / admiral Course / task Withdraw                     161     36
+  no other in reach       seen silent      day 0-2 km   holding she's slow / Station / admiral Screen / task Screen                        65     33
+  a fighting enemy in reach seen silent      day 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                    30     29
+  a fighting enemy in reach seen half silent day 0-2 km   opening she's slow / Course / admiral Course / task Withdraw                     27     27
+  a fighting enemy in reach seen silent      day 0-2 km   opening she's slow / Station / admiral Course / task Intercept                   31     27
+  no other in reach       seen silent      day 2-4 km   closing she's quick / Station / admiral Course / task Withdraw                     56     26
+  a fighting enemy in reach seen fighting    day 0-2 km   closing she's quick / Course / admiral Course / task Intercept                   27     23
+  a fighting enemy in reach seen half silent day 2-4 km   opening she's slow / Course / admiral Course / task Withdraw                     32     22
+  no other in reach       seen silent      day 0-2 km   opening she's quick / Course / admiral Course / task Withdraw                      22     22
+  a fighting enemy in reach seen silent      day 2-4 km   opening she's slow / Course / admiral Course / task Intercept                    38     21
+  a fighting enemy in reach seen half silent day 0-2 km   closing she's slow / Course / admiral Course / task Intercept                    35     20
+  a fighting enemy in reach seen half silent day 0-2 km   holding she's slow / Course / admiral Course / task Intercept                    26     20
+  a fighting enemy in reach seen half silent day 0-2 km   closing she's quick / Course / admiral Course / task Intercept                   29     19
+  no other in reach       seen silent      day 0-2 km   opening she's slow / Station / admiral Course / task Withdraw                      30     19
+  no other in reach       seen silent      day 2-4 km   opening she's quick / Station / admiral Course / task Withdraw                     60     19
+  no other in reach       seen silent      day 0-2 km   opening she's quick / Station / admiral Course / task Withdraw                     20     18
+  no other in reach       seen silent      day 2-4 km   holding she's slow / Home                                                          39     17
+  no other in reach       seen silent      day 4-6 km   closing she's slow / Station / admiral Screen / task Screen                        83     16
+  a fighting enemy in reach seen half silent day 2-4 km   opening she's slow / Station / admiral Course / task Withdraw                    46     14
+  a fighting enemy in reach seen silent      day 2-4 km   closing she's quick / Station / admiral Course / task Withdraw                   52     14
+  a fighting enemy in reach seen half silent day 2-4 km   holding she's quick / Course / admiral Course / task Withdraw                    20     13
+  a fighting enemy in reach seen fighting    day 0-2 km   opening she's slow / Station / admiral Course / task Intercept                   12     12
+  no other in reach       seen silent      day 4-6 km   holding she's quick / Station / admiral Course / task Withdraw                     34     12

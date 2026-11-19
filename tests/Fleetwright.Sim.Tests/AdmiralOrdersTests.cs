@@ -431,9 +431,10 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     public void A_force_sends_in_its_own_flotilla_on_a_line_its_battle_squadron_engages()
     {
         // the force of O7 (dreadnoughts, light cruisers, destroyers screening), one enemy dreadnought 14 km on its beam:
-        // the force's admiral sends his destroyers in; the side's commander, on, leaves what's inside the force alone. Eight
-        // boats: by day four are no match for her since the torpedo officer's judgement (docs/battle/night.md Q12f)
-        var (w, ai, force, _, _, destroyers, _) = Disposed(boats: 8);
+        // the force's admiral sends his destroyers in; the side's commander, on, leaves what's inside the force alone.
+        // Twenty-four boats: by day eight are no match for her since P11 (docs/battle/balance.md: the torpedoes as play gives
+        // them), four since the torpedo officer's judgement (docs/battle/night.md Q12f)
+        var (w, ai, force, _, _, destroyers, _) = Disposed(boats: 24);
         int bb = w.Ships.AddClass(Fleet.Get("dreadnought").Class!);
         var guide = Ship(w, w.Groups.GuideShip(w.Groups.Get(force)!));
         Column(w, ai, bb, Off(guide.Position, 90, 14_000), 180, 1, 15, side: 1);
@@ -465,10 +466,10 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
     [Fact]
     public void A_light_cruiser_leading_destroyers_goes_in_with_them()
     {
-        // a top force of two light cruisers leading eight destroyers (the Jutland's "Scouting torpedo boats", Regensburg
+        // a top force of two light cruisers leading twenty-four destroyers (the Jutland's "Scouting torpedo boats", Regensburg
         // leading her flotillas), beside a battle squadron engaging an enemy dreadnought: the side's commander sends the
-        // force in whole, and the cruisers go in with their boats, both firing (eight boats: by day four are no match for
-        // her since the torpedo officer's judgement, docs/battle/night.md Q12f)
+        // force in whole, and the cruisers go in with their boats, both firing (twenty-four boats: by day eight are no match
+        // for her since P11, docs/battle/balance.md: the torpedoes as play gives them)
         var w = new World(Start, 3, Settings);
         var ai = new AiSystem(w);
         w.Apply(Command.SetWeather(30_000));
@@ -479,7 +480,7 @@ public class AdmiralOrdersTests(ITestOutputHelper output)
         var at = Earth.Position(56.0, 4.0);
         Column(w, ai, bb, at, 180, 4, 15);
         int cruisers = Column(w, ai, cl, Off(at, 270, 3_000), 180, 2, 15);
-        int destroyers = Column(w, ai, dd, Off(at, 270, 5_000), 180, 8, 15);
+        int destroyers = Column(w, ai, dd, Off(at, 270, 5_000), 180, 24, 15);
         w.Apply(GroupSystem.Form(cruisers, Formation.LineAbreast, 2_000));
         int force = w.Groups.Get(cruisers)!.Parent;
         w.Apply(GroupSystem.EnterAlongside(destroyers, cruisers));

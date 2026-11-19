@@ -81,11 +81,12 @@ public class MatchupTests(ITestOutputHelper output)
             last = c;
         }
         Assert.True(Judge([E("v25")], [E("iron_duke")]) < 0.2);
-        // by day twenty since PM (docs/battle/explosions.md EX7: the matchup expects the boats' losses on the run as the fine
-        // model has them, about half; sixteen 1.01 -> 0.84, twenty 1.21), sixteen since the torpedo officer's judgement
-        // (docs/battle/night.md Q12f: twelve 1.40 -> 0.76, sixteen 1.20); by night four are a match for her
-        Assert.True(Judge([E("v25", 16)], [E("iron_duke")]) < 1);
-        Assert.True(Judge([E("v25", 20)], [E("iron_duke")]) > 1);
+        // by day about thirty-four since P11 (docs/battle/balance.md: the torpedoes' hit chance as play gives it, the run timed
+        // as she turns away; from 4.5 km on the slow setting after a 21 kn battleship the boats' torpedoes seldom catch her:
+        // twenty 0.35, thirty-two 0.96, thirty-six 1.24), twenty since PM (docs/battle/explosions.md EX7), sixteen since the
+        // torpedo officer's judgement (docs/battle/night.md Q12f); by night four are a match for her
+        Assert.True(Judge([E("v25", 28)], [E("iron_duke")]) < 1);
+        Assert.True(Judge([E("v25", 36)], [E("iron_duke")]) > 1);
         Assert.True(Judge([E("v25", 4)], [E("iron_duke")], Moonless) > 1);
         // by night the battleship's guns open only on what she makes out: the lone boat does better
         Assert.True(Judge([E("v25")], [E("iron_duke")], Moonless) > Judge([E("v25")], [E("iron_duke")]));

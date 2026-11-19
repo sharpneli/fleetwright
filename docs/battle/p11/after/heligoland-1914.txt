@@ -1,0 +1,81 @@
+Heligoland Bight: 60 ships, 2 sides, from 1914-08-28 06:50:00.000 until 1914-08-28 15:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+
+the timeline:
+  06:51 (+0:01)  the sides meet (the first encounter opens)
+  06:51 (+0:01)  Germany's commander: no contact
+  06:51 (+0:01)  Germany sights Arethusa
+  06:52 (+0:02)  Britain's commander: no contact
+  06:52 (+0:02)  Germany's commander: II. Scouting Group to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: V. Flotilla to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: I. Flotilla to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: Stettin to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: Frauenlob to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: Mainz to withdraw (outmatched)
+  06:52 (+0:02)  Germany's commander: Danzig to withdraw (outmatched)
+  06:52 (+0:02)  Britain sights V188
+  06:52 (+0:02)  Britain's first torpedoes: Arethusa, 2 at V188
+  06:53 (+0:03)  Germany's II. Scouting Group: withdraw done (home)
+  06:53 (+0:03)  Germany's commander: retiring (outmatched)
+  06:53 (+0:03)  Britain opens fire: Arethusa at V188
+  06:54 (+0:04)  Britain's commander: battle
+  06:55 (+0:05)  Germany opens fire: V188 at Arethusa
+  06:55 (+0:05)  Germany's first hit: V188 on Arethusa
+  07:01 (+0:11)  Britain's commander: 1st Light Cruiser Squadron to join Battlecruisers (idle)
+  07:01 (+0:11)  Britain's commander: 1st Flotilla to join Battlecruisers (idle)
+  07:01 (+0:11)  Britain's commander: 3rd Flotilla to intercept V188 (contact)
+  07:02 (+0:12)  Britain's commander: contact
+  07:14 (+0:24)  Germany's Danzig: withdraw done (home)
+  07:17 (+0:27)  Germany's Frauenlob: withdraw done (home)
+  07:23 (+0:33)  Germany's Stettin: withdraw done (home)
+  07:26 (+0:36)  Germany's V. Flotilla: withdraw done (home)
+  07:31 (+0:41)  Britain's 3rd Flotilla: intercept can't (lostcontact)
+  07:31 (+0:41)  Britain's commander: Battlecruisers to withdraw (gave up)
+  07:31 (+0:41)  Britain's commander: 1st Light Cruiser Squadron to withdraw (gave up)
+  07:31 (+0:41)  Britain's commander: 1st Flotilla to withdraw (gave up)
+  07:31 (+0:41)  Britain's commander: 3rd Flotilla to withdraw (gave up)
+  07:32 (+0:42)  Britain's commander: home (gave up)
+  07:46 (+0:56)  Germany's I. Flotilla: withdraw done (home)
+  08:56 (+2:06)  Germany's Mainz: withdraw done (home)
+  09:02 (+2:12)  the end: done
+
+the result (done at 09:02 (+2:12), played in 13.2 s):
+  Britain        44 ships    256065 t   lost   0 (      0 t)   damaged afloat   1   afloat  44   hits made    0   torpedoes   6   aims not met, score 0.00   men lost 0, saved 0
+  Germany        16 ships     55372 t   lost   0 (      0 t)   damaged afloat   1   afloat  16   hits made    1   torpedoes   0   aims not met, score 0.00   men lost 0, saved 0
+  Britain      at the end: 4 units on a task, 0 home, 0 on their first orders, 0 idle; 0 fallen out
+  Germany      at the end: 0 units on a task, 7 home, 0 on their first orders, 0 idle; 0 fallen out
+  Britain      done? home (gave up); 0 of 44 afloat home, 44 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 237 km)
+  Germany      done? retiring (outmatched); 12 of 16 afloat home, 4 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 14 km)
+  at the end 0 units held by the player, 1 out of their lines on tasks; 0 notices raised
+where the time went (12.0 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
+  Commands                    0.05 %      0.000     6544.2 µs   (6.54 ms)
+  Smoke looks                 0.44 %     13.290        0.6 µs   (0.47 ms)
+  Ships: step                29.96 %     19.848       25.1 µs   (1.44 ms)
+  Ships: step, all threads   29.85 %     19.848       25.0 µs   (1.44 ms)
+  Ships: contacts             0.01 %      0.198        0.7 µs   (0.46 ms)
+  Ships: rails check          0.36 %      0.198       30.3 µs   (3.05 ms)
+  Encounters                  0.34 %      0.198       28.5 µs   (3.95 ms)
+  Sighting                    8.76 %      0.992      146.8 µs   (18.01 ms)
+  Ships: coarse               0.20 %      0.004      929.1 µs   (26.04 ms)
+  ShipSystem                 39.60 %     19.852       33.1 µs   (26.05 ms)
+  ShellSystem                 0.41 %      0.011      634.2 µs   (24.21 ms)
+  GunnerySystem               3.02 %      0.064      783.4 µs   (17.26 ms)
+  DamageSystem                0.02 %      0.000     1046.7 µs   (2.07 ms)
+  TorpedoSystem               0.07 %      0.186        6.2 µs   (1.95 ms)
+  Smoke index                 5.66 %      0.400      235.4 µs   (12.22 ms)
+  Smoke merge                 4.17 %      0.993       69.9 µs   (13.95 ms)
+  Smoke queries               0.09 %      0.043       34.2 µs   (2.97 ms)
+  SmokeSystem                12.69 %      0.995      211.8 µs   (47.55 ms)
+  AI: CommanderLayer          1.89 %     20.000        1.6 µs   (34.55 ms)
+  AI: TaskLayer               0.84 %     19.849        0.7 µs   (0.55 ms)
+  AI: AdmiralLayer            6.28 %     19.849        5.3 µs   (7.40 ms)
+  AI: CaptainLayer           33.18 %     19.849       27.8 µs   (20.54 ms)
+  AiSystem                   43.55 %     79.546        9.1 µs   (34.80 ms)
+  AI: captains, prepared      3.02 %     19.849        2.5 µs   (4.56 ms)
+  AI: captains, the job      28.69 %     19.849       24.0 µs   (13.18 ms)
+  the speed hour by hour: 430x 899x
+  main guns: 0 fell out for them, no main mounts
+             at the end, 60 ships afloat: main mounts out 0 of 193 (0 of 213 guns)
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 31 fired, 0 at ships seen done for
+  the state at the end: 53897eadf6778c84

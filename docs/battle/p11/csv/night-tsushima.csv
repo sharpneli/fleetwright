@@ -1,0 +1,6 @@
+scenario,night,count,hits,others,range_m,run_s,setting_kn,fast_kn,slow_kn,target_kn,length_m,forecast
+night-tsushima,1,1,0,0,623,41.6,30,30,24,8.6,112.8,0.1561
+night-tsushima,1,1,1,0,491,23.1,30,30,24,13.7,112.8,0.141
+night-tsushima,1,1,0,0,489,23,30,30,24,13.7,112.8,0.141
+night-tsushima,1,1,0,0,746,35.7,30,30,24,13.8,112.8,0.1409
+night-tsushima,1,1,0,0,745,35.5,30,30,24,13.8,112.8,0.1409

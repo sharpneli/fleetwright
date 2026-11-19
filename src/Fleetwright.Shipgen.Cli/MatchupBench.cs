@@ -175,8 +175,8 @@ static class MatchupBench
                 g.Battery, g.Kind.ToString().ToLowerInvariant(), g.CalibreMm, g.Guns, g.ShellsPerGunMin, g.Rounds == int.MaxValue ? "unlimited" : g.Rounds.ToString(Inv),
                 g.Level, g.ReachM, g.Shell.Kind, g.Shell.MassKg, g.Shell.FillerKg));
         if (p.TubesBearing > 0)
-            Console.WriteLine(string.Format(Inv, "  torpedoes: {0} bearing, {1} carried; {2:0} kg, {3:0} kn for {4:0} m (attacks from {5:0} m); duds {6:0}%", p.TubesBearing,
-                p.Torpedoes, p.Torpedo.ChargeKg, p.Torpedo.FastKn, p.Torpedo.FastRangeM, p.AttackRangeM(s), 100 * p.TorpedoDud));
+            Console.WriteLine(string.Format(Inv, "  torpedoes: {0} bearing, {1} carried; {2:0} kg, {3:0} kn for {4:0} m (attacks by day from {5:0} m); duds {6:0}%", p.TubesBearing,
+                p.Torpedoes, p.Torpedo.ChargeKg, p.Torpedo.FastKn, p.Torpedo.FastRangeM, p.AttackRangeM(s, false), 100 * p.TorpedoDud));
     }
 
     static void Shots(MatchupEntry[] from, MatchupEntry[] to, double r, SimSettings s)

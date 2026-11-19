@@ -1,0 +1,342 @@
+The Yalu, 1894: 15 ships, 2 sides, from 1894-09-17 04:00:00.000 until 1894-09-17 12:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed 1894917: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.00   China lost 0/7 (0 t), score 0.00   41e37895fe30e4bf   (20.3 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 15 ships afloat: main mounts out 0 of 29 (0 of 37 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 71 fired, 0 at ships seen done for
+           Japan        done? retiring (outmatched); 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 32 km)
+           China        done? home (gave up); 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 198 km)
+  seed 1894918: time    at 12:00 (+8:00)  Japan lost 1/8 (2519 t), score 0.19   China lost 3/7 (5808 t), score 0.09   (foundered 1, capsized 2, broke in two 1)   18bb04ae132ebdb1   (27.8 s)
+           main guns: 2 fell out for them, main mounts out 2 of 2 (3 of 3 guns): gunhouse out of action 1, guns out 1
+                      at the end, 11 ships afloat: main mounts out 2 of 23 (2 of 29 guns): magazine flooded by the sea 1, gunhouse destroyed 1
+           blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+           shells: 4494 fired, 0 at ships seen done for
+           Japan        done? lost (lost contact); 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 145 km)
+           China        done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 302 km)
+  seed 1894919: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.10   China lost 2/7 (3155 t), score 0.00   (foundered 1, capsized 1)   f82500459f75b3e7   (20.9 s)
+           main guns: 1 fell out for them, main mounts out 1 of 1 (2 of 2 guns): gunhouse out of action 1
+                      at the end, 13 ships afloat: main mounts out 3 of 26 (4 of 33 guns): magazine flooded by the sea 1, gunhouse out of action 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2850 fired, 0 at ships seen done for
+           Japan        done? contact; 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 1 dead in the water, the farthest 114 km)
+           China        done? retiring (outmatched); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 261 km)
+  seed 1894920: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.00   China lost 0/7 (0 t), score 0.00   f8e22f0fa2c3d619   (28.1 s)
+           main guns: 1 fell out for them, main mounts out 1 of 1 (2 of 2 guns): guns out 1
+                      at the end, 15 ships afloat: main mounts out 1 of 29 (1 of 37 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1293 fired, 0 at ships seen done for
+           Japan        done? home (gave up); 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 111 km)
+           China        done? retiring (outmatched); 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 252 km)
+  seed 1894921: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.19   China lost 3/7 (5808 t), score 0.00   (foundered 1, capsized 2)   c6f2c8fa203055b7   (26.6 s)
+           main guns: 3 fell out for them, main mounts out 3 of 3 (4 of 4 guns): guns out 3
+                      at the end, 12 ships afloat: main mounts out 2 of 24 (2 of 30 guns): gunhouse destroyed 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2736 fired, 0 at ships seen done for
+           Japan        done? lost (lost contact); 3 of 8 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 111 km)
+           China        done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 238 km)
+  seed 1894922: time    at 12:00 (+8:00)  Japan lost 3/8 (13411 t), score 0.23   China lost 4/7 (6945 t), score 0.50   (foundered 2, capsized 5)   c6481ade1b9eb105   (26.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 8 ships afloat: main mounts out 5 of 17 (6 of 22 guns): magazine flooded by the sea 2, gunhouse destroyed 2, magazine flooded by order 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 3705 fired, 0 at ships seen done for
+           Japan        done? retiring (broken off); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 86 km)
+           China        done? retiring (outmatched); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 252 km)
+  seed 1894923: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.00   China lost 0/7 (0 t), score 0.00   c8b49b5b13374bcf   (18.3 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 15 ships afloat: main mounts out 2 of 29 (2 of 37 guns): magazine flooded by the sea 1, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1404 fired, 0 at ships seen done for
+           Japan        done? home (gave up); 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 89 km)
+           China        done? retiring (outmatched); 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 112 km)
+  seed 1894924: time    at 12:00 (+8:00)  Japan lost 0/8 (0 t), score 0.00   China lost 0/7 (0 t), score 0.00   b7d3e8b69833162a   (22.4 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 15 ships afloat: main mounts out 0 of 29 (0 of 37 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 743 fired, 0 at ships seen done for
+           Japan        done? home (gave up); 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 150 km)
+           China        done? retiring (outmatched); 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 226 km)
+
+over 8 seeds:
+  ended time      8 times, after 8:00 on average
+  Japan        lost 0.5 of 8 ships (from 0 to 3), 1991 t; made 185 hits, fired 1.4 torpedoes; aims met 0 times, score 0.09; regrouped 0.1 squadrons
+  China        lost 1.5 of 7 ships (from 0 to 4), 2715 t; made 56 hits, fired 1.1 torpedoes; aims met 0 times, score 0.07
+over 8 seeds:
+  main guns: 7 fell out for them, main mounts out 7 of 7 (11 of 11 guns): guns out 5, gunhouse out of action 2
+             at the end, 104 ships afloat: main mounts out 15 of 206 (17 of 262 guns): magazine flooded by the sea 5, gunhouse destroyed 5, gunhouse out of action 3, magazine flooded by order 1, guns out 1
+  blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
+  shells: 17296 fired, 0 at ships seen done for
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  day    large  120-200 mm       0-2 km                   100     29   29.0%
+  day    large  120-200 mm       0-2 km          pb       317    176   55.5%
+  day    large  120-200 mm       2-4 km                  3469    676   19.5%
+  day    large  120-200 mm       2-4 km          pb        62     23   37.1%
+  day    large  120-200 mm       4-6 km                  3565    182    5.1%
+  day    large  120-200 mm       6-10 km                 2561     35    1.4%
+  day    large  200-300 mm       0-2 km          pb        30     22   73.3%
+  day    large  200-300 mm       2-4 km                    79     17   21.5%
+  day    large  200-300 mm       2-4 km          pb        11      2   18.2%
+  day    large  200-300 mm       4-6 km                   337     34   10.1%
+  day    large  200-300 mm       6-10 km                 1540     40    2.6%
+  day    large  200-300 mm       10-15 km                 111      1    0.9%
+  day    large  300 mm and over  0-2 km          pb        12      7   58.3%
+  day    large  300 mm and over  2-4 km                    55     10   18.2%
+  day    large  300 mm and over  2-4 km          pb        10      3   30.0%
+  day    large  300 mm and over  4-6 km                   132     16   12.1%
+  day    large  300 mm and over  6-10 km                  445     10    2.2%
+  day    large  300 mm and over  10-15 km                 201      0    0.0%
+  day    small  120-200 mm       0-2 km                    47      0    0.0%
+  day    small  120-200 mm       0-2 km          pb        46     16   34.8%
+  day    small  120-200 mm       2-4 km                   661     80   12.1%
+  day    small  120-200 mm       4-6 km                  1061     45    4.2%
+  day    small  120-200 mm       6-10 km                  897      8    0.9%
+  day    small  200-300 mm       0-2 km          pb         3      1   33.3%
+  day    small  200-300 mm       2-4 km                     2      1   50.0%
+  day    small  200-300 mm       2-4 km          pb         2      0    0.0%
+  day    small  200-300 mm       4-6 km                     8      0    0.0%
+  day    small  200-300 mm       6-10 km                  131      1    0.8%
+  day    small  200-300 mm       10-15 km                  13      0    0.0%
+  day    small  300 mm and over  0-2 km          pb         1      1  100.0%
+  day    small  300 mm and over  2-4 km                     8      2   25.0%
+  day    small  300 mm and over  4-6 km                    12      2   16.7%
+  day    small  300 mm and over  6-10 km                   12      0    0.0%
+  day    small  300 mm and over  10-15 km                   7      1   14.3%
+  night  large  120-200 mm       0-2 km                     1      0    0.0%
+  night  large  120-200 mm       0-2 km          pb       189    133   70.4%
+  night  large  120-200 mm       2-4 km                   353     75   21.2%
+  night  large  120-200 mm       2-4 km          pb        26     12   46.2%
+  night  large  120-200 mm       4-6 km                    23      8   34.8%
+  night  large  120-200 mm       6-10 km                   19      0    0.0%
+  night  large  200-300 mm       0-2 km          pb        32     27   84.4%
+  night  large  200-300 mm       2-4 km                    18      6   33.3%
+  night  large  200-300 mm       2-4 km          pb         5      2   40.0%
+  night  large  200-300 mm       6-10 km                   10      0    0.0%
+  night  large  200-300 mm       10-15 km                   8      0    0.0%
+  night  large  300 mm and over  0-2 km          pb         5      4   80.0%
+  night  large  300 mm and over  2-4 km                     8      0    0.0%
+  night  large  300 mm and over  2-4 km          pb         2      0    0.0%
+  night  large  300 mm and over  4-6 km                     4      0    0.0%
+  night  small  120-200 mm       2-4 km                   111     12   10.8%
+  night  small  120-200 mm       4-6 km                     2      0    0.0%
+  night  small  120-200 mm       6-10 km                    7      0    0.0%
+  night  small  200-300 mm       6-10 km                    9      0    0.0%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  day Station (Superior) / admiral Course / task Intercept Done                                            1784    301
+  day Course (Superior) / admiral Course / task Intercept Done                                             1421    295
+  night Station (Superior) / admiral Course / task Withdraw OnTask                                          243     99
+  day Station (Superior) / admiral Fight / task Attack OnTask / attack Run                                  164     68
+  day Course (Superior) / admiral Fight / task Attack OnTask / attack Gain                                  290     65
+  day Station (Superior) / admiral Course / task Withdraw OnTask                                            120     56
+  day Run (Superior) / admiral Fight / task Attack OnTask / attack Away                                     101     52
+  day Station (Superior) / admiral Fight / task Attack OnTask / attack Gain                                 261     44
+  night Station (Superior) / admiral Fight / task Attack OnTask / attack Gain                               163     36
+  night Course (Superior) / admiral Course / task Withdraw OnTask                                           120     34
+  day Course (Superior) / admiral Course / task Withdraw OnTask                                              66     28
+  day Course (Superior) / admiral Fight / task Attack OnTask / attack Run                                    61     26
+  day Course (Superior) / admiral Fight / task Attack OnTask / attack Fire                                   37     25
+  day Course (Superior) / admiral Course / task Intercept OnTask                                             53     21
+  night Station (Superior) / admiral Fight / task Attack OnTask / attack Away                                66     21
+  night Station (Superior) / admiral Fight / task Join Cant                                                  35     21
+  night Home (Own)                                                                                           18     16
+  night Course (Superior) / admiral Fight / task Attack OnTask / attack Gain                                 49     15
+  day Station (Superior) / admiral Fight / task Attack OnTask / attack Away                                 252     14
+  day Home (Own)                                                                                             40     13
+  day Station (Superior) / admiral Screen / task Screen OnTask                                               63     13
+  night Fight away (Superior) / admiral Fight / task Join Cant                                               10     10
+  day Station (Superior) / admiral Fight / task Attack Done                                                  17      8
+  day Station (Superior) / admiral Course / task Intercept OnTask                                            29      6
+  day Station (Superior) / admiral Fight / task Screen Cant                                                  10      6
+  day Station (Superior) / admiral Fight / task Join Engaged                                                 13      4
+  day Station (Superior) / admiral Fight / task Join Engaged / attack Run                                     7      4
+  night Course (Superior) / admiral Fight / task Attack OnTask / attack Away                                  5      4
+  night Course (Superior) / admiral Fight / task Attack OnTask / attack Fire                                  5      4
+  day Course (Superior) / admiral Fight / task Join Engaged / attack Fire                                    10      3
+  day Course (Superior) / admiral Fight / task Join Engaged / attack Run                                     13      3
+  day Fight away (Superior) / admiral Fight / task Screen Cant                                                9      3
+  night Course (Superior) / admiral Fight / task Join Engaged / attack Gain                                   3      3
+  night Run (Superior) / admiral Fight / task Attack OnTask / attack Away                                    10      3
+  night Station (Superior) / admiral Fight / task Join Engaged / attack Gain                                  6      3
+  day Fight attacking (Own)                                                                                  10      2
+  day Station (Superior) / admiral Course / task Withdraw Engaged                                             8      2
+  day Course (Superior) / admiral Fight / task Intercept Done                                                 1      1
+  day Course (Superior) / admiral Fight / task Join Engaged / attack Gain                                    15      1
+  day Station (Superior) / admiral Fight / task Attack OnTask                                                 1      1
+  day Station (Superior) / admiral Fight / task Intercept Done                                               39      1
+  night Fight in the band (Superior) / admiral Fight / task Join Engaged                                      8      1
+  night Station (Superior) / admiral Fight / task Join Engaged                                                8      1
+  day Course (Superior) / admiral Course / task Withdraw Engaged                                              3      0
+  day Fight away (Superior) / admiral Fight / task Intercept Done                                            10      0
+  day Fight away (Superior) / admiral Fight / task Join Engaged                                               5      0
+  day Fight finishing (Superior) / admiral Fight / task Intercept Done                                        2      0
+  night Station (Superior) / admiral Route / task Withdraw OnTask                                             1      0
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  0.2-0.5 deg/s         353  11.2%     14    4.0%
+  0.5-1 deg/s           402  12.8%      7    1.7%
+  over 1 deg/s          101   3.2%      4    4.0%
+  steady               2294  72.8%    116    5.1%
+  under helm, by what she was doing (shells, hits):
+    0.5-1 deg/s: Station (Superior) / admiral Fight / in the line                                           217      3
+    0.2-0.5 deg/s: Station (Superior) / admiral Fight / in the line                                         160      3
+    0.2-0.5 deg/s: Station (Superior) / admiral Screen / the guide                                           56      1
+    0.5-1 deg/s: Course (Superior) / admiral Fight / the guide                                               47      1
+    0.5-1 deg/s: Station (Superior) / admiral Screen / the guide                                             40      1
+    0.2-0.5 deg/s: Station (Superior) / admiral Screen / in the line                                         38      3
+    0.2-0.5 deg/s: Course (Superior) / admiral Fight / the guide                                             30      2
+    0.5-1 deg/s: Fight (Superior) / admiral Fight / the guide                                                30      1
+    over 1 deg/s: Station (Superior) / admiral Fight / in the line                                           29      1
+    0.2-0.5 deg/s: Station (Superior) / admiral Course / in the line                                         24      2
+    0.5-1 deg/s: Station (Superior) / admiral Screen / in the line                                           22      0
+    over 1 deg/s: Course (Superior) / admiral Fight / the guide                                              22      1
+    over 1 deg/s: Station (Superior) / admiral Screen / the guide                                            16      0
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / in the line                                          13      2
+    0.2-0.5 deg/s: Course (Superior) / admiral Course / the guide                                            11      0
+    0.5-1 deg/s: Course (Superior) / admiral Fight / in the line                                             10      0
+    0.5-1 deg/s: Station (Superior) / admiral Course / in the line                                           10      0
+    0.5-1 deg/s: Course (Superior) / admiral Course / in the line                                             8      1
+    0.5-1 deg/s: Course (Superior) / admiral Course / the guide                                               8      0
+    0.5-1 deg/s: Fight (Superior) / admiral Screen / the guide                                                8      0
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+  Japan night [neither]: Station (Superior, None) / admiral Fight Gain / task Attack                                  7
+  Japan night [she closes]: Station (Superior, None) / admiral Fight Gain / task Attack                               5
+  China night [both closing]: Station (Superior, None) / admiral Fight / task Join                                    3
+  China night [he closes]: Fight away (Superior, None) / admiral Fight / task Join                                    3
+  China night [neither]: Station (Superior, None) / admiral Fight / task Join                                         3
+  Japan night [he closes]: Course (Superior, None) / admiral Fight Gain / task Attack                                 3
+  Japan night [she closes]: Course (Superior, None) / admiral Fight Gain / task Attack                                3
+  China night [both closing]: Course (Superior, None) / admiral Fight Fire / task Attack                              2
+  China night [he closes]: Station (Superior, None) / admiral Fight Away / task Attack                                2
+  China night [neither]: Fight away (Superior, None) / admiral Fight / task Join                                      2
+  China night [she closes]: Fight away (Superior, None) / admiral Fight / task Join                                   2
+  China day [she closes]: Course (Superior, None) / admiral Course / task Intercept                                   1
+  China night [he closes]: Course (Superior, None) / admiral Fight Fire / task Attack                                 1
+  China night [he closes]: Run (Superior, None) / admiral Fight Away / task Attack                                    1
+  China night [neither]: Course (Superior, None) / admiral Fight Away / task Attack                                   1
+  China night [neither]: Course (Superior, None) / admiral Fight Fire / task Attack                                   1
+  China night [neither]: Run (Superior, None) / admiral Fight Away / task Attack                                      1
+  China night [she closes]: Station (Superior, None) / admiral Fight / task Join                                      1
+  Japan day [he closes]: Course (Superior, None) / admiral Course / task Intercept                                    1
+  Japan night [both closing]: Station (Superior, None) / admiral Fight Gain / task Attack                             1
+  Japan night [both closing]: Station (Superior, None) / admiral Route / task Withdraw                                1
+  Japan night [he closes]: Station (Superior, None) / admiral Fight Gain / task Attack                                1
+  Japan night [neither]: Course (Superior, None) / admiral Course / task Withdraw                                     1
+  Japan night [neither]: Course (Superior, None) / admiral Fight Gain / task Attack                                   1
+  Japan night [neither]: Home (Own, OutSpeed)                                                                         1
+  Japan night [neither]: Route (Superior, None) / admiral Route / task Withdraw                                       1
+  Japan night [neither]: Station (Superior, None) / admiral Course / task Withdraw                                    1
+  Japan night [she closes]: Home (Own, OutSpeed)                                                                      1
+  Japan night [she closes]: Station (Superior, None) / admiral Course / task Withdraw                                 1
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  day range/band 1/3-2/3 vis >12 km / target away / her admiral Fight                                       425    148
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Course                                   496    129
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Course                                    274    117
+  day range/band <1/3 vis >12 km / target Course / her admiral Course                                       154     80
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Screen                                   439     73
+  day range/band 1/3-2/3 vis >12 km / target Home                                                           876     69
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Fight                                     155     65
+  day range/band <1/3 vis >12 km / target away / her admiral Fight                                          109     49
+  night range/band <1/3 vis >12 km / target Run / her admiral Fight Away                                     51     42
+  night range/band 1/3-2/3 vis >12 km / target Station / her admiral Course                                 129     34
+  day range/band 1/3-2/3 vis >12 km / target attacking                                                      299     31
+  day range/band <1/3 vis >12 km / target Course / her admiral Fight Fire                                    58     29
+  day range/band >2/3 vis >12 km / target Station / her admiral Course                                      190     29
+  day range/band >2/3 vis >12 km / target Course / her admiral Fight                                         57     27
+  day range/band <1/3 vis >12 km / target Course / her admiral Fight                                         52     25
+  night range/band <1/3 vis >12 km / target Home                                                             45     24
+  day range/band 1/3-2/3 vis >12 km / target Station / her admiral Fight                                    193     23
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Fight Run                                  91     22
+  night range/band 1/3-2/3 vis >12 km / target fighting / her admiral Fight                                  87     22
+  day range/band 1/3-2/3 vis >12 km / target Course / her admiral Fight Gain                                139     21
+  night range/band <1/3 vis >12 km / target away / her admiral Fight                                         21     21
+  day range/band >2/3 vis >12 km / target away / her admiral Fight                                           77     19
+  night range/band <1/3 vis >12 km / target Course / her admiral Fight Fire                                  25     19
+  day range/band <1/3 vis >12 km / target Home                                                               50     16
+  day range/band <1/3 vis >12 km / target Station / her admiral Screen                                       45     16
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
+  day:
+    1-2 min                         7     1   14.3% (+0 others)  forecast  13.3%   range   1.5 km, set   24 kn, target    7 kn
+    2-4 min                         7     0    0.0% (+0 others)  forecast  13.6%   range   1.8 km, set   24 kn, target    5 kn
+    all                            14     1    7.1% (+0 others)  forecast  13.5%   range   1.7 km, set   24 kn, target    5 kn
+    a 30 kn torpedo                14     1    7.1% (+0 others)  forecast  13.5%   range   1.7 km, set   24 kn, target    5 kn
+  night:
+    under 1 min                     6     1   16.7% (+0 others)  forecast  14.2%   range   0.8 km, set   30 kn, target   16 kn
+    all                             6     1   16.7% (+0 others)  forecast  14.2%   range   0.8 km, set   30 kn, target   16 kn
+    a 30 kn torpedo                 6     1   16.7% (+0 others)  forecast  14.2%   range   0.8 km, set   30 kn, target   16 kn
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Cruiser by her match Cruiser at 4-6 km                                                         7     113    98.3
+  Cruiser by her match Cruiser at 2-4 km                                                         5     226   117.2
+  Capital by lighter Cruiser at 2-4 km                                                           2      57    60.8
+  Capital by lighter Cruiser at 6-10 km                                                          2       7   188.7
+  Cruiser by heavier Capital at 0-2 km                                                           2     121   142.5
+  Cruiser by heavier Capital at 2-4 km                                                           2      47   173.6
+  Cruiser by heavier Capital at 4-6 km                                                           2      47    21.2
+  Cruiser by her match Cruiser at 0-2 km                                                         2     103    45.9
+  Cruiser by heavier Cruiser at 4-6 km                                                           1       5    21.4
+  Cruiser by her match Capital at 0-2 km                                                         1      16   296.6
+  Cruiser by her match Cruiser at 10-15 km                                                       1       1     2.9
+  Cruiser by her match Cruiser at 6-10 km                                                        1       1    16.1
+  Cruiser by lighter Cruiser at 2-4 km                                                           1       4   118.2
+  Cruiser by lighter Cruiser at 4-6 km                                                           1      32   106.0
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutList                                                    5     156   136.0
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutGuns                                                       3     120    71.1
+    Capital day Course / admiral Course / task Intercept (firing) -> OutList                                                     2      48    91.7
+    Cruiser day Course / admiral Course / task Intercept (firing) -> OutSteering                                                 2      48   201.3
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutList                                                       2      49    89.1
+    Capital day Station / admiral Course / task Intercept (firing) -> OutList                                                    1      12    87.4
+    Capital day Station / admiral Fight / task Intercept (firing) -> OutList                                                     1       4   228.2
+    Cruiser day Course / admiral Course / task Intercept (firing) -> OutGuns                                                     1      10    33.9
+    Cruiser day Course / admiral Course / task Intercept (firing) -> OutList                                                     1      22    62.5
+    Cruiser day Course / admiral Fight / task Attack (firing) -> OutList                                                         1      21    21.4
+    Cruiser day Course / admiral Fight / task Attack (firing) -> OutSteering                                                     1      22   108.6
+    Cruiser day Course / admiral Fight / task Attack (not firing) -> OutSpeed                                                    1       4   118.2
+    Cruiser day Fight away / admiral Screen / task Screen (firing) -> OutList                                                    1      42   169.0
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutGuns                                                    1      21    32.7
+    Cruiser day Station / admiral Course / task Intercept (firing) -> OutSteering                                                1       8    18.4
+    Cruiser day Station / admiral Course / task Intercept (not firing) -> OutGuns                                                1      22    57.8
+    Cruiser day Station / admiral Course / task Intercept (not firing) -> OutList                                                1      10   198.7
+    Cruiser day Station / admiral Fight / task Attack (not firing) -> OutAmmunition                                              1       3    85.1
+    Cruiser day Station / admiral Run / task Screen (not firing) -> OutSteering                                                  1       1     2.9
+    Cruiser day Station / admiral Screen / task Screen (firing) -> OutSteering                                                   1      76   147.6
+    Cruiser day Station / admiral Screen / task Screen (not firing) -> OutGuns                                                   1      81    71.2
+ships going home under fire: 12 (8 lost by the end), 130 hits on them going home (median 5, the top quarter from 18, the most 67); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 184 shells, 44 hits
+  with none other in reach: 1043 shells, 86 hits
+    no other in reach       seen silent                     802     47
+    no other in reach       seen half silent                188     33
+    a fighting enemy in reach seen silent                    74     23
+    a fighting enemy in reach seen half silent              100     19
+    no other in reach       seen fighting                    53      6
+    a fighting enemy in reach seen fighting                  10      2
+  no other in reach       seen silent      day 2-4 km   closing she's slow / Station / admiral Course / task Intercept                     94     17
+  no other in reach       seen silent      day 2-4 km   opening she's slow / Station / admiral Course / task Intercept                    348     15
+  no other in reach       seen half silent night 0-2 km   opening she's quick / Course / admiral Course / task Withdraw                    33     14
+  no other in reach       seen half silent day 2-4 km   closing she's slow / Station / admiral Course / task Intercept                     87     13
+  no other in reach       seen silent      day 2-4 km   holding she's slow / Station / admiral Course / task Intercept                    105     12
+  a fighting enemy in reach seen half silent day 0-2 km   closing she's quick / Course / admiral Course / task Intercept                   27      8
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's slow / Station / admiral Fight / task Join                       15      8
+  a fighting enemy in reach seen silent      night 4-6 km   opening she's slow / Station / admiral Fight / task Attack                     13      6
+  no other in reach       seen fighting    day 2-4 km   closing she's slow / Station / admiral Course / task Intercept                     38      6
+  no other in reach       seen half silent night 2-4 km   opening she's quick / Station / admiral Course / task Withdraw                   12      5
+  a fighting enemy in reach seen half silent day 0-2 km   opening she's quick / Course / admiral Course / task Intercept                    6      4
+  a fighting enemy in reach seen half silent day 2-4 km   closing she's slow / Station / admiral Course / task Intercept                    8      2
+  a fighting enemy in reach seen half silent day 4-6 km   opening she's slow / Station / admiral Fight / task Join                         14      2
+  a fighting enemy in reach seen silent      day 0-2 km   holding she's quick / Course / admiral Course / task Intercept                    3      2
+  a fighting enemy in reach seen silent      night 0-2 km   opening she's slow / Fight away / admiral Fight / task Join                     2      2
+  no other in reach       seen silent      night 0-2 km   closing she's quick / Station / admiral Fight / task Join                         3      2
+  a fighting enemy in reach seen fighting    day 4-6 km   holding she's slow / Station / admiral Fight / task Join                          5      1
+  a fighting enemy in reach seen fighting    day 4-6 km   opening she's slow / Station / admiral Fight / task Join                          5      1
+  a fighting enemy in reach seen half silent day 0-2 km   holding she's quick / Course / admiral Course / task Intercept                    3      1
+  a fighting enemy in reach seen half silent day 2-4 km   opening she's slow / Course / admiral Course / task Intercept                    12      1
+  a fighting enemy in reach seen half silent day 4-6 km   opening she's quick / Station / admiral Fight / task Join                         5      1
+  a fighting enemy in reach seen silent      day 0-2 km   closing she's quick / Course / admiral Course / task Intercept                    4      1
+  a fighting enemy in reach seen silent      day 2-4 km   closing she's slow / Station / admiral Course / task Intercept                    2      1
+  a fighting enemy in reach seen silent      day 2-4 km   holding she's slow / Course / admiral Course / task Intercept                     1      1
+  a fighting enemy in reach seen silent      day 2-4 km   holding she's slow / Station / admiral Course / task Intercept                    2      1
+  a fighting enemy in reach seen silent      day 2-4 km   opening she's slow / Course / admiral Course / task Intercept                     3      1
+  no other in reach       seen half silent night 2-4 km   opening she's slow / Course / admiral Course / task Withdraw                     15      1
+  no other in reach       seen silent      night 2-4 km   opening she's slow / Course / admiral Course / task Withdraw                      3      1
+  a fighting enemy in reach seen half silent day 0-2 km   closing she's quick / Station / admiral Course / task Intercept                   1      0
+  a fighting enemy in reach seen half silent day 0-2 km   opening she's quick / Fight away / admiral Fight / task Screen                    2      0

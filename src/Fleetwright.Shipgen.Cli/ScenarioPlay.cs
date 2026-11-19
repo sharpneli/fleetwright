@@ -43,7 +43,7 @@ static partial class ScenarioPlay
         var fellWhy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
         var fellBy = new SortedDictionary<string, (int Ships, long Hits, double Minutes)>(StringComparer.Ordinal);
         var noGunfire = new MainGuns.Tally();
-        var attacks = new AttackTrace();
+        var attacks = new AttackTrace { Scenario = Path.GetFileNameWithoutExtension(path) };
         int noGunfireHits = 0, noGunfireShips = 0;
         // ship-minutes inside 1 km of an enemy, by side and what she was doing (BL5: who closes in, and why)
         var inside = new SortedDictionary<string, long>(StringComparer.Ordinal);
@@ -208,6 +208,8 @@ static partial class ScenarioPlay
                         homeShips[hk] = (homeShips.GetValueOrDefault(hk).Hits + r.Hits, false);
                     }
                 };
+            if (fireTable)
+                attacks.Hook(w, seed);
             if (salvoLog != null)
                 LogSalvos(w, seed, salvoLog);
             ammo?.Begin(w);
@@ -276,6 +278,8 @@ static partial class ScenarioPlay
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
                 ammo?.End(ai);
+                if (fireTable)
+                    attacks.EndSeed(w, ai);
                 foreach (var k in homeShips.Keys.Where(k => k.Seed == seed).ToList())
                     homeShips[k] = (homeShips[k].Hits, w.Ships.Store.SlotOf(k.Entity) < 0);
             }
@@ -401,10 +405,30 @@ static partial class ScenarioPlay
             public double GainS, RunS, AwayS;
             public readonly int[] Hits = new int[5], Fell = new int[5];
             public string End = "";
+            // P11 (balance.md): the attack's forecast as its force judges it by day (FlotillaAttacks.Worth), from the truth at its
+            // first sample, against what it came to: its boats out and the tonnes its torpedoes took, settled SettleMs after it
+            public ulong Seed;
+            public int Side;
+            public string Name = "";
+            public readonly List<int> Members = [];
+            public double MembersT, RangeM;
+            public MatchupEntry[] A = [], B = [];
+            public MatchupTerms Forecast;
+            public MatchupLight Light;
+            public long CloseMs;
+            public int Torpedoes, TorpedoHits;
+            public readonly HashSet<int> Struck = [];
+            public double LostT, StruckT, TakenT;
+            public int LostBoats;
         }
 
+        /// <summary>An attack's outcome is read this long after it ends: its torpedoes run, its cripples fallen out.</summary>
+        const long SettleMs = 15 * 60_000;
+
         readonly Dictionary<(ulong, int), Run> active = [];
-        readonly List<Run> done = [];
+        readonly List<Run> done = [], settling = [];
+        CombatLog? log;
+        long read;
         readonly SortedDictionary<string, (long Hits, List<double> Own, List<double> Heavy, List<double> Boat)> onBoats = new(StringComparer.Ordinal);
         long lastMs;
         readonly HashSet<int> seenGroups = [];
@@ -428,6 +452,8 @@ static partial class ScenarioPlay
                 return;
             lastMs = w.Time.Ms;
             var store = w.Ships.Store;
+            this.seed = seed;
+            Torpedoes(w, ai);
             seenGroups.Clear();
             for (int slot = 0; slot < store.Slots; slot++)
             {
@@ -445,7 +471,11 @@ static partial class ScenarioPlay
                     continue;
                 }
                 if (run == null)
-                    active[key] = run = new Run { StartMs = w.Time.Ms, Boats = g.Line.Count, Night = Light.SunElevationDeg(store[slot].Position, w.Time) < -6 };
+                {
+                    active[key] = run = new Run { StartMs = w.Time.Ms, Boats = g.Line.Count, Night = Light.SunElevationDeg(store[slot].Position, w.Time) < -6,
+                        Seed = seed, Side = store[slot].Side };
+                    Forecast(w, ai, g, target, run);
+                }
                 int gs = store.SlotOf(w.Groups.GuideShip(g));
                 if (gs < 0)
                     continue;
@@ -476,8 +506,236 @@ static partial class ScenarioPlay
         void Close((ulong, int) key, Run run, string end)
         {
             run.End = end;
-            done.Add(run);
+            run.CloseMs = lastMs;
+            settling.Add(run);
             active.Remove(key);
+        }
+
+        /// <summary>The attack as its force judges it by day (<see cref="FlotillaAttacks.Worth"/>, from the truth): its boats
+        /// (every member of its unit) and its side's heavy ships within <see cref="SimSettings.FightCompareM"/> of the target,
+        /// against the enemy within <see cref="DefenceM"/> of her; the lines at the range the matchup picks, the attack beside them.</summary>
+        void Forecast(World w, AiSystem ai, GroupSystem.Group g, int target, Run run)
+        {
+            var store = w.Ships.Store;
+            var s = w.Settings;
+            one.Clear();
+            ai.Judge.AddMembers(w, g, one);
+            run.Name = store.SlotOf(w.Groups.GuideShip(g)) is int gs and >= 0 ? store[gs].Handling.Class.Name : "";
+            Members(w, g, run);
+            if (store.SlotOf(target) is not (int ts and >= 0))
+                return;
+            var at = store[ts].Position;
+            for (int k = 0; k < store.Slots; k++)
+            {
+                if (!store.IsAlive(k) || run.Members.Contains(store[k].Entity))
+                    continue;
+                double d = (store[k].Position - at).Length;
+                if (store[k].Side == run.Side && d <= s.FightCompareM &&
+                    ai.Roles.Of(w.Groups.UnitOf(store[k].Entity) is { } u ? Fleetwright.Sim.Ai.Unit.Group(u.GroupId) : Fleetwright.Sim.Ai.Unit.Ship(store[k].Entity)) == Fleetwright.Sim.Ai.UnitRole.Heavy)
+                    one.AddOwn(w, ai.Judge.Matchups, k);
+            }
+            enemy.Clear();
+            for (int k = 0; k < store.Slots; k++)
+                if (store.IsAlive(k) && store[k].Side != run.Side && (store[k].Position - at).Length <= DefenceM)
+                    enemy.AddOwn(w, ai.Judge.Matchups, k);
+            if (one.Count == 0 || enemy.Count == 0)
+                return;
+            double share = ai.Doctrine.OfGroup(null, (byte)run.Side, Fleetwright.Sim.Ai.DoctrineField.RangeShare);
+            var light = run.Night ? new MatchupLight(w.Weather.At(at, w.Time).VisibilityM,
+                NightLight.At(at, w.Time, w.Weather.At(at, w.Time).Cloud, s).SkyCdM2) : MatchupLight.Day;
+            var r = Matchup.Judge(one.Entries, enemy.Entries, share, share, s, light);
+            run.A = one.Entries.ToArray();
+            run.B = enemy.Entries.ToArray();
+            run.RangeM = r.Terms.RangeM;
+            run.Light = light;
+            run.Forecast = Matchup.Engage(run.A, run.B, run.RangeM, MatchupStyle.AttackByA, s, light);
+        }
+
+        /// <summary>The enemy defending the target: his ships within this of her, m.</summary>
+        const double DefenceM = 10_000;
+
+        readonly Fleetwright.Sim.Ai.Knowledge.MatchupSide one = new(), enemy = new();
+
+        void Members(World w, GroupSystem.Group g, Run run)
+        {
+            foreach (int m in g.Members)
+                if (!g.IsForce)
+                {
+                    if (w.Ships.Store.SlotOf(m) is int k and >= 0)
+                    {
+                        run.Members.Add(m);
+                        run.MembersT += tonnes[m] = w.Ships.Store[k].Handling.Class.Motion.FullDisplacementT;
+                    }
+                }
+                else if (w.Groups.Get(m) is { } sub)
+                    Members(w, sub, run);
+        }
+
+        /// <summary>The torpedoes the attacks' boats fired and those that struck, from the combat log; attacks settled.</summary>
+        readonly TorpedoTally tally = new();
+        public string Scenario { set => tally.Scenario = value; }
+        ulong seed;
+        long missed;
+
+        /// <summary>A seed's world: each spread read as it's launched (the torpedo system's hook, the AI's watch kept).</summary>
+        public void Hook(World w, ulong seed)
+        {
+            var prev = w.Torpedoes.Launched;
+            w.Torpedoes.Launched = world =>
+            {
+                prev?.Invoke(world);
+                ref readonly var e = ref world.CombatLog.Newest(0);
+                if (e.Kind == CombatEvent.Torpedoes)
+                    tally.Fired(world, seed, e);
+            };
+        }
+
+        void Torpedoes(World w, AiSystem ai)
+        {
+            settings = w.Settings;
+            if (!ReferenceEquals(log, w.CombatLog))
+                (log, read) = (w.CombatLog, w.CombatLog.Written);
+            missed += Math.Max(log.Written - read - log.Count, 0);
+            long fresh = Math.Min(log.Written - read, log.Count);
+            for (long i = fresh - 1; i >= 0; i--)
+            {
+                ref readonly var e = ref log.Newest((int)i);
+                bool fired = e.Kind == CombatEvent.Torpedoes, hit = e.Kind == CombatEvent.Hit && e.Source == HitSource.Torpedo;
+                if (!fired && !hit)
+                    continue;
+                if (hit)
+                    tally.Hit(seed, e);
+                foreach (var run in active.Values.Concat(settling))
+                    if (run.Members.Contains(e.Shooter))
+                    {
+                        if (fired)
+                            run.Torpedoes += e.Count;
+                        else
+                        {
+                            run.TorpedoHits++;
+                            run.Struck.Add(e.Target);
+                            if (w.Ships.Store.SlotOf(e.Target) is int tk and >= 0)
+                                tonnes[e.Target] = w.Ships.Store[tk].Handling.Class.Motion.FullDisplacementT;
+                        }
+                    }
+            }
+            read = log.Written;
+            for (int i = settling.Count - 1; i >= 0; i--)
+                if (lastMs - settling[i].CloseMs >= SettleMs)
+                {
+                    Settle(w, ai, settling[i]);
+                    done.Add(settling[i]);
+                    settling.RemoveAt(i);
+                }
+        }
+
+        /// <summary>What an attack came to: the tonnes of its boats out of the fight (gone, going down or fallen out), and of
+        /// the ships its torpedoes struck, those of them out.</summary>
+        void Settle(World w, AiSystem ai, Run run)
+        {
+            foreach (int m in run.Members)
+                if (Out(w, ai, m, out double t))
+                    (run.LostT, run.LostBoats) = (run.LostT + t, run.LostBoats + 1);
+            foreach (int e in run.Struck)
+            {
+                bool o = Out(w, ai, e, out double t);
+                run.StruckT += t;
+                if (o)
+                    run.TakenT += t;
+            }
+        }
+
+        readonly Dictionary<int, double> tonnes = [];
+
+        bool Out(World w, AiSystem ai, int entity, out double t)
+        {
+            var store = w.Ships.Store;
+            if (store.SlotOf(entity) is not (int k and >= 0))
+            {
+                t = tonnes.GetValueOrDefault(entity);
+                return true;
+            }
+            t = store[k].Handling.Class.Motion.FullDisplacementT;
+            // going down, or fallen out (her damage took her out; not a boat sent home with her torpedoes spent)
+            return store.Combat.Condition(k).Status != ShipStatus.Afloat || fell.Contains(entity);
+        }
+
+        readonly HashSet<int> fell = [];
+
+        /// <summary>P11 (balance.md): each attack's forecast, as its force judges it (the truth at its first sample: its boats'
+        /// share lost, the tonnes its torpedoes take, the exchange against the side's bar) beside what it came to
+        /// <see cref="SettleMs"/> after it ended; then the forecast over all of them at other run-in hit shares.</summary>
+        void Exchange()
+        {
+            var s = settings;
+            if (s == null)
+                return;
+            foreach (var night in new[] { false, true })
+            {
+                var rs = done.Where(r => r.Night == night && r.A.Length > 0).ToList();
+                if (rs.Count == 0)
+                    continue;
+                Console.WriteLine($"the {(night ? "night" : "day")} attacks' exchange (P11): forecast at their start (the force's: boats and heavy ships within " +
+                                  $"{s.FightCompareM / 1000:0} km of the target, on the enemy within {DefenceM / 1000:0} km of her; truth) against what they came to " +
+                                  $"{SettleMs / 60_000} min after; lost = the tonnes of its boats out, taken = the tonnes struck by its torpedoes and out");
+                Console.WriteLine($"  {"seed",6} {"start",5} {"boats",-22} {"line km",7} {"lost: fc",8} {"real",6} {"taken: fc",9} {"real",7} {"exch fc",7} {"real",6}  torps hits  end");
+                foreach (var r in rs.OrderBy(r => r.Seed).ThenBy(r => r.StartMs))
+                {
+                    var f = r.Forecast;
+                    double att = Attackers(r.A, f.AttackersA);
+                    Console.WriteLine($"  {r.Seed,6} {TimeOf(r.StartMs),5} {$"{r.Members.Count} {r.Name}",-22} {r.RangeM / 1000,7:0.0} " +
+                                      $"{(att > 0 ? f.AttackLostT / att : double.NaN),8:P0} {r.LostT / Math.Max(r.MembersT, 1),6:P0} " +
+                                      $"{f.AttackTakenT,9:0} {r.TakenT,7:0} {(f.AttackA > 0 ? f.AttackExchange() : double.NaN),7:0.00} {r.TakenT / Math.Max(r.LostT, 1),6:0.00}  " +
+                                      $"{r.Torpedoes,5} {r.TorpedoHits,4}  {r.End}");
+                }
+                double attT = rs.Sum(r => Attackers(r.A, r.Forecast.AttackersA));
+                Console.WriteLine($"  all {rs.Count}: boats lost forecast {rs.Sum(r => r.Forecast.AttackLostT) / Math.Max(attT, 1):P0} of the attackers, " +
+                                  $"real {rs.Sum(r => r.LostT) / Math.Max(rs.Sum(r => r.MembersT), 1):P0} of the boats ({rs.Sum(r => r.LostBoats)} of {rs.Sum(r => r.Members.Count)}); " +
+                                  $"taken forecast {rs.Sum(r => r.Forecast.AttackTakenT):0} t, real {rs.Sum(r => r.TakenT):0} t (struck {rs.Sum(r => r.StruckT):0} t); " +
+                                  $"{rs.Sum(r => r.Torpedoes)} torpedoes, {rs.Sum(r => r.TorpedoHits)} hits");
+                // the forecast again at other run-in hit shares (MatchupRunInHitShare), each attack on its own terms
+                foreach (double share in new[] { 0.2, 0.4, 0.6, 0.8, 1.0 })
+                {
+                    var t = s with { MatchupRunInHitShare = share };
+                    double lost = 0, taken = 0, aT = 0;
+                    foreach (var r in rs)
+                    {
+                        var f = Matchup.Engage(r.A, r.B, r.RangeM, MatchupStyle.AttackByA, t, r.Light);
+                        (lost, taken, aT) = (lost + f.AttackLostT, taken + f.AttackTakenT, aT + Attackers(r.A, f.AttackersA));
+                    }
+                    Console.WriteLine($"    at a run-in share of {share:0.0}: boats lost {lost / Math.Max(aT, 1):P0}, taken {taken:0} t, the exchange {taken / Math.Max(lost, 1):0.00}");
+                }
+            }
+        }
+
+        static double Attackers(MatchupEntry[] a, ulong mask)
+        {
+            double t = 0;
+            for (int i = 0; i < a.Length; i++)
+                if ((mask >> i & 1) != 0)
+                    t += a[i].Profile.DisplacementT * a[i].Count;
+            return t;
+        }
+
+        static string TimeOf(long ms) => new WorldTime(ms).ToString()[11..16];
+
+        SimSettings? settings;
+
+        /// <summary>A seed played out: its attacks still on closed, and every one settled against its world as it ended.</summary>
+        public void EndSeed(World w, AiSystem ai)
+        {
+            Torpedoes(w, ai);
+            foreach (var (k, r) in active.ToList())
+                Close(k, r, $"still on in {r.Last} at the end");
+            foreach (var r in settling)
+            {
+                Settle(w, ai, r);
+                done.Add(r);
+            }
+            settling.Clear();
+            tonnes.Clear();
+            fell.Clear();
+            lastMs = 0;   // the next seed's clock starts over
         }
 
         public void Hit(World w, AiSystem ai, ulong seed, int slot, int hits, bool night, int shooter, int battery)
@@ -515,6 +773,7 @@ static partial class ScenarioPlay
 
         public void FellOut(World w, AiSystem ai, ulong seed, int slot)
         {
+            fell.Add(w.Ships.Store[slot].Entity);
             // she's left her line as she falls out: her group's top unit
             if (w.Groups.Of(w.Ships.Store[slot].Entity) is { } own && w.Groups.TopOf(own) is var g && active.TryGetValue((seed, g.GroupId), out var run))
                 run.Fell[(int)ai.Admirals.AttackOf(g.GroupId).Phase]++;
@@ -552,6 +811,10 @@ static partial class ScenarioPlay
                 Console.WriteLine($"    hits {string.Join("/", Enumerable.Range(1, 4).Select(i => rs.Sum(r => r.Hits[i])))}, " +
                                   $"fallen out {string.Join("/", Enumerable.Range(1, 4).Select(i => rs.Sum(r => r.Fell[i])))}");
             }
+            Exchange();
+            tally.Print();
+            if (missed > 0)
+                Console.WriteLine($"  ({missed} combat log lines missed between samples: torpedo hits among them uncounted)");
             Console.WriteLine("hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, " +
                               "to the enemy's nearest heavy ship and to his nearest boat, km):");
             foreach (var (k, e) in onBoats.OrderByDescending(kv => kv.Value.Hits).Take(25))

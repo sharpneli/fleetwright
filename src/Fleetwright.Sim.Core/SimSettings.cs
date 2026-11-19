@@ -2794,17 +2794,23 @@ public sealed record SimSettings
     public double MatchupInPlateShare { get; init; } = 0.5;
     public double MatchupLowOrderShare { get; init; } = 0.3;
 
-    /// <summary>A torpedo's hit chance, fired at a range: MatchupTorpedoHitM / range, at most MatchupTorpedoHitMax, by the
-    /// square root of the target's length over MatchupTorpedoLengthM, times MatchupTorpedoEvadedShare for her combing and
-    /// turning away, and by how much slower than the torpedo she is beside a target at MatchupTorpedoRefKn (a fast ship
-    /// turning away outruns its reach): shipgen torpedo against a steady target at 18 kn by day, the aim as the torpedo
-    /// officer judges it (docs/battle/night.md Q12c, refitted Q12f): 18% at 1 km, 15% at 2 km, 7% at 3 km, 6% at 5 km. The
-    /// AI's own expectation, not optimism (that's doctrine's Aggression).</summary>
-    public double MatchupTorpedoHitM { get; init; } = 350;
-    public double MatchupTorpedoHitMax { get; init; } = 0.2;
+    /// <summary>A torpedo's hit chance as the matchup expects it, by its run's time t on the setting it's fired on as its
+    /// target turns away (Matchup.TorpedoHit: the range over its speed less hers): (MatchupTorpedoHitS / t)^MatchupTorpedoHitPower,
+    /// at most MatchupTorpedoHitMax, and MatchupTorpedoHitFloor beside it (a spread into her formation finds some ship now and
+    /// then, however she turns), by the square root of her length over MatchupTorpedoLengthM. Fitted to play
+    /// (docs/battle/balance.md P11, tools/torpedo_fit.py: 2,562 torpedoes fired in 17 scenarios, day and night, 24-41 kn,
+    /// the aim as the torpedo officer judged it and the targets turning away as they did; hits on her or another ship;
+    /// within 0.6 of the likelihood's best, T 24 s and power 1.2 with no floor): about a third inside a
+    /// minute's run, a quarter at one to one and a half, 9% to three, 4-5% to six, 2% to twelve, 1% beyond. Timing the run as
+    /// she turns away reads play better than a shot on her beam: a slow torpedo after a fast ship seldom catches her (the
+    /// 1890s torpedo's slow setting after a 15 kn battleship: 2 hits in 85), and a day attack's long shots at a line make 1%
+    /// (319 at the flotilla scenario's battle line: 3). The old law (350 m over the range, times 0.6 for her evading) read
+    /// the first at 13% and the second at 3%. The AI's own expectation, not optimism (that's doctrine's Aggression).</summary>
+    public double MatchupTorpedoHitS { get; init; } = 28;
+    public double MatchupTorpedoHitPower { get; init; } = 1.4;
+    public double MatchupTorpedoHitMax { get; init; } = 0.4;
+    public double MatchupTorpedoHitFloor { get; init; } = 0.005;
     public double MatchupTorpedoLengthM { get; init; } = 150;
-    public double MatchupTorpedoEvadedShare { get; init; } = 0.6;
-    public double MatchupTorpedoRefKn { get; init; } = 18;
 
     /// <summary>The engagement judged: a gunfight lasts MatchupFightMin minutes; a torpedo attack the run in from the
     /// defender's reach to the firing range and out again, plus MatchupTorpedoFireMin. A side is faster than the other
