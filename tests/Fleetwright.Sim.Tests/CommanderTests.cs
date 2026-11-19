@@ -180,8 +180,8 @@ public class CommanderTests(ITestOutputHelper output)
     public void Flotillas_are_sent_in_on_an_enemy_line_their_heavy_units_engage()
     {
         // twenty-four destroyers beside four dreadnoughts against one: an attack worth making (docs/battle/command.md 5.1g; by
-        // day eight aren't since P11, docs/battle/balance.md: the torpedoes as play gives them, the force's exchange 0.16 for
-        // eight, 0.6 for twenty-four against doctrine's 0.5)
+        // day eight aren't since P11, docs/battle/balance.md: the torpedoes as play gives them, the force's exchange 0.19 for
+        // eight, 0.72 for twenty-four against doctrine's 0.5)
         var (w, ai) = Make();
         int bb = Class(w, "dreadnought"), dd = Class(w, "m_class");
         var line = Column(w, ai, bb, Earth.Position(Lat, Lon), 180, 4, side: 0);

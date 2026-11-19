@@ -1,0 +1,407 @@
+Flotilla: 10 ships, 2 sides, from 1916-05-31 18:30:00.000 until 1916-05-31 23:30:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+  seed      9: done    at 21:22 (+2:52)  Britain lost 0/4 (0 t), score 0.83   Germany lost 5/6 (9392 t), score 0.00   (capsized 1, broke in two 4)   f8b9c1a396d2aca0   (9.0 s)
+           main guns: 2 fell out for them, main mounts out 6 of 8 (6 of 8 guns): guns out 3, magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1
+                      at the end, 5 ships afloat: main mounts out 1 of 24 (1 of 44 guns): gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1083 fired, 0 at ships seen done for
+  seed     10: decided at 19:37 (+1:07)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   09235c090d729f4e   (2.6 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 3
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 3, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1038 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 357 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     11: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.66   Germany lost 4/6 (7474 t), score 0.00   (broke in two 4)   52b4602634ca006a   (4.8 s)
+           main guns: 3 fell out for them, main mounts out 11 of 12 (11 of 12 guns): gunhouse out of action 8, guns out 2, gunhouse destroyed 1
+                      at the end, 6 ships afloat: main mounts out 5 of 28 (5 of 48 guns): gunhouse out of action 4, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1093 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 414 km)
+           Germany      done? retiring (broken off); 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 211 km)
+  seed     12: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.83   Germany lost 5/6 (9392 t), score 0.00   (magazine 1, capsized 1, broke in two 3)   44288bdafe273db0   (4.8 s)
+           main guns: 2 fell out for them, main mounts out 7 of 8 (7 of 8 guns): gunhouse out of action 6, magazine flooded by the sea 1
+                      at the end, 5 ships afloat: main mounts out 0 of 24 (0 of 44 guns)
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1587 fired, 0 at ships seen done for
+           Britain      done? retiring (outmatched); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 401 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 208 km)
+  seed     13: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.50   Germany lost 3/6 (5622 t), score 0.00   (broke in two 3)   249c729a9644c479   (7.2 s)
+           main guns: 5 fell out for them, main mounts out 17 of 20 (17 of 20 guns): gunhouse out of action 10, magazine flooded by the sea 2, gunhouse destroyed 2, guns out 2, magazine put out by a hit 1
+                      at the end, 7 ships afloat: main mounts out 9 of 32 (9 of 52 guns): gunhouse out of action 5, magazine flooded by the sea 2, gunhouse destroyed 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1331 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 370 km)
+           Germany      done? retiring (broken off); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 225 km)
+  seed     14: decided at 18:47 (+0:17)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   88f15dd15ddad0fb   (0.7 s)
+           main guns: 2 fell out for them, main mounts out 8 of 8 (8 of 8 guns): gunhouse out of action 6, gunhouse destroyed 1, guns out 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 3, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 477 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 342 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     15: done    at 22:30 (+4:00)  Britain lost 0/4 (0 t), score 0.83   Germany lost 5/6 (9392 t), score 0.00   (capsized 1, broke in two 4)   eda85986b869188f   (5.4 s)
+           main guns: 5 fell out for them, main mounts out 17 of 20 (17 of 20 guns): gunhouse out of action 8, guns out 5, magazine flooded by the sea 4
+                      at the end, 5 ships afloat: main mounts out 1 of 24 (1 of 44 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 2144 fired, 10 at ships seen done for
+  seed     16: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.84   Germany lost 5/6 (9458 t), score 0.00   (broke in two 5)   5bcf65c944f190a8   (4.2 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): guns out 2, gunhouse out of action 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (6 of 44 guns): magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 998 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 341 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 270 km)
+  seed     17: done    at 21:09 (+2:39)  Britain lost 0/4 (0 t), score 0.67   Germany lost 4/6 (7540 t), score 0.00   (broke in two 4)   d6b59653df5c4f6c   (3.7 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 3
+                      at the end, 6 ships afloat: main mounts out 3 of 28 (3 of 48 guns): gunhouse out of action 3
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1904 fired, 0 at ships seen done for
+  seed     18: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.83   Germany lost 5/6 (9392 t), score 0.00   (capsized 2, broke in two 3)   506dfb8893a98b74   (4.5 s)
+           main guns: 2 fell out for them, main mounts out 6 of 8 (6 of 8 guns): gunhouse out of action 3, guns out 3
+                      at the end, 5 ships afloat: main mounts out 2 of 24 (2 of 44 guns): gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1734 fired, 0 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 4 afloat home, 4 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 479 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 81 km)
+  seed     19: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.50   Germany lost 3/6 (5622 t), score 0.00   (capsized 2, broke in two 1)   738b8c7630cc8e94   (7.8 s)
+           main guns: 5 fell out for them, main mounts out 18 of 20 (18 of 20 guns): gunhouse out of action 11, guns out 4, magazine flooded by the sea 2, magazine spent (its race) 1
+                      at the end, 7 ships afloat: main mounts out 11 of 32 (11 of 52 guns): gunhouse out of action 7, magazine flooded by the sea 4
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1702 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 342 km)
+           Germany      done? retiring (broken off); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 257 km)
+  seed     20: decided at 18:57 (+0:27)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   565739658cf5f8ea   (1.2 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): magazine flooded by the sea 2, magazine spent (its race) 1, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 719 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 343 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     21: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.67   Germany lost 4/6 (7540 t), score 0.00   (capsized 2, broke in two 2)   79250830318ed222   (5.7 s)
+           main guns: 1 fell out for them, main mounts out 2 of 4 (2 of 4 guns): guns out 2
+                      at the end, 6 ships afloat: main mounts out 4 of 28 (4 of 48 guns): magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1463 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 356 km)
+           Germany      done? retiring (broken off); 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 214 km)
+  seed     22: done    at 23:19 (+4:49)  Britain lost 0/4 (0 t), score 0.50   Germany lost 3/6 (5688 t), score 0.00   (broke in two 3)   8a176f9ec235a0a8   (5.9 s)
+           main guns: 2 fell out for them, main mounts out 6 of 8 (6 of 8 guns): gunhouse out of action 5, gunhouse destroyed 1
+                      at the end, 7 ships afloat: main mounts out 4 of 32 (4 of 52 guns): gunhouse out of action 3, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1696 fired, 0 at ships seen done for
+  seed     23: done    at 21:53 (+3:23)  Britain lost 0/4 (0 t), score 0.66   Germany lost 4/6 (7474 t), score 0.00   (capsized 1, broke in two 3)   c7d38bdb0afaf9dd   (3.8 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse out of action 5, magazine flooded by the sea 2, magazine spent (its race) 1, gunhouse destroyed 1
+                      at the end, 6 ships afloat: main mounts out 4 of 28 (4 of 48 guns): gunhouse out of action 4
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1251 fired, 0 at ships seen done for
+  seed     24: done    at 21:18 (+2:48)  Britain lost 0/4 (0 t), score 0.50   Germany lost 3/6 (5688 t), score 0.00   (capsized 2, broke in two 1)   c3e898b15ab09705   (3.6 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse out of action 8, gunhouse destroyed 1
+                      at the end, 7 ships afloat: main mounts out 6 of 32 (6 of 52 guns): gunhouse out of action 6
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1012 fired, 0 at ships seen done for
+  seed     25: done    at 21:08 (+2:38)  Britain lost 0/4 (0 t), score 0.66   Germany lost 4/6 (7474 t), score 0.00   (broke in two 4)   87b4a6ec9628588b   (3.3 s)
+           main guns: 4 fell out for them, main mounts out 12 of 16 (12 of 16 guns): gunhouse out of action 7, magazine flooded by the sea 2, guns out 2, gunhouse destroyed 1
+                      at the end, 6 ships afloat: main mounts out 5 of 28 (5 of 48 guns): gunhouse out of action 4, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1207 fired, 0 at ships seen done for
+  seed     26: decided at 19:14 (+0:44)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   8231ea21bc24da3c   (1.4 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 2, gunhouse destroyed 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse destroyed 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 851 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 354 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     27: decided at 18:55 (+0:25)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (capsized 1, broke in two 5)   cd6936bdc28b8ddd   (1.1 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 3
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 3, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 666 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 345 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     28: decided at 19:29 (+0:59)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   81b6d233839d690b   (2.3 s)
+           main guns: 0 fell out for them, no main mounts
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 4
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1605 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 356 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     29: decided at 19:23 (+0:53)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   d8cee8596aedca1d   (1.7 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse out of action 8, gunhouse destroyed 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 777 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 362 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     30: decided at 19:34 (+1:04)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (capsized 1, broke in two 5)   e7828e140fb9d852   (1.8 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse out of action 5, magazine flooded by the sea 1, magazine put out by a hit 1, gunhouse destroyed 1, guns out 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 3, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 742 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 366 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     31: quiet   at 23:15 (+4:45)  Britain lost 0/4 (0 t), score 0.84   Germany lost 5/6 (9458 t), score 0.00   (capsized 1, broke in two 4)   66ba60abb3624d02   (3.7 s)
+           main guns: 3 fell out for them, main mounts out 11 of 12 (11 of 12 guns): gunhouse out of action 7, magazine flooded by the sea 2, guns out 2
+                      at the end, 5 ships afloat: main mounts out 1 of 24 (1 of 44 guns): gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1571 fired, 0 at ships seen done for
+           Britain      done? lost (lost contact); 0 of 4 afloat home, 4 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 350 km)
+           Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 67 km)
+  seed     32: decided at 20:27 (+1:57)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 5)   2a134c255e631678   (2.7 s)
+           main guns: 1 fell out for them, main mounts out 4 of 4 (4 of 4 guns): gunhouse out of action 3, magazine put out by a hit 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 2, magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1277 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 384 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     33: time    at 23:30 (+5:00)  Britain lost 0/4 (0 t), score 0.50   Germany lost 3/6 (5622 t), score 0.00   (capsized 1, broke in two 2)   e8a6541136f312cc   (6.9 s)
+           main guns: 4 fell out for them, main mounts out 13 of 16 (13 of 16 guns): gunhouse out of action 7, guns out 5, magazine flooded by the sea 1
+                      at the end, 7 ships afloat: main mounts out 6 of 32 (6 of 52 guns): gunhouse out of action 3, magazine flooded by the sea 2, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1676 fired, 0 at ships seen done for
+           Britain      done? home (gave up); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 405 km)
+           Germany      done? retiring (broken off); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 218 km)
+  seed     34: decided at 20:24 (+1:54)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 6)   a5badeefae4bc6ce   (2.4 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 3
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): magazine flooded by the sea 2, gunhouse out of action 2
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1347 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 389 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     35: decided at 19:02 (+0:32)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (capsized 1, broke in two 5)   a0d2802ce80a144d   (1.2 s)
+           main guns: 3 fell out for them, main mounts out 11 of 12 (11 of 12 guns): magazine flooded by the sea 4, gunhouse out of action 4, guns out 2, gunhouse destroyed 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): magazine flooded by the sea 2, magazine spent (its race) 1, magazine put out by a hit 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 869 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 349 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     36: decided at 20:08 (+1:38)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (broke in two 5)   efd736cf26cb5d7f   (2.4 s)
+           main guns: 2 fell out for them, main mounts out 7 of 8 (7 of 8 guns): guns out 6, magazine flooded by the sea 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 2, magazine flooded by the sea 1, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1269 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 378 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     37: decided at 20:11 (+1:41)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (magazine 1, broke in two 5)   487509cd45f8ff92   (2.1 s)
+           main guns: 2 fell out for them, main mounts out 7 of 8 (7 of 8 guns): gunhouse out of action 6, guns out 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): magazine flooded by the sea 2, magazine spent (its race) 1, gunhouse out of action 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1426 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 382 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     38: done    at 21:46 (+3:16)  Britain lost 0/4 (0 t), score 0.67   Germany lost 4/6 (7540 t), score 0.00   (capsized 1, broke in two 3)   33a570d8af721610   (4.1 s)
+           main guns: 3 fell out for them, main mounts out 9 of 12 (9 of 12 guns): gunhouse out of action 7, magazine flooded by the sea 1, guns out 1
+                      at the end, 6 ships afloat: main mounts out 6 of 28 (6 of 48 guns): gunhouse out of action 6
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1703 fired, 0 at ships seen done for
+  seed     39: decided at 19:14 (+0:44)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (capsized 1, broke in two 5)   0189a20b87dcc59b   (1.6 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 2, gunhouse destroyed 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 2, magazine flooded by the sea 1, gunhouse destroyed 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 1092 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 354 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+  seed     40: decided at 19:02 (+0:32)  Britain lost 0/4 (0 t), aims met, score 1.00   Germany lost 6/6 (11310 t), score 0.00   (capsized 1, broke in two 5)   e0732e39b13cd7ac   (1.1 s)
+           main guns: 1 fell out for them, main mounts out 3 of 4 (3 of 4 guns): gunhouse out of action 2, guns out 1
+                      at the end, 5 ships afloat: main mounts out 4 of 24 (4 of 44 guns): gunhouse out of action 3, guns out 1
+           blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+           shells: 633 fired, 0 at ships seen done for
+           Britain      done? battle; 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 350 km)
+           Germany      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
+
+over 32 seeds:
+  ended time      8 times, after 5:00 on average
+  ended decided  15 times, after 0:59 on average
+  ended quiet     1 times, after 4:45 on average
+  ended done      8 times, after 3:18 on average
+  Britain      lost 0.0 of 4 ships (from 0 to 0), 0 t; made 35 hits, fired 0.0 torpedoes; aims met 15 times, score 0.83
+  Germany      lost 5.0 of 6 ships (from 3 to 6), 9357 t; made 2 hits, fired 5.1 torpedoes; aims met 0 times, score 0.00
+over 32 seeds:
+  main guns: 71 fell out for them, main mounts out 232 of 284 (232 of 284 guns): gunhouse out of action 144, guns out 45, magazine flooded by the sea 24, gunhouse destroyed 14, magazine put out by a hit 3, magazine spent (its race) 2
+             at the end, 176 ships afloat: main mounts out 132 of 832 (134 of 1472 guns): gunhouse out of action 85, magazine flooded by the sea 25, gunhouse destroyed 13, guns out 5, magazine spent (its race) 3, magazine put out by a hit 1
+  blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
+  shells: 39943 fired, 10 at ships seen done for
+
+where the hits came from, every seed (shells, hits, hit %; pb: laid point blank; at a ship under 2,000 t or larger):
+  day    large  under 120 mm     4-6 km                   170     14    8.2%
+  day    large  under 120 mm     6-10 km                  695     14    2.0%
+  day    small  120-200 mm       4-6 km                   514     25    4.9%
+  day    small  120-200 mm       6-10 km                 3560     39    1.1%
+  day    small  120-200 mm       10-15 km                  58      0    0.0%
+  day    small  300 mm and over  4-6 km                   732    111   15.2%
+  day    small  300 mm and over  6-10 km                 9208    422    4.6%
+  day    small  300 mm and over  10-15 km               17922    296    1.7%
+  day    small  300 mm and over  15 km and over          4368     30    0.7%
+  night  large  under 120 mm     2-4 km                     9      2   22.2%
+  night  small  120-200 mm       2-4 km                     4      0    0.0%
+  night  small  300 mm and over  2-4 km          pb         4      1   25.0%
+inside 4 km, by the shooter's captain's order and his way of fighting (shells, hits):
+  night Home (Own)                                                                                            9      2
+  night Course (Superior) / admiral Course / task Withdraw OnTask                                             8      1
+the heavy guns' (200 mm and over) salvos laid by the sights, by her rate of turn as she fired (shells, share, hits, hit %):
+  0.2-0.5 deg/s        4912  15.2%    134    2.7%
+  0.5-1 deg/s          2812   8.7%     92    3.3%
+  over 1 deg/s          144   0.4%      0    0.0%
+  steady              24362  75.6%    633    2.6%
+  under helm, by what she was doing (shells, hits):
+    0.2-0.5 deg/s: Station (Superior) / admiral Fight / in the line                                        2636     46
+    0.2-0.5 deg/s: Course (Superior) / admiral Fight / in the line                                         1304     57
+    0.5-1 deg/s: Course (Superior) / admiral Fight / in the line                                           1252     48
+    0.5-1 deg/s: Station (Superior) / admiral Fight / in the line                                           700     14
+    0.2-0.5 deg/s: Fight (Superior) / admiral Fight / the guide                                             604     18
+    0.5-1 deg/s: Course (Superior) / admiral Fight / the guide                                              456     24
+    0.5-1 deg/s: Fight (Superior) / admiral Fight / the guide                                               400      6
+    0.2-0.5 deg/s: Course (Superior) / admiral Fight / the guide                                            346     13
+    over 1 deg/s: Course (Superior) / admiral Fight / in the line                                            78      0
+    over 1 deg/s: Fight (Superior) / admiral Fight / the guide                                               36      0
+    0.2-0.5 deg/s: Station (Superior) / admiral Course / in the line                                         22      0
+    over 1 deg/s: Course (Superior) / admiral Fight / the guide                                              16      0
+    over 1 deg/s: Station (Superior) / admiral Fight / in the line                                           14      0
+    0.5-1 deg/s: Station (Superior) / admiral Course / in the line                                            4      0
+ship-minutes inside 1 km of an enemy, by side and what she was doing:
+inside 4 km, by the range against the shooter's band, the visibility and her target's way (shells, hits):
+  night range/band 1/3-2/3 vis >12 km / target Course / her admiral Course                                    6      1
+  night range/band 1/3-2/3 vis >12 km / target Route / her admiral Route                                      3      1
+  night range/band <1/3 vis >12 km / target Home                                                              8      1
+the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
+  day: 33 attacks, 194 boats; beaten off (run) 18, stopped in Fire 5, fired and away 5, stopped in Run 3, still on in Gain at the end 1, still on in Run at the end 1
+    gaining   300 s, running   300 s; nearest the target  6.7, an enemy heavy ship  7.9, an enemy boat    - km; the signal at  6.7 km (29 made it)
+    hits 30/146/36/76, fallen out 0/0/0/0
+the day attacks' exchange (P11): forecast at their start (the force's: boats and heavy ships within 30 km of the target, on the enemy within 10 km of her; truth) against what they came to 15 min after; lost = the tonnes of its boats out, taken = the tonnes struck by its torpedoes and out
+    seed start boats                  line km lost: fc   real taken: fc    real exch fc   real  torps hits  end
+       9 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   83 %       201       0    0.02   0.00      6    1  beaten off (run)
+      10 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00     11    0  beaten off (run)
+      11 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  stopped in Fire
+      12 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00     10    0  fired and away
+      13 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      6    0  beaten off (run)
+      14 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      0    0  beaten off (run)
+      15 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      4    0  stopped in Run
+      16 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    1  beaten off (run)
+      17 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   67 %       201       0    0.02   0.00      2    0  stopped in Run
+      18 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   84 %       201       0    0.02   0.00     10    0  beaten off (run)
+      19 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00     12    0  stopped in Run
+      20 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  beaten off (run)
+      21 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   84 %       201       0    0.02   0.00      7    0  beaten off (run)
+      22 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  beaten off (run)
+      23 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      6    0  fired and away
+      23 18:42 2 G101-like large torpedo boat (1914)    11.4    100 %  100 %        53       0    0.03   0.00      0    0  still on in Gain at the end
+      24 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   84 %       201       0    0.02   0.00      6    0  fired and away
+      25 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      6    0  beaten off (run)
+      26 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      4    0  beaten off (run)
+      27 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      0    0  stopped in Fire
+      28 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  stopped in Fire
+      29 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  beaten off (run)
+      30 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  fired and away
+      31 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   83 %       201       0    0.02   0.00      6    0  beaten off (run)
+      32 18:32 6 G101-like large torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00     25    0  stopped in Fire
+      33 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      4    0  fired and away
+      34 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      4    0  beaten off (run)
+      35 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      0    0  beaten off (run)
+      36 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   67 %       201       0    0.02   0.00      2    0  beaten off (run)
+      37 18:32 6 V25-like torpedo boat (1914)     1.0    100 %   84 %       201       0    0.02   0.00      4    0  beaten off (run)
+      38 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00     11    0  stopped in Fire
+      39 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      2    0  beaten off (run)
+      40 18:32 6 V25-like torpedo boat (1914)     1.0    100 %  100 %       201       0    0.02   0.00      0    0  still on in Run at the end
+  all 33: boats lost forecast 100 % of the attackers, real 95 % of the boats (184 of 194); taken forecast 6480 t, real 0 t (struck 54229 t); 162 torpedoes, 2 hits
+    at a run-in share of 0.2: boats lost 99 %, taken 10334 t, the exchange 0.03
+    at a run-in share of 0.4: boats lost 100 %, taken 6480 t, the exchange 0.02
+    at a run-in share of 0.6: boats lost 100 %, taken 3964 t, the exchange 0.01
+    at a run-in share of 0.8: boats lost 100 %, taken 2393 t, the exchange 0.01
+    at a run-in share of 1.0: boats lost 100 %, taken 1432 t, the exchange 0.00
+every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
+  day:
+    4-8 min                        18     0    0.0% (+0 others)  forecast   0.2%   range   8.4 km, set   28 kn, target   18 kn
+    8 min and over                105     1    1.0% (+1 others)  forecast   0.2%   range   7.8 km, set   28 kn, target   19 kn
+    out of reach on the truth      39     0    0.0% (+0 others)  forecast   0.3%   range   7.4 km, set  NaN kn, target   19 kn
+    all                           162     1    0.6% (+1 others)  forecast   0.2%   range   7.8 km, set   28 kn, target   19 kn
+    a 41 kn torpedo               162     1    0.6% (+1 others)  forecast   0.2%   range   7.8 km, set   28 kn, target   19 kn
+hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
+  day going home                                                                      527  own    -  enemy heavy  9.8  enemy boat    -
+  day admiral Fight / task Attack / attack Run / hit by a Capital's chief guns        140  own    -  enemy heavy  7.5  enemy boat    -
+  day alone                                                                            60  own    -  enemy heavy  7.3  enemy boat    -
+  day admiral Fight / task Attack / attack Away / hit by a Capital's chief guns        59  own    -  enemy heavy  7.0  enemy boat    -
+  day admiral Course / task Withdraw / hit by a Capital's chief guns                   30  own    -  enemy heavy 11.2  enemy boat    -
+  day admiral Fight / task Attack / attack Gain / hit by a Capital's chief guns        30  own    -  enemy heavy 10.2  enemy boat    -
+  day admiral Fight / task Attack / attack Fire / hit by a Capital's chief guns        28  own    -  enemy heavy  6.7  enemy boat    -
+  day admiral Fight / task Attack / attack Away / hit by a Capital's secondary guns     17  own    -  enemy heavy  6.5  enemy boat    -
+  day admiral Fight / task Attack / attack Fire / hit by a Capital's secondary guns      8  own    -  enemy heavy  6.5  enemy boat    -
+  day admiral Run / task Attack / hit by a Capital's chief guns                         8  own    -  enemy heavy  4.9  enemy boat    -
+  day admiral Fight / task Attack / attack Run / hit by a Capital's secondary guns      6  own    -  enemy heavy  5.3  enemy boat    -
+  day admiral Course / task Withdraw / its guide fights a Capital / hit by a Capital's chief guns      5  own    -  enemy heavy 11.0  enemy boat    -
+  day admiral Route / task Withdraw / hit by a Capital's chief guns                     3  own    -  enemy heavy 15.4  enemy boat    -
+  day admiral Fight / task Attack / attack Gain / hit by a Capital's secondary guns      1  own    -  enemy heavy  9.0  enemy boat    -
+  day admiral Fight / task Attack / its guide fights a Capital / hit by a Capital's chief guns      1  own    -  enemy heavy  7.5  enemy boat    -
+  night going home                                                                      1  own    -  enemy heavy  3.3  enemy boat    -
+how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
+  Destroyer by heavier Capital at 6-10 km                                                       74     172     7.0
+  Destroyer by heavier Capital at 10-15 km                                                      28      48     9.2
+  Destroyer: no gunfire hits                                                                    24       0     0.0
+  Destroyer by heavier Capital at 4-6 km                                                         8      29     3.2
+  Destroyer by heavier Capital at 15 km and over                                                 2       4    13.4
+  the 24 with no shell landed while fighting: 31 hits on them by the damage model's count (torpedoes, mines, collisions); main mounts out: main mounts out 62 of 96 (62 of 96 guns): gunhouse out of action 43, guns out 10, magazine flooded by the sea 4, gunhouse destroyed 4, magazine put out by a hit 1
+  and what she was doing when the hits began, whether she was firing then, and why she fell out:
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutGuns                                                 37      94    10.8
+    Destroyer OutGuns: no gunfire hits (torpedoes, a collision, or the sea)                                                     16       0     0.0
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutSpeed                                                16      37     5.2
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutSteering                                             15      36     7.0
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutGuns                                                   9      15     7.8
+    Destroyer OutSteering: no gunfire hits (torpedoes, a collision, or the sea)                                                  6       0     0.0
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutSpeed                                                  4       8     4.6
+    Destroyer day Station / admiral Fight / task Attack (not firing) -> OutList                                                  4      10     5.4
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutSteering                                               3       5     6.3
+    Destroyer day Station / admiral Fight / task Attack (firing) -> OutGuns                                                      3       3     2.9
+    Destroyer day Station / admiral Fight / task Attack (firing) -> OutSpeed                                                     3       8     4.5
+    Destroyer OutSpeed: no gunfire hits (torpedoes, a collision, or the sea)                                                     2       0     0.0
+    Destroyer day Course / admiral Course / task Withdraw (not firing) -> OutSpeed                                               2       4     5.0
+    Destroyer day Course / admiral Course / task Withdraw (not firing) -> OutSteering                                            2       2     0.8
+    Destroyer day Station / admiral Course / task Withdraw (not firing) -> OutGuns                                               2       3     6.3
+    Destroyer day Course / admiral Course / task Withdraw (firing) -> OutGuns                                                    1       1     0.6
+    Destroyer day Course / admiral Course / task Withdraw (firing) -> OutSteering                                                1       2     0.2
+    Destroyer day Course / admiral Course / task Withdraw (not firing) -> OutGuns                                                1       3    25.6
+    Destroyer day Course / admiral Course / task Withdraw (not firing) -> OutList                                                1       3     8.8
+    Destroyer day Course / admiral Fight / task Attack (not firing) -> OutList                                                   1       3     1.6
+    Destroyer day Fight away / admiral Fight / task Attack (not firing) -> OutGuns                                               1       1     7.8
+    Destroyer day Route / admiral Route / task Withdraw (not firing) -> OutGuns                                                  1       1     1.5
+    Destroyer day Run / admiral Run / task Attack (not firing) -> OutSpeed                                                       1       3     0.5
+    Destroyer day Station / admiral Course / task Withdraw (firing) -> OutSteering                                               1       5     2.0
+    Destroyer day Station / admiral Course / task Withdraw (not firing) -> OutSpeed                                              1       2     1.1
+    Destroyer day Station / admiral Fight / task Attack (firing) -> OutSteering                                                  1       3    14.2
+    Destroyer day Station / admiral Run / task Attack (firing) -> OutSpeed                                                       1       1     0.3
+ships going home under fire: 134 (90 lost by the end), 528 hits on them going home (median 3, the top quarter from 6, the most 39); by range, closing, her speed and the shooter (shells, hits):
+  with a fighting enemy in the battery's reach: 5536 shells, 210 hits
+  with none other in reach: 18450 shells, 318 hits
+    no other in reach       seen silent                   18398    312
+    a fighting enemy in reach seen silent                  5262    196
+    a fighting enemy in reach seen half silent              258     14
+    no other in reach       seen half silent                 52      6
+    a fighting enemy in reach seen fighting                  16      0
+  no other in reach       seen silent      day 10-15 km closing she's slow / Station / admiral Fight / task Intercept                    2494     41
+  a fighting enemy in reach seen silent      day 6-10 km  opening she's slow / Course / admiral Fight / task None                         766     26
+  no other in reach       seen silent      day 10-15 km closing she's slow / Fight finishing / admiral Fight / task Intercept            1018     26
+  no other in reach       seen silent      day 6-10 km  closing she's slow / Station / admiral Fight / task None                          320     22
+  no other in reach       seen silent      day 10-15 km closing she's slow / Station / admiral Course / task Intercept                   1094     21
+  a fighting enemy in reach seen silent      day 4-6 km   opening she's slow / Station / admiral Fight / task None                        112     16
+  no other in reach       seen silent      day 6-10 km  closing she's slow / Station / admiral Course / task Intercept                    104     16
+  a fighting enemy in reach seen silent      day 6-10 km  opening she's slow / Station / admiral Fight / task None                        708     15
+  no other in reach       seen silent      day 10-15 km holding she's slow / Station / admiral Fight / task Intercept                    1176     15
+  a fighting enemy in reach seen silent      day 4-6 km   closing she's slow / Station / admiral Fight / task None                         82     14
+  no other in reach       seen silent      day 10-15 km closing she's slow / Course / admiral Course / task Intercept                     498     13
+  a fighting enemy in reach seen silent      day 6-10 km  closing she's quick / Station / admiral Fight / task None                       126     11
+  a fighting enemy in reach seen silent      day 6-10 km  closing she's quick / Course / admiral Fight / task None                        114     10
+  a fighting enemy in reach seen silent      day 6-10 km  closing she's slow / Station / admiral Fight / task None                        520     10
+  no other in reach       seen silent      day 10-15 km closing she's slow / Station / admiral Fight / task None                          452     10
+  no other in reach       seen silent      day 10-15 km holding she's quick / Station / admiral Fight / task Intercept                   1082      9
+  no other in reach       seen silent      day 6-10 km  closing she's slow / Fight finishing / admiral Fight / task None                  200      9
+  a fighting enemy in reach seen silent      day 4-6 km   closing she's quick / Course / admiral Fight / task None                         44      8
+  a fighting enemy in reach seen silent      day 4-6 km   holding she's slow / Station / admiral Fight / task None                         24      8
+  a fighting enemy in reach seen silent      day 6-10 km  closing she's slow / Course / admiral Fight / task None                         400      8
+  no other in reach       seen silent      day 6-10 km  closing she's slow / Course / admiral Course / task Intercept                      40      8
+  a fighting enemy in reach seen silent      day 10-15 km opening she's slow / Course / admiral Fight / task None                         226      7
+  no other in reach       seen silent      day 10-15 km opening she's slow / Course / admiral Fight / task None                            72      7
+  a fighting enemy in reach seen silent      day 10-15 km opening she's quick / Station / admiral Fight / task None                       262      6
+  a fighting enemy in reach seen silent      day 4-6 km   closing she's quick / Station / admiral Fight / task None                        60      6
+  a fighting enemy in reach seen silent      day 4-6 km   opening she's slow / Course / admiral Fight / task None                          52      6
+  no other in reach       seen silent      day 10-15 km closing she's slow / Fight finishing / admiral Fight / task None                  144      6
+  no other in reach       seen silent      day 4-6 km   closing she's slow / Station / admiral Course / task Intercept                     12      6
+  no other in reach       seen silent      day 6-10 km  holding she's slow / Station / admiral Fight / task Intercept                     114      6
+  a fighting enemy in reach seen silent      day 4-6 km   closing she's slow / Course / admiral Fight / task None                          30      5

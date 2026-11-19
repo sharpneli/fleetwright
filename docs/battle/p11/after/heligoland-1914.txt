@@ -39,7 +39,7 @@ the timeline:
   08:56 (+2:06)  Germany's Mainz: withdraw done (home)
   09:02 (+2:12)  the end: done
 
-the result (done at 09:02 (+2:12), played in 13.2 s):
+the result (done at 09:02 (+2:12), played in 10.3 s):
   Britain        44 ships    256065 t   lost   0 (      0 t)   damaged afloat   1   afloat  44   hits made    0   torpedoes   6   aims not met, score 0.00   men lost 0, saved 0
   Germany        16 ships     55372 t   lost   0 (      0 t)   damaged afloat   1   afloat  16   hits made    1   torpedoes   0   aims not met, score 0.00   men lost 0, saved 0
   Britain      at the end: 4 units on a task, 0 home, 0 on their first orders, 0 idle; 0 fallen out
@@ -48,32 +48,32 @@ the result (done at 09:02 (+2:12), played in 13.2 s):
   Germany      done? retiring (outmatched); 12 of 16 afloat home, 4 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 14 km)
   at the end 0 units held by the player, 1 out of their lines on tasks; 0 notices raised
 where the time went (12.0 MB allocated, gen0/1/2 0/0/0; share of the run, calls a game second, each, longest):
-  Commands                    0.05 %      0.000     6544.2 µs   (6.54 ms)
-  Smoke looks                 0.44 %     13.290        0.6 µs   (0.47 ms)
-  Ships: step                29.96 %     19.848       25.1 µs   (1.44 ms)
-  Ships: step, all threads   29.85 %     19.848       25.0 µs   (1.44 ms)
-  Ships: contacts             0.01 %      0.198        0.7 µs   (0.46 ms)
-  Ships: rails check          0.36 %      0.198       30.3 µs   (3.05 ms)
-  Encounters                  0.34 %      0.198       28.5 µs   (3.95 ms)
-  Sighting                    8.76 %      0.992      146.8 µs   (18.01 ms)
-  Ships: coarse               0.20 %      0.004      929.1 µs   (26.04 ms)
-  ShipSystem                 39.60 %     19.852       33.1 µs   (26.05 ms)
-  ShellSystem                 0.41 %      0.011      634.2 µs   (24.21 ms)
-  GunnerySystem               3.02 %      0.064      783.4 µs   (17.26 ms)
-  DamageSystem                0.02 %      0.000     1046.7 µs   (2.07 ms)
-  TorpedoSystem               0.07 %      0.186        6.2 µs   (1.95 ms)
-  Smoke index                 5.66 %      0.400      235.4 µs   (12.22 ms)
-  Smoke merge                 4.17 %      0.993       69.9 µs   (13.95 ms)
-  Smoke queries               0.09 %      0.043       34.2 µs   (2.97 ms)
-  SmokeSystem                12.69 %      0.995      211.8 µs   (47.55 ms)
-  AI: CommanderLayer          1.89 %     20.000        1.6 µs   (34.55 ms)
-  AI: TaskLayer               0.84 %     19.849        0.7 µs   (0.55 ms)
-  AI: AdmiralLayer            6.28 %     19.849        5.3 µs   (7.40 ms)
-  AI: CaptainLayer           33.18 %     19.849       27.8 µs   (20.54 ms)
-  AiSystem                   43.55 %     79.546        9.1 µs   (34.80 ms)
-  AI: captains, prepared      3.02 %     19.849        2.5 µs   (4.56 ms)
-  AI: captains, the job      28.69 %     19.849       24.0 µs   (13.18 ms)
-  the speed hour by hour: 430x 899x
+  Commands                    0.06 %      0.000     6182.3 µs   (6.18 ms)
+  Smoke looks                 0.48 %     13.290        0.5 µs   (0.44 ms)
+  Ships: step                29.67 %     19.848       19.5 µs   (1.01 ms)
+  Ships: step, all threads   29.57 %     19.848       19.4 µs   (1.01 ms)
+  Ships: contacts             0.01 %      0.198        0.6 µs   (0.44 ms)
+  Ships: rails check          0.39 %      0.198       25.5 µs   (2.08 ms)
+  Encounters                  0.36 %      0.198       23.7 µs   (3.96 ms)
+  Sighting                    9.91 %      0.992      130.1 µs   (16.33 ms)
+  Ships: coarse               0.24 %      0.004      852.4 µs   (23.90 ms)
+  ShipSystem                 40.52 %     19.852       26.6 µs   (23.90 ms)
+  ShellSystem                 0.40 %      0.011      483.2 µs   (20.37 ms)
+  GunnerySystem               2.97 %      0.064      603.1 µs   (13.23 ms)
+  DamageSystem                0.02 %      0.000      959.0 µs   (1.89 ms)
+  TorpedoSystem               0.07 %      0.186        5.2 µs   (1.61 ms)
+  Smoke index                 5.91 %      0.400      192.7 µs   (10.26 ms)
+  Smoke merge                 4.02 %      0.993       52.7 µs   (13.13 ms)
+  Smoke queries               0.09 %      0.043       27.6 µs   (2.85 ms)
+  SmokeSystem                12.66 %      0.995      165.7 µs   (41.41 ms)
+  AI: CommanderLayer          2.01 %     20.000        1.3 µs   (33.80 ms)
+  AI: TaskLayer               0.87 %     19.849        0.6 µs   (0.52 ms)
+  AI: AdmiralLayer            6.63 %     19.849        4.3 µs   (7.08 ms)
+  AI: CaptainLayer           31.84 %     19.849       20.9 µs   (19.48 ms)
+  AiSystem                   42.70 %     79.546        7.0 µs   (34.05 ms)
+  AI: captains, prepared      3.05 %     19.849        2.0 µs   (4.25 ms)
+  AI: captains, the job      27.24 %     19.849       17.9 µs   (12.53 ms)
+  the speed hour by hour: 536x 1193x
   main guns: 0 fell out for them, no main mounts
              at the end, 60 ships afloat: main mounts out 0 of 193 (0 of 213 guns)
   blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out

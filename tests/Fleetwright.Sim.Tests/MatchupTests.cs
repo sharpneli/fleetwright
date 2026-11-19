@@ -81,9 +81,9 @@ public class MatchupTests(ITestOutputHelper output)
             last = c;
         }
         Assert.True(Judge([E("v25")], [E("iron_duke")]) < 0.2);
-        // by day about thirty-four since P11 (docs/battle/balance.md: the torpedoes' hit chance as play gives it, the run timed
+        // by day about thirty-one since P11 (docs/battle/balance.md: the torpedoes' hit chance as play gives it, the run timed
         // as she turns away; from 4.5 km on the slow setting after a 21 kn battleship the boats' torpedoes seldom catch her:
-        // twenty 0.35, thirty-two 0.96, thirty-six 1.24), twenty since PM (docs/battle/explosions.md EX7), sixteen since the
+        // twenty 0.40, twenty-eight 0.83, thirty-two 1.10, thirty-six 1.41), twenty since PM (docs/battle/explosions.md EX7), sixteen since the
         // torpedo officer's judgement (docs/battle/night.md Q12f); by night four are a match for her
         Assert.True(Judge([E("v25", 28)], [E("iron_duke")]) < 1);
         Assert.True(Judge([E("v25", 36)], [E("iron_duke")]) > 1);

@@ -1079,7 +1079,7 @@ public static class Matchup
     /// runs on the setting the torpedo system picks for a shot on her beam (<see cref="Setting"/>): the fast one if its run
     /// is within <paramref name="reachShare"/> of its range, else (an attack by day, <paramref name="slow"/>: the captains'
     /// long setting, docs/battle/balance.md BL5) the slow one; none if neither reaches her. Its chance is the play's
-    /// (docs/battle/balance.md P11, fitted on every torpedo fired in 17 scenarios): by its run's time t as she turns away
+    /// (docs/battle/balance.md P11, fitted on every torpedo fired in 18 scenarios): by its run's time t as she turns away
     /// (<see cref="TorpedoHit"/>), (<see cref="SimSettings.MatchupTorpedoHitS"/> / t)^<see cref="SimSettings.MatchupTorpedoHitPower"/>, at most
     /// <see cref="SimSettings.MatchupTorpedoHitMax"/>, by the square root of her length over
     /// <see cref="SimSettings.MatchupTorpedoLengthM"/>: the aim's errors and her turning away grow with the time she has.</summary>
@@ -1117,16 +1117,13 @@ public static class Matchup
     /// <summary>A torpedo's chance to hit a ship at a range (her speed <paramref name="targetMs"/>, her length
     /// <paramref name="lengthM"/>), on the setting <see cref="Setting"/> picks; 0 out of its reach (<see cref="Torpedoes"/>).
     /// Its run is timed as she turns away from it (docs/battle/balance.md P11: the lines and captains comb and turn from
-    /// the tracks, and play reads that better than a shot on her beam): the range over its speed less hers; and beside
-    /// that, the floor a spread into her formation has of finding some ship.</summary>
+    /// the tracks, and play reads that better than a shot on her beam): the range over its speed less hers.</summary>
     public static double TorpedoHit(in TorpedoRow t, double rangeM, double targetMs, double lengthM, SimSettings s, double reachShare = 1, bool slow = false)
     {
-        double v = Setting(t, rangeM, targetMs, reachShare, slow), closing = Math.Max(v - targetMs, 0);
-        if (v <= 0)
-            return 0;
-        // a spread fired into her formation finds a ship now and then however she turns (MatchupTorpedoHitFloor)
-        double aimed = Math.Min(s.MatchupTorpedoHitMax, Math.Pow(s.MatchupTorpedoHitS * closing / rangeM, s.MatchupTorpedoHitPower));
-        return (aimed + s.MatchupTorpedoHitFloor) * Math.Sqrt(lengthM / s.MatchupTorpedoLengthM);
+        double v = Setting(t, rangeM, targetMs, reachShare, slow), closing = v - targetMs;
+        return closing > 0
+            ? Math.Min(s.MatchupTorpedoHitMax, Math.Pow(s.MatchupTorpedoHitS * closing / rangeM, s.MatchupTorpedoHitPower)) * Math.Sqrt(lengthM / s.MatchupTorpedoLengthM)
+            : 0;
     }
 
     /// <summary>The setting a torpedo is fired on at a ship on its beam at a range (her speed <paramref name="targetMs"/>),

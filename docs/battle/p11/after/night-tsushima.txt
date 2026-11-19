@@ -1,53 +1,53 @@
 Night: Tsushima 1905: 11 ships, 2 sides, from 1905-05-27 10:45:00.000 until 1905-05-27 12:45:00.000; played by the AI on every side
   2 sim workers, spinning 250 µs
-  seed   1905: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   (capsized 1)   8ca4934f4cf5ee70   (8.3 s)
+  seed   1905: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   (capsized 1)   01b3aadcbeaf77c1   (8.8 s)
            main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): gunhouse out of action 2
                       at the end, 10 ships afloat: main mounts out 1 of 20 (1 of 26 guns): gunhouse out of action 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 761 fired, 0 at ships seen done for
            Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 865 km)
            Japan        done? contact; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 253 km)
-  seed   1906: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   f155842bd2beaae8   (4.4 s)
+  seed   1906: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   93b56ca848400575   (4.1 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 0 fired, 0 at ships seen done for
            Russia       done? no contact; 0 of 3 afloat home, 3 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 859 km)
            Japan        done? retiring (outmatched); 0 of 8 afloat home, 8 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 155 km)
-  seed   1907: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   ea6d630fe10c9f9e   (5.3 s)
+  seed   1907: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   06f1a8b3aa7cea85   (9.2 s)
            main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
                       at the end, 11 ships afloat: main mounts out 2 of 22 (2 of 28 guns): guns out 2
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 150 fired, 0 at ships seen done for
            Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 862 km)
            Japan        done? battle; 0 of 7 afloat home, 7 not (7 in an encounter, 0 stopped, 0 dead in the water, the farthest 239 km)
-  seed   1908: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.25   Japan lost 2/8 (1568 t), score 0.00   (capsized 1)   6a5059519c0f6bb3   (5.7 s)
+  seed   1908: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.25   Japan lost 2/8 (1568 t), score 0.00   (capsized 1)   542f38d1cef73f1c   (7.6 s)
            main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
                       at the end, 10 ships afloat: main mounts out 2 of 20 (2 of 26 guns): magazine flooded by the sea 1, guns out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 311 fired, 0 at ships seen done for
            Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 854 km)
            Japan        done? battle; 0 of 6 afloat home, 6 not (6 in an encounter, 0 stopped, 1 dead in the water, the farthest 248 km)
-  seed   1909: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   0c238bfd1a264a47   (5.4 s)
+  seed   1909: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   7e64b0cb4965a638   (7.1 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 33 fired, 0 at ships seen done for
            Russia       done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 861 km)
            Japan        done? battle; 0 of 8 afloat home, 8 not (8 in an encounter, 0 stopped, 0 dead in the water, the farthest 252 km)
-  seed   1910: done    at 12:42 (+1:57)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   97264a1cd73dfcc5   (3.6 s)
+  seed   1910: done    at 12:42 (+1:57)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   8e7286683ca715d2   (4.2 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 0 fired, 0 at ships seen done for
-  seed   1911: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   948094eb4217eb23   (2.6 s)
+  seed   1911: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.00   Japan lost 0/8 (0 t), score 0.00   74fd430291561363   (3.5 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 28 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 0 fired, 0 at ships seen done for
            Russia       done? no contact; 0 of 3 afloat home, 3 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 859 km)
            Japan        done? retiring (outmatched); 0 of 8 afloat home, 8 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 155 km)
-  seed   1912: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   efddc427bdced58e   (5.1 s)
+  seed   1912: time    at 12:45 (+2:00)  Russia lost 0/3 (0 t), score 0.13   Japan lost 1/8 (784 t), score 0.00   9f06c9bc97d505b4   (7.8 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 2 of 22 (2 of 28 guns): magazine flooded by the sea 2
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
@@ -117,16 +117,16 @@ the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the 
     hits 0/0/0/0, fallen out 0/0/0/0
 the night attacks' exchange (P11): forecast at their start (the force's: boats and heavy ships within 30 km of the target, on the enemy within 10 km of her; truth) against what they came to 15 min after; lost = the tonnes of its boats out, taken = the tonnes struck by its torpedoes and out
     seed start boats                  line km lost: fc   real taken: fc    real exch fc   real  torps hits  end
-    1907 12:22 3 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      2835       0 2834.69   0.00      0    0  still on in Gain at the end
-    1907 12:22 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      3493       0 3492.60   0.00      0    0  still on in Gain at the end
-    1908 12:17 4 Ikazuchi-like destroyer (1899)     0.7      0 %   25 %      4654       0 4653.92   0.00      0    0  fired and away
-    1909 12:45 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      4913       0 4912.62   0.00      0    0  still on in Gain at the end
-  all 4: boats lost forecast 0 % of the attackers, real 7 % of the boats (1 of 15); taken forecast 15894 t, real 0 t (struck 0 t); 0 torpedoes, 0 hits
-    at a run-in share of 0.2: boats lost 0 %, taken 15894 t, the exchange 15893.82
-    at a run-in share of 0.4: boats lost 0 %, taken 15894 t, the exchange 15893.82
-    at a run-in share of 0.6: boats lost 0 %, taken 15894 t, the exchange 15893.82
-    at a run-in share of 0.8: boats lost 0 %, taken 15894 t, the exchange 15893.82
-    at a run-in share of 1.0: boats lost 0 %, taken 15894 t, the exchange 15893.82
+    1907 12:22 3 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      3059       0 3059.36   0.00      0    0  still on in Gain at the end
+    1907 12:22 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      3751       0 3751.42   0.00      0    0  still on in Gain at the end
+    1908 12:17 4 Ikazuchi-like destroyer (1899)     0.7      0 %   25 %      4954       0 4954.17   0.00      0    0  fired and away
+    1909 12:45 4 Ikazuchi-like destroyer (1899)     0.7      0 %    0 %      5218       0 5218.46   0.00      0    0  still on in Gain at the end
+  all 4: boats lost forecast 0 % of the attackers, real 7 % of the boats (1 of 15); taken forecast 16983 t, real 0 t (struck 0 t); 0 torpedoes, 0 hits
+    at a run-in share of 0.2: boats lost 0 %, taken 16983 t, the exchange 16983.41
+    at a run-in share of 0.4: boats lost 0 %, taken 16983 t, the exchange 16983.41
+    at a run-in share of 0.6: boats lost 0 %, taken 16983 t, the exchange 16983.41
+    at a run-in share of 0.8: boats lost 0 %, taken 16983 t, the exchange 16983.41
+    at a run-in share of 1.0: boats lost 0 %, taken 16983 t, the exchange 16983.41
 hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
   night going home                                                                    149  own    -  enemy heavy  2.4  enemy boat    -
   night admiral Shadow / task Shadow / its guide fights a Capital / hit by a Capital's secondary guns     20  own    -  enemy heavy  2.4  enemy boat    -

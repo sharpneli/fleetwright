@@ -1,53 +1,53 @@
 Port Arthur, 1904: 11 ships, 2 sides, from 1904-03-09 22:20:00.000 until 1904-03-10 01:30:00.000; played by the AI on every side
   2 sim workers, spinning 250 µs
-  seed   1904: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 1/6 (832 t), aims met, score 1.00   (broke in two 1)   0a26e0485649cbde   (13.0 s)
+  seed   1904: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 1/6 (832 t), aims met, score 1.00   (broke in two 1)   0a26e0485649cbde   (14.4 s)
            main guns: 2 fell out for them, main mounts out 2 of 4 (2 of 4 guns): guns out 2
                       at the end, 10 ships afloat: main mounts out 0 of 20 (0 of 20 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 596 fired, 20 at ships seen done for
            Japan        done? home (aims decided); 4 of 5 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 11 km)
            Russia       done? home (aims decided); 2 of 5 afloat home, 3 not (3 in an encounter, 1 stopped, 0 dead in the water, the farthest 13 km)
-  seed   1905: time    at 01:30 (+3:10)  Japan lost 1/5 (784 t), aims met, score 1.00   Russia lost 2/6 (1664 t), score 0.75   (foundered 1, capsized 2)   0a3a5150346745df   (11.8 s)
+  seed   1905: time    at 01:30 (+3:10)  Japan lost 1/5 (784 t), aims met, score 1.00   Russia lost 2/6 (1664 t), score 0.75   (foundered 1, capsized 2)   176bbe8688ad1d38   (18.4 s)
            main guns: 5 fell out for them, main mounts out 7 of 10 (7 of 10 guns): guns out 3, magazine flooded by the sea 2, gunhouse destroyed 1, gunhouse out of action 1
                       at the end, 8 ships afloat: main mounts out 4 of 16 (4 of 16 guns): magazine flooded by the sea 2, gunhouse out of action 2
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 4046 fired, 0 at ships seen done for
            Japan        done? home (aims decided); 2 of 4 afloat home, 2 not (2 in an encounter, 1 stopped, 2 dead in the water, the farthest 46 km)
            Russia       done? home (aims decided); 0 of 4 afloat home, 4 not (4 in an encounter, 0 stopped, 0 dead in the water, the farthest 21 km)
-  seed   1906: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   cf2b1ecfdc6da78e   (6.4 s)
+  seed   1906: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   cf2b1ecfdc6da78e   (8.0 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 22 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 139 fired, 0 at ships seen done for
            Japan        done? home (aims decided); 5 of 5 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Russia       done? home (aims decided); 3 of 6 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 4 km)
-  seed   1907: time    at 01:30 (+3:10)  Japan lost 2/5 (1568 t), aims met, score 1.00   Russia lost 1/6 (832 t), score 0.00   (capsized 3)   0b85538d4d59a564   (9.1 s)
+  seed   1907: time    at 01:30 (+3:10)  Japan lost 2/5 (1568 t), aims met, score 1.00   Russia lost 1/6 (832 t), score 0.00   (capsized 3)   0b85538d4d59a564   (13.0 s)
            main guns: 1 fell out for them, main mounts out 2 of 2 (2 of 2 guns): guns out 2
                       at the end, 8 ships afloat: main mounts out 0 of 16 (0 of 16 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 1974 fired, 0 at ships seen done for
            Japan        done? home (aims decided); 3 of 3 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Russia       done? home (aims decided); 3 of 5 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 42 km)
-  seed   1908: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 2/6 (9644 t), aims met, score 1.00   (capsized 2)   b4a8171bb89e8228   (7.0 s)
+  seed   1908: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 2/6 (9644 t), aims met, score 1.00   (capsized 2)   b4a8171bb89e8228   (10.6 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 9 ships afloat: main mounts out 0 of 18 (0 of 18 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 1062 fired, 0 at ships seen done for
            Japan        done? home (aims decided); 5 of 5 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Russia       done? home (aims decided); 2 of 4 afloat home, 2 not (2 in an encounter, 2 stopped, 0 dead in the water, the farthest 4 km)
-  seed   1909: done    at 00:28 (+2:08)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   453316ba6fcec220   (4.7 s)
+  seed   1909: done    at 00:28 (+2:08)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   453316ba6fcec220   (7.0 s)
            main guns: 3 fell out for them, main mounts out 4 of 6 (4 of 6 guns): guns out 4
                       at the end, 11 ships afloat: main mounts out 3 of 22 (3 of 22 guns): magazine flooded by the sea 2, guns out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 524 fired, 0 at ships seen done for
-  seed   1910: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   bfede375a755cbc3   (5.0 s)
+  seed   1910: time    at 01:30 (+3:10)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   bfede375a755cbc3   (8.3 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 22 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 148 fired, 0 at ships seen done for
            Japan        done? home (aims decided); 5 of 5 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Russia       done? home (aims decided); 3 of 6 afloat home, 3 not (3 in an encounter, 3 stopped, 0 dead in the water, the farthest 4 km)
-  seed   1911: done    at 00:34 (+2:14)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   2c1115f02dc86f3e   (4.2 s)
+  seed   1911: done    at 00:34 (+2:14)  Japan lost 0/5 (0 t), score 0.00   Russia lost 0/6 (0 t), aims met, score 1.00   2c1115f02dc86f3e   (6.6 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 11 ships afloat: main mounts out 0 of 22 (0 of 22 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
@@ -168,10 +168,10 @@ inside 4 km, by the range against the shooter's band, the visibility and her tar
 the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
 every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
   day:
-    under 1 min                     3     0    0.0% (+0 others)  forecast   2.9%   range   1.4 km, set   30 kn, target   20 kn
-    2-4 min                         4     1   25.0% (+0 others)  forecast   6.0%   range   1.6 km, set   24 kn, target   17 kn
-    all                             7     1   14.3% (+0 others)  forecast   4.7%   range   1.6 km, set   24 kn, target   17 kn
-    a 30 kn torpedo                 7     1   14.3% (+0 others)  forecast   4.7%   range   1.6 km, set   24 kn, target   17 kn
+    under 1 min                     3     0    0.0% (+0 others)  forecast   3.8%   range   1.4 km, set   30 kn, target   20 kn
+    2-4 min                         4     1   25.0% (+0 others)  forecast   7.3%   range   1.6 km, set   24 kn, target   17 kn
+    all                             7     1   14.3% (+0 others)  forecast   5.8%   range   1.6 km, set   24 kn, target   17 kn
+    a 30 kn torpedo                 7     1   14.3% (+0 others)  forecast   5.8%   range   1.6 km, set   24 kn, target   17 kn
 hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
 how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
   Cruiser by heavier Capital at 2-4 km                                                           8     154    21.9

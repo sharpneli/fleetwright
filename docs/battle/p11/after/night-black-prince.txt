@@ -1,55 +1,55 @@
 Night: Black Prince, Jutland 1916: 4 ships, 2 sides, from 1916-05-31 23:22:00.000 until 1916-06-01 01:22:00.000; played by the AI on every side
   2 sim workers, spinning 250 µs
-  seed   1916: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   de7a5f648e1423c0   (2.9 s)
+  seed   1916: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   28be7ba511dc725c   (3.4 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 3 of 24 (3 of 42 guns): gunhouse destroyed 2, magazine flooded by the sea 1
            blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
            shells: 0 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 463 km)
            Germany      done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 169 km)
-  seed   1917: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   5e8c775d49bc7c40   (1.3 s)
+  seed   1917: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   e5d69b03a46994eb   (1.4 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 1 of 24 (1 of 42 guns): magazine put out by a hit 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 0 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 439 km)
            Germany      done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 170 km)
-  seed   1918: decided at 00:44 (+1:22)  Britain lost 1/1 (13584 t), score 0.00   Germany lost 0/3 (0 t), aims met, score 1.00   56fdb90ed236ea40   (5.0 s)
+  seed   1918: decided at 00:44 (+1:22)  Britain lost 1/1 (13584 t), score 0.00   Germany lost 0/3 (0 t), aims met, score 1.00   ed9d24da0f1a1c2f   (5.1 s)
            main guns: 1 fell out for them, main mounts out 4 of 6 (4 of 6 guns): magazine spent (its race) 4
                       at the end, 4 ships afloat: main mounts out 6 of 24 (6 of 42 guns): magazine flooded by order 2, magazine spent (its race) 2, gunhouse out of action 1, guns out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 360 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Germany      done? battle; 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 205 km)
-  seed   1919: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   b8265e695bbe03e3   (2.5 s)
+  seed   1919: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   23c9118fbc0c67fb   (2.8 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 3 of 24 (3 of 42 guns): magazine flooded by the sea 2, barbette out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 113 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 445 km)
            Germany      done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 169 km)
-  seed   1920: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   f05de433962d4b38   (1.8 s)
+  seed   1920: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   9629812abb7b1018   (2.4 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 2 of 24 (2 of 42 guns): magazine flooded by the sea 2
            blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
            shells: 54 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 451 km)
            Germany      done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 172 km)
-  seed   1921: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   758d2101b4185b33   (1.2 s)
+  seed   1921: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   dd3e78add162a773   (2.3 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 2 of 24 (2 of 42 guns): magazine flooded by the sea 2
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 77 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 429 km)
            Germany      done? home (gave up); 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 176 km)
-  seed   1922: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   8936c10d2a03d330   (1.6 s)
+  seed   1922: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   9ec19ab9c440344c   (2.9 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 2 of 24 (2 of 42 guns): magazine flooded by order 2
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 121 fired, 0 at ships seen done for
            Britain      done? retiring (outmatched); 0 of 1 afloat home, 1 not (1 in an encounter, 0 stopped, 0 dead in the water, the farthest 463 km)
            Germany      done? battle; 0 of 3 afloat home, 3 not (3 in an encounter, 0 stopped, 0 dead in the water, the farthest 206 km)
-  seed   1923: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   a94c9fdf74f2abc0   (1.5 s)
+  seed   1923: time    at 01:22 (+2:00)  Britain lost 0/1 (0 t), score 0.00   Germany lost 0/3 (0 t), score 0.00   7bd45f8fab7e34db   (2.4 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 4 ships afloat: main mounts out 2 of 24 (2 of 42 guns): magazine flooded by order 1, barbette out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
@@ -133,12 +133,12 @@ inside 4 km, by the range against the shooter's band, the visibility and her tar
 the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
 every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
   night:
-    under 1 min                    16     4   25.0% (+0 others)  forecast  32.2%   range   0.7 km, set   41 kn, target   15 kn
-    1-2 min                         6     0    0.0% (+0 others)  forecast   8.6%   range   3.1 km, set   41 kn, target   21 kn
-    2-4 min                         2     0    0.0% (+0 others)  forecast  10.0%   range   2.5 km, set   41 kn, target    9 kn
-    out of reach on the truth       1     0    0.0% (+0 others)  forecast   5.2%   range   2.5 km, set  NaN kn, target   22 kn
-    all                            25     4   16.0% (+0 others)  forecast  23.6%   range   1.1 km, set   41 kn, target   15 kn
-    a 41 kn torpedo                25     4   16.0% (+0 others)  forecast  23.6%   range   1.1 km, set   41 kn, target   15 kn
+    under 1 min                    16     4   25.0% (+0 others)  forecast  32.5%   range   0.7 km, set   41 kn, target   15 kn
+    1-2 min                         6     0    0.0% (+0 others)  forecast  10.2%   range   3.1 km, set   41 kn, target   21 kn
+    2-4 min                         2     0    0.0% (+0 others)  forecast  11.8%   range   2.5 km, set   41 kn, target    9 kn
+    out of reach on the truth       1     0    0.0% (+0 others)  forecast   6.8%   range   2.5 km, set  NaN kn, target   22 kn
+    all                            25     4   16.0% (+0 others)  forecast  24.5%   range   1.1 km, set   41 kn, target   15 kn
+    a 41 kn torpedo                25     4   16.0% (+0 others)  forecast  24.5%   range   1.1 km, set   41 kn, target   15 kn
 hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
 how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
   Capital by her match Capital at 0-2 km                                                         1      86     7.7

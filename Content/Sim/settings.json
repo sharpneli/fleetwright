@@ -1030,10 +1030,9 @@
 
   "MatchupInPlateShare": 0.5,
   "MatchupLowOrderShare": 0.3,
-  "MatchupTorpedoHitS": 28,
-  "MatchupTorpedoHitPower": 1.4,
+  "MatchupTorpedoHitS": 22,
+  "MatchupTorpedoHitPower": 1.1,
   "MatchupTorpedoHitMax": 0.4,
-  "MatchupTorpedoHitFloor": 0.005,
   "MatchupTorpedoLengthM": 150,
   "MatchupFightMin": 30,
   "RoleScoutSizeRatio": 1.5,

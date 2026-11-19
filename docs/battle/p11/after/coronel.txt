@@ -1,47 +1,47 @@
 Coronel: 8 ships, 2 sides, from 1914-11-01 22:00:00.000 until 1914-11-02 05:00:00.000; played by the AI on every side
   2 sim workers, spinning 250 µs
-  seed   1914: done    at 03:38 (+5:38)  Britain lost 1/3 (3827 t), score 0.54   Germany lost 3/5 (24234 t), score 0.14   (foundered 1, capsized 3)   5048eda61447d375   (19.5 s)
+  seed   1914: done    at 03:38 (+5:38)  Britain lost 1/3 (3827 t), score 0.54   Germany lost 3/5 (24234 t), score 0.14   (foundered 1, capsized 3)   5048eda61447d375   (26.1 s)
            main guns: 2 fell out for them, main mounts out 6 of 7 (6 of 7 guns): gunhouse destroyed 4, gunhouse out of action 1, guns out 1
                       at the end, 4 ships afloat: main mounts out 3 of 20 (5 of 26 guns): gunhouse out of action 2, barbette out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3902 fired, 0 at ships seen done for
-  seed   1915: done    at 03:01 (+5:01)  Britain lost 2/3 (16010 t), score 0.08   Germany lost 1/5 (3790 t), score 0.57   (broke in two 1)   e7b0f6be3c003c68   (11.6 s)
+  seed   1915: done    at 03:01 (+5:01)  Britain lost 2/3 (16010 t), score 0.08   Germany lost 1/5 (3790 t), score 0.57   (broke in two 1)   e7b0f6be3c003c68   (15.4 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 7 ships afloat: main mounts out 8 of 30 (8 of 42 guns): guns out 6, magazine flooded by the sea 1, gunhouse destroyed 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3128 fired, 13 at ships seen done for
-  seed   1916: quiet   at 04:26 (+6:26)  Britain lost 1/3 (3827 t), score 0.88   Germany lost 4/5 (39462 t), score 0.14   (foundered 1, capsized 1, broke in two 3)   e149a4bc242bdf0a   (11.6 s)
+  seed   1916: quiet   at 04:26 (+6:26)  Britain lost 1/3 (3827 t), score 0.88   Germany lost 4/5 (39462 t), score 0.14   (foundered 1, capsized 1, broke in two 3)   e149a4bc242bdf0a   (16.6 s)
            main guns: 2 fell out for them, main mounts out 9 of 11 (15 of 17 guns): magazine spent (its race) 5, gunhouse destroyed 2, magazine flooded by the sea 1, gunhouse out of action 1
                       at the end, 3 ships afloat: main mounts out 0 of 14 (0 of 14 guns)
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3590 fired, 0 at ships seen done for
            Britain      done? lost (lost contact); 0 of 2 afloat home, 2 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 315 km)
            Germany      done? retiring (broken off); 0 of 1 afloat home, 1 not (0 in an encounter, 0 stopped, 0 dead in the water, the farthest 144 km)
-  seed   1917: done    at 01:39 (+3:39)  Britain lost 1/3 (3827 t), score 0.08   Germany lost 1/5 (3790 t), score 0.14   (capsized 1, broke in two 1)   fdcaf4a35f65ec47   (7.7 s)
+  seed   1917: done    at 01:39 (+3:39)  Britain lost 1/3 (3827 t), score 0.08   Germany lost 1/5 (3790 t), score 0.14   (capsized 1, broke in two 1)   fdcaf4a35f65ec47   (12.1 s)
            main guns: 2 fell out for them, main mounts out 5 of 8 (10 of 14 guns): magazine flooded by order 4, magazine flooded by the sea 1
                       at the end, 6 ships afloat: main mounts out 6 of 28 (11 of 40 guns): magazine flooded by order 4, magazine flooded by the sea 1, barbette out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3258 fired, 0 at ships seen done for
-  seed   1918: done    at 01:24 (+3:24)  Britain lost 1/3 (3827 t), score 0.00   Germany lost 0/5 (0 t), score 0.14   (broke in two 1)   ba1a544a9a2907a3   (5.4 s)
+  seed   1918: done    at 01:24 (+3:24)  Britain lost 1/3 (3827 t), score 0.00   Germany lost 0/5 (0 t), score 0.14   (broke in two 1)   ba1a544a9a2907a3   (9.0 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 7 ships afloat: main mounts out 5 of 30 (8 of 42 guns): magazine flooded by order 2, magazine flooded by the sea 1, gunhouse destroyed 1, gunhouse out of action 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3343 fired, 0 at ships seen done for
-  seed   1919: decided at 02:59 (+4:59)  Britain lost 3/3 (28193 t), score 0.00   Germany lost 0/5 (0 t), aims met, score 1.00   (broke in two 2)   125343b0813a1b91   (10.6 s)
+  seed   1919: decided at 02:59 (+4:59)  Britain lost 3/3 (28193 t), score 0.00   Germany lost 0/5 (0 t), aims met, score 1.00   (broke in two 2)   125343b0813a1b91   (17.2 s)
            main guns: 1 fell out for them, main mounts out 5 of 6 (5 of 6 guns): magazine spent (its race) 5
                       at the end, 6 ships afloat: main mounts out 7 of 24 (7 of 36 guns): guns out 4, magazine flooded by the sea 1, gunhouse destroyed 1, jammed 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 2756 fired, 0 at ships seen done for
            Britain      done? retiring (broken off); 0 of 0 afloat home, 0 not (0 in an encounter, 0 stopped, 0 dead in the water)
            Germany      done? lost (lost contact); 0 of 5 afloat home, 5 not (5 in an encounter, 0 stopped, 0 dead in the water, the farthest 427 km)
-  seed   1920: time    at 05:00 (+7:00)  Britain lost 1/3 (12183 t), score 0.08   Germany lost 1/5 (3790 t), score 0.43   (capsized 2)   6db6f727cd0f3b93   (13.4 s)
+  seed   1920: time    at 05:00 (+7:00)  Britain lost 1/3 (12183 t), score 0.08   Germany lost 1/5 (3790 t), score 0.43   (capsized 2)   1f76184a358dc020   (16.1 s)
            main guns: 1 fell out for them, main mounts out 4 of 5 (4 of 5 guns): gunhouse destroyed 2, gunhouse out of action 1, guns out 1
                       at the end, 6 ships afloat: main mounts out 11 of 27 (15 of 39 guns): magazine flooded by the sea 3, gunhouse out of action 3, magazine flooded by order 2, gunhouse destroyed 2, barbette out 1
            blackouts: 0 ship-wide (0 by a hit's shock, 0 by near misses), 0 ships blacked out
            shells: 3573 fired, 0 at ships seen done for
            Britain      done? retiring (broken off); 0 of 2 afloat home, 2 not (2 in an encounter, 0 stopped, 0 dead in the water, the farthest 165 km)
            Germany      done? night; 0 of 4 afloat home, 4 not (4 in an encounter, 1 stopped, 1 dead in the water, the farthest 556 km)
-  seed   1921: done    at 02:18 (+4:18)  Britain lost 1/3 (3827 t), score 0.34   Germany lost 1/5 (15228 t), score 0.14   (capsized 1, broke in two 1)   56b3cf105340c859   (9.3 s)
+  seed   1921: done    at 02:18 (+4:18)  Britain lost 1/3 (3827 t), score 0.34   Germany lost 1/5 (15228 t), score 0.14   (capsized 1, broke in two 1)   56b3cf105340c859   (8.2 s)
            main guns: 0 fell out for them, no main mounts
                       at the end, 6 ships afloat: main mounts out 7 of 24 (10 of 30 guns): gunhouse destroyed 3, barbette out 2, magazine flooded by the sea 1, gunhouse out of action 1
            blackouts: 1 ship-wide (1 by a hit's shock, 0 by near misses), 1 ships blacked out
@@ -142,14 +142,14 @@ inside 4 km, by the range against the shooter's band, the visibility and her tar
 the flotillas' torpedo attacks, every seed (attacks, boats; how they ended; the medians of the seconds gaining and running in, the guide's nearest to the target, and to an enemy heavy ship and an enemy boat while gaining and running, the range at the signal; the hits on its boats and the boats fallen out, gaining/running/firing/away):
 every torpedo fired (P11), by day or night and the run the setting gives (its range over its speed, on the truth at the launch): torpedoes, hits, hit %; the matchup's forecast a torpedo for the same shots (duds aside); the median range, setting and target speed
   day:
-    4-8 min                        13     1    7.7% (+0 others)  forecast   0.8%   range   5.5 km, set   28 kn, target   19 kn
-    all                            13     1    7.7% (+0 others)  forecast   0.8%   range   5.5 km, set   28 kn, target   19 kn
-    a 41 kn torpedo                13     1    7.7% (+0 others)  forecast   0.8%   range   5.5 km, set   28 kn, target   19 kn
+    4-8 min                        13     1    7.7% (+0 others)  forecast   1.4%   range   5.5 km, set   28 kn, target   19 kn
+    all                            13     1    7.7% (+0 others)  forecast   1.4%   range   5.5 km, set   28 kn, target   19 kn
+    a 41 kn torpedo                13     1    7.7% (+0 others)  forecast   1.4%   range   5.5 km, set   28 kn, target   19 kn
   night:
-    1-2 min                         1     0    0.0% (+0 others)  forecast  13.6%   range   2.2 km, set   41 kn, target    3 kn
-    2-4 min                         4     0    0.0% (+0 others)  forecast   8.5%   range   3.1 km, set   41 kn, target    5 kn
-    all                             5     0    0.0% (+0 others)  forecast   9.5%   range   2.8 km, set   41 kn, target    4 kn
-    a 41 kn torpedo                 5     0    0.0% (+0 others)  forecast   9.5%   range   2.8 km, set   41 kn, target    4 kn
+    1-2 min                         1     0    0.0% (+0 others)  forecast  15.2%   range   2.2 km, set   41 kn, target    3 kn
+    2-4 min                         4     0    0.0% (+0 others)  forecast  10.1%   range   3.1 km, set   41 kn, target    5 kn
+    all                             5     0    0.0% (+0 others)  forecast  11.2%   range   2.8 km, set   41 kn, target    4 kn
+    a 41 kn torpedo                 5     0    0.0% (+0 others)  forecast  11.2%   range   2.8 km, set   41 kn, target    4 kn
 hits on torpedo craft, by what her unit was doing (hits; the medians of her distance to her own side's nearest heavy ship, to the enemy's nearest heavy ship and to his nearest boat, km):
 how ships came to fall out: her type, who landed most of the hits before she fell out (by their displacement against hers) and from how far (ships, hits before, minutes from her first hit):
   Cruiser by heavier Capital at 4-6 km                                                          14     343    30.8
