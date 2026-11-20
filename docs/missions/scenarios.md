@@ -340,10 +340,10 @@ from one to the next):
 
 | # | Scenario | Size | Sides | New |
 |---|---|---|---|---|
-| E1 | **Port Arthur, 1904** (inspired by the dawn action of 10 March): a skirmish off the roads | small, 12 | four boats and two cruisers a side; Russia's boats reach the roads, Japan stops them | yoshino, bayan, novik (built); poltava built for the Yellow Sea; lights shown (night.md Q13) |
+| E1 | **Port Arthur, 1904** (inspired by the dawn action of 10 March): a skirmish off the roads | small, 12 | five Russian boats and three Japanese, two cruisers a side; Russia's boats reach the roads, Japan stops them | yoshino, bayan, novik (built); poltava built for the Yellow Sea; lights shown (night.md Q13) |
 | E2 | **Pungdo, 1894** (inspired by the war's opening shots) | small, 7 | Japan's Flying Squadron (Yoshino, Naniwa, Akitsushima) v Zhiyuan, Jiyuan, Guangyi and the transport Kowshing; China reach, Japan stop | naniwa, jiyuan, zhiyuan, guangyi (built); yoshino from E1; troopship reused |
 | E3 | **The Yalu, 1894** (candidate 1) | medium, 15 | the Beiyang Fleet (two ironclads, two armoured cruisers, three cruisers) v Itō's two squadrons (eight cruisers) | dingyuan, laiyuan, matsushima, chiyoda (built); E1's and E2's |
-| E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium, 18 | three Ekaterinas and four transports v two Ottoman ironclads and nine torpedo boats; Russia reach, the Ottomans stop | ekaterina, mesudiye, ottoman_tb (built); troopship |
+| E4 | **The Bosporus coup, 1896** (hypothetical, new): Nelidov's plan carried out | medium, 18 | three Ekaterinas and four transports v two Ottoman ironclads, two German-built turret ships and twelve torpedo boats; Russia reach, the Ottomans stop | ekaterina, mesudiye, ottoman_tb (built); troopship |
 | E5 | **Cámara reaches Manila, 1898** (hypothetical, new) | small, 9 | Pelayo, Carlos V and three destroyers v Olympia, Baltimore and two monitors; Spain reach, the US stop | pelayo, carlos_v, spanish_dd, olympia, monterey (built); the US ensign (drawn) |
 | E6 | **Conrad's war, 1908** (hypothetical, new): the preventive war on Italy in the Bosnian crisis | large, 27 | six Austrian battleships, two armoured cruisers, six destroyers v four Italian battleships, three Garibaldis, six destroyers; both destroy everyone | habsburg, erzherzog_karl, sankt_georg, huszar, regina_margherita, regina_elena, garibaldi, soldato (built) |
 
@@ -448,6 +448,12 @@ damage changes and BL5's reach held to the end: Tsushima given history's reach (
 Chinese escort, Port Arthur three Japanese boats, the Bosporus four Ottoman ironclads and nine boats, Åland two Sverige
 and two Swedish destroyers against nine Finnish boats, Heligoland's German patrols four boats a flotilla; the Yalu even
 once the commander counted his screening cruisers (an AI fix). Numbers and what was tried: docs/battle/balance.md "BL6".
+
+**P11, every scenario to a fight (2026-11-20):** the user: "the whole point of these scenarios is to get to fighting".
+Heligoland fights again (an AI fix: no decline on a blip). Port Arthur: five Russian boats, the Japanese flotilla 8 km
+ahead of them on their way home, and a Stop side now chases the ships it wants with what can catch them (an AI fix). The
+Bosporus: Osmaniye and Avnillah German-built turret ships (dingyuan), the muzzle-loading ironclads harmless to an
+Ekaterina. Numbers: docs/battle/balance.md "Port Arthur and the Bosporus".
 
 ## Open questions for the user
 

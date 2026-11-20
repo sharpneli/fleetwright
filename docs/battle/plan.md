@@ -20,7 +20,7 @@ date** when a step or a sub-plan starts or finishes, and take stock against it f
    ships going home; the gunnery gap (some 3.5 times the record) stays accepted (error-sources.md).
 2. **BL5, the AI's judgement and the ends:** P11 (light forces' run-in by day: the matchup's torpedoes refitted to play
    2026-11-19, balance.md "P11"; the gain under fire in the forecast; by day the AI judges only what it's made out, so
-   Heligoland fights again; next, Port Arthur's games with no fight and the Bosporus's balance), fights that run to
+   Heligoland fights again; Port Arthur and the Bosporus in shape 2026-11-20: every played scenario fights), fights that run to
    the clock (the Yalu, Port Arthur).
 3. **BL6, the scenarios rebalanced** (wave 1, Åland, the early wave E1-E6): done 2026-11-16 by ship counts, Tsushima's
    reach and one AI fix (balance.md "BL6"); the coarse sync the same day; then **the user's playtest alpha**.

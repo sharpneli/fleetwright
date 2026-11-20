@@ -1186,9 +1186,57 @@ with no fight is one with under 10 hits and nobody lost.
 **Heligoland** fights in all 8: Germany loses 6.9 a game against the record's 4, Britain 1.8 against none (P11's before: 5.6 and 0.5). Still a British scenario, as the file says.
 
 **What's left:**
-- **Port Arthur**, 3 games in 8 with no fight. It's the same at P11, so not new. The Russian boats run home past the Japanese flotilla, which stays on its scenario patrol, and Japan's cruisers are too slow to catch them. Japan's commander sends nobody after the boats his Stop aim wants for about an hour. The likely reason, not yet confirmed: at dawn the boats aren't made out to their type, so he doesn't know them for the wanted ships. Three scenario changes were tried and each made it worse (none or one game in 8 fought): the patrol moved onto the boats' way 8 km out, the patrol dropped, a shadow task on the boats. So was letting a flotilla be sent after wanted ships (no change at all). All reverted. Next.
+- **Port Arthur** (done 2026-11-20, below), 3 games in 8 with no fight. It's the same at P11, so not new. The Russian boats run home past the Japanese flotilla, which stays on its scenario patrol, and Japan's cruisers are too slow to catch them. Japan's commander sends nobody after the boats his Stop aim wants for about an hour. The likely reason, not yet confirmed: at dawn the boats aren't made out to their type, so he doesn't know them for the wanted ships. Three scenario changes were tried and each made it worse (none or one game in 8 fought): the patrol moved onto the boats' way 8 km out, the patrol dropped, a shadow task on the boats. So was letting a flotilla be sent after wanted ships (no change at all). All reverted. Next.
 - **Coronel**, 1 in 8: a brief exchange (8 hits), then both break off. Left as is.
-- **The Bosporus** fights, but lopsidedly again: the Ottomans lose 6.8 a game to Russia's 0.4, and Russia lands in most games. A balance question, by ship counts.
+- **The Bosporus** (done 2026-11-20, below) fights, but lopsidedly again: the Ottomans lose 6.8 a game to Russia's 0.4, and Russia lands in most games. A balance question, by ship counts.
+
+### Port Arthur and the Bosporus (2026-11-20)
+
+The user: "let's get the Port Arthur and Bosporus into good shape".
+
+**Port Arthur: a Stop side chases with what can catch.** The guess above was wrong: Japan's commander makes the Russian
+boats out within four minutes, and knows them for the ships his aim wants. What held him (a debug print of his held
+groups and his units' tasks, seed 1910):
+- **In contact, never sent.** His cruisers opened fire at long range in the first minute, which is contact, and
+  `Assign` leaves a unit in contact to doctrine's fight. The A3 rule that takes a unit past an escort for the convoy
+  only moved one already closing another group. Now it also moves one in contact that closes nothing.
+- **Sent, and never catching up.** Then the cruisers went (18 kn after 26 kn boats), counted as enough, and the
+  flotilla that could catch them stayed on its patrol. Now a unit the wanted ships outrun by the matchup's margin
+  (`MatchupResult.BCanRefuse`) isn't sent after them, nor counted as closing them (`CommanderLayer.Outrun`).
+
+The flotilla then went after the boats at once, but from 14 km in a clear dawn the boats turned away on sighting it, and
+29 kn against 26 never closed. So the scenario too:
+- the Japanese flotilla starts 8 km ahead of the boats on their way home (6 km gave fights in 6 of 8, Japan winning 5);
+- a fifth Russian boat, four still to reach the roads (with four, Japan won all 8).
+
+On the final code (`p11/fights2`, 8 seeds): a fight in 7 games (the eighth, 0 lost and few hits); Japan stops the
+boats in 3, Russia brings four home in 3, and 2 are drawn (each side half its aim). Japan loses 0.2 ships a game, Russia
+1.4 (three games in 8 with no fight before).
+
+**The Bosporus: a line that can fight.** Four Mesudiyes with muzzle-loaders against three Ekaterinas read 0.01 (against
+one, 0.04): the Ottoman commander never sent them in, and the boats fought alone. Tried (8 or 16 seeds), the Ottomans'
+wins of the landing:
+
+| Variant | Ottoman wins | Lost a game: Russia / the Ottomans |
+|---|---:|---|
+| As built | 1 of 8 | 0.4 / 6.8 |
+| Russia two Ekaterinas | 0 of 8 | 0.4 / 6.1 |
+| A fourth division of three boats | 5 of 16 | 0.4 / 10.1 |
+| Both | 1 of 8 | 0.3 / 8.8 |
+| Osmaniye and Avnillah German-built turret ships (dingyuan) and the boats | 12 of 16 | 0.7 / 8.9 |
+| **The turret ships alone** | **9 of 16** | **0.6 / 8.1** |
+
+The turret ships it is: a hypothetical purchase from Vulcan of Stettin, Dingyuan's builder, beside the German torpedo
+boats. Two Mesudiyes and two Dingyuans read 0.18 against the three Ekaterinas, and the Ottoman hits went up several
+times over.
+
+On the final code: a fight in every game, the Ottomans stopping the landing in 5 of 8; Russia loses 0.5 ships a game,
+the Ottomans 8.6, most of them boats.
+
+**What else the Stop changes moved** (the other sides with a Stop aim): Tsushima's Russians reach the open Sea of Japan
+in 5 games of 8, against 2 yesterday (Japan's commander now sends what can catch them, and not what can't); Manila's
+Spaniards in 2, as before (Spain losing 3.8 ships a game, 3.4 yesterday); Åland's Finns 6.2 against 6.0. Every other
+scenario as yesterday, to the seed.
 
 ## Decided (the user, 2026-10-30)
 
@@ -1260,7 +1308,7 @@ answered today; the rest are best answered when their step has measured.
 | P8 | E8a item 2 | Water per heavy hit sits low in the median: missing are waves over holes near the waterline, a captain slowing for holes forward, and the near zone holing a burst space's outside faces. | Waves over holes with BL1's sea state (the same sea that moves the guns); the captain's slowing in BL5; the outer faces in BL3. Decide after BL1 measures. | decided (5) |
 | P9 | `shell-choice.md` A4 | Two matchup anchors restated since battleships fire HE at small ships: "light cruisers with torpedoes take on a battleship" four → five; "destroyers saturate a battleship's defence" eight → twelve. | Set them in BL4: BL1's gunnery (light guns at boats today 3x the record) moves both back. | decided (5) |
 | P10 | `bugs.md` Balance | The flotilla scenario's day attack (six boats on four battleships) is beaten off in every seed. What share of determined day attacks should get in? | Decide after BL1, with the light guns at their record; a proposal then. | decided (5) |
-| P11 | `explosions.md` EX7 | Light forces now stand off by day: once the matchup expected a torpedo to put a light cruiser out about 60% of the time (not 85%) and the guns at 8 km to grind slowly, the prizes' war fought at 7.8 km for 90 minutes before its boats ran in (0:39 before); PM eased it (6.6 km). How should light forces judge a run in under fire? | BL5's: measure the run-in's own exchange as the flotilla's day attack now is (`FlotillaAttacks.Worth`), then decide. AL8 (2026-11-19, `allocation.md`): the Bosporus's boats sent in at first sight by day, forecast 36% lost and 1.15 torpedo hits, played 75% lost and none; boats falling out for their one gun, tubes whole; the Jutland's German destroyers 34 of 55 lost a seed. **Measured 2026-11-19 ("P11" above): the torpedoes were the error; the matchup's torpedo hit chance refitted to play; the day run in matches where boats outrun their target; a boat without torpedoes always pays going in (her station in the run, as now); the gain under fire measured and in the forecast (inside the defence's turn-away range the boats close at their speed less hers); by day a commander judges, and sends flotillas in, only on what he's made out (Heligoland fights again)** | done; Port Arthur's no-fight games and the Bosporus's balance next |
+| P11 | `explosions.md` EX7 | Light forces now stand off by day: once the matchup expected a torpedo to put a light cruiser out about 60% of the time (not 85%) and the guns at 8 km to grind slowly, the prizes' war fought at 7.8 km for 90 minutes before its boats ran in (0:39 before); PM eased it (6.6 km). How should light forces judge a run in under fire? | BL5's: measure the run-in's own exchange as the flotilla's day attack now is (`FlotillaAttacks.Worth`), then decide. AL8 (2026-11-19, `allocation.md`): the Bosporus's boats sent in at first sight by day, forecast 36% lost and 1.15 torpedo hits, played 75% lost and none; boats falling out for their one gun, tubes whole; the Jutland's German destroyers 34 of 55 lost a seed. **Measured 2026-11-19 ("P11" above): the torpedoes were the error; the matchup's torpedo hit chance refitted to play; the day run in matches where boats outrun their target; a boat without torpedoes always pays going in (her station in the run, as now); the gain under fire measured and in the forecast (inside the defence's turn-away range the boats close at their speed less hers); by day a commander judges, and sends flotillas in, only on what he's made out (Heligoland fights again)** | done; Port Arthur and the Bosporus in shape 2026-11-20 |
 
 ## The balance log
 
@@ -1312,3 +1360,4 @@ answered today; the rest are best answered when their step has measured.
 | 2026-11-17 | 7f2f801e | AL7b: a ship made out to her type estimated by her size, the matchup weighing her side's classes by it (allocation.md; `allocation/al7b/`) | 9 of 14 sides within 2x (7); the record's loser lost more in 26 of 44 (28); Coronel's Germany 0.8 and Dogger's Britain 0.9 in band; Jutland 23.0 v 42.5 (12.3 v 40.3), German torpedo hits 13.3 (8.0); Åland's aims Sweden 13 of 16 (8) |
 | 2026-11-17 | (this commit) | AL7c: every decision that read a type reads the matchup (size rank, torpedoes for the biggest, torpedo threats and heavy ships by the attacker reading, the aims' wanted, the enemy line); the estimate on displacement, not side area (allocation.md; `allocation/al7c/`, `ladder.txt`) | 8 of 14 sides within 2x (7); the record's loser lost more in 28 of 44 (28); Jutland 19.8 v 27.8 (12.3 v 40.3), Tsushima 7.1 v 6.9, Coronel in band, Dogger's Britain 2.6; early wave as AL6's but Åland: Sweden's aims 14 of 16 (8) |
 | 2026-11-19 | (this commit) | P11: the gain under fire in the matchup's run in (inside the defence's turn-away range the boats close at their speed less hers); by day a commander's balance and the flotillas' send-in judge only what's made out (`p11/panel`, `p11/fights`) | 8 of 14 sides within 2x (8, AL7c); the record's loser lost more in 25 of 44 (28); Heligoland fights in 8 of 8 (1 of 8 at P11's first commit), Germany 6.9 v 4, in band; the Jutland 7.5 v 35.5; every played scenario fights in every game but Port Arthur (3 of 8 without) and Coronel (1 of 8) |
+| 2026-11-20 | (this commit) | P11: a Stop side chases the ships it wants with what can catch them, in contact or not; Port Arthur's Japanese flotilla 8 km ahead and a fifth Russian boat; the Bosporus's Osmaniye and Avnillah German-built turret ships (`p11/fights2`) | scenario sweep, not the panel: Port Arthur fights in 7 of 8 (5), its aims 3 v 3 and 2 drawn; the Bosporus fights in 8 of 8, the Ottomans stop the landing in 5 (1); Tsushima's Russians reach in 5 of 8 (2); the panel's scenarios but Tsushima unmoved (no Stop aim) |

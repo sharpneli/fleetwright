@@ -6,18 +6,22 @@
 // Not history's forces: the Ottoman fleet, laid up in the Golden Horn since 1878, is here made fit to sail, with its new
 // German torpedo boats, for an even fight (the user: scenarios inspired by history for play).
 // The classes: ekaterina for Ekaterina II, Chesma and Sinop, troopship for the transports; mesudiye for Mesudiye and
-// Asar-i Tevfik (a smaller ironclad, her stand-in) and, added in BL6 for balance, Osmaniye and Avnillah, ottoman_tb for the torpedo boats.
+// Asar-i Tevfik (a smaller ironclad, her stand-in); dingyuan for Osmaniye and Avnillah, added in BL6 for balance and made
+// German-built turret ships in P11 (balance.md "The Bosporus"): a hypothetical purchase from Vulcan of Stettin, beside the
+// German torpedo boats, because four muzzle-loading ironclads did nothing to an Ekaterina (0.01) and the boats fought
+// alone; ottoman_tb for the torpedo boats.
 //   Russia, the coup: three barbette ships with six 12-inch guns each, and four transports full of soldiers.
-//   Ottoman Empire, the defence: four old ironclads with muzzle-loaders and nine fast torpedo boats, at their own front door.
+//   Ottoman Empire, the defence: two old ironclads with muzzle-loaders, two German-built turret ships and twelve fast
+//   torpedo boats, at their own front door.
 // The weather: a grey December morning on the Black Sea, a fresh northeasterly, a moderate sea [EST].
 {
   "scenario": 1,
   "name": "The Bosporus coup, 1896",
-  "brief": "15 December 1896, morning. The signal from Constantinople has come: the Black Sea Fleet is off the Bosporus with an army corps in its transports, to land on the beaches west of the strait's mouth and seize the straits before Europe can act. The Ottoman fleet, laid up for twenty years, has steam up at last: four old ironclads and a flotilla of new German torpedo boats stand out of the strait to meet it. Land the troops, or drive the transports off.",
+  "brief": "15 December 1896, morning. The signal from Constantinople has come: the Black Sea Fleet is off the Bosporus with an army corps in its transports, to land on the beaches west of the strait's mouth and seize the straits before Europe can act. The Ottoman fleet, laid up for twenty years, has steam up at last: two old ironclads, two turret ships new from Germany and a flotilla of German torpedo boats stand out of the strait to meet it. Land the troops, or drive the transports off.",
   "place": "off the Black Sea mouth of the Bosporus",
   "about": {
     "Russia": { "character": "The coup: three barbette ships with six 12-inch guns each, four transports to bring in.", "commander": "V-Adm Tyrtov", "ensign": "russia" },
-    "Ottoman Empire": { "character": "The defence: four old ironclads with muzzle-loaders, nine fast torpedo boats, home waters.", "commander": "Hasan Hüsnü Pasha", "ensign": "ottoman" } },
+    "Ottoman Empire": { "character": "The defence: two old ironclads, two German-built turret ships, twelve fast torpedo boats, home waters.", "commander": "Hasan Hüsnü Pasha", "ensign": "ottoman" } },
   "start": "1896-12-15T05:30",
   "seed": 1896,
   "camera": [41.45, 29.25, 70],
@@ -46,7 +50,7 @@
       "ships": [ { "design": "troopship", "names": ["Odessa", "Kherson", "Rostov", "Tsaritsa"] } ] },
     // ------------------------------------------------------------- the Ottoman Empire: 8, out of the strait
     { "name": "Armoured Squadron", "admiral": { "name": "Hasan Hüsnü Pasha", "temper": 0.0 }, "side": 1, "at": [41.32, 29.20], "course": 30, "kn": 8, "spacing": 600,
-      "ships": [ { "design": "mesudiye", "names": ["Mesudiye", "Asar-i Tevfik", "Osmaniye", "Avnillah"] } ] },
+      "ships": [ { "design": "mesudiye", "names": ["Mesudiye", "Asar-i Tevfik"] }, { "design": "dingyuan", "names": ["Osmaniye", "Avnillah"] } ] },
     { "name": "1st Torpedo Boat Division", "admiral": { "name": "Kol Agasi Tahir", "temper": 0.3 }, "side": 1, "at": [41.30, 29.10], "course": 0, "kn": 12, "spacing": 300,
       "ships": [ { "design": "ottoman_tb", "names": ["Ejder", "Gilyum", "Pelengderya"] } ] },
     { "name": "2nd Torpedo Boat Division", "admiral": { "name": "Kol Agasi Riza", "temper": 0.3 }, "side": 1, "at": [41.30, 29.30], "course": 30, "kn": 12, "spacing": 300,

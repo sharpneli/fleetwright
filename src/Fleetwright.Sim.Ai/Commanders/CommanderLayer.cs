@@ -807,10 +807,14 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 if (on == k)
                 {
                     sent.Add(i);
-                    AddTop(ctx, t, set);
+                    if (!(kw && Outrun(ctx, side, g.Centre, t)))
+                        AddTop(ctx, t, set);   // one the wanted ships outrun closes them in name only
                 }
-                else if (kw && on >= 0 && !wantedGroup[on] && FreeToClose(t.Unit, 0))
-                    near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));   // off a group his aim doesn't want for one it does, in contact or not (aims.md A3: past the escort for the convoy)
+                else if (kw && (on < 0 || !wantedGroup[on]) && FreeToClose(t.Unit, 0))
+                    // for one his aim wants, off a group it doesn't, or off a fight doctrine took up and closes nothing, in contact
+                    // or not (aims.md A3: past the escort for the convoy; Port Arthur's cruisers lobbed shells at the Russian
+                    // boats running home and never chased them, in contact from the first minute, balance.md P11)
+                    near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));
                 else if ((on < 0 || kc < graveness[on] / ctx.Settings.CommanderRetargetShare) && FreeToClose(t.Unit, 0) && !InContact(ctx, t))
                     near.Add((i, (store[t.Slot].Position - g.Centre).LengthSquared));
             }
@@ -824,8 +828,10 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     break;
                 one.Clear();
                 AddTop(ctx, tops[i], one);
-                if (one.Count == 0 || Judge.Judge(ctx, 0, side, g.Centre, one, enemy).Confidence < accept)
+                if (one.Count == 0 || Judge.Judge(ctx, 0, side, g.Centre, one, enemy) is var alone && alone.Confidence < accept)
                     continue;   // hopeless against it alone
+                if (kw && alone.BCanRefuse(ctx.Settings))
+                    continue;   // the ships his aim wants run for their zone: one they outrun never closes them
                 sent.Add(i);
                 AddTop(ctx, tops[i], set);
                 enough = Judge.Judge(ctx, 0, side, g.Centre, set, enemy).Confidence >= seek;
@@ -870,6 +876,16 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             if (pic[i].Entity == entity)
                 return true;
         return false;
+    }
+
+    /// <summary>Whether an enemy group (in <see cref="enemy"/>) outruns a unit of his by the matchup's margin: the ships his
+    /// aim wants run for their zone, and a unit they outrun never closes them (Port Arthur's 18 kn cruisers sent after 26 kn
+    /// boats, the flotilla that could catch them left on its patrol: balance.md P11).</summary>
+    bool Outrun(in AiContext ctx, byte side, Vec3d at, in Top t)
+    {
+        one.Clear();
+        AddTop(ctx, t, one);
+        return one.Count > 0 && Judge.Judge(ctx, 0, side, at, one, enemy).BCanRefuse(ctx.Settings);
     }
 
     /// <summary>The biggest of an enemy group's contacts that his aim wants sunk first (<see cref="AimBook.Wanted"/>: by
