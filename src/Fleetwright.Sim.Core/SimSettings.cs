@@ -649,6 +649,15 @@ public sealed record SimSettings
     public int AdmiralPeriodMs { get; init; } = 1000;
     public double GroupSpeedMarginKn { get; init; } = 2;
 
+    /// <summary>A straggler (<c>GroupSystem.Straggle</c>): a ship another of her line keeps station on, more than this many of
+    /// her station's spacings off it and not closing it, is out of the line's chain (the ships astern close up on the one
+    /// ahead of her, the user, 2026-11-20: the line mustn't stop behind her); while the line passes her she's hauled out
+    /// this many spacings to the side she's on, turned this many degrees off its course to get there (at what she makes, a
+    /// station abeam she'd make only as she dropped back).</summary>
+    public double StragglerSpacings { get; init; } = 0.5;
+    public double StragglerHaulOutSpacings { get; init; } = 0.5;
+    public double StragglerTurnOutDeg { get; init; } = 30;
+
     // ------------------------------------------------------------------ shells (docs/battle/fighting.md 4.2a)
 
     /// <summary>The top of a shell's danger window, metres over the sea: nothing at sea is taller, so only the flight

@@ -81,6 +81,7 @@ public enum GroupCommand : ushort
     Subordinate,
     Shape,
     Wings,
+    Straggle,
 }
 
 /// <summary>The world's groups (docs/battle/plan.md steps 2.4 and 2.6): units that move together, in order, with a
@@ -116,7 +117,14 @@ public sealed class GroupSystem : IWorldSystem
 
         /// <summary>How many of its line are out on its bows: up to two (the last on the starboard bow, the one before her
         /// on the port), leaving two in the column; none but in a squadron in line ahead with <see cref="WingM"/>.</summary>
-        public int Wings => !IsForce && Formation == Formation.Column && WingM > 0 ? Math.Clamp(line.Count - 2, 0, 2) : 0;
+        public int Wings => !IsForce && Formation == Formation.Column && WingM > 0 && StragglerCount == 0 ? Math.Clamp(line.Count - 2, 0, 2) : 0;
+
+        /// <summary>How many of a squadron's line straggle (<see cref="Straggle"/>): its last, nobody keeping station on them;
+        /// none when they all do (then they're simply its line).</summary>
+        public int StragglerCount { get; private set; }
+
+        /// <summary>How many of its line keep the formation: all but its stragglers.</summary>
+        public int Keeping => line.Count - StragglerCount;
 
         /// <summary>A force: its members are groups. A squadron's are ships.</summary>
         public bool IsForce { get; internal set; }
@@ -236,29 +244,35 @@ public sealed class GroupSystem : IWorldSystem
         /// Whether it changed.</summary>
         internal bool Relink()
         {
-            int n = 0;
+            int n = 0, stragglers = 0;
             bool changed = false;
-            for (int i = 0; i < members.Count; i++)
-            {
-                if (detached[i] != Detachment.InLine || IsForce && Owner != null && !Owner.HasLine(members[i]))
-                    continue;
-                if (n == line.Count)
-                    line.Add(members[i]);
-                else if (line[n] != members[i])
-                    line[n] = members[i];
-                else
+            // a squadron's stragglers go last (<see cref="Straggle"/>): the ships keeping the formation first, in their order
+            for (int pass = 0; pass < (IsForce ? 1 : 2); pass++)
+                for (int i = 0; i < members.Count; i++)
                 {
+                    if (detached[i] != Detachment.InLine || IsForce && Owner != null && !Owner.HasLine(members[i]))
+                        continue;
+                    if (!IsForce && (Owner?.IsStraggling(members[i]) == true) != (pass == 1))
+                        continue;
+                    stragglers += pass;
+                    if (n == line.Count)
+                        line.Add(members[i]);
+                    else if (line[n] != members[i])
+                        line[n] = members[i];
+                    else
+                    {
+                        n++;
+                        continue;
+                    }
+                    changed = true;
                     n++;
-                    continue;
                 }
-                changed = true;
-                n++;
-            }
             if (line.Count > n)
             {
                 line.RemoveRange(n, line.Count - n);
                 changed = true;
             }
+            StragglerCount = stragglers < n ? stragglers : 0;
             return changed;
         }
     }
@@ -308,6 +322,23 @@ public sealed class GroupSystem : IWorldSystem
     Group?[] squadronOf = [];   // by entity
     bool squadronStale = true;
 
+    /// <summary>Whether a ship straggles (<see cref="Straggle"/>): out of her line's chain, at its tail, until she rejoins at its
+    /// rear.</summary>
+    public bool IsStraggling(int entity) => (uint)entity < (uint)straggling.Length && straggling[entity];
+
+    bool[] straggling = [];   // by entity
+
+    /// <summary>Sets a ship's flag; only one in a squadron straggles, and the squadron index has made room for every one
+    /// (<see cref="IndexSquadrons"/>).</summary>
+    void SetStraggling(int entity, bool on)
+    {
+        if (entity <= 0 || !on && !IsStraggling(entity))
+            return;
+        if (entity >= straggling.Length)
+            Array.Resize(ref straggling, Math.Max(entity + 1, straggling.Length * 2));   // not met: Straggle asks Of first
+        straggling[entity] = on;
+    }
+
     internal void MembershipChanged() => squadronStale = true;
 
     void IndexSquadrons()
@@ -328,6 +359,8 @@ public sealed class GroupSystem : IWorldSystem
                 squadronOf[e] ??= g;   // the first squadron that holds it, as the scan found
             }
         }
+        if (straggling.Length < squadronOf.Length)
+            Array.Resize(ref straggling, squadronOf.Length);   // room for every ship in a squadron: a straggler's flag allocates nothing in a fight
         squadronStale = false;
     }
 
@@ -407,11 +440,12 @@ public sealed class GroupSystem : IWorldSystem
         return g.Guide;
     }
 
-    /// <summary>The last ship of a group's line, down the tree; 0 if there's none.</summary>
+    /// <summary>The last ship of a group's line, down the tree, that keeps the formation (its stragglers aren't followed); 0 if
+    /// there's none.</summary>
     public int LastShip(Group g)
     {
         if (!g.IsForce)
-            return g.Line.Count > 0 ? g.Line[^1] : 0;
+            return g.Line.Count > 0 ? g.Line[g.Keeping - 1] : 0;   // its stragglers aren't followed
         for (int k = g.Line.Count - 1; k >= 0; k--)
             if (Get(g.Line[k]) is { } sub && LastShip(sub) is int s and > 0)
                 return s;
@@ -535,14 +569,18 @@ public sealed class GroupSystem : IWorldSystem
     {
         into.Clear();
         Offsets(g, 0, 0, into);
+        Trailing(g, into);
     }
 
+    /// <summary>A group's line laid into the list, its stragglers left out but those of each run of it that chains into one
+    /// line (<see cref="Chains"/>) once the run's laid, astern of it (<see cref="Trailing"/>); those of its last run are left
+    /// for the caller, whose line may go on from it.</summary>
     void Offsets(Group g, double astern0, double abeam0, List<(int Ship, double AsternM, double AbeamM)> into)
     {
         var line = g.Line;
         if (!g.IsForce)
         {
-            for (int i = 0; i < line.Count; i++)
+            for (int i = 0; i < g.Keeping; i++)
             {
                 var (a, b) = WingOf(g, i) is int k and >= 0 ? WingOffset(g.WingM, k) : OffsetFromGuide(g.Formation, g.SpacingM, i, g.BearingDeg);
                 into.Add((line[i], astern0 + a, abeam0 + b));
@@ -550,15 +588,86 @@ public sealed class GroupSystem : IWorldSystem
             return;
         }
         Group? before = null;
+        int run = 0;
         for (int k = 0; k < line.Count; k++)
         {
             if (Get(line[k]) is not { } sub)
                 continue;
+            bool chained = before != null && Chains(g, before);
+            if (before != null && !chained)
+            {
+                for (int r = run; r < k; r++)
+                    if (Get(line[r]) is { } done)
+                        Trailing(done, into);
+                run = k;
+            }
             var (a, b) = GroupStation(g.Formation, g.SpacingM, k, (astern0, abeam0), into.Count > 0 ? (into[^1].AsternM, into[^1].AbeamM) : null,
-                g.BearingDeg, before != null && Chains(g, before));
+                g.BearingDeg, chained);
             Offsets(sub, a, b, into);
             before = sub;
         }
+    }
+
+    /// <summary>The stragglers of a group's last run (the part of its line its caller's may go on from), each a spacing of
+    /// her squadron's on along its line from the last ship laid: at the tail of the line she's in.</summary>
+    void Trailing(Group g, List<(int Ship, double AsternM, double AbeamM)> into)
+    {
+        var line = g.Line;
+        if (!g.IsForce)
+        {
+            var (a, b) = OffsetFromGuide(Formation.Bearing, g.SpacingM, 1, g.LineBearingDeg);
+            for (int i = g.Keeping; i < line.Count; i++)
+            {
+                var (la, lb) = into.Count > 0 ? (into[^1].AsternM, into[^1].AbeamM) : (0.0, 0.0);
+                into.Add((line[i], la + a, lb + b));
+            }
+            return;
+        }
+        int run = 0;
+        for (int k = 1; k < line.Count; k++)
+            if (Get(line[k - 1]) is { } prior && !Chains(g, prior))
+                run = k;
+        for (int k = run; k < line.Count; k++)
+            if (Get(line[k]) is { } sub)
+                Trailing(sub, into);
+    }
+
+    /// <summary>Whether another ship of her line keeps station on a ship (a straggler is out of the chain, so the ship astern of
+    /// her closes up on the one ahead of her: <see cref="Straggle"/>): in a squadron in line ahead the ship astern of her; any
+    /// squadron's guide, its others; and its last ship the next group's guide, where a force's line goes on from it (as far up
+    /// as it's its force's last).</summary>
+    public bool Leads(int ship)
+    {
+        if (Of(ship) is not { } g || g.DetachmentOf(ship) != Detachment.InLine)
+            return false;
+        var line = g.Line;
+        int i = -1;
+        for (int k = 0; k < g.Keeping; k++)
+            if (line[k] == ship)
+                i = k;
+        if (i < 0)
+            return false;   // a straggler
+        if (i < g.Keeping - 1)
+            return i == 0 || g.Formation == Formation.Column;   // abreast or on a bearing the others are all on the guide
+        return TrailFollowed(g);
+    }
+
+    /// <summary>Whether a group's last ship (<see cref="LastShip"/>) has another group's guide on her: its force's line goes
+    /// on from it, at the first level up where it isn't its force's last.</summary>
+    public bool TrailFollowed(Group g)
+    {
+        for (var cur = g; cur.Parent != 0 && InForceLine(cur) && Get(cur.Parent) is { } p; cur = p)
+        {
+            int k = -1;
+            for (int j = 0; j < p.Line.Count; j++)
+                if (p.Line[j] == cur.GroupId)
+                    k = j;
+            if (k < 0)
+                return false;
+            if (k < p.Line.Count - 1)
+                return Chains(p, cur);
+        }
+        return false;
     }
 
     /// <summary>Where the k-th group of a force's line puts its guide ship (k from 0), about the guide ship of the
@@ -776,6 +885,12 @@ public sealed class GroupSystem : IWorldSystem
     /// (<see cref="Group.WingM"/>, docs/battle/allocation.md AL4): its admiral's to give.</summary>
     public static Command SetWings(int groupId, double wingM) => new(Id, (ushort)GroupCommand.Wings, A: groupId, X: wingM);
 
+    /// <summary>A ship out of her line's chain as a straggler, or back (docs/battle/command.md "Stragglers"): straggling she's
+    /// last of her squadron's line and nobody keeps station on her (<see cref="LastShip"/>, <see cref="Leads"/>), the ships
+    /// astern of her closing up on the one ahead of her; back, she's moved to her squadron's end, where she is by then. Her
+    /// admiral's to give; she's no longer one once she leaves her squadron.</summary>
+    public static Command Straggle(int entity, bool on) => new(Id, (ushort)GroupCommand.Straggle, entity, A: on ? 1 : 0);
+
     /// <summary>A group gone: its members are free (a force's groups stay squadrons and forces of their own), and it
     /// leaves its force.</summary>
     public static Command Disband(int groupId) => new(Id, (ushort)GroupCommand.Disband, A: groupId);
@@ -868,6 +983,14 @@ public sealed class GroupSystem : IWorldSystem
                 break;
             case GroupCommand.Reverse:
                 Get((int)c.A)?.Reverse();
+                break;
+            case GroupCommand.Straggle:
+                if (Of(c.Entity) is not { } straggler || (c.A != 0) == IsStraggling(c.Entity))
+                    return;
+                SetStraggling(c.Entity, c.A != 0);
+                if (c.A == 0)
+                    straggler.Move(c.Entity, straggler.Members.Count);   // back at her squadron's end
+                straggler.Relink();
                 break;
             case GroupCommand.Wings:
                 if (Get((int)c.A) is { IsForce: false } winged)
@@ -1041,6 +1164,7 @@ public sealed class GroupSystem : IWorldSystem
 
     void Leave(int entity)
     {
+        SetStraggling(entity, false);
         for (int i = 0; i < groups.Count; i++)
             if (!groups[i].IsForce && groups[i].Remove(entity))
             {
@@ -1095,6 +1219,8 @@ public sealed class GroupSystem : IWorldSystem
             {
                 h.Add(g.Members[i]);
                 h.Add((int)g.DetachmentAt(i));
+                if (IsStraggling(g.Members[i]))
+                    h.Add(-1);   // only then: a world without stragglers hashes as before
             }
         }
     }

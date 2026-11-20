@@ -257,6 +257,31 @@ out. The admirals read their units' summed (a squadron's strength left, its spee
 `SeenFlags` and the class as taken for, gives an enemy's fitness as it's seen: "she's low in the water and silent"
 makes her a cripple to finish, not a threat.
 
+### Stragglers
+
+Added 2026-11-20 (the user: the second ship of a line almost stopped and the ships astern of her stopped too, leaving
+the van alone; "the rest of the ships should just ignore the stalling ship. Keeping the congaline of doom is important
+in a battle"). In line ahead each ship keeps station on the one before her, so a ship that stays in her line though
+she can't keep it (doctrine never falls out, a brave captain's lower threshold, the player holding her in, or a loss
+she expects back within `FallOutWaitMin`) held up every ship astern of her. Now her squadron's admiral
+(`AdmiralLayer.Stragglers.cs`) takes her out of the line's chain, `GroupSystem.Straggle`: a group's state set by a command,
+so it replays and hashes, and the admirals' thinks on their slots read it safely. She's one when **another ship keeps
+station on her** (`GroupSystem.Leads`: the ship astern in a column, a squadron's others on its guide, the next group's
+guide on a squadron's last ship where its force's line goes on from it), **she's more than `StragglerSpacings` of her
+station's spacing astern of it and not closing it, and she can't** (`CanClose`: her steering doesn't answer, or what her
+plant makes now isn't half the line's `GroupSpeedMarginKn` over the speed of the ship she keeps station on). A ship that
+was merely held up astern of one works up to her station again, so she isn't.
+
+Straggling, she's last of her squadron's `Line` and nobody keeps station on her (`LastShip` skips her; a squadron's guide
+straggling hands it to her next ship). `LineOffsets` lays her at the tail of the run of the line she's in (the whole
+line ahead in a force in line ahead; her own column in columns abreast), and that's her station, on the last ship that
+keeps the formation. While she's ahead of it (the line still to pass her) she turns `StragglerTurnOutDeg` off its course
+to the side she's on, and keeps `StragglerHaulOutSpacings` of a spacing abeam of it until it's by: a station abeam she'd
+reach only as she dropped back, too slowly for a line coming up at its speed. Once it has passed her, and no group would
+follow her at her squadron's end (`TrailFollowed`), she rejoins there, at the rear for good: in a force a straggler from a
+squadron ahead of others stays one, at the tail of the whole line. The unit's own guide is never one (the line's speed is
+hers). `StragglerTests`.
+
 ### The tactical picture: enemy groups and who can fight them
 
 What an admiral sees of the enemy, built from his navy's picture once a think per side (`Sim.Ai/Knowledge`, pure):

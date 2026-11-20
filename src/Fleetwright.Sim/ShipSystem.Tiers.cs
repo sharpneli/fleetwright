@@ -673,7 +673,7 @@ public sealed partial class ShipSystem
             case GroupCommand.Join when c.A != 0:
                 Derail(world, (int)c.A, unride: true);
                 break;
-            case GroupCommand.Detach when groups.Of(c.Entity) is { } g:
+            case GroupCommand.Detach or GroupCommand.Straggle when groups.Of(c.Entity) is { } g:
                 DerailGroup(world, g);   // a ship rejoining is on rails of its own: its line comes off too
                 break;
             case GroupCommand.CreateOfNewest:

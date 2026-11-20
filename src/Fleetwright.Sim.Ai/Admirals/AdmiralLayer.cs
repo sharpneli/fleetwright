@@ -416,11 +416,15 @@ public sealed partial class AdmiralLayer(GroupSystem groups, CaptainLayer captai
             Limit(ctx, g, a);
             Clear(ctx, g, a);
             var members = g.Line;
+            if (!g.IsForce && a.Attack == AttackPhase.None)
+                Stragglers(ctx, g, a);   // a ship that can't keep the line out of its chain, or back at its rear
             for (int i = 1; i < members.Count; i++)
             {
                 if (ScreenHanded(ctx, g, a, i) || AttackHanded(ctx, g, a, i))
                     continue;   // a force screening, or attacking: each of its groups on its own station of the arc, or its own attack
-                if (!g.IsForce)
+                if (!g.IsForce && i >= g.Keeping)
+                    OrderStraggler(ctx, g, members[i]);
+                else if (!g.IsForce)
                 {
                     var (target, astern, abeam) = GroupSystem.StationOf(g, i);
                     if (!captains.Holds(members[i], CaptainOrder.Station, target, astern, abeam))
