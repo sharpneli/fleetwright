@@ -96,7 +96,7 @@ public sealed class AiSystem : IWorldSystem
         (Admirals.Tasks, Captains.Tasks) = (Tasks, Tasks);
         Attacks = new FlotillaAttacks(Judge, Held, Doctrine, Roles) { Tasks = Tasks };
         var wings = new FastWing(Judge, Held, Measures);
-        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Wings = wings, Book = Aims };
+        Commanders = new CommanderLayer(world.Groups, world.Ships.Store, Seen, Doctrine) { Tasks = Tasks, Captains = Captains, Judge = Judge, Held = Held, Roles = Roles, Attacks = Attacks, Wings = wings, Book = Aims, Homes = Homes };
         (Admirals.Attacks, Admirals.Commanders, Admirals.Wings, Admirals.Regrouper, Commanders.Regrouper) = (Attacks, Commanders, wings, Regroup, Regroup);
         (Roles.Tasks, Roles.Commanders, Roles.Book) = (Tasks, Commanders, Aims);
         layers = [Commanders, Tasks, Admirals, Captains];

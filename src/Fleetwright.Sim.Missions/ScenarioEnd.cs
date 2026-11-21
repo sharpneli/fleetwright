@@ -19,7 +19,8 @@ public enum EndReason : byte
     /// <summary>Decided: every side still afloat has met its aims (destroy everyone: one side, or sides at peace, left).</summary>
     Decided,
 
-    /// <summary>Quiet: the sides met, and no encounter has been open for <see cref="SimSettings.QuietEndMs"/>.</summary>
+    /// <summary>Quiet: the sides met, and no encounter has been open for <see cref="SimSettings.QuietEndMs"/>, nor is any
+    /// side's commander still after the enemy (holding him, or searching for him).</summary>
     Quiet,
 
     /// <summary>Every side done: each side still afloat has its aims, or its commander has given them up (gone home, or
@@ -217,9 +218,21 @@ public sealed class ScenarioEnd
             End(EndReason.Decided, now);
         else if (ai != null && AllDone())
             End(EndReason.Done, now);
-        else if (met && world.Encounters.Count == 0 && now - lastBusyMs >= world.Settings.QuietEndMs)
+        else if (met && world.Encounters.Count == 0 && now - lastBusyMs >= world.Settings.QuietEndMs && !Hunting())
             End(EndReason.Quiet, now);
         return Over;
+    }
+
+    /// <summary>Whether a side's commander is still after the enemy, holding him or searching for him lost (not given up):
+    /// the fight isn't over while he is, however long since the last encounter.</summary>
+    bool Hunting()
+    {
+        if (ai == null)
+            return false;
+        for (int side = 0; side < afloat.Length; side++)
+            if (ai.Commanders.PhaseOf(side).Phase is Fleetwright.Sim.Ai.Commanders.CommanderPhase.Lost or Fleetwright.Sim.Ai.Commanders.CommanderPhase.Contact)
+                return true;
+        return false;
     }
 
     /// <summary>Every side still afloat has met its aims: nothing is left to be fought for.</summary>

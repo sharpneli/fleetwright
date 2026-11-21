@@ -551,9 +551,31 @@ tier's rules too (the fine tier's timing only hid them):
 What it moved (`allocation/keep-touch/`): the coarse Jutland meets as history has it (Germany sights Galatea at 14:21) and
 fights from 15:07; the fine one's seed 1916 as before (B109 at 14:16, Galatea seen at 14:19, 27 v 53 lost). The user's
 own game replayed is in battle by 17:56. The panel: 8 of 14 sides within 2x (7); the Jutland 28.0 v 48.3 (23.0 v 46.8),
-Germany still the heavier loser in all 4 seeds; Dogger Bank's Britain 0.9, in band (1.3). Still open: a commander who
-loses contact sends his heavy units back to their stations and gives up after his search, whatever his aim (Destroy
-Everyone open, the enemy's fleet a hundred miles off).
+Germany still the heavier loser in all 4 seeds; Dogger Bank's Britain 0.9, in band (1.3). Still open then: a commander
+who loses contact gives up after his search, whatever his aim (below).
+
+**A longer memory** (2026-11-21, the user: "Commander should have longer memory than just 2 hours. If the target is to
+destroy the enemy fleet a real commander would not abandon that quickly"). A commander who lost the enemy searched where
+he was last held and gave up once that search was through, or wasn't worth it by BL5's Koopman chance against a circle
+growing at his speed in every way: about two hours. And the judge ended the scenario two hours after the last encounter
+(`QuietEndMs`) whatever the commanders were doing. On what he knows (BL5: never where the enemy is), a commander knows
+more than a datum: the enemy's course and speed, and where his bases are (each side's home, `Homes`; good intelligence).
+- *Across his way home* (`CommanderLayer.WayHome`): the search about the datum through, his main body searches where the
+  enemy would be now, steaming home from where he was last held at the speed he was held at (`Across`, as a Stop side
+  searches across the way to a zone, A3), given again each time it's through. He gives up only once the enemy would be
+  home by now, or no point of his way home is one the main body could reach before him at its slowest ship's best speed
+  (`Catchable`: eleven points from where he'd be to his home's edge; he's got away). A side with no home known for the
+  enemy gives up as before. Jellicoe's night between Scheer and the Horns Reef is the shape of it.
+- *The quiet end waits for him* (`ScenarioEnd.Hunting`): no quiet end while a side's commander is in contact or searching
+  (the phases Contact and Lost); once he's given up, the two hours run as before.
+- `CommanderTests.A_side_that_loses_the_enemy_searches_across_his_way_home_while_he_can_be_caught`: a 28-knot cruiser
+  running for a home dead ahead of her is given up at once as before (no point of her way his dreadnoughts reach first);
+  a dreadnought lost in haze that turns north for home out of sight is found again across her way in by three
+  battlecruisers, lost, found again, still after her six hours on. (A first try of the test, dreadnoughts after a sister
+  ship running at their own speed, gave up: chasing, they were behind her on her way, and can't be ahead of her on it.)
+- What it moved (`allocation/way-home/`, the panel at 8 seeds): nothing in the losses but Heligoland's Germany, 6.6
+  (5.9); no run ends quiet now (the three that did run to their time or end done), and the coarse Jutland never loses
+  contact to need it. The rule is for the fight that does lose him.
 
 ## Questions for the user
 

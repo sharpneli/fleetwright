@@ -376,6 +376,61 @@ public class CommanderTests(ITestOutputHelper output)
         Assert.True(w.Time < Start + 4 * 3_600_000L, "given up within hours");
     }
 
+    /// <summary>The enemy lost, his home known (allocation.md "A longer memory", the user 2026-11-21): his main body
+    /// searches across his way home while it could be on it before him, and gives up only once it couldn't. A cruiser too
+    /// fast to be caught on her way home ahead of her is given up as before; a dreadnought lost in the haze that turns
+    /// north for home, out of his sight, is searched for across her way in by his faster battlecruisers.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_side_that_loses_the_enemy_searches_across_his_way_home_while_he_can_be_caught(bool catchable)
+    {
+        var w = new World(Start, 3, Settings with { SearchLegM = 8_000 });
+        var ai = new AiSystem(w);
+        w.Apply(Command.SetWeather(catchable ? 8_000 : 12_000));
+        int bb = Class(w, "dreadnought"), lc = Class(w, "light_cruiser"), bc = Class(w, "lion");
+        var mine = Column(w, ai, catchable ? bc : bb, Earth.Position(Lat, Lon), catchable ? 270 : 90, 3, side: 1, kn: catchable ? 0 : 15);
+        var (ela, elo) = LatLon(catchable ? Off(90, 7_500) : Off(90, 10_000));
+        w.Apply(ShipSystem.Spawn(catchable ? bb : lc, ela, elo, 90, catchable ? 21 : 28, 0));   // running east, out of his sight soon
+        int her = w.Ships.NewestEntity;
+        w.Apply(ai.Orders.HoldFire(Unit.Ship(her)));
+        var (hla, hlo) = LatLon(Off(270, 60_000));
+        w.Apply(ai.Orders.Home(1, hla, hlo));
+        // hers: north, past a turn 25 km east she makes out of his sight; or dead ahead of her
+        var turn = Off(90, 25_000);
+        var (xla, xlo) = LatLon(catchable ? Off(0, 150_000, Earth.LatLon(turn).Lat, Earth.LatLon(turn).Lon) : Off(90, 300_000));
+        if (catchable)
+        {
+            var (tla, tlo) = LatLon(turn);
+            w.Apply(ShipSystem.AddWaypoint(her, tla, tlo));
+            w.Apply(ShipSystem.AddWaypoint(her, xla, xlo));
+        }
+        w.Apply(ai.Orders.Home(0, xla, xlo));
+        w.Apply(ShipSystem.LookNow());
+        w.Apply(ai.Orders.Commander(1, CommanderMode.On));
+        var whys = new List<CommanderWhy>();
+        var phases = new List<CommanderPhase>();
+        for (double s = 0; s < 6 * 3600 && ai.Commanders.PhaseOf(1).Phase != CommanderPhase.Home; s += 60)
+        {
+            Run(w, 60);
+            if (ai.Commanders.GivenOf(mine).Why is var y && y != CommanderWhy.None && (whys.Count == 0 || whys[^1] != y))
+                whys.Add(y);
+            if (phases.Count == 0 || phases[^1] != ai.Commanders.PhaseOf(1).Phase)
+                phases.Add(ai.Commanders.PhaseOf(1).Phase);
+        }
+        output.WriteLine($"whys {string.Join(" > ", whys)}; phases {string.Join(" > ", phases)}; at {w.Time}: {ai.Commanders.PhaseOf(1)}");
+        if (catchable)
+        {
+            Assert.Contains(CommanderWhy.WayHome, whys);
+            Assert.NotEqual(CommanderPhase.Home, ai.Commanders.PhaseOf(1).Phase);   // after her still, or on her again
+        }
+        else
+        {
+            Assert.DoesNotContain(CommanderWhy.WayHome, whys);
+            Assert.Equal((TaskKind.Withdraw, CommanderWhy.GaveUp), (ai.Commanders.GivenOf(mine).Given, ai.Commanders.GivenOf(mine).Why));
+        }
+    }
+
     /// <summary>A search's worth on what he knows (docs/battle/balance.md BL5, the user's 2026-10-31): the chance of a find
     /// in the next hour falls the longer the enemy's been lost and the faster he was going, and rises with the searchers'
     /// line. Heligoland's mist (5 km): five battlecruisers at 25 kn after cruisers held at 20 kn give up within the hour.</summary>

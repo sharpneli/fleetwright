@@ -383,7 +383,8 @@ A scenario ends when, in order:
    doesn't hold it open either: she can't go anywhere);
 3. **a side is gone** (sunk, or out of the area);
 4. **nothing has happened for long:** no encounter open and none of a side's units in contact for `QuietEndMs`
-   (hours), after the sides have met at least once. A stalemate is an end, and worth flagging.
+   (hours), after the sides have met at least once, and no side's commander still after the enemy (holding him, or
+   searching for him lost; since 2026-11-21, allocation.md "A longer memory"). A stalemate is an end, and worth flagging.
 
 The result, v0, is facts, not a grade (grading is 6.1's): each side's losses (ships, tonnage, crew), its ships
 damaged, its aims met or not, and when the sides met, fought and parted. Read from the combat log and the world, so
@@ -830,8 +831,9 @@ doesn't hold the T.
    (its flotillas attack by doctrine). *Broken off,* for good: losses past doctrine's new `BreakOffShare` (the default
    preset a third of the tonnage he came with; neutral never). Either way every unit goes home (Withdraw), a flotilla near
    the enemy sent in once to cover a break-off. *Lost:* the enemy met and no contact fresh: his main body searches about
-   where he was last held (the picture's estimate) on `LostSearchLegM` (20 km) legs, and with nothing found he gives up:
-   every unit home. He gives up sooner once the search isn't worth it on what he knows (balance.md BL5, 2026-10-31):
+   where he was last held (the picture's estimate) on `LostSearchLegM` (20 km) legs; with nothing found it searches
+   across the enemy's way home while it could be on it before him (since 2026-11-21, allocation.md "A longer memory"),
+   and only then he gives up: every unit home. The search about where he was last held ends sooner once it isn't worth it on what he knows (balance.md BL5, 2026-10-31):
    Koopman's random search, his line's sweep in the next `LostSearchAheadMs` (an hour) against the circle the enemy could
    be in, out from where he was last fixed at the speed he was held at, under `LostSearchMinChance` (0.1). The search's
    line is its admiral's call (`AdmiralLayer.SearchLine`): spread abreast, a force's every ship too, if each piece (a

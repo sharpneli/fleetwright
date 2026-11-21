@@ -91,6 +91,10 @@ public enum CommanderWhy : byte
     /// <summary>The enemy lost: the main body searching where he was last held.</summary>
     Lost,
 
+    /// <summary>The enemy lost and searched for where he was last held: the main body searching across his way home, where
+    /// he'd be now making for it.</summary>
+    WayHome,
+
     /// <summary>Home: declining battle with a stronger enemy.</summary>
     Outmatched,
 
@@ -147,6 +151,9 @@ public enum CommanderWhy : byte
 /// in unit order; nothing allocated once grown.</para></summary>
 public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenContacts seen, Doctrine doctrine) : IAiLayer
 {
+    /// <summary>Every side's home (set by the AI system): where a lost enemy is making for.</summary>
+    internal Homes? Homes { get; set; }
+
     sealed class SideState
     {
         public CommanderMode Mode;
@@ -160,6 +167,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public double LastMps; // and the speed it was held at, m/s
         public double CameT;   // the tonnage he came with (at his first think)
         public int LastTarget;
+        public int LastSide = -1;  // the target's side (his home is where he's making for, lost)
         public bool Met, Declined, BrokenOff, Searched, GaveUp;
         public readonly MatchupSide DeclinedFrom = new();   // the gravest enemy he's held since he declined
         public double DeclinedC;    // his side's matchup against it, when he held it
@@ -431,11 +439,11 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             : s.Target != 0 ? (CommanderPhase.Contact, CommanderReason.None)
             : s.Met ? (CommanderPhase.Lost, CommanderReason.LostContact)
             : (CommanderPhase.NoContact, CommanderReason.None);
-        // the enemy lost: a search where he was last held, then home; but with a zone to search (docs/battle/aims.md A3,
-        // A4) he never gives up while the aim's open: across the enemy's way at once, or his hunting ground once that
-        // search is through (his main body idle, its task)
+        // the enemy lost: a search where he was last held, then across his way home while he can still be caught on it,
+        // then home; but with a zone to search (docs/battle/aims.md A3, A4) he never gives up while the aim's open: across
+        // the enemy's way at once, or his hunting ground once that search is through (his main body idle, its task)
         if (s.Phase == CommanderPhase.Lost && main >= 0 && !reach && hunt is not { Way: true } && Commands(tops[main].Unit, side, player) &&
-            Search(ctx, s, tops[main]) && hunt == null)
+            Search(ctx, s, tops[main]) && hunt == null && !WayHome(ctx, s, tops[main]))
             (s.GaveUp, s.Phase, s.Reason) = (true, CommanderPhase.Home, CommanderReason.GaveUp);
         Regroup(ctx, side, player);
         ChooseWings(ctx, s, side, player);
@@ -1012,6 +1020,67 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return kind != TaskKind.Search || state is TaskState.Done or TaskState.Cant;
     }
 
+    /// <summary>The enemy lost and the search where he was last held through: his main body searches across the enemy's way
+    /// home (his side's home, <see cref="Homes"/>: a navy knows the other's bases), where he'd be now steaming for it from
+    /// where he was last held at the speed he was held at (<see cref="Across"/>, as a Stop side searches across the way
+    /// to a zone), given again each time it's through. On what he knows (balance.md BL5): false, he gives up, once the
+    /// enemy would be home by now, or no point of his way home is one the main body could reach before him (he's got
+    /// away); with no home known for him, at once, as before. A commander out to destroy the enemy's fleet doesn't let it
+    /// go while it can still be brought to battle on its way in.</summary>
+    bool WayHome(in AiContext ctx, SideState s, in Top main)
+    {
+        if (s.LastAt == 0 || s.LastSide < 0 || Homes?.OfSide(s.LastSide) is not { } home)
+            return false;
+        var (la, lo) = Earth.UnpackLatLon(s.LastAt);
+        var p = Earth.Position(la, lo);
+        double way = Earth.Distance(p, home) - ctx.Settings.HomeRadiusM;
+        double gone = s.LastMps * Math.Max(ctx.NowMs - s.LastMs, 0) / 1000.0;
+        if (gone >= way)
+            return false;   // he'd be home
+        if (!Catchable(ctx, main, p, home, gone, way, s.LastMps))
+            return false;   // nowhere on his way he's not past before the main body could be there
+        var (given, _, why, ms) = GivenOf(main.Unit);
+        var (kind, state, _) = Tasks!.Of(main.Unit);
+        if (why == CommanderWhy.WayHome && given == TaskKind.Search &&
+            (Tasks.StartOf(main.Unit) < ms || kind == TaskKind.Search && state is TaskState.OnTask or TaskState.Engaged or TaskState.InContact))
+            return true;   // on it, or the order not landed yet
+        var (hl, ho) = Earth.LatLon(home);
+        Give(ctx, main, Across(ctx, main, new Zone(hl, ho, ctx.Settings.HomeRadiusM), true), CommanderWhy.WayHome);
+        return true;
+    }
+
+    /// <summary>Whether the main body could be at some point of the enemy's way home (from <paramref name="from"/>, already
+    /// <paramref name="gone"/> along it of <paramref name="way"/>) before he passes it, at its slowest ship's best speed
+    /// against the speed he was held at: the points ahead of him a tenth of the way left apart, his home's edge last.</summary>
+    bool Catchable(in AiContext ctx, in Top main, Vec3d from, Vec3d home, double gone, double way, double mps)
+    {
+        double kn = store[main.Slot].Handling.Class.Motion.MaxSpeedKn;
+        if (main.Unit.IsGroup && groups.Get(main.Unit.GroupId) is { } g)
+        {
+            groups.LineOffsets(g, line);
+            foreach (var (ship, _, _) in line)
+                if (store.SlotOf(ship) is int m and >= 0)
+                    kn = Math.Min(kn, store[m].Handling.Class.Motion.MaxSpeedKn);
+        }
+        double v = kn * Handling.MsPerKnot;
+        if (v <= 0)
+            return false;
+        if (mps <= 0)
+            return true;   // held stopped: still where he was
+        var at = store[main.Slot].Position;
+        var f0 = Earth.Forward(from, Earth.Bearing(from, home));
+        for (int k = 0; k <= 10; k++)
+        {
+            double along = gone + (way - gone) * k / 10;
+            var x = from;
+            var f = f0;
+            Earth.Advance(ref x, ref f, along);
+            if (Earth.Distance(at, x) / v <= (along - gone) / mps)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>His search's chance of a find in the next <see cref="SimSettings.LostSearchAheadMs"/>, on what he knows
     /// (docs/battle/balance.md BL5, the user's 2026-10-31): the enemy last held at his datum, at the speed he was held at,
     /// since the last fix; his main body's line as its admiral would search with it (<see cref="AdmiralLayer.SearchLine"/>:
@@ -1106,6 +1175,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                     mps = g.Velocity.Length;
             (s.LastAt, s.LastMs, s.LastMps, s.LastTarget, s.Met, s.Searched) =
                 (Earth.PackLatLon(lat, lon), pic[ti].SeenMs, mps, s.Target, true, false);
+            if (store.SlotOf(s.Target) is int sl and >= 0)
+                s.LastSide = store[sl].Side;   // whose she is: his navy knows the enemy's colours
         }
     }
 
@@ -1320,6 +1391,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 h.Add(s.LastMs);
                 h.Add(s.LastMps);
                 h.Add(s.LastTarget);
+                if (s.LastSide >= 0)
+                    h.Add(s.LastSide);   // only then: worlds where nobody's held hash as before
                 h.Add(s.CameT);
                 h.Add(s.Met);
                 h.Add(s.Declined);
