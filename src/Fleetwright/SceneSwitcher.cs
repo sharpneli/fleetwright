@@ -135,6 +135,7 @@ public sealed unsafe class SceneSwitcher : IScene
             ImGui.Spacing();
             shut |= items.MenuItems();
         }
+        Options();
         ImGui.Spacing();
         ImGui.Separator();
         if (ImGui.Button(current <= 0 ? "Ship designer  (F3)" : Home < 0 ? "Back to the scenarios" : "Back to the map", full))
@@ -161,6 +162,36 @@ public sealed unsafe class SceneSwitcher : IScene
         ImGui.EndPopup();
         ImGui.PopStyleVar();
         Ui.Theme.Pop();
+    }
+
+    // the UI size slider's value while it's held, in percent: applied on release, as the UI it sizes would move under the
+    // cursor mid-drag (the fonts reload once the frame's done)
+    int uiPercent = -1;
+
+    /// <summary>The player's options in the menu (AppOptions, kept across sessions): the UI's size over the window's own
+    /// scale, 50-200% by 5%, with 100% a click away.</summary>
+    void Options()
+    {
+        float sc = UiFonts.Scale;
+        ImGui.Spacing();
+        ImGui.TextDisabled("Options");
+        ImGui.TextUnformatted("UI size");
+        ImGui.SameLine(110 * sc);
+        if (!ImGui.IsAnyItemActive() || uiPercent < 0)
+            uiPercent = (int)MathF.Round(UiFonts.UserScale * 100);
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize("Reset").X - ImGui.GetStyle().FramePadding.X * 2 - ImGui.GetStyle().ItemSpacing.X);
+        ImGui.SliderInt("##uisize", ref uiPercent, (int)(AppOptions.MinUiScale * 100), (int)(AppOptions.MaxUiScale * 100), "%d%%", ImGuiSliderFlags.AlwaysClamp);
+        uiPercent = (int)MathF.Round(uiPercent / 5f) * 5;
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("The size of the text and panels, over what the window's height gives (kept for the next time)");
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            AppOptions.SetUiScale(uiPercent / 100f);
+        ImGui.SameLine();
+        if (ImGui.Button("Reset", new System.Numerics.Vector2(-1, 0)))
+        {
+            uiPercent = 100;
+            AppOptions.SetUiScale(1);
+        }
     }
 
     public bool ProcessEvent(SDL_Event* e, uint width, uint height)

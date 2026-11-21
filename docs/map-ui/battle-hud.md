@@ -26,7 +26,7 @@ session, each judged by captures against the mockup.
 | Map marks | the map | own ships named with speed and a flotation bar; contacts by identity with what's seen of them; fire lines, the selection's in brass with the range; torpedo reach; orders sent, amber while the signal travels; the cursor's verb | all |
 | Briefing | modal, at load (paused) | the situation, the aim, your side's orders before action, your forces and the enemy as reported | `#brief` |
 | Result | modal, at the end | the count, every ship's fate, the truth about the enemy | `#result` |
-| Menu | Esc with nothing open | resume, briefing, result, restart, scenarios, controls, the auto-pause rules (from the clock panel today), the designer, quit (UI scale not in it: `-uiscale=`) | `#menu` |
+| Menu | Esc with nothing open | resume, briefing, result, restart, scenarios, controls, the auto-pause rules (from the clock panel today), the options (the UI's size, kept in My Games/Fleetwright/options.json: `AppOptions`), the designer, quit | `#menu` |
 | Dev panel | F1 | everything that isn't the game: built (U0) | `#dev` |
 
 ## The ship card (the centre of it)

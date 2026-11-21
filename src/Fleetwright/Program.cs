@@ -51,6 +51,7 @@ public static unsafe class Program
         string? variants = null, scenarioArg = null, wakeBake = null, replayArg = null;
         TimeSpan? replayAt = null;
         string? crashTest = null;
+        float? uiScaleArg = null;
 
         foreach (string arg in args)
         {
@@ -390,7 +391,7 @@ public static unsafe class Program
             else if (arg.StartsWith("-uiscale="))   // a factor over the UI scale (the window's height over 1080 px)
             {
                 if (float.TryParse(arg.Substring("-uiscale=".Length), System.Globalization.CultureInfo.InvariantCulture, out float f) && f > 0)
-                    UiFonts.UserScale = f;
+                    uiScaleArg = f;   // over the saved option, for this run (AppOptions)
             }
             else if (arg.StartsWith("-section="))   // the designer's open section, 0-7
             {
@@ -457,6 +458,9 @@ public static unsafe class Program
             return Map.Wakes.WakeLook.Write(wakeBake, args.Any(a => a.StartsWith("-output=")) ? screenshotPath : null, FindDesign);
 
         // the land the world sails on, built while the window opens (docs/world/terrain-plan.md T1)
+        AppOptions.Start(captureRun: screenshotFrame >= 0 || screenshotAt != null);   // the player's options (the UI's size); a capture shows the defaults
+        if (uiScaleArg is float uiScale)
+            UiFonts.UserScale = uiScale;
         var shore = Map.WorldSession.LoadShore();
         try
         {

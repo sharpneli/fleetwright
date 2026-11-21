@@ -46,7 +46,7 @@ dotnet run --project src/Fleetwright -- -view=ship [-navy=kure] [-era=wwii]
 dotnet run --project src/Fleetwright -- -view=profile                      # the ship card's side view
 dotnet run --project src/Fleetwright -- -lights=roughness:0.5,specular:0   # the ships' light table knobs (ShipLight.cs: roughness scales the looks' materials; eye, the night eye's gain, below, purkinje, moonsky: docs/visuals/night-lights.md Q10a; lightknee, the eye's response to artificial light, Q10f), for side-by-side captures
 dotnet run --project src/Fleetwright -- -view=ship -viewer=sun:300:30,shade:normal,at:10:0:8 [-outline=0.5]   # the viewer for captures: sun, moon, debug view (lit, albedo, normal, ao, ...), centre and zoom; the plan's ink weight
-dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0)
+dotnet run --project src/Fleetwright -- -uiscale=1.25                     # UI size over the window-height scale (1080 px = 1.0), over the player's saved option for this run
 dotnet run --project src/Fleetwright -- -map=56.7,5.8,150 -grid=units:nm,squares:100,graticule:300   # the map grid's knobs (docs/visuals/grid.md; Map/GridLook.cs: units (nm, km), hidden, minorfrom, majorfrom, majorat, labelfrom, labelat, minoralpha, majoralpha, minorwidth, majorwidth, squares, graticule (the blend band, m/px at 1080p), reanchordeg, reanchornm, reanchors)
 dotnet run --project src/Fleetwright -- -scenario=squadrons -symbols=casing:1.5,motion:0   # the map symbols' knobs (docs/map-ui/symbols.md; Map/SymbolLook.cs: chord (a curve's error, reference px), width (a gain on strokes), casing, casingalpha, labelfade (s), halo (0 the old shadow), motion (0 no eases))
 dotnet run --project src/Fleetwright -- -ships=dreadnought:6 -map=56.5,4.0,2 -weather=225,8,2 -haze=gain:1,slant:1   # the world view's haze from the weather's visibility (docs/visuals/haze.md; Map/HazeLook.cs: on, gain, hazescale, fogscale, deepest, back, slant)
@@ -75,7 +75,7 @@ per pixel; projection, picking, the grid and the land's clip in double, so nothi
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), under the HUD of `docs/map-ui/battle-hud.md`
 (`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-5 the gears (1x, 10x, 60x, 240x, 3,000x; a paused clock runs; the bar has every speed), § held fast-forwards, Shift+Space runs until it matters, Ctrl+Space a coarse step: docs/map-ui/input.md; the briefing, from the
 menu, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
-the briefing, the result, restart, Scenarios… (the launch screen), Controls (`MapScene.Controls.cs`), the clock's rules on contact, the designer, quit. Esc never quits).
+the briefing, the result, restart, Scenarios… (the launch screen), Controls (`MapScene.Controls.cs`), the clock's rules on contact, the options (`SceneSwitcher.Options`: the UI's size, 50-200% over the window's own scale, applied on release, kept in My Games/Fleetwright/options.json by `AppOptions`; a capture run neither reads nor writes it), the designer, quit. Esc never quits).
 The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md L1) unless the command line asks for
 a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag), a workstation in the designer's look
 (docs/ui-language.md; drawn with the shared pieces `Ui/Pieces.cs`, colours only from `Ui/Theme.cs`): a menu bar and a resource
