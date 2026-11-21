@@ -92,7 +92,9 @@ relative to his own fleet, as with his other calls (an admiral strips his line f
 The commander allocates his top units; a force given a job is a task to its admiral, who allocates his members to the
 jobs that task needs by the same pass; a squadron's admiral stations his own ships (a lookout on a wing is a station in
 his formation, not a unit of its own: decision 1). The player's roles and tasks hold over all of it (a role set by hand is
-a job given by hand).
+a job given by hand). A force given the scouting job is the scouting: its admiral puts out no scouts ahead of it and no
+fast wing of its own, its fast squadrons keeping their places in its line (2026-11-21, below AL8). The forces are
+allocated level by level, so a force's own job is known before its members'.
 
 ### At contact
 
@@ -514,6 +516,21 @@ What it moved (`al8/tubes/`): the Bosporus's boats no longer fall out for their 
 (10.0), Russia lands 11 of 16 (13); Åland 9, Pungdo 7, Port Arthur 9 (8, 8, 8); the Jutland at 8 seeds against the same
 code before it (`jutland8-before` / `-after`): Britain 13.0 → 16.1, Germany 42.4 → 41.1, capital ships 2.9 / 6.5 → 4.0 / 6.4,
 within its spread (25-111 lost a seed).
+
+**A scouting force scouts as a whole** (2026-11-21, the user: "the Jutland doesn't start fighting; the British scouting
+group runs away"). From AL3 the Jutland's opening contact was gone: the first sighting came at 18:53, the main bodies',
+where before it had been Galatea's at B109 at 14:16. Inside the Battlecruiser Fleet's light cruisers (a force, the side's
+scouting job, on no task: it steams as placed, a screening line 37 km a squadron), its admiral's pass found all three
+squadrons strong against one another, so the two 25.5-knot ones became his line and the 28.5-knot 1st LCS his fast wing,
+sent to scout ahead of the force: Galatea, at the line's eastern end where Elbing and B109 are, turned to 315° at full
+speed. The Battlecruiser Fleet did the same, Lion's squadron its fast wing ahead of the 2nd BCS. A force given the scouting
+job is the scouting: now its admiral puts out no scouts ahead of it and no fast wing of its own (`Roles.ForceNeeds`,
+`Needs.Wing`), and its fast squadrons keep their places in its line, as every one of them did before AL3, when each was
+labelled alone. The forces are allocated level by level down (`Roles.Depth`), so a force's own job is known before its
+members'. What it moved (`allocation/scout-force/`: the panel at 8 seeds, the Jutland's seed 1916): Galatea sights B109 at
+14:16 again, and the light forces fight from 15:15. The panel gives 7 of 14 sides within 2x (8 at P11, with the stragglers
+commit since); the Jutland 23.0 v 46.8 (7.5 v 35.5), Britain in band and Germany the heavier loser in all 4 seeds; Dogger
+Bank's Britain 1.3 (0.4), its battlecruisers' fast wing now in their line.
 
 ## Questions for the user
 

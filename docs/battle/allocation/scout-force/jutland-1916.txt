@@ -1,0 +1,807 @@
+﻿Jutland: 250 ships, 2 sides, from 1916-05-31 14:00:00.000 until 1916-06-01 04:00:00.000; played by the AI on every side
+  2 sim workers, spinning 250 µs
+
+the timeline:
+  14:01 (+0:01)  the sides meet (the first encounter opens)
+  14:01 (+0:01)  Germany's commander: no contact
+  14:02 (+0:02)  Britain's commander: no contact
+  14:16 (+0:16)  Britain sights B109
+  14:17 (+0:17)  Britain's Battlecruiser Fleet light cruisers deploys into line of battle
+  14:17 (+0:17)  Britain's commander: 3rd Battlecruiser Squadron to intercept B109 (flank)
+  14:17 (+0:17)  Britain's commander: Fleet tenders to screen Grand Fleet (idle)
+  14:17 (+0:17)  Britain's commander: Attached cruisers, starboard to screen Grand Fleet (idle)
+  14:17 (+0:17)  Britain's commander: Attached cruisers, port to screen Grand Fleet (idle)
+  14:17 (+0:17)  Britain's commander: Grand Fleet to intercept B109 (contact)
+  14:17 (+0:17)  Britain's commander: 5th Battle Squadron to intercept B109 (flank)
+  14:17 (+0:17)  Britain's commander: Battlecruiser Fleet to intercept B109 (flank)
+  14:17 (+0:17)  Britain's commander: Yarmouth to scout Grand Fleet (idle)
+  14:17 (+0:17)  Britain's commander: Engadine to withdraw (idle)
+  14:17 (+0:17)  Britain's commander: Hampshire to screen Grand Fleet (idle)
+  14:18 (+0:18)  Britain's commander: battle
+  14:53 (+0:53)  Germany sights Galatea
+  14:54 (+0:54)  Germany's commander: High Seas Fleet to intercept Galatea (contact)
+  14:54 (+0:54)  Germany's commander: 1st Scouting Group to intercept Galatea (flank)
+  14:55 (+0:55)  Germany's commander: battle
+  14:56 (+0:56)  Germany's commander: B109 and B110 to screen High Seas Fleet (idle)
+  14:57 (+0:57)  Germany's commander: contact
+  15:01 (+1:01)  Britain's commander: Battlecruiser Fleet light cruisers to scout Grand Fleet (idle)
+  15:02 (+1:02)  Britain's commander: contact
+  15:03 (+1:03)  Britain's commander: 3rd Battlecruiser Squadron to intercept Seydlitz (flank)
+  15:03 (+1:03)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (flank)
+  15:03 (+1:03)  Britain's commander: Battlecruiser Fleet to intercept Seydlitz (flank)
+  15:04 (+1:04)  Britain's commander: 3rd Battlecruiser Squadron to intercept G102 (flank)
+  15:04 (+1:04)  Britain's commander: 5th Battle Squadron to intercept G102 (flank)
+  15:04 (+1:04)  Britain's commander: Battlecruiser Fleet to intercept G102 (flank)
+  15:05 (+1:05)  Britain's commander: battle
+  15:05 (+1:05)  Britain's commander: 3rd Battlecruiser Squadron to intercept G103 (flank)
+  15:05 (+1:05)  Britain's commander: 5th Battle Squadron to intercept G103 (flank)
+  15:05 (+1:05)  Britain's commander: Battlecruiser Fleet to intercept G103 (flank)
+  15:07 (+1:07)  Germany's commander: battle
+  15:08 (+1:08)  Britain's Battlecruiser Fleet light cruisers: scout in contact
+  15:08 (+1:08)  Britain's commander: 3rd Battlecruiser Squadron to intercept Derfflinger (flank)
+  15:08 (+1:08)  Britain's commander: 5th Battle Squadron to intercept Derfflinger (flank)
+  15:08 (+1:08)  Britain's commander: Battlecruiser Fleet to intercept Derfflinger (flank)
+  15:10 (+1:10)  Britain's commander: 3rd Battlecruiser Squadron to intercept Lützow (flank)
+  15:10 (+1:10)  Britain's commander: 5th Battle Squadron to intercept Lützow (flank)
+  15:10 (+1:10)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  15:11 (+1:11)  Britain's commander: 5th Battle Squadron to intercept B97 (flank)
+  15:11 (+1:11)  Britain's commander: Battlecruiser Fleet to intercept B97 (flank)
+  15:12 (+1:12)  Britain's commander: 5th Battle Squadron to intercept G101 (flank)
+  15:12 (+1:12)  Britain's commander: Battlecruiser Fleet to intercept G101 (flank)
+  15:13 (+1:13)  Britain's commander: 3rd Battlecruiser Squadron to intercept V69 (flank)
+  15:13 (+1:13)  Britain's commander: 5th Battle Squadron to intercept V69 (flank)
+  15:13 (+1:13)  Britain's commander: Battlecruiser Fleet to intercept V69 (flank)
+  15:15 (+1:15)  Germany opens fire: Derfflinger at Galatea
+  15:16 (+1:16)  Britain's commander: 3rd Battlecruiser Squadron to intercept V46 (flank)
+  15:16 (+1:16)  Britain's commander: 5th Battle Squadron to intercept V46 (flank)
+  15:16 (+1:16)  Britain's commander: Battlecruiser Fleet to intercept V46 (flank)
+  15:16 (+1:16)  Britain opens fire: Galatea at G41
+  15:17 (+1:17)  Germany's 2nd Scouting Group: scout in contact
+  15:17 (+1:17)  Britain's commander: 3rd Battlecruiser Squadron to intercept Regensburg (wing)
+  15:17 (+1:17)  Britain's commander: 5th Battle Squadron to intercept Regensburg (wing)
+  15:17 (+1:17)  Britain's commander: Battlecruiser Fleet to intercept Regensburg (wing)
+  15:17 (+1:17)  Germany's commander: High Seas Fleet to intercept Phaeton (contact)
+  15:19 (+1:19)  Britain's first hit: Galatea on G41
+  15:24 (+1:24)  Germany's first hit: G87 on Galatea
+  15:25 (+1:25)  Britain's commander: Grand Fleet to intercept Regensburg (contact)
+  15:29 (+1:29)  Germany's commander: High Seas Fleet to intercept Lion (contact)
+  15:29 (+1:29)  Germany's commander: 1st Scouting Group to intercept Lion (flank)
+  15:30 (+1:30)  Britain's commander: 3rd Battlecruiser Squadron to intercept Derfflinger (wing)
+  15:30 (+1:30)  Britain's commander: 5th Battle Squadron to intercept Derfflinger (wing)
+  15:30 (+1:30)  Britain's commander: Battlecruiser Fleet to intercept Derfflinger (wing)
+  15:31 (+1:31)  Britain's commander: 3rd Battlecruiser Squadron to intercept S51 (flank)
+  15:31 (+1:31)  Britain's commander: 5th Battle Squadron to intercept S51 (flank)
+  15:31 (+1:31)  Britain's commander: Battlecruiser Fleet to intercept S51 (flank)
+  15:31 (+1:31)  Britain's first torpedoes: Galatea, 2 at G41
+  15:33 (+1:33)  Britain's commander: 3rd Battlecruiser Squadron to intercept S34 (flank)
+  15:33 (+1:33)  Britain's commander: 5th Battle Squadron to intercept S34 (flank)
+  15:33 (+1:33)  Britain's commander: Battlecruiser Fleet to intercept S34 (flank)
+  15:34 (+1:34)  Germany's V44 falls out: too slow
+  15:34 (+1:34)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  15:34 (+1:34)  Britain's commander: 5th Battle Squadron to intercept V28 (flank)
+  15:34 (+1:34)  Britain's commander: Battlecruiser Fleet to intercept V28 (flank)
+  15:34 (+1:34)  Germany's commander: 1st Scouting Group to intercept Queen Mary (flank)
+  15:35 (+1:35)  Germany's G41 falls out: too slow
+  15:35 (+1:35)  Germany's commander: 1st Scouting Group to intercept Lion (flank)
+  15:36 (+1:36)  Germany's first torpedoes: G87, 2 at Galatea
+  15:37 (+1:37)  Britain's Battlecruiser Fleet deploys into line of battle
+  15:38 (+1:38)  Germany's commander: 1st Scouting Group to intercept Champion (flank)
+  15:40 (+1:40)  Germany's B97 falls out: too slow
+  15:40 (+1:40)  Britain's commander: 5th Battle Squadron to intercept G37 (flank)
+  15:40 (+1:40)  Britain's commander: Battlecruiser Fleet to intercept G37 (flank)
+  15:41 (+1:41)  Britain's commander: 5th Battle Squadron to intercept V28 (flank)
+  15:41 (+1:41)  Britain's commander: Battlecruiser Fleet to intercept V28 (flank)
+  15:42 (+1:42)  Britain's Galatea falls out: too slow
+  15:42 (+1:42)  Britain's commander: 5th Battle Squadron to intercept G37 (flank)
+  15:42 (+1:42)  Britain's commander: Battlecruiser Fleet to intercept G37 (flank)
+  15:43 (+1:43)  Britain's commander: 5th Battle Squadron to intercept V27 (flank)
+  15:43 (+1:43)  Britain's commander: Battlecruiser Fleet to intercept V27 (flank)
+  15:44 (+1:44)  Germany's commander: 1st Scouting Group to intercept Pelican (flank)
+  15:45 (+1:45)  Britain's commander: 5th Battle Squadron to intercept Lützow (flank)
+  15:45 (+1:45)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  15:47 (+1:47)  Britain's commander: 5th Battle Squadron to intercept V27 (flank)
+  15:47 (+1:47)  Britain's commander: Battlecruiser Fleet to intercept V27 (flank)
+  15:47 (+1:47)  Germany's commander: 1st Scouting Group to intercept Nerissa (flank)
+  15:48 (+1:48)  Germany's B98 falls out: too slow
+  15:48 (+1:48)  Germany's commander: 1st Scouting Group to intercept Pelican (flank)
+  15:55 (+1:55)  Britain's commander: 3rd Battlecruiser Squadron to intercept V27 (flank)
+  15:55 (+1:55)  LOST: Germany's B97, capsized (last hit by Phaeton)
+  15:56 (+1:56)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  15:57 (+1:57)  Britain's commander: 3rd Battlecruiser Squadron to intercept Pillau (wing)
+  15:59 (+1:59)  Germany's B112 falls out: too slow
+  15:59 (+1:59)  Britain's 3rd BCS light cruisers: scout in contact
+  16:00 (+2:00)  Britain's commander: 5th Battle Squadron to intercept Lützow (flank)
+  16:00 (+2:00)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  16:02 (+2:02)  Britain's commander: 3rd Battlecruiser Squadron to intercept Lützow (flank)
+  16:02 (+2:02)  LOST: Germany's B112, capsized (last hit by Galatea)
+  16:03 (+2:03)  Germany's S51 falls out: her main guns out
+  16:03 (+2:03)  Britain's 3rd Battlecruiser Squadron: intercept done
+  16:03 (+2:03)  Britain's commander: 3rd Battlecruiser Squadron to intercept Pillau (wing)
+  16:04 (+2:04)  Britain's commander: 3rd Battlecruiser Squadron to intercept Frankfurt (wing)
+  16:06 (+2:06)  Germany's commander: 1st Scouting Group to intercept Lizard (wing)
+  16:08 (+2:08)  Germany's commander: 1st Scouting Group to intercept Galatea (wing)
+  16:08 (+2:08)  LOST: Germany's S52, broke in two (last hit by Valiant)
+  16:09 (+2:09)  Britain's Phaeton falls out: too slow
+  16:09 (+2:09)  Germany's commander: High Seas Fleet to search (idle)
+  16:09 (+2:09)  Germany's commander: 1st Scouting Group to intercept Ophelia (line)
+  16:10 (+2:10)  Germany's V30 falls out: her steering gone
+  16:10 (+2:10)  Germany's commander: High Seas Fleet to intercept Galatea (contact)
+  16:11 (+2:11)  Germany's V28 falls out: her main guns out
+  16:11 (+2:11)  Germany's commander: High Seas Fleet to intercept Pelican (contact)
+  16:12 (+2:12)  Germany's commander: High Seas Fleet to intercept Invincible (contact)
+  16:12 (+2:12)  Germany's commander: 1st Scouting Group to intercept Termagant (line)
+  16:13 (+2:13)  Britain's commander: 5th Battle Squadron to intercept V26 (flank)
+  16:13 (+2:13)  Britain's commander: Battlecruiser Fleet to intercept V26 (flank)
+  16:14 (+2:14)  Germany's G87 falls out: her main guns out
+  16:14 (+2:14)  Britain's commander: 3rd Battlecruiser Squadron to intercept V26 (flank)
+  16:14 (+2:14)  Germany's commander: 1st Scouting Group to intercept Nicator (line)
+  16:14 (+2:14)  LOST: Germany's S34, broke in two (last hit by Malaya)
+  16:15 (+2:15)  Britain's commander: 3rd Battlecruiser Squadron to intercept Frankfurt (wing)
+  16:15 (+2:15)  Britain's commander: 5th Battle Squadron to intercept G87 (flank)
+  16:15 (+2:15)  Britain's commander: Battlecruiser Fleet to intercept G87 (flank)
+  16:15 (+2:15)  Germany's commander: 1st Scouting Group to intercept Queen Mary (line)
+  16:16 (+2:16)  Germany's V29 falls out: too slow
+  16:16 (+2:16)  Germany's commander: 1st Scouting Group to intercept Ariel (line)
+  16:17 (+2:17)  Britain's commander: 3rd Battlecruiser Squadron to intercept Wiesbaden (wing)
+  16:17 (+2:17)  Britain's commander: 5th Battle Squadron to intercept Pillau (flank)
+  16:17 (+2:17)  Britain's commander: Battlecruiser Fleet to intercept Pillau (flank)
+  16:17 (+2:17)  Germany's commander: 1st Scouting Group to intercept Lapwing (line)
+  16:19 (+2:19)  Germany's Elbing falls out: her main guns out
+  16:19 (+2:19)  Britain's commander: 5th Battle Squadron to intercept Frankfurt (flank)
+  16:19 (+2:19)  Britain's commander: Battlecruiser Fleet to intercept Frankfurt (flank)
+  16:19 (+2:19)  LOST: Germany's V30, broke in two (last hit by Barham)
+  16:20 (+2:20)  Britain's commander: Battlecruiser Fleet to intercept V28 (flank)
+  16:22 (+2:22)  Britain's commander: Battlecruiser Fleet to intercept S51 (flank)
+  16:22 (+2:22)  Germany's commander: High Seas Fleet to search (idle)
+  16:23 (+2:23)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  16:23 (+2:23)  Germany's commander: High Seas Fleet to intercept Ophelia (contact)
+  16:25 (+2:25)  Britain's commander: Battlecruiser Fleet to intercept S51 (flank)
+  16:25 (+2:25)  Germany's commander: 1st Scouting Group to intercept Barham (line)
+  16:26 (+2:26)  Britain's commander: 3rd Battlecruiser Squadron to intercept B109 (wing)
+  16:26 (+2:26)  Britain's commander: Battlecruiser Fleet to intercept Wiesbaden (flank)
+  16:26 (+2:26)  Germany's commander: High Seas Fleet to intercept Invincible (contact)
+  16:27 (+2:27)  Britain's commander: Battlecruiser Fleet to intercept S51 (flank)
+  16:29 (+2:29)  Britain's commander: 3rd Battlecruiser Squadron to intercept Pillau (wing)
+  16:29 (+2:29)  Britain's commander: Battlecruiser Fleet to intercept Wiesbaden (flank)
+  16:29 (+2:29)  Germany's commander: 1st Scouting Group to intercept Invincible (wing)
+  16:30 (+2:30)  Germany's Frankfurt falls out: too slow
+  16:30 (+2:30)  Germany's commander: High Seas Fleet to intercept Warspite (contact)
+  16:30 (+2:30)  Germany's IX Flotilla (5 ships) regroups into VI Flotilla
+  16:31 (+2:31)  Germany's commander: 1st Scouting Group to intercept Champion (wing)
+  16:32 (+2:32)  Germany's V26 falls out: her main guns out
+  16:32 (+2:32)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  16:32 (+2:32)  Germany's commander: High Seas Fleet to intercept Queen Mary (contact)
+  16:32 (+2:32)  Germany's commander: 1st Scouting Group to intercept Lapwing (flank)
+  16:33 (+2:33)  Germany's G104 falls out: her main guns out
+  16:33 (+2:33)  Germany's VI Flotilla II II: intercept done
+  16:33 (+2:33)  Germany's VI Flotilla I II: intercept done
+  16:33 (+2:33)  Germany's II Flotilla: join done (joined)
+  16:33 (+2:33)  Britain's commander: Grand Fleet to intercept Lützow (flank)
+  16:33 (+2:33)  Britain's commander: 5th Battle Squadron to search (idle)
+  16:34 (+2:34)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  16:37 (+2:37)  Britain's commander: 3rd Battlecruiser Squadron to intercept Pillau (wing)
+  16:37 (+2:37)  Britain's commander: Grand Fleet to intercept S51 (flank)
+  16:37 (+2:37)  Britain's commander: Battlecruiser Fleet to intercept S51 (flank)
+  16:37 (+2:37)  Germany's commander: 1st Scouting Group to intercept Warspite (wing)
+  16:40 (+2:40)  Britain's commander: Grand Fleet to intercept G41 (flank)
+  16:40 (+2:40)  Britain's commander: Battlecruiser Fleet to intercept G41 (flank)
+  16:40 (+2:40)  Germany's commander: 1st Scouting Group to intercept Indefatigable (wing)
+  16:45 (+2:45)  Germany's Pillau falls out: her main guns out
+  16:45 (+2:45)  Germany's Wiesbaden falls out: her main guns out
+  16:46 (+2:46)  Britain's commander: 3rd Battlecruiser Squadron to intercept Frankfurt (wing)
+  16:46 (+2:46)  Britain's 1st Light Cruiser Squadron (1 ship) regroups into 2nd Light Cruiser Squadron
+  16:47 (+2:47)  Britain's Inconstant falls out: her main guns out
+  16:48 (+2:48)  Britain's commander: Grand Fleet to intercept B111 (flank)
+  16:48 (+2:48)  Britain's commander: Battlecruiser Fleet to intercept B111 (flank)
+  16:49 (+2:49)  Britain's commander: Grand Fleet to intercept G103 (flank)
+  16:49 (+2:49)  Britain's commander: Battlecruiser Fleet to intercept G103 (flank)
+  16:49 (+2:49)  LOST: Germany's V29, capsized (last hit by Valiant)
+  16:50 (+2:50)  Germany's VI Flotilla II: intercept done
+  16:52 (+2:52)  Britain's Valiant falls out: too slow
+  16:52 (+2:52)  Britain's Yarmouth: scout in contact
+  16:52 (+2:52)  Britain's commander: 5th Battle Squadron to intercept G103 (flank)
+  16:52 (+2:52)  Germany's commander: 1st Scouting Group to intercept Nottingham (wing)
+  16:52 (+2:52)  LOST: Germany's G87, broke in two (last hit by Malaya)
+  16:53 (+2:53)  Britain's commander: Grand Fleet to intercept S50 (line)
+  16:53 (+2:53)  Britain's commander: 5th Battle Squadron to intercept S50 (flank)
+  16:53 (+2:53)  Britain's commander: Battlecruiser Fleet to intercept S50 (flank)
+  16:54 (+2:54)  Britain's commander: Grand Fleet to intercept S35 (line)
+  16:54 (+2:54)  Britain's commander: 5th Battle Squadron to intercept S35 (flank)
+  16:54 (+2:54)  Britain's commander: Battlecruiser Fleet to intercept S35 (flank)
+  16:54 (+2:54)  LOST: Germany's B98, broke in two (last hit by Valiant)
+  16:55 (+2:55)  Germany's commander: 1st Scouting Group to intercept Cordelia (wing)
+  16:56 (+2:56)  Germany's S36 falls out: too slow
+  16:56 (+2:56)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  16:56 (+2:56)  Britain's commander: Grand Fleet to intercept V46 (line)
+  16:56 (+2:56)  Britain's commander: 5th Battle Squadron to intercept V46 (flank)
+  16:56 (+2:56)  Britain's commander: Battlecruiser Fleet to intercept V46 (flank)
+  16:57 (+2:57)  Britain's Cordelia falls out: her steering gone
+  16:57 (+2:57)  Britain's commander: Grand Fleet to intercept S35 (line)
+  16:57 (+2:57)  Britain's commander: 5th Battle Squadron to intercept S35 (flank)
+  16:57 (+2:57)  Britain's commander: Battlecruiser Fleet to intercept S35 (flank)
+  16:59 (+2:59)  Germany's G86 falls out: too slow
+  16:59 (+2:59)  LOST: Britain's Cordelia, broke in two (last hit by G37)
+  17:00 (+3:00)  Germany's VI Flotilla II deploys into line of battle
+  17:00 (+3:00)  Britain's commander: Grand Fleet to intercept V27 (line)
+  17:00 (+3:00)  Britain's commander: 5th Battle Squadron to intercept V27 (flank)
+  17:00 (+3:00)  Britain's commander: Battlecruiser Fleet to intercept V27 (flank)
+  17:00 (+3:00)  Germany's commander: 1st Scouting Group to intercept Birmingham (wing)
+  17:00 (+3:00)  Germany's Wiesbaden: SCUTTLED, her men ordered off
+  17:02 (+3:02)  Britain's commander: 5th Battle Squadron to intercept Elbing (wing)
+  17:03 (+3:03)  Britain's commander: Grand Fleet to intercept G37 (line)
+  17:03 (+3:03)  Britain's commander: Battlecruiser Fleet to intercept G37 (flank)
+  17:04 (+3:04)  LOST: Germany's Frankfurt, broke in two (last hit by Malaya)
+  17:04 (+3:04)  Britain's Inconstant: ABANDONED
+  17:05 (+3:05)  Britain's commander: Grand Fleet to intercept S50 (line)
+  17:05 (+3:05)  Britain's commander: Battlecruiser Fleet to intercept S50 (flank)
+  17:06 (+3:06)  Britain's commander: Grand Fleet to intercept G103 (line)
+  17:06 (+3:06)  Britain's commander: Battlecruiser Fleet to intercept G103 (flank)
+  17:06 (+3:06)  Germany's commander: High Seas Fleet to search (idle)
+  17:06 (+3:06)  Germany's commander: 1st Scouting Group to intercept Landrail (line)
+  17:07 (+3:07)  Britain's commander: Grand Fleet to intercept B111 (line)
+  17:07 (+3:07)  Britain's commander: Battlecruiser Fleet to intercept B111 (flank)
+  17:07 (+3:07)  Germany's commander: High Seas Fleet to intercept Barham (contact)
+  17:07 (+3:07)  Germany's commander: 1st Scouting Group to intercept Birmingham (wing)
+  17:09 (+3:09)  LOST: Germany's Wiesbaden, capsized (last hit by Chester)
+  17:10 (+3:10)  Germany's commander: 1st Scouting Group to intercept Indomitable (wing)
+  17:11 (+3:11)  Britain's commander: 3rd Battlecruiser Squadron to intercept V73 (wing)
+  17:12 (+3:12)  Germany's 4th Scouting Group: scout in contact
+  17:13 (+3:13)  Britain's commander: 3rd Battlecruiser Squadron to intercept Stuttgart (wing)
+  17:13 (+3:13)  Britain's commander: 5th Battle Squadron to intercept Stuttgart (wing)
+  17:14 (+3:14)  Britain's commander: 3rd Battlecruiser Squadron to intercept V73 (wing)
+  17:15 (+3:15)  Britain's commander: 5th Battle Squadron to intercept V73 (wing)
+  17:17 (+3:17)  LOST: Britain's Inconstant, capsized (last hit by Seydlitz)
+  17:18 (+3:18)  Germany's B109 falls out: her main guns out
+  17:19 (+3:19)  Germany's B110 falls out: too slow
+  17:22 (+3:22)  Britain's Phaeton: ABANDONED
+  17:23 (+3:23)  Britain's commander: Grand Fleet to intercept G103 (line)
+  17:23 (+3:23)  Britain's commander: Battlecruiser Fleet to intercept G103 (flank)
+  17:24 (+3:24)  Britain's commander: Grand Fleet to intercept S36 (line)
+  17:24 (+3:24)  Britain's commander: Battlecruiser Fleet to intercept S36 (flank)
+  17:24 (+3:24)  LOST: Germany's S36, capsized (last hit by Phaeton)
+  17:25 (+3:25)  Britain's commander: 3rd Battlecruiser Squadron to intercept Stettin (flank)
+  17:25 (+3:25)  Britain's commander: Grand Fleet to intercept Stettin (line)
+  17:25 (+3:25)  Britain's commander: 5th Battle Squadron to intercept Stettin (flank)
+  17:25 (+3:25)  Britain's commander: Battlecruiser Fleet to intercept Seydlitz (wing)
+  17:26 (+3:26)  Germany's G103 falls out: too slow
+  17:26 (+3:26)  LOST: Germany's G41, capsized (last hit by Canterbury)
+  17:27 (+3:27)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  17:29 (+3:29)  Britain's commander: 3rd Battlecruiser Squadron to intercept Lützow (wing)
+  17:31 (+3:31)  Germany's B110: SCUTTLED, her men ordered off
+  17:33 (+3:33)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  17:34 (+3:34)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  17:34 (+3:34)  Britain's commander: 5th Battle Squadron to intercept Elbing (wing)
+  17:35 (+3:35)  Britain's commander: 3rd Battlecruiser Squadron to intercept Kronprinz (wing)
+  17:35 (+3:35)  Germany's commander: 1st Scouting Group to intercept Valiant (wing)
+  17:36 (+3:36)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  17:36 (+3:36)  Britain's commander: Battlecruiser Fleet to intercept Stettin (flank)
+  17:36 (+3:36)  Germany's commander: 1st Scouting Group to intercept Indomitable (wing)
+  17:36 (+3:36)  LOST: Germany's B110, capsized (last hit by Invincible)
+  17:37 (+3:37)  Britain's commander: Grand Fleet to intercept G10 (line)
+  17:37 (+3:37)  Britain's commander: Battlecruiser Fleet to intercept G10 (flank)
+  17:37 (+3:37)  Germany's commander: Scouting torpedo boats to attack (battle)
+  17:38 (+3:38)  Germany's Scouting torpedo boats: attack can't (beatenoff)
+  17:38 (+3:38)  Britain's commander: 3rd Battlecruiser Squadron to intercept G10 (flank)
+  17:38 (+3:38)  Britain's commander: 5th Battle Squadron to intercept G10 (flank)
+  17:39 (+3:39)  Britain's commander: 3rd Battlecruiser Squadron to intercept München (wing)
+  17:39 (+3:39)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  17:39 (+3:39)  Britain's commander: 5th Battle Squadron to intercept München (wing)
+  17:39 (+3:39)  Britain's commander: Battlecruiser Fleet to intercept München (wing)
+  17:41 (+3:41)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  17:41 (+3:41)  Britain's commander: Grand Fleet to intercept V189 (line)
+  17:41 (+3:41)  Britain's commander: 5th Battle Squadron to intercept V189 (flank)
+  17:41 (+3:41)  Britain's commander: Battlecruiser Fleet to intercept V189 (flank)
+  17:46 (+3:46)  Britain's commander: 3rd Battlecruiser Squadron to intercept Rostock (wing)
+  17:46 (+3:46)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  17:46 (+3:46)  Britain's commander: 5th Battle Squadron to intercept Rostock (wing)
+  17:46 (+3:46)  Britain's commander: Battlecruiser Fleet to intercept Rostock (wing)
+  17:47 (+3:47)  Britain's commander: Grand Fleet to intercept Regensburg (line)
+  17:48 (+3:48)  Britain's commander: Grand Fleet to intercept G102 (line)
+  17:48 (+3:48)  LOST: Germany's G86, broke in two (last hit by Lapwing)
+  17:49 (+3:49)  Britain's Chester falls out: her main guns out
+  17:49 (+3:49)  Britain's commander: Grand Fleet to intercept Derfflinger (line)
+  17:50 (+3:50)  Britain's commander: 3rd Battlecruiser Squadron to intercept Lützow (wing)
+  17:50 (+3:50)  Britain's commander: Grand Fleet to intercept V2 (line)
+  17:50 (+3:50)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  17:50 (+3:50)  Britain's commander: Battlecruiser Fleet to intercept V2 (flank)
+  17:51 (+3:51)  Britain's Cruiser screen: scout in contact
+  17:51 (+3:51)  Britain's commander: 3rd Battlecruiser Squadron to intercept Elbing (wing)
+  17:51 (+3:51)  Britain's commander: Grand Fleet to intercept V45 (line)
+  17:51 (+3:51)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  17:51 (+3:51)  Britain's commander: Battlecruiser Fleet to intercept V45 (flank)
+  17:53 (+3:53)  Britain's commander: 3rd Battlecruiser Squadron to intercept München (wing)
+  17:53 (+3:53)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  17:53 (+3:53)  Britain's commander: Battlecruiser Fleet to intercept Lützow (flank)
+  17:56 (+3:56)  Germany's G102 falls out: too slow
+  17:56 (+3:56)  Germany's Regensburg: screen can't (gone)
+  17:56 (+3:56)  Britain's commander: Grand Fleet to intercept V45 (line)
+  17:56 (+3:56)  Britain's commander: Battlecruiser Fleet to intercept V45 (flank)
+  17:57 (+3:57)  Britain's commander: Grand Fleet to intercept G103 (line)
+  17:57 (+3:57)  Britain's commander: Battlecruiser Fleet to intercept G103 (flank)
+  17:57 (+3:57)  LOST: Britain's Phaeton, foundered (last hit by G102)
+  17:58 (+3:58)  Germany's B111 falls out: too slow
+  17:58 (+3:58)  Germany's G101 falls out: too slow
+  18:00 (+4:00)  Britain's Termagant falls out: too slow
+  18:00 (+4:00)  Britain's commander: Grand Fleet to intercept V189 (line)
+  18:00 (+4:00)  Britain's commander: Battlecruiser Fleet to intercept V189 (flank)
+  18:00 (+4:00)  LOST: Germany's B111, broke in two (last hit by Morris)
+  18:03 (+4:03)  Britain's commander: Grand Fleet to intercept G101 (line)
+  18:03 (+4:03)  Britain's commander: 5th Battle Squadron to intercept München (wing)
+  18:03 (+4:03)  Britain's commander: Battlecruiser Fleet to intercept München (wing)
+  18:04 (+4:04)  Britain's commander: Grand Fleet to intercept G102 (line)
+  18:05 (+4:05)  Britain's commander: Grand Fleet to intercept G11 (line)
+  18:06 (+4:06)  Britain's Morris falls out: too slow
+  18:06 (+4:06)  Britain's commander: Grand Fleet to intercept G103 (line)
+  18:06 (+4:06)  LOST: Germany's G101, capsized (last hit by Morris)
+  18:07 (+4:07)  Britain's commander: 3rd Battlecruiser Squadron to intercept Friedrich der Grosse (wing)
+  18:08 (+4:08)  Germany's Derfflinger falls out: her main guns out
+  18:08 (+4:08)  Britain's commander: Grand Fleet to intercept G11 (line)
+  18:08 (+4:08)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  18:08 (+4:08)  Britain's commander: Battlecruiser Fleet to intercept G11 (flank)
+  18:09 (+4:09)  Britain's commander: Grand Fleet to intercept V2 (line)
+  18:09 (+4:09)  Britain's commander: Battlecruiser Fleet to intercept V2 (flank)
+  18:10 (+4:10)  Britain's commander: Grand Fleet to intercept S20 (line)
+  18:10 (+4:10)  Britain's commander: Battlecruiser Fleet to intercept S20 (flank)
+  18:11 (+4:11)  Britain's commander: Grand Fleet to intercept Moltke (line)
+  18:11 (+4:11)  Britain's commander: Battlecruiser Fleet to intercept Moltke (flank)
+  18:12 (+4:12)  Britain's commander: Grand Fleet to intercept G102 (line)
+  18:12 (+4:12)  Britain's commander: 5th Battle Squadron to intercept Friedrich der Grosse (wing)
+  18:12 (+4:12)  Britain's commander: Battlecruiser Fleet to intercept Friedrich der Grosse (wing)
+  18:14 (+4:14)  Germany's S53 falls out: too slow
+  18:15 (+4:15)  Britain's commander: Grand Fleet to intercept S24 (line)
+  18:15 (+4:15)  Germany's commander: 1st Scouting Group to intercept Black Prince (wing)
+  18:16 (+4:16)  Britain's Laurel falls out: her main guns out
+  18:16 (+4:16)  Britain's commander: Grand Fleet to intercept G11 (line)
+  18:17 (+4:17)  Germany's commander: 1st Scouting Group to intercept Duke of Edinburgh (wing)
+  18:18 (+4:18)  Britain's commander: Grand Fleet to intercept Seydlitz (line)
+  18:18 (+4:18)  LOST: Germany's G102, capsized (last hit by Turbulent)
+  18:19 (+4:19)  Britain's commander: Grand Fleet to intercept S20 (line)
+  18:19 (+4:19)  Germany's commander: 1st Scouting Group to intercept Indomitable (wing)
+  18:20 (+4:20)  Britain's commander: Grand Fleet to intercept S24 (line)
+  18:21 (+4:21)  Britain's commander: Grand Fleet to intercept Seydlitz (line)
+  18:22 (+4:22)  Britain's commander: Grand Fleet to intercept G11 (line)
+  18:23 (+4:23)  Germany's V73 falls out: too slow
+  18:23 (+4:23)  Britain's commander: Grand Fleet to intercept V73 (line)
+  18:24 (+4:24)  Britain's commander: Grand Fleet to intercept S53 (line)
+  18:25 (+4:25)  Britain's commander: 5th Battle Squadron to intercept München (wing)
+  18:26 (+4:26)  Britain's commander: 3rd Battlecruiser Squadron to intercept München (wing)
+  18:29 (+4:29)  Britain's Nerissa falls out: her main guns out
+  18:30 (+4:30)  Britain's Nottingham falls out: too slow
+  18:30 (+4:30)  Britain's Nicator falls out: too slow
+  18:30 (+4:30)  Germany's G11 falls out: her main guns out
+  18:34 (+4:34)  Britain's Southampton falls out: her main guns out
+  18:34 (+4:34)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  18:37 (+4:37)  Britain's Champion falls out: her main guns out
+  18:40 (+4:40)  Britain's commander: 3rd Battlecruiser Squadron to intercept Hamburg (wing)
+  18:40 (+4:40)  Britain's commander: 5th Battle Squadron to intercept Hamburg (wing)
+  18:42 (+4:42)  Britain's Liberty falls out: her main guns out
+  18:42 (+4:42)  Germany's V3 falls out: her main guns out
+  18:43 (+4:43)  Britain's commander: Grand Fleet to intercept S24 (line)
+  18:45 (+4:45)  Britain's Grand Fleet deploys into line of battle
+  18:45 (+4:45)  Germany's VI Flotilla: screen can't (gone)
+  18:45 (+4:45)  Britain's commander: Grand Fleet to intercept Derfflinger (line)
+  18:47 (+4:47)  Germany's V5 falls out: her main guns out
+  18:49 (+4:49)  Germany's S16 falls out: her steering gone
+  18:50 (+4:50)  Britain's Pelican falls out: her main guns out
+  18:50 (+4:50)  Germany's S17 falls out: her main guns out
+  18:50 (+4:50)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  18:51 (+4:51)  Britain's commander: 5th Battle Squadron to intercept Hamburg (wing)
+  18:53 (+4:53)  Germany's G7 falls out: her main guns out
+  18:53 (+4:53)  Germany's V6 falls out: her main guns out
+  18:53 (+4:53)  Germany's commander: Battle fleet torpedo boats to attack (battle)
+  18:54 (+4:54)  Germany's G88 falls out: her steering gone
+  18:54 (+4:54)  Germany's Battle fleet torpedo boats: attack can't (beatenoff)
+  18:56 (+4:56)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  18:56 (+4:56)  Germany's commander: High Seas Fleet to search (idle)
+  18:56 (+4:56)  Germany's commander: 1st Scouting Group to intercept Champion (line)
+  18:57 (+4:57)  Germany's V71 falls out: too slow
+  18:58 (+4:58)  Germany's S23 falls out: too slow
+  19:00 (+5:00)  Germany's S18 falls out: too slow
+  19:00 (+5:00)  Germany's Rostock: screen can't (gone)
+  19:00 (+5:00)  Britain's commander: Battlecruiser Fleet to intercept Thüringen (wing)
+  19:01 (+5:01)  Britain's commander: Battlecruiser Fleet to intercept Hamburg (wing)
+  19:01 (+5:01)  Germany's commander: 1st Scouting Group to intercept Boadicea (line)
+  19:02 (+5:02)  Britain's commander: Grand Fleet to intercept Moltke (line)
+  19:03 (+5:03)  Britain's commander: 3rd Battlecruiser Squadron to intercept Thüringen (wing)
+  19:03 (+5:03)  Britain's commander: Grand Fleet to intercept Lützow (line)
+  19:04 (+5:04)  Britain's commander: Grand Fleet to intercept V5 (line)
+  19:07 (+5:07)  Britain's commander: Grand Fleet to intercept Seydlitz (line)
+  19:07 (+5:07)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  19:07 (+5:07)  Britain's commander: Battlecruiser Fleet to intercept Thüringen (wing)
+  19:10 (+5:10)  Britain's commander: Grand Fleet to intercept Rostock (line)
+  19:10 (+5:10)  Germany's commander: 1st Scouting Group to intercept Pelican (line)
+  19:10 (+5:10)  LOST: Germany's V71, broke in two (last hit by Duke of Edinburgh)
+  19:11 (+5:11)  Britain's commander: Grand Fleet to intercept V73 (line)
+  19:11 (+5:11)  Britain's commander: 5th Battle Squadron to intercept Hamburg (wing)
+  19:12 (+5:12)  Germany's commander: 1st Scouting Group to intercept Indomitable (wing)
+  19:13 (+5:13)  Britain's commander: Grand Fleet to intercept G88 (line)
+  19:14 (+5:14)  Britain's Lapwing falls out: her main guns out
+  19:14 (+5:14)  Britain's commander: Grand Fleet to intercept S24 (line)
+  19:14 (+5:14)  Britain's commander: Battlecruiser Fleet to intercept Hamburg (wing)
+  19:14 (+5:14)  Germany's Pillau: SCUTTLED, her men ordered off
+  19:15 (+5:15)  Britain's Onslow falls out: her steering gone
+  19:15 (+5:15)  Germany's S24 falls out: her main guns out
+  19:15 (+5:15)  Britain's commander: Grand Fleet to intercept V73 (line)
+  19:15 (+5:15)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  19:15 (+5:15)  Britain's commander: Battlecruiser Fleet to intercept V73 (flank)
+  19:16 (+5:16)  Britain's commander: 5th Battle Squadron to intercept Derfflinger (wing)
+  19:16 (+5:16)  Britain's commander: Battlecruiser Fleet to intercept Derfflinger (wing)
+  19:19 (+5:19)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  19:19 (+5:19)  Britain's commander: Battlecruiser Fleet to intercept Lützow (wing)
+  19:20 (+5:20)  Britain's commander: 3rd Battlecruiser Squadron to intercept Friedrich der Grosse (flank)
+  19:20 (+5:20)  Britain's commander: Grand Fleet to intercept Friedrich der Grosse (line)
+  19:20 (+5:20)  Britain's commander: Battlecruiser Fleet to intercept Seydlitz (wing)
+  19:23 (+5:23)  Germany's S32 falls out: her main guns out
+  19:23 (+5:23)  Britain's commander: Grand Fleet to intercept König (line)
+  19:23 (+5:23)  Britain's commander: Battlecruiser Fleet to intercept König (flank)
+  19:23 (+5:23)  Germany's commander: 1st Scouting Group to intercept Morris (line)
+  19:24 (+5:24)  Britain's Turbulent falls out: her main guns out
+  19:24 (+5:24)  Britain's commander: Battlecruiser Fleet to intercept Lützow (wing)
+  19:24 (+5:24)  Germany's commander: 1st Scouting Group to intercept Turbulent (line)
+  19:25 (+5:25)  Britain's commander: Grand Fleet to intercept V6 (line)
+  19:26 (+5:26)  Germany's commander: 1st Scouting Group to intercept Moresby (line)
+  19:27 (+5:27)  LOST: Germany's G7, capsized (last hit by Black Prince)
+  19:27 (+5:27)  Germany's S18: ABANDONED
+  19:27 (+5:27)  LOST: Germany's Pillau, capsized (last hit by Calliope)
+  19:28 (+5:28)  Germany's commander: 1st Scouting Group to intercept Champion (wing)
+  19:29 (+5:29)  Germany's commander: 1st Scouting Group to intercept Defence (wing)
+  19:30 (+5:30)  LOST: Germany's V2, broke in two (last hit by Erin)
+  19:32 (+5:32)  Germany's G42 falls out: her steering gone
+  19:32 (+5:32)  Germany's G8 falls out: too slow
+  19:33 (+5:33)  Germany's commander: 4th Scouting Group to withdraw (outmatched)
+  19:33 (+5:33)  Germany's commander: High Seas Fleet to withdraw (outmatched)
+  19:33 (+5:33)  Germany's commander: 1st Scouting Group to withdraw (outmatched)
+  19:33 (+5:33)  Germany's commander: V2 to withdraw (outmatched)
+  19:33 (+5:33)  Germany's commander: S18 to withdraw (outmatched)
+  19:34 (+5:34)  Germany's G38 falls out: her main guns out
+  19:34 (+5:34)  Germany's V4 falls out: too slow
+  19:34 (+5:34)  Germany's V189 falls out: too slow
+  19:34 (+5:34)  Germany's VI Flotilla I II: scout in contact
+  19:34 (+5:34)  Germany's commander: retiring (outmatched)
+  19:35 (+5:35)  Britain's Duke of Edinburgh falls out: her steering gone
+  19:35 (+5:35)  Germany's S54 falls out: listing
+  19:35 (+5:35)  Germany's G9 falls out: too slow
+  19:35 (+5:35)  Germany's S15 falls out: too slow
+  19:35 (+5:35)  Germany's V Flotilla: attack can't (beatenoff)
+  19:35 (+5:35)  Germany's III Flotilla: attack done (fired)
+  19:36 (+5:36)  Germany's Fleet flagship: scout in contact
+  19:37 (+5:37)  Germany's G39 falls out: her main guns out
+  19:37 (+5:37)  Germany's G40 falls out: too slow
+  19:38 (+5:38)  Britain's Nestor falls out: too slow
+  19:38 (+5:38)  Germany's S19 falls out: her main guns out
+  19:38 (+5:38)  Germany's VII Flotilla: join can't (gone)
+  19:38 (+5:38)  Britain's 4th Light Cruiser Squadron: scout in contact
+  19:40 (+5:40)  LOST: Germany's G40, capsized (last hit by Nomad)
+  19:42 (+5:42)  Germany's V48 falls out: too slow
+  19:42 (+5:42)  Germany's VI Flotilla II: scout in contact
+  19:42 (+5:42)  Germany's S54: ABANDONED
+  19:43 (+5:43)  Germany's commander: S54 to withdraw (outmatched)
+  19:43 (+5:43)  LOST: Germany's V48, capsized (last hit by Fearless)
+  19:45 (+5:45)  Britain's 9th and 10th Flotillas (3 ships) regroups into 13th Flotilla
+  19:45 (+5:45)  LOST: Germany's G8, broke in two (last hit by New Zealand)
+  19:45 (+5:45)  LOST: Germany's S32, capsized (last hit by Duke of Edinburgh)
+  19:48 (+5:48)  Britain's Landrail falls out: too slow
+  19:48 (+5:48)  Britain's Liberty: ABANDONED
+  19:49 (+5:49)  Britain's commander: Liberty to join Grand Fleet (idle)
+  19:50 (+5:50)  Britain's commander: 3rd Battlecruiser Squadron to intercept Lützow (wing)
+  19:50 (+5:50)  Germany's S16: SCUTTLED, her men ordered off
+  19:51 (+5:51)  Britain's 2nd Division: intercept done
+  19:51 (+5:51)  Britain's commander: 3rd Battlecruiser Squadron to intercept Ostfriesland (flank)
+  19:51 (+5:51)  Britain's commander: Grand Fleet to intercept Ostfriesland (line)
+  19:51 (+5:51)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  19:51 (+5:51)  Germany's commander: S16 to withdraw (outmatched)
+  19:51 (+5:51)  Germany's V4: SCUTTLED, her men ordered off
+  19:51 (+5:51)  LOST: Germany's V4, capsized (last hit by Barham)
+  19:52 (+5:52)  Germany's commander: V4 to withdraw (outmatched)
+  19:52 (+5:52)  LOST: Germany's G9, broke in two (last hit by Moorsom)
+  19:52 (+5:52)  LOST: Germany's G38, foundered (last hit by Moresby)
+  19:54 (+5:54)  LOST: Germany's G88, capsized (last hit by Petard)
+  19:55 (+5:55)  Germany's S20 falls out: her main guns out
+  19:56 (+5:56)  Germany's V1 falls out: too slow
+  19:57 (+5:57)  Germany's G10 falls out: too slow
+  19:57 (+5:57)  Britain's commander: 3rd Battlecruiser Squadron to intercept Prinzregent Luitpold (wing)
+  19:57 (+5:57)  Britain's commander: 12th Flotilla to attack (battle)
+  19:57 (+5:57)  Britain's commander: 11th Flotilla to attack (battle)
+  19:58 (+5:58)  Britain's Obedient falls out: her steering gone
+  19:59 (+5:59)  Britain's Black Prince falls out: her main guns out
+  19:59 (+5:59)  LOST: Germany's S18, capsized (last hit by Defence)
+  20:01 (+6:01)  Britain's Marksman falls out: her steering gone
+  20:01 (+6:01)  Germany's Friedrich der Grosse falls out: her main guns out
+  20:01 (+6:01)  Germany's II Squadron I: scout in contact
+  20:01 (+6:01)  Britain's commander: 4th Flotilla to attack (battle)
+  20:01 (+6:01)  Germany's Derfflinger: ABANDONED
+  20:01 (+6:01)  LOST: Germany's Derfflinger, capsized (last hit by Lion)
+  20:02 (+6:02)  Britain's commander: Grand Fleet to intercept Schlesien (line)
+  20:02 (+6:02)  Britain's commander: Liberty to intercept S16 (contact)
+  20:02 (+6:02)  Germany's commander: Derfflinger to withdraw (outmatched)
+  20:04 (+6:04)  LOST: Germany's S16, foundered (last hit by Obdurate)
+  20:05 (+6:05)  Britain's commander: Grand Fleet to intercept Pommern (line)
+  20:05 (+6:05)  LOST: Germany's S23, capsized (last hit by Defence)
+  20:06 (+6:06)  Britain's commander: Fleet tenders to attack (battle)
+  20:06 (+6:06)  Britain's commander: Grand Fleet to intercept Schlesien (line)
+  20:07 (+6:07)  Britain's commander: Grand Fleet to intercept Pommern (line)
+  20:08 (+6:08)  Britain's Maenad falls out: her main guns out
+  20:08 (+6:08)  Britain's commander: Grand Fleet to intercept Schlesien (line)
+  20:09 (+6:09)  Britain's Duke of Edinburgh: SCUTTLED, her men ordered off
+  20:10 (+6:10)  Britain's commander: 3rd Battlecruiser Squadron to intercept Helgoland (wing)
+  20:10 (+6:10)  Britain's commander: Grand Fleet to intercept Seydlitz (line)
+  20:10 (+6:10)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  20:10 (+6:10)  LOST: Germany's S54, capsized (last hit by Defence)
+  20:11 (+6:11)  Britain's Moon falls out: her main guns out
+  20:11 (+6:11)  Britain's 2nd Light Cruiser Squadron: join can't (gone)
+  20:12 (+6:12)  Britain's Ajax falls out: her steering gone
+  20:13 (+6:13)  Britain's Mystic falls out: too slow
+  20:13 (+6:13)  Germany's Thüringen falls out: her main guns out
+  20:14 (+6:14)  Germany's G39: ABANDONED
+  20:14 (+6:14)  Germany's G10: SCUTTLED, her men ordered off
+  20:15 (+6:15)  Germany's commander: G39 to withdraw (outmatched)
+  20:15 (+6:15)  Germany's commander: G10 to withdraw (outmatched)
+  20:17 (+6:17)  Britain's Ossory falls out: her steering gone
+  20:17 (+6:17)  Britain's commander: Grand Fleet to intercept König (line)
+  20:17 (+6:17)  Britain's commander: Battlecruiser Fleet to intercept Helgoland (wing)
+  20:17 (+6:17)  Britain's 3rd BCS light cruisers (1 ship) regroups into Attached cruisers, port
+  20:18 (+6:18)  Britain's Nomad falls out: too slow
+  20:18 (+6:18)  LOST: Germany's G10, capsized (last hit by Defence)
+  20:19 (+6:19)  LOST: Germany's G42, broke in two (last hit by Warspite)
+  20:20 (+6:20)  LOST: Britain's Duke of Edinburgh, foundered (last hit by V1)
+  20:22 (+6:22)  Britain's Canterbury falls out: her steering gone
+  20:22 (+6:22)  Germany's V44: ABANDONED
+  20:23 (+6:23)  Britain's commander: 3rd Battlecruiser Squadron to intercept Thüringen (flank)
+  20:23 (+6:23)  Britain's commander: Grand Fleet to intercept Thüringen (line)
+  20:23 (+6:23)  Britain's commander: 5th Battle Squadron to intercept Seydlitz (wing)
+  20:23 (+6:23)  Britain's commander: Battlecruiser Fleet to intercept Thüringen (flank)
+  20:23 (+6:23)  Germany's commander: V44 to withdraw (outmatched)
+  20:25 (+6:25)  Britain's 1st Battle Squadron: intercept done
+  20:26 (+6:26)  Britain's Morning Star falls out: her main guns out
+  20:26 (+6:26)  LOST: Germany's V1, capsized (last hit by Defence)
+  20:28 (+6:28)  Britain's Kempenfelt falls out: her main guns out
+  20:29 (+6:29)  Britain's Mystic: ABANDONED
+  20:31 (+6:31)  LOST: Britain's Mystic, capsized (last hit by Rheinland)
+  20:32 (+6:32)  Germany's Hessen falls out: too slow
+  20:32 (+6:32)  Germany's II Squadron II: scout can't (gone)
+  20:32 (+6:32)  Germany's II Squadron I: join can't (gone)
+  20:32 (+6:32)  Britain's Nestor: ABANDONED
+  20:34 (+6:34)  Britain's commander: 3rd Battlecruiser Squadron to intercept Prinzregent Luitpold (wing)
+  20:34 (+6:34)  Britain's commander: Battlecruiser Fleet to intercept Lützow (wing)
+  20:36 (+6:36)  Britain's Boadicea falls out: too slow
+  20:36 (+6:36)  Britain's commander: 3rd Battlecruiser Squadron to intercept König (flank)
+  20:36 (+6:36)  Britain's commander: Battlecruiser Fleet to intercept Ostfriesland (wing)
+  20:36 (+6:36)  Britain's Attached cruisers, port (1 ship) regroups into Attached cruisers, starboard
+  20:37 (+6:37)  Germany's Hannover falls out: too slow
+  20:39 (+6:39)  Britain's 3rd Light Cruiser Squadron: join can't (gone)
+  20:45 (+6:45)  Britain's Liberty: intercept can't (lostcontact)
+  20:45 (+6:45)  Britain's commander: Liberty to intercept S15 (contact)
+  20:51 (+6:51)  Germany's Schleswig-Holstein falls out: her main guns out
+  20:53 (+6:53)  Germany's Schlesien falls out: too slow
+  20:57 (+6:57)  LOST: Britain's Canterbury, capsized (last hit by Westfalen)
+  20:58 (+6:58)  Germany's Schlesien: ABANDONED
+  20:58 (+6:58)  LOST: Germany's Schlesien, capsized (last hit by Neptune)
+  20:59 (+6:59)  Germany's commander: Schlesien to withdraw (outmatched)
+  20:59 (+6:59)  LOST: Germany's Hannover, broke in two (last hit by Benbow)
+  21:00 (+7:00)  Germany's Schleswig-Holstein: ABANDONED
+  21:01 (+7:01)  Germany's commander: Schleswig-Holstein to withdraw (outmatched)
+  21:02 (+7:02)  Britain's Termagant: ABANDONED
+  21:03 (+7:03)  Britain's commander: Termagant to join Grand Fleet (idle)
+  21:04 (+7:04)  LOST: Britain's Termagant, foundered (last hit by Derfflinger)
+  21:05 (+7:05)  Britain's Magic falls out: her main guns out
+  21:09 (+7:09)  LOST: Germany's Schleswig-Holstein, foundered (last hit by Benbow)
+  21:14 (+7:14)  Germany's Hessen: SCUTTLED, her men ordered off
+  21:15 (+7:15)  Germany's commander: Hessen to withdraw (outmatched)
+  21:16 (+7:16)  Germany's Oldenburg falls out: her main guns out
+  21:20 (+7:20)  Britain's commander: 5th Battle Squadron to intercept Lützow (wing)
+  21:21 (+7:21)  Britain's commander: Grand Fleet to withdraw (night)
+  21:21 (+7:21)  Britain's commander: Nestor to withdraw (night)
+  21:21 (+7:21)  Britain's commander: Liberty to withdraw (night)
+  21:22 (+7:22)  Britain's 2nd Division: scout in contact
+  21:22 (+7:22)  Britain's commander: night
+  21:28 (+7:28)  LOST: Germany's Hessen, foundered (last hit by Marlborough)
+  21:33 (+7:33)  Britain's 5th Division: scout in contact
+  21:58 (+7:58)  Britain's 4th Division: scout in contact
+  21:58 (+7:58)  Germany's Oldenburg: ABANDONED
+  21:58 (+7:58)  LOST: Germany's Oldenburg, capsized (last hit by Oak)
+  21:59 (+7:59)  Britain's Moresby falls out: her main guns out
+  21:59 (+7:59)  Germany's commander: Oldenburg to withdraw (outmatched)
+  22:04 (+8:04)  Britain's Fleet tenders: attack done (lostcontact)
+  22:04 (+8:04)  Britain's commander: Fleet tenders to screen Grand Fleet (idle)
+  22:08 (+8:08)  Britain's Minion falls out: her steering gone
+  22:15 (+8:15)  Britain's Calliope falls out: too slow
+  22:15 (+8:15)  Germany's Deutschland falls out: her main guns out
+  22:17 (+8:17)  Britain's Mandate falls out: too slow
+  22:18 (+8:18)  Britain's Narborough falls out: too slow
+  22:18 (+8:18)  Britain's Obdurate falls out: too slow
+  22:18 (+8:18)  Britain's Moorsom falls out: her main guns out
+  22:22 (+8:22)  Germany's Deutschland: ABANDONED
+  22:22 (+8:22)  LOST: Germany's Deutschland, capsized (last hit by Marne)
+  22:24 (+8:24)  Germany's commander: night
+  22:24 (+8:24)  Germany's commander: 4th Scouting Group to intercept Castor (contact)
+  22:25 (+8:25)  Britain's Constance falls out: her main guns out
+  22:26 (+8:26)  Germany's commander: 4th Scouting Group to intercept Broke (contact)
+  22:27 (+8:27)  Britain's Spitfire falls out: too slow
+  22:28 (+8:28)  LOST: Britain's Mandate, broke in two (last hit by Nassau)
+  22:29 (+8:29)  Britain's Black Prince: ABANDONED
+  22:30 (+8:30)  Britain's commander: Black Prince to withdraw (night)
+  22:33 (+8:33)  Britain's Michael falls out: her main guns out
+  22:33 (+8:33)  Britain's Martial falls out: her main guns out
+  22:35 (+8:35)  Britain's Comus falls out: too slow
+  22:37 (+8:37)  Britain's Petard falls out: her main guns out
+  22:37 (+8:37)  Germany's Helgoland falls out: her main guns out
+  22:38 (+8:38)  Britain's Achates falls out: her steering gone
+  22:39 (+8:39)  Britain's Lydiard falls out: her steering gone
+  22:39 (+8:39)  Britain's Achates: ABANDONED
+  22:41 (+8:41)  Britain's commander: Achates to withdraw (night)
+  22:43 (+8:43)  Germany's commander: 4th Scouting Group to scout High Seas Fleet (idle)
+  22:43 (+8:43)  LOST: Britain's Lydiard, capsized (last hit by Ostfriesland)
+  22:47 (+8:47)  Germany's Grosser Kurfürst falls out: her steering gone
+  22:47 (+8:47)  LOST: Britain's Black Prince, capsized (last hit by Moltke)
+  22:48 (+8:48)  LOST: Germany's V28, capsized (last hit by Barham)
+  22:51 (+8:51)  Britain's Caroline falls out: too slow
+  22:51 (+8:51)  Britain's 3rd BCS destroyers I: scout in contact
+  22:53 (+8:53)  Britain's Broke falls out: too slow
+  22:58 (+8:58)  Britain's Nottingham: ABANDONED
+  22:59 (+8:59)  Britain's commander: Nottingham to withdraw (night)
+  23:00 (+9:00)  LOST: Britain's Nottingham, broke in two (last hit by Kronprinz)
+  23:05 (+9:05)  Germany's VI Flotilla II: join can't (gone)
+  23:05 (+9:05)  Germany's VI Flotilla I: scout can't (gone)
+  23:07 (+9:07)  Britain's commander: Cruiser screen to withdraw (night)
+  23:08 (+9:08)  LOST: Germany's Helgoland, foundered (last hit by Midge)
+  23:09 (+9:09)  Britain's Midge falls out: too slow
+  23:10 (+9:10)  Britain's Warrior falls out: her steering gone
+  23:12 (+9:12)  LOST: Britain's Midge, capsized (last hit by Rheinland)
+  23:14 (+9:14)  Britain's commander: Cruiser screen to intercept Pommern (contact)
+  23:16 (+9:16)  Britain's Calliope: ABANDONED
+  23:16 (+9:16)  LOST: Britain's Calliope, foundered (last hit by Kaiser)
+  23:17 (+9:17)  Britain's Goshawk falls out: too slow
+  23:17 (+9:17)  Britain's Defender falls out: her main guns out
+  23:17 (+9:17)  Britain's 1st Flotilla II: scout in contact
+  23:17 (+9:17)  Britain's 1st Flotilla I: join done (joined)
+  23:17 (+9:17)  Britain's commander: Calliope to withdraw (night)
+  23:18 (+9:18)  Britain's Fearless falls out: too slow
+  23:18 (+9:18)  Britain's Lizard falls out: too slow
+  23:18 (+9:18)  Britain's 1st Flotilla I II: join can't (gone)
+  23:18 (+9:18)  Britain's 1st Flotilla I I: scout can't (gone)
+  23:19 (+9:19)  Germany's S35 falls out: too slow
+  23:19 (+9:19)  LOST: Germany's V44, capsized (last hit by Galatea)
+  23:20 (+9:20)  Britain's Marne falls out: her steering gone
+  23:20 (+9:20)  Germany's Posen falls out: her main guns out
+  23:22 (+9:22)  Britain's Royalist falls out: too slow
+  23:23 (+9:23)  Britain's Porpoise falls out: too slow
+  23:25 (+9:25)  Britain's commander: Cruiser screen to intercept Thüringen (contact)
+  23:25 (+9:25)  LOST: Britain's Porpoise, broke in two (last hit by Friedrich der Grosse)
+  23:28 (+9:28)  Britain's Faulknor falls out: too slow
+  23:28 (+9:28)  LOST: Britain's Comus, capsized (last hit by Kaiserin)
+  23:29 (+9:29)  Germany's V27 falls out: her steering gone
+  23:29 (+9:29)  Britain's Cruiser screen: intercept can't (lostcontact)
+  23:29 (+9:29)  LOST: Germany's V27, broke in two (last hit by Active)
+  23:32 (+9:32)  Germany's G37 falls out: her main guns out
+  23:33 (+9:33)  LOST: Britain's Caroline, broke in two (last hit by Kaiserin)
+  23:34 (+9:34)  Britain's commander: Cruiser screen to intercept Kaiser (contact)
+  23:35 (+9:35)  Britain's Lizard: ABANDONED
+  23:36 (+9:36)  Britain's commander: Lizard to withdraw (night)
+  23:37 (+9:37)  Britain's commander: Cruiser screen to scout Grand Fleet (idle)
+  23:38 (+9:38)  Britain's Cruiser screen: scout in contact
+  23:42 (+9:42)  LOST: Britain's Lizard, capsized (last hit by S35)
+  23:43 (+9:43)  Germany's Westfalen falls out: listing
+  23:56 (+9:56)  Germany's Westfalen: ABANDONED
+  23:57 (+9:57)  LOST: Britain's Royalist, broke in two (last hit by König)
+  23:58 (+9:58)  Germany's commander: Westfalen to withdraw (night)
+  23:58 (+9:58)  LOST: Germany's Westfalen, foundered (last hit by Indomitable)
+  00:03 (+10:03)  Britain's Revenge falls out: her main guns out
+  00:05 (+10:05)  Germany's Ostfriesland falls out: her main guns out
+  00:08 (+10:08)  Britain's Warrior: ABANDONED
+  00:09 (+10:09)  Britain's commander: Warrior to withdraw (night)
+  00:09 (+10:09)  Britain's Revenge: ABANDONED
+  00:10 (+10:10)  Britain's commander: Revenge to withdraw (night)
+  00:10 (+10:10)  LOST: Britain's Warrior, foundered (last hit by Grosser Kurfürst)
+  00:11 (+10:11)  Germany's Nassau falls out: her main guns out
+  00:12 (+10:12)  Britain's Engadine: withdraw done (home)
+  00:13 (+10:13)  Germany's Rheinland falls out: her main guns out
+  00:13 (+10:13)  Germany's 4th Scouting Group: scout can't (gone)
+  00:13 (+10:13)  Germany's commander: 4th Scouting Group to intercept Mary Rose (contact)
+  00:14 (+10:14)  Britain's 5th Battle Squadron: intercept can't (lostcontact)
+  00:14 (+10:14)  Britain's commander: 5th Battle Squadron to scout Grand Fleet (idle)
+  00:19 (+10:19)  Germany's commander: 4th Scouting Group to intercept Yarmouth (contact)
+  00:23 (+10:23)  Germany's Ostfriesland: ABANDONED
+  00:24 (+10:24)  Germany's commander: 4th Scouting Group to withdraw (broken off)
+  00:24 (+10:24)  Germany's commander: Ostfriesland to withdraw (broken off)
+  00:25 (+10:25)  Germany's commander: retiring (broken off)
+  00:26 (+10:26)  LOST: Germany's Rheinland, capsized (last hit by Hercules)
+  00:27 (+10:27)  LOST: Germany's Ostfriesland, foundered (last hit by Spitfire)
+  00:30 (+10:30)  Britain's 1st Flotilla II I: screen can't (gone)
+  00:31 (+10:31)  LOST: Britain's Spitfire, broke in two (last hit by Nassau)
+  00:33 (+10:33)  LOST: Britain's Fearless, capsized (last hit by Prinzregent Luitpold)
+  00:35 (+10:35)  LOST: Britain's Revenge, broke in two (last hit by Rheinland)
+  00:37 (+10:37)  Germany's Nassau: ABANDONED
+  00:37 (+10:37)  LOST: Germany's Nassau, capsized (last hit by Hercules)
+  00:38 (+10:38)  Germany's commander: Nassau to withdraw (broken off)
+  00:53 (+10:53)  Germany's Pommern falls out: listing
+  00:58 (+10:58)  Germany's Pommern: ABANDONED
+  00:59 (+10:59)  Germany's commander: Pommern to withdraw (broken off)
+  00:59 (+10:59)  Germany's Friedrich der Grosse: ABANDONED
+  01:00 (+11:00)  Germany's commander: Friedrich der Grosse to withdraw (broken off)
+  01:14 (+11:14)  LOST: Germany's Friedrich der Grosse, capsized (last hit by Indefatigable)
+  01:16 (+11:16)  LOST: Germany's Pommern, foundered (last hit by Ariel)
+  01:20 (+11:20)  Britain's 11th Flotilla: attack done (lostcontact)
+  01:20 (+11:20)  Britain's commander: 11th Flotilla to screen Achates (idle)
+  01:25 (+11:25)  LOST: Germany's G39, broke in two (last hit by King George V)
+  01:26 (+11:26)  Britain's Manners falls out: her main guns out
+  01:30 (+11:30)  Germany's S33 falls out: too slow
+  01:31 (+11:31)  LOST: Germany's S33, broke in two (last hit by Indefatigable)
+  01:31 (+11:31)  LOST: Britain's Nestor, foundered (last hit by G40)
+  01:35 (+11:35)  Britain's Kempenfelt: ABANDONED
+  01:36 (+11:36)  Britain's commander: Kempenfelt to withdraw (night)
+  01:37 (+11:37)  Britain's 12th Flotilla: attack done (lostcontact)
+  01:37 (+11:37)  Britain's 4th Flotilla: attack done (lostcontact)
+  01:37 (+11:37)  Britain's Battlecruiser Fleet: intercept can't (lostcontact)
+  01:37 (+11:37)  Britain's commander: 12th Flotilla to screen Achates (idle)
+  01:37 (+11:37)  Britain's commander: 4th Flotilla to screen Achates (idle)
+  01:37 (+11:37)  Britain's commander: Battlecruiser Fleet to screen Achates (idle)
+  01:43 (+11:43)  LOST: Germany's S35, broke in two (last hit by King George V)
+  01:48 (+11:48)  Britain's commander: 5th Battle Squadron to intercept Thüringen (wing)
+  01:48 (+11:48)  Britain's commander: Achates to intercept S15 (contact)
+  01:49 (+11:49)  Germany's Kronprinz falls out: too slow
+  01:49 (+11:49)  Britain's 5th Division: join done (joined)
+  01:49 (+11:49)  Britain's commander: battle
+  01:49 (+11:49)  Britain's commander: Fleet tenders to attack (battle)
+  01:49 (+11:49)  Britain's commander: Attached cruisers, starboard to attack (battle)
+  01:49 (+11:49)  Britain's commander: Kempenfelt to intercept Grosser Kurfürst (contact)
+  01:52 (+11:52)  Germany's Grosser Kurfürst: ABANDONED
+  01:53 (+11:53)  Germany's commander: Grosser Kurfürst to withdraw (broken off)
+  01:54 (+11:54)  LOST: Germany's Grosser Kurfürst, capsized (last hit by Malaya)
+  01:55 (+11:55)  Germany's Markgraf falls out: too slow
+  02:07 (+12:07)  Germany's Kaiser falls out: listing
+  02:10 (+12:10)  Germany's Kronprinz: ABANDONED
+  02:11 (+12:11)  Germany's commander: Kronprinz to withdraw (broken off)
+  02:15 (+12:15)  LOST: Britain's Kempenfelt, capsized (last hit by Ostfriesland)
+  02:18 (+12:18)  LOST: Germany's Kronprinz, capsized (last hit by Cochrane)
+  02:23 (+12:23)  Germany's 1st Scouting Group: withdraw done (home)
+  03:13 (+13:13)  Britain's Bellona falls out: too slow
+  03:28 (+13:28)  Britain's commander: 5th Battle Squadron to intercept Markgraf (wing)
+  03:39 (+13:39)  Britain's commander: 5th Battle Squadron to intercept König (flank)
+  03:41 (+13:41)  Britain's commander: 5th Battle Squadron to intercept Markgraf (wing)
+  03:46 (+13:46)  Britain's commander: 5th Battle Squadron to intercept König (flank)
+  03:50 (+13:50)  Britain's Opal falls out: listing
+  03:57 (+13:57)  Germany's Kaiser: ABANDONED
+  03:58 (+13:58)  Germany's commander: Kaiser to withdraw (broken off)
+  04:00 (+14:00)  the end: time
+
+the result (time at 04:00 (+14:00), played in 1480.2 s):
+  Britain       151 ships   1487617 t   lost  26 ( 132849 t)   damaged afloat 104   afloat 125   hits made 5376   torpedoes 306   aims not met, score 0.55   of the lost: taken 0, struck 0, scuttled 1, abandoned 14   men lost 5513, saved 1797
+  Germany        99 ships    821301 t   lost  59 ( 448178 t)   damaged afloat  33   afloat  40   hits made 3380   torpedoes 154   aims not met, score 0.09   of the lost: taken 0, struck 0, scuttled 7, abandoned 17   men lost 16666, saved 6034
+  Britain      at the end: 11 units on a task, 1 home, 0 on their first orders, 1 idle; 41 fallen out
+  Germany      at the end: 1 units on a task, 1 home, 0 on their first orders, 0 idle; 22 fallen out
+  Britain      done? battle; 1 of 125 afloat home, 124 not (124 in an encounter, 29 stopped, 7 dead in the water, the farthest 681 km)
+  Germany      done? retiring (broken off); 4 of 40 afloat home, 36 not (36 in an encounter, 3 stopped, 4 dead in the water, the farthest 404 km)
+  at the end 0 units held by the player, 21 out of their lines on tasks; 0 notices raised
+where the time went (73.6 MB allocated, gen0/1/2 2/1/1; share of the run, calls a game second, each, longest):
+  Commands                    0.00 %      0.000    23155.0 µs   (23.16 ms)
+  Smoke looks                 0.23 %     38.382        1.8 µs   (2.01 ms)
+  Ships: step                 2.27 %     19.976       33.4 µs   (4.62 ms)
+  Ships: step, all threads    5.33 %     19.976       78.4 µs   (5.06 ms)
+  Ships: contacts             0.00 %      0.200        0.9 µs   (0.49 ms)
+  Ships: rails check          0.07 %      0.200       97.8 µs   (3.92 ms)
+  Encounters                  0.04 %      0.200       62.7 µs   (4.92 ms)
+  Sighting                    4.48 %      0.999     1318.5 µs   (14.67 ms)
+  Ships: coarse               0.00 %      0.005      101.6 µs   (25.48 ms)
+  ShipSystem                  6.88 %     19.981      101.1 µs   (25.48 ms)
+  ShellSystem                 0.27 %      3.743       21.6 µs   (40.55 ms)
+  GunnerySystem               3.98 %      2.265      515.6 µs   (17.65 ms)
+  DamageSystem                3.23 %     22.214       42.7 µs   (13.82 ms)
+  TorpedoSystem               0.01 %      1.683        1.5 µs   (1.92 ms)
+  Smoke index                 0.56 %      0.400      414.7 µs   (25.07 ms)
+  Smoke merge                 0.40 %      0.999      116.8 µs   (56.47 ms)
+  Smoke queries               1.47 %     15.807       27.4 µs   (4.29 ms)
+  SmokeSystem                 1.39 %      0.999      409.7 µs   (202.50 ms)
+  StarShellSystem             0.20 %      0.204      285.8 µs   (2.90 ms)
+  AI: CommanderLayer          3.80 %     20.000       55.7 µs   (100.46 ms)
+  AI: TaskLayer               0.19 %     19.976        2.8 µs   (51.00 ms)
+  AI: AdmiralLayer           72.08 %     19.976     1059.7 µs   (60.05 ms)
+  AI: CaptainLayer            7.85 %     19.976      115.4 µs   (74.03 ms)
+  AiSystem                   84.00 %     79.929      308.6 µs   (100.87 ms)
+  AI: captains, prepared      0.90 %     19.976       13.3 µs   (10.00 ms)
+  AI: captains, the job       5.64 %     19.976       82.9 µs   (17.49 ms)
+  the speed hour by hour: 310x 58x 33x 25x 22x 23x 25x 26x 29x 33x 41x 42x 48x 55x
+  main guns: 58 fell out for them, main mounts out 163 of 209 (209 of 268 guns): guns out 59, gunhouse out of action 31, magazine flooded by the sea 20, magazine flooded by order 19, gunhouse destroyed 14, magazine spent (its race) 7, barbette out 7, down: a crew stunned 4, jammed 2
+             at the end, 168 ships afloat: main mounts out 110 of 617 (136 of 858 guns): magazine flooded by the sea 42, gunhouse out of action 27, gunhouse destroyed 19, guns out 9, magazine flooded by order 7, magazine spent (its race) 3, barbette out 2, magazine put out by a hit 1
+  blackouts: 13 ship-wide (13 by a hit's shock, 0 by near misses), 9 ships blacked out
+  shells: 82891 fired, 290 at ships seen done for
+  the state at the end: 55d7f51bcb99f1a9

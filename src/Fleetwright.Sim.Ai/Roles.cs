@@ -190,19 +190,25 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
             if (main >= 0)
                 mains.Add((mainOf[side] = units[main].Id));
         }
-        // each force's members, by the force's task
+        // each force's members, by the force's task and its own job: level by level down the forces, so a force's own job
+        // is allocated before its members are
+        int deepest = 0;
         for (int k = 0; k < groups.Count; k++)
-        {
-            var g = groups[k];
-            if (!g.IsForce || SideOf(g) is not (>= 0 and var side))
-                continue;
-            units.Clear();
-            var members = g.Members;
-            for (int i = 0; i < members.Count; i++)
-                if (groups.Get(members[i]) != null)
-                    units.Add(Unit.Group(members[i]));
-            Allocate((byte)side, ForceNeeds(g));
-        }
+            if (groups[k].IsForce)
+                deepest = Math.Max(deepest, Depth(groups[k]));
+        for (int depth = 0; depth <= deepest; depth++)
+            for (int k = 0; k < groups.Count; k++)
+            {
+                var g = groups[k];
+                if (!g.IsForce || Depth(g) != depth || SideOf(g) is not (>= 0 and var side))
+                    continue;
+                units.Clear();
+                var members = g.Members;
+                for (int i = 0; i < members.Count; i++)
+                    if (groups.Get(members[i]) != null)
+                        units.Add(Unit.Group(members[i]));
+                Allocate((byte)side, ForceNeeds(g));
+            }
         // the lookouts (AL4): a side with nothing scouting ahead puts its main body's leading squadron's own ships out
         Span<bool> scouted = stackalloc bool[256];
         foreach (var (unit, role) in made)   // every unit is in it, a role set by hand over its own
@@ -224,8 +230,22 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
 
     /// <summary>What a task needs of the units it has (docs/battle/allocation.md "The jobs, set by the task"): scouts ahead of
     /// its main body, how many; whether its scouting force must be a match for the enemy's; whether it wants a screen
-    /// (against the enemy's attackers).</summary>
-    readonly record struct Needs(int Scouts, bool Match, bool Screen);
+    /// (against the enemy's attackers); whether its fast strong units are a fast wing apart from its line (a scouting
+    /// force's are its line: it is the eyes and the fast wing, and puts out none of its own).</summary>
+    readonly record struct Needs(int Scouts, bool Match, bool Screen, bool Wing = true);
+
+    /// <summary>How many forces a group is inside (a side's top unit: 0).</summary>
+    int Depth(GroupSystem.Group g)
+    {
+        int d = 0;
+        for (var p = groups.Get(g.Parent); p != null && d < 64; p = groups.Get(p.Parent))
+            d++;
+        return d;
+    }
+
+    /// <summary>A unit's job as allocated so far in this pass, a role set by hand over it (never <see cref="Of"/>, which
+    /// would allocate again).</summary>
+    UnitRole JobOf(int unit) => set.TryGetValue(unit, out var r) ? r : allocated.GetValueOrDefault(unit);
 
     /// <summary>The side's top units: on passage (a Reach his side pursues: no scouting force) or withdrawing (home), a
     /// screen; else the approach to a fleet action: scouts ahead, a match for the enemy's, and a screen.</summary>
@@ -239,14 +259,21 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
 
     /// <summary>A force's members, by its task: scouting, shadowing, closing the enemy or on its orders, its own scouts
     /// ahead and a screen; searching (its admiral spreads its ships), attacking or screening, none; on passage (going
-    /// somewhere, joining, covering, patrolling, withdrawing), a screen.</summary>
-    Needs ForceNeeds(GroupSystem.Group g) => (Tasks?.Of(Unit.Group(g.GroupId)).Kind ?? Sim.Ai.Tasks.TaskKind.None) switch
+    /// somewhere, joining, covering, patrolling, withdrawing), a screen. A force its own admiral has scouting (the
+    /// side's scouting force, a line of light cruisers) is the scouting itself: no scouts ahead of it and no fast wing
+    /// of its own, its fast squadrons keeping their places in it (a light cruiser line's 28-knot squadron isn't sent
+    /// ahead of the 25-knot ones off its station).</summary>
+    Needs ForceNeeds(GroupSystem.Group g)
     {
-        Sim.Ai.Tasks.TaskKind.Search or Sim.Ai.Tasks.TaskKind.Attack or Sim.Ai.Tasks.TaskKind.Screen => new Needs(0, false, false),
-        Sim.Ai.Tasks.TaskKind.GoTo or Sim.Ai.Tasks.TaskKind.Join or Sim.Ai.Tasks.TaskKind.Cover or Sim.Ai.Tasks.TaskKind.Patrol
-            or Sim.Ai.Tasks.TaskKind.Withdraw => new Needs(0, false, true),
-        _ => new Needs(world.Settings.AllocationScouts, false, true),
-    };
+        var needs = (Tasks?.Of(Unit.Group(g.GroupId)).Kind ?? Sim.Ai.Tasks.TaskKind.None) switch
+        {
+            Sim.Ai.Tasks.TaskKind.Search or Sim.Ai.Tasks.TaskKind.Attack or Sim.Ai.Tasks.TaskKind.Screen => new Needs(0, false, false),
+            Sim.Ai.Tasks.TaskKind.GoTo or Sim.Ai.Tasks.TaskKind.Join or Sim.Ai.Tasks.TaskKind.Cover or Sim.Ai.Tasks.TaskKind.Patrol
+                or Sim.Ai.Tasks.TaskKind.Withdraw => new Needs(0, false, true),
+            _ => new Needs(world.Settings.AllocationScouts, false, true),
+        };
+        return JobOf(Unit.Group(g.GroupId).Id) == UnitRole.Scout ? needs with { Scouts = 0, Wing = false } : needs;
+    }
 
     /// <summary>One admiral's units (<see cref="units"/>) to jobs (docs/battle/allocation.md "The allocation"), a greedy
     /// pass; the main body's index, -1 with none:
@@ -254,7 +281,8 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
     /// <item>No main battery: kept back (<see cref="UnitRole.Auxiliary"/>).</item>
     /// <item>The line: of the armed units that aren't attackers (all of them, if every one is), the strong at about the
     /// slowest strong one's speed (<see cref="ForceMeasures.Line"/>), the strongest its main body.</item>
-    /// <item>Scouts: the strong with speed to spare, always (the scouting force, the fast wing in battle); then, for the
+    /// <item>Scouts: the strong with speed to spare, always (the scouting force, the fast wing in battle; in a scouting
+    /// force, its line); then, for the
     /// positions the task wants ahead, the units faster than the line by the margin that hold their own best against the
     /// enemy's scouts (<see cref="UnitMeasure.Scouting"/>; his line the yardstick, <see cref="UnitMeasure.Quality"/>, with
     /// none), and more while the scouting force is no match for his (doctrine's bar). A boat (<see cref="UnitMeasure.Boat"/>:
@@ -292,7 +320,9 @@ public sealed class Roles(World world, ForceMeasures measures, Doctrine doctrine
         double scoutsT = 0;
         int scouts = 0;
         for (int i = 0; i < n; i++)
-            if (strong[i] && !inLine[i])
+            if (strong[i] && !inLine[i] && !needs.Wing)
+                job[i] = UnitRole.Heavy;   // a scouting force's fast squadrons: in its line
+            else if (strong[i] && !inLine[i])
             {
                 job[i] = UnitRole.Scout;
                 scoutsT += m[i].StrengthT;
