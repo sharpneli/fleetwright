@@ -26,7 +26,7 @@ session, each judged by captures against the mockup.
 | Map marks | the map | own ships named with speed and a flotation bar; contacts by identity with what's seen of them; fire lines, the selection's in brass with the range; torpedo reach; orders sent, amber while the signal travels; the cursor's verb | all |
 | Briefing | modal, at load (paused) | the situation, the aim, your side's orders before action, your forces and the enemy as reported | `#brief` |
 | Result | modal, at the end | the count, every ship's fate, the truth about the enemy | `#result` |
-| Menu | Esc with nothing open | resume, briefing, restart, scenarios, the auto-pause rules (from the clock panel today), UI scale, quit | `#menu` |
+| Menu | Esc with nothing open | resume, briefing, result, restart, scenarios, controls, the auto-pause rules (from the clock panel today), the designer, quit (UI scale not in it: `-uiscale=`) | `#menu` |
 | Dev panel | F1 | everything that isn't the game: built (U0) | `#dev` |
 
 ## The ship card (the centre of it)
@@ -170,7 +170,7 @@ one or two detachments (2-3 units, the rest the AI's), so a fleet must take orde
   command (one implementation).
 - **The strip** at a unit's level: `Line ahead · Columns · Abreast` (Columns for a force) lit by the shape its whole
   line is in, then this level's formation ▾ (echelons, lines of bearing, the spacing), then `Turn ▾ · Deploy… · to
-  port · to stbd · Withdraw · AI`. **Keys** with a unit picked: L line ahead, K columns, A abreast, comma and period
+  port · to stbd · Withdraw · AI`. **Keys** with a unit picked: L line ahead, K columns, A abreast (⇧L since input.md), comma and period
   deploy to port and starboard. Several units picked: each gets it.
 - **Measured** (`LineShapeTests`: the Grand Fleet in little, three squadrons of two divisions of four, at 14 kn): one
   line ahead on the same course in 64 min, back into columns in 83 min; deploying (`DeploymentTests`) in 11. On the

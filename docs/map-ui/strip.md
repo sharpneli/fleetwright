@@ -107,15 +107,16 @@ Finnish keyboard `[ ] / ;` need AltGr. Keys are SDL keycodes, so they follow the
 | | Enter | type a course |
 | | ↓ ↑ | the telegraph a bell slower, faster |
 | | O, C, Del, M | hard over, the conn (as now), clear route, make smoke |
-| Guns | G, E, X, S | fire at will, engage…, hold fire, shells ▾ |
+| Guns | G, E, X, R | fire at will, engage…, hold fire, shells ▾ (R since input.md: S is the camera's) |
 | | ⇧E | torpedoes at… |
 | | ⇧R, ⇧X, ⇧G | star shell… (a contact or the sea), dark, beams: the night's row (docs/battle/night.md Q9, added 2026-10-29) |
-| Task | B, F, H, T, W, I | fight, follow…, hold, the task menu (as now), withdraw, AI |
-| Formation | L, K, A (as now), Z, U, D, `,` `.` (as now) | line ahead, columns, abreast, this level's formation ▾, turn ▾, deploy…, deploy to port, to starboard |
+| Task | B, F, H, T, I | fight, follow…, hold, the task menu (as now), AI; Withdraw a button alone (input.md: keys are for what's used often) |
+| Formation | L, K, ⇧L, Z, U, N, `,` `.` | line ahead, columns, abreast, this level's formation ▾, turn ▾, deploy…, deploy to port, to starboard (⇧L and N since input.md: A and D are the camera's) |
 | An enemy | E, Alt+E, ⇧E | engage her with the unit, with the ship alone, torpedoes |
 | Any order | Alt + its key | to this ship alone (as Alt does for a right-click now) |
 
-Where the task menu has the same order the key is the same (B fight, F follow, W withdraw). While the task menu is open its
+Where the task menu has the same order the key is the same (B fight, F follow; W withdraws in the task menu only).
+The table above is as built; the code's own table is `MapScene.Strip.cs` `Def`, and the menu's Controls page shows it. While the task menu is open its
 own letters win, as now (its S, E, G, H, I, O, D, M, K, L, A, Q mean its own orders there).
 
 ## For the port

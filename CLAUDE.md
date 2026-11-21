@@ -73,9 +73,9 @@ its sim thread for the app (the engine's `FrameStarted` reports real time every 
 `MapScene` draws the globe from orbit to 10 px/m (`MapCamera` and `MapView`: straight down, north up, zoom in metres
 per pixel; projection, picking, the grid and the land's clip in double, so nothing jitters), the land from
 `Content/World/` (Natural Earth, a rough first Earth: `LandView`), under the HUD of `docs/map-ui/battle-hud.md`
-(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-9 and 0 pick the bar's first ten speeds (1x to 30,000x; a paused clock runs); the briefing, from the
+(`MapScene.Hud.cs`: the top bar with the clock's controls, space pauses, + and - change speed, 1-5 the gears (1x, 10x, 60x, 240x, 3,000x; a paused clock runs; the bar has every speed), § held fast-forwards, Shift+Space runs until it matters, Ctrl+Space a coarse step: docs/map-ui/input.md; the briefing, from the
 menu, or `-brief` at start; Esc shuts the topmost thing, else opens the app's menu:
-the briefing, restart, Scenarios… (the launch screen), the clock's rules on contact, the designer, quit. Esc never quits).
+the briefing, the result, restart, Scenarios… (the launch screen), Controls (`MapScene.Controls.cs`), the clock's rules on contact, the designer, quit. Esc never quits).
 The app opens on the launch screen (`Map/LaunchScene.cs`, docs/map-ui/launch.md L1) unless the command line asks for
 a world (`-scenario=`, `-ships=`, `-map=`, `-view=` or a designer flag), a workstation in the designer's look
 (docs/ui-language.md; drawn with the shared pieces `Ui/Pieces.cs`, colours only from `Ui/Theme.cs`): a menu bar and a resource
@@ -99,9 +99,9 @@ selects (twice: her squadron takes the orders; Tab steps through your ships), th
 (`MapScene.Strip.cs`, docs/map-ui/strip.md: docked panes under the rail, every order a button with its key from one table,
 `Def`) gives the orders: ORDERS TO, the chain as radio rows (Q up, Shift+Q down), HELM (← → 10°, Shift 90°, Enter types a
 course, ↑ ↓ the telegraph, O hard over, C the conn, Del clear route, M smoke), GUNS (G at will, E engage…, X hold fire,
-S shells: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md; Shift+E
+R shells: the main guns' shell for the selection, by target or a kind held, docs/battle/shell-choice.md; Shift+E
 torpedoes; the night's row, docs/battle/night.md Q9: Shift+R star shell… on a contact or the sea, Shift+X dark, Shift+G
-beams), TASK (B fight, F follow…, H hold, W withdraw, I the AI; Task ▾ or T opens the task menu,
+beams), TASK (B fight, F follow…, H hold, Withdraw a button (no key: keys are for what's used often), I the AI; Task ▾ or T opens the task menu,
 `MapScene.Tasks.cs`, docs/battle/admirals-orders.md O9: what the unit is for, every order by what it's about, each armed
 and given by a click (docs/map-ui/input.md: the left selects, a drag a box, but completes an armed action; the right acts on its release, or cancels an armed action), and organising the unit (detach or rejoin, divide, merge, disband, add the picked), letters picking while it's open), FORMATION for a unit (its whole line in one click, Line ahead, Columns or Abreast: L, K, ⇧L, docs/map-ui/battle-hud.md P1; Turn ▾ U, Deploy… N and deploy to port or starboard: comma, period; this level's formation ▾ Z);
 Alt with any order's key gives it to the ship alone; an enemy selected shows her as held and the orders against her (E, Alt+E, Shift+E); a status bar along the bottom (`StatusBar`, MapScene.Hud.cs) says what the mouse does or the armed pick, the map's keys, the grid's legend, the scale and the position; ctrl+click ships, or units in the rail, and orders go to each; the selection's tree
@@ -183,8 +183,9 @@ saves the poster as a PNG in Documents/My Games/Fleetwright/Cards (`FrameCapture
 the window as seen a couple of frames later, cropped to the poster). The profile is made only while the tab is open,
 off the render thread with a baker of its own, at the scale nearest above the poster's.
 
-F2 shows the stats window, Alt+Enter toggles borderless fullscreen, Escape quits. The app menu's Controls (`MapScene.Controls.cs`)
-lists every control, the strip's orders read from its key table.
+F2 shows the stats window, Alt+Enter toggles borderless fullscreen, Esc shuts the topmost thing or opens the app's menu (never
+quits). The menu's Controls (`MapScene.Controls.cs`) lists every control of the map, the strip's orders read from its key
+table: a key changed in the code shows there by itself, but a new map control is a row to add.
 
 **Logs, crash reports and replays** (for the playtests): `AppLog` tees the console into Documents/My Games/Fleetwright/Logs
 (a file a run, the newest 20 kept), and an exception nothing caught, the engine's error or the sim thread's stop writes a
