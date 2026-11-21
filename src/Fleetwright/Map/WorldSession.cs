@@ -85,8 +85,19 @@ public sealed class WorldSession : IDisposable
     /// <summary>The world's instruments on the UI side (docs/battle/plan.md step 2.7b), fed every frame.</summary>
     public WorldPerf Perf { get; } = new();
 
-    /// <summary>The last scenario's failure to load, or null.</summary>
-    public string? LoadError { get; private set; }
+    /// <summary>The last scenario's failure to load, or null. Each failure goes to the console (and so the log) too: a
+    /// load from the command line that fails leaves the dev world, which says nothing of why.</summary>
+    public string? LoadError
+    {
+        get => loadError;
+        private set
+        {
+            loadError = value;
+            if (value != null)
+                Console.Error.WriteLine($"Scenario load failed: {value}");
+        }
+    }
+    string? loadError;
 
     sealed class Pending
     {
