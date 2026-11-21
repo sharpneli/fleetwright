@@ -188,6 +188,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         public bool Main;           // its side's main body by the allocation (docs/battle/allocation.md AL3)
         public int Group;           // the enemy group it's sent after at this think (-1: none)
         public int Reaching;        // its ships reaching for its side's pursued Reach (docs/battle/aims.md A2)
+        public bool Contact;        // any of its ships has an enemy in sight within reach of a fight (InContact)
     }
 
     readonly SideState?[] sides = new SideState?[256];
@@ -365,15 +366,17 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
             double tonnage = 0;
             int reaching = 0;
             byte gs = store[slot].Side;
+            bool contact = false;
             foreach (var (ship, _, _) in line)
                 if (store.SlotOf(ship) is int m and >= 0)
                 {
                     tonnage += store[m].Handling.Class.Motion.FullDisplacementT;
                     if (Book.Reaching(gs, ship))
                         reaching++;
+                    contact = contact || Sees(ctx, gs, m);
                 }
             tops.Add(new Top { Unit = Unit.Group(g.GroupId), Side = gs, Slot = slot, TonnageT = tonnage, Main = Roles.IsMain(Unit.Group(g.GroupId)),
-                Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1, Reaching = reaching });
+                Role = Roles.Of(Unit.Group(g.GroupId)), Group = -1, Reaching = reaching, Contact = contact });
         }
         for (int slot = 0; slot < store.Slots; slot++)
         {
@@ -384,7 +387,7 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
                 : Roles.Of(Unit.Ship(store[slot].Entity));
             tops.Add(new Top { Unit = Unit.Ship(store[slot].Entity), Side = store[slot].Side, Slot = slot, TonnageT = cls.Motion.FullDisplacementT,
                 Main = Roles.IsMain(Unit.Ship(store[slot].Entity)), Role = role, Group = -1,
-                Reaching = Book.Reaching(store[slot].Side, store[slot].Entity) ? 1 : 0 });
+                Reaching = Book.Reaching(store[slot].Side, store[slot].Entity) ? 1 : 0, Contact = Sees(ctx, store[slot].Side, slot) });
         }
     }
 
@@ -1151,10 +1154,15 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     /// <summary>Whether a unit has gone home: its withdrawal done there.</summary>
     bool Home(Unit u) => Tasks!.Of(u) is (TaskKind.Withdraw, TaskState.Done, TaskReason.Home);
 
-    /// <summary>Whether a unit has an enemy in sight within reach of a fight (<see cref="SimSettings.FightCompareM"/>):
-    /// fighting, or about to, as doctrine has it.</summary>
-    bool InContact(in AiContext ctx, in Top t) =>
-        seen.Near(ctx.World, t.Side, store[t.Slot].Position, ctx.Settings.FightCompareM).Length > 0;
+    /// <summary>Whether a unit has an enemy in sight within reach of a fight (<see cref="SimSettings.FightCompareM"/>) of
+    /// any of its ships: fighting, or about to, as doctrine has it. Any, not its guide alone: a force spread wide (a
+    /// scouting line, its squadrons miles apart) is in contact at whichever end meets the enemy, and its guide can be
+    /// the other end (a line of battle it deployed into puts its head first).</summary>
+    static bool InContact(in AiContext ctx, in Top t) => t.Contact;
+
+    /// <summary>Whether a ship has an enemy in sight within <see cref="SimSettings.FightCompareM"/>.</summary>
+    bool Sees(in AiContext ctx, byte side, int slot) =>
+        seen.Near(ctx.World, side, store[slot].Position, ctx.Settings.FightCompareM).Length > 0;
 
     /// <summary>Whether a heavy unit may be sent to close the enemy: on the orders it was given, through with its task, or
     /// on one of going somewhere (a go to, patrol, search or join: the plan's, before the enemy was found), closing another
@@ -1172,7 +1180,8 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
     }
 
     /// <summary>A unit's task with no enemy about, by its role: the main body searches ahead on its course; another heavy
-    /// unit joins it (covers it, if it's a ship alone or a convoy: warships don't join a line of merchants); scouts scout ahead of it, spread off its bow; flotillas and screens
+    /// unit joins it (covers it, if it's a ship alone or a convoy: warships don't join a line of merchants); scouts scout ahead of it, spread off its bow
+    /// (but for one keeping touch with the enemy held nearer it than its main body, <see cref="KeepTouch"/>); flotillas and screens
     /// screen the nearest heavy unit; auxiliaries go home. A unit with no main body to support is one.</summary>
     Command IdleTask(in AiContext ctx, in Top t, Top? main)
     {
@@ -1194,10 +1203,42 @@ public sealed class CommanderLayer(GroupSystem groups, ShipStore store, SeenCont
         return t.Role switch
         {
             UnitRole.Heavy => m.Unit.IsGroup && m.Role != UnitRole.Auxiliary ? o.Join(t.Unit, m.Unit, By) : o.Cover(t.Unit, m.Unit, 0, By),
-            UnitRole.Scout => Dispositions.Attend(o, t.Role, t.Unit, m.Unit, Scouts(m.Unit), By),
+            UnitRole.Scout => KeepTouch(ctx, t, m) is int e and not 0 ? o.Shadow(t.Unit, Unit.Ship(e), 0, By)
+                : Dispositions.Attend(o, t.Role, t.Unit, m.Unit, Scouts(m.Unit), By),
             UnitRole.Flotilla or UnitRole.Screen => Dispositions.Attend(o, t.Role, t.Unit, NearestHeavy(t, m).Unit, 0, By),
             _ => o.WithdrawHome(t.Unit, By),
         };
+    }
+
+    /// <summary>The enemy a scout keeps touch with once he's been found (0: none): the biggest of the group his side holds
+    /// nearest any of its ships, if that's nearer them than its main body is. A scout's work, once the enemy's found, is to
+    /// keep him found: the one that found him, his contact out of sight a moment (turned away, gone into the haze),
+    /// follows him rather than steaming off for its station on a main body far off, which loses him for the side. One
+    /// nearer its main body than any enemy takes its station there (the enemy comes to it).</summary>
+    int KeepTouch(in AiContext ctx, in Top t, in Top main)
+    {
+        var held = Held.Of(ctx, t.Side);
+        if (held.Length == 0)
+            return 0;
+        line.Clear();
+        if (t.Unit.IsGroup && groups.Get(t.Unit.GroupId) is { } g)
+            groups.LineOffsets(g, line);
+        else
+            line.Add((store[t.Slot].Entity, 0, 0));
+        double home = double.MaxValue, best = double.MaxValue;
+        int pick = 0;
+        var at = store[main.Slot].Position;
+        foreach (var (ship, _, _) in line)
+        {
+            if (store.SlotOf(ship) is not (int m and >= 0))
+                continue;
+            var p = store[m].Position;
+            home = Math.Min(home, (p - at).LengthSquared);
+            for (int k = 0; k < held.Length; k++)
+                if ((p - held[k].Centre).LengthSquared is var d && d < best)
+                    (best, pick) = (d, held[k].Biggest);
+        }
+        return best < home ? pick : 0;
     }
 
     /// <summary>His main body's search of the zone his aim has him search (<see cref="AimBook.SearchZone"/>), given again

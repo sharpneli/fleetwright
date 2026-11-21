@@ -532,6 +532,29 @@ members'. What it moved (`allocation/scout-force/`: the panel at 8 seeds, the Ju
 commit since); the Jutland 23.0 v 46.8 (7.5 v 35.5), Britain in band and Germany the heavier loser in all 4 seeds; Dogger
 Bank's Britain 1.3 (0.4), its battlecruisers' fast wing now in their line.
 
+**Keeping touch** (2026-11-21, the user: "the Brits just go home after a short time", playing Britain at 3,000x, the coarse
+tier). In the coarse tier the Jutland still never met: Britain sighted B110 at 14:18, the scouting line ran west, Germany
+never saw a British ship, contact was lost at 14:56 and the commander gave up at 17:14. Three faults, each in the fine
+tier's rules too (the fine tier's timing only hid them):
+- *A scouting line deployed into a line of battle.* B110, seen at 22 km and not made out, counts as one of the enemy not
+  yet accounted for (AL7a), so as his main body; Beatty's light cruisers (no task, squadrons 37 km apart) deployed, and
+  the wing furthest along the course, the far western one, led, so Galatea, the ship in contact, steamed 74 km west to
+  her place. 5.1c's guard ("two capital ships or more") went with AL5's guns rule. Now a force forms a line of battle
+  only with every ship of its line within `DeployM` of its guide (`AdmiralLayer.BattleForce`): the reach it deploys at,
+  so a line that can't close up before the enemy's on it doesn't try. The Grand Fleet's columns and the BCF deploy as before.
+- *In contact by its guide alone.* The commander's `InContact` looked from a unit's guide only, and a force's guide can
+  be its far end (the deployment had made it so); now any ship of the unit (`Top.Contact`, worked out in `Gather`).
+- *A scout sent to its station with the enemy at hand.* A scout on its first orders, the enemy met and out of sight a
+  moment (B110 turned away on her route), got its idle task, to scout ahead of the Grand Fleet 100 km off. Now a scout
+  nearer the enemy held (a fresh contact) than its main body shadows the biggest of the group nearest it
+  (`CommanderLayer.KeepTouch`): a scout's work once he's found is to keep him found.
+What it moved (`allocation/keep-touch/`): the coarse Jutland meets as history has it (Germany sights Galatea at 14:21) and
+fights from 15:07; the fine one's seed 1916 as before (B109 at 14:16, Galatea seen at 14:19, 27 v 53 lost). The user's
+own game replayed is in battle by 17:56. The panel: 8 of 14 sides within 2x (7); the Jutland 28.0 v 48.3 (23.0 v 46.8),
+Germany still the heavier loser in all 4 seeds; Dogger Bank's Britain 0.9, in band (1.3). Still open: a commander who
+loses contact sends his heavy units back to their stations and gives up after his search, whatever his aim (Destroy
+Everyone open, the enemy's fleet a hundred miles off).
+
 ## Questions for the user
 
 1. ~~The intelligence before contact~~: good intelligence, the enemy's order of battle (decision 2).

@@ -172,18 +172,27 @@ public sealed partial class AdmiralLayer
 
     /// <summary>Whether a force forms a line of battle against the enemy's main body (docs/battle/allocation.md AL5): two
     /// ships or more in its line, fighting him with their guns (<see cref="ForceMeasures.Guns"/>: a flotilla's torpedoes
-    /// are its better weapon against a battle line, a cruiser squadron's guns against cruisers), and not on a task that keeps
-    /// it apart (scouting, screening, shadowing, searching, withdrawing). Never by its ships' type.</summary>
+    /// are its better weapon against a battle line, a cruiser squadron's guns against cruisers), not on a task that keeps
+    /// it apart (scouting, screening, shadowing, searching, withdrawing), and close enough together to form one before the
+    /// enemy's on it: every ship of its line within <see cref="SimSettings.DeployM"/> of its guide, the reach it deploys at
+    /// (a scouting line, its squadrons miles apart, would steam its whole width to take its places, the ships that met him
+    /// running from him for the far wing that leads). Never by its ships' type.</summary>
     bool BattleForce(in AiContext ctx, GroupSystem.Group g, byte side, in EnemyGroup main)
     {
         if (Tasks?.Of(Unit.Group(g.GroupId)) is { Kind: Ai.Tasks.TaskKind.Scout or Ai.Tasks.TaskKind.Screen or Ai.Tasks.TaskKind.Shadow or Ai.Tasks.TaskKind.Search or Ai.Tasks.TaskKind.Withdraw })
             return false;
+        if (ctx.Ships.SlotOf(groups.GuideShip(g)) is not (int gs and >= 0))
+            return false;
+        var at = ctx.Ships[gs].Position;
+        double reach2 = ctx.Settings.DeployM * ctx.Settings.DeployM;
         groups.LineOffsets(g, line);
         lineSide.Clear();
         int ships = 0;
         foreach (var (ship, _, _) in line)
             if (ctx.Ships.SlotOf(ship) is int slot and >= 0)
             {
+                if ((ctx.Ships[slot].Position - at).LengthSquared > reach2)
+                    return false;   // spread wider than it can close up in time
                 lineSide.AddOwn(ctx.World, Judge.Matchups, slot);
                 ships++;
             }

@@ -751,7 +751,8 @@ of 14); the Jutland to its time (04:00), 15 British and 19 German ships lost, in
    Fleet at 19:43; to its time, 18 British ships lost (225,000 t) and 13 German (95,000 t), in 169 s. Found by it: the
    deployment fired on every force in a cruising order (Beatty's light cruiser screen, the cruiser screen, both
    torpedo-boat forces, the 3rd BCS scouting); only a battle force deploys now (two capital ships or more in its line,
-   not scouting, screening, shadowing, searching or withdrawing). With deployment but before the opening tasks, the
+   not scouting, screening, shadowing, searching or withdrawing; since AL5 two ships or more fighting with their guns,
+   and since 2026-11-21 every one of them within `DeployM` of its guide: allocation.md "Keeping touch"). With deployment but before the opening tasks, the
    Grand Fleet deployed at 18:13 (history's 18:15) and Britain lost 38 ships. Ships stationed on another unit (scouts,
    screens) stay on the fine tick, so the first hour runs at ~900x with ~200 ships fine: for 5.1f's cost.
    `squadrons`, `flotilla` and Tsushima play as after 5.1b (5 seeds each).
@@ -804,9 +805,11 @@ doesn't hold the T.
      list is a top unit's plan, its first given at once. A unit's plan is the task layer's, so it runs on the player's
      side too; a new task in place of a plan drops what was to come.
    - *Idle units:* one whose plan has run out gets its role's task (the main body searches ahead on its course, another
-     heavy unit joins it, scouts scout ahead of it spread 0°, ±45°, ±90° off its bow, flotillas screen the nearest heavy
+     heavy unit joins it, scouts scout ahead of it spread 0°, ±45°, ±90° off its bow (but a scout nearer the enemy held
+     than its main body shadows him: allocation.md "Keeping touch"), flotillas screen the nearest heavy
      unit, auxiliaries go home). A unit on the scenario's own orders is on its orders until the enemy's met; after that
-     (they were for the approach) it counts as idle too.
+     (they were for the approach) it counts as idle too, unless any of its ships has an enemy in sight within
+     `FightCompareM` (in contact: doctrine's fight).
    - Placeholders: "AI commands" beside the spawn panel's "watch" for the player's side; a top group's "leave it to the
      admiral" / "take it from the admiral", and "· AI" / "· yours" on its label. *Since 2026-10-23 (decision 14) the
      switch is the rail's, "AI commands: on" under YOUR FORCES; each top unit's AI / YOURS tag on the rail is a click
