@@ -873,7 +873,11 @@ public sealed class ShipStore
             if (!alive[i])
                 continue;
             h.Add(entity[i]);
-            h.Add(classIndex[i]);
+            // her class by its design, not its registry id: the app's registry numbers classes as they're asked for
+            // across scenarios, a replay's afresh (src/Fleetwright.Sim.Missions/Replay.cs), and the same world hashes the same
+            var design = handling[i].Class.DesignHash;
+            h.Add(design.A);
+            h.Add(design.B);
             h.Add(side[i]);
             if (dye[i] != Dye.None)
                 h.Add((int)dye[i]);   // only then, so a world without dye hashes as it did before

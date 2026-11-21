@@ -36,6 +36,17 @@ public static class ScenarioLoader
         return ids;
     }
 
+    /// <summary>Every design the scenario names and the file it's read from, as <see cref="RequestClasses"/> finds them
+    /// (a replay carries them, <see cref="ReplayWriter"/>).</summary>
+    public static Dictionary<string, string> DesignPaths(Scenario s, IReadOnlyList<string> designFolders)
+    {
+        var paths = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (string name in s.DesignNames())
+            paths[name] = FindDesign(s, name, designFolders)
+                ?? throw new ScenarioException($"no design \"{name}\" (in the scenario's Designs/ or {string.Join(", ", designFolders)})");
+        return paths;
+    }
+
     static string? FindDesign(Scenario s, string name, IReadOnlyList<string> folders)
     {
         if (s.Folder != null && Path.Combine(s.Folder, "Designs", name + ".json") is var own && File.Exists(own))
@@ -329,7 +340,7 @@ public static class ScenarioLoader
     /// (Content/Scenarios), else the builtin default.</summary>
     public static DoctrinePresets PresetsFor(Scenario s)
     {
-        if (s.Folder != null && Path.Combine(s.Folder, "..", "Sim", "doctrine.json") is var p && File.Exists(p))
+        if (PresetsPath(s) is { } p)
         {
             try
             {
@@ -342,6 +353,10 @@ public static class ScenarioLoader
         }
         return DoctrinePresets.Builtin;
     }
+
+    /// <summary>The file <see cref="PresetsFor"/> reads, or null for the builtin default.</summary>
+    public static string? PresetsPath(Scenario s) =>
+        s.Folder != null && Path.Combine(s.Folder, "..", "Sim", "doctrine.json") is var p && File.Exists(p) ? p : null;
 
     /// <summary>Every ship of a unit with its station about the top unit's guide ship, in line order: the walk of
     /// GroupSystem.LineOffsets over the scenario's tree, by the same rules (<see cref="GroupSystem.OffsetFromGuide"/>,

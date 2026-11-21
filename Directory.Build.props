@@ -16,6 +16,19 @@
     <Optimize>true</Optimize>
   </PropertyGroup>
 
+  <!-- The commit the game and the CLI are built from, in their informational version ("1.0.0+df91dc66", "-dirty" with
+       local changes): the log's header and a replay's (src/Fleetwright.Sim.Missions/Replay.cs) say which code played. -->
+  <Target Name="FleetwrightRevision" BeforeTargets="GetAssemblyVersion;GenerateAssemblyInfo"
+          Condition="'$(MSBuildProjectName)' == 'Fleetwright' Or '$(MSBuildProjectName)' == 'Fleetwright.Shipgen.Cli'">
+    <Exec Command="git describe --always --dirty --abbrev=8" ConsoleToMSBuild="true" StandardOutputImportance="low"
+          IgnoreExitCode="true" ContinueOnError="true" WorkingDirectory="$(MSBuildThisFileDirectory)">
+      <Output TaskParameter="ConsoleOutput" PropertyName="FleetwrightGitRevision" />
+    </Exec>
+    <PropertyGroup Condition="'$(FleetwrightGitRevision)' != ''">
+      <SourceRevisionId>$(FleetwrightGitRevision)</SourceRevisionId>
+    </PropertyGroup>
+  </Target>
+
   <PropertyGroup Condition="$(MSBuildProjectName.StartsWith('Fleetwright.Shipgen')) Or $(MSBuildProjectName.StartsWith('Fleetwright.Sim'))">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- A switch over an enum with every member named needs no default arm: leaving one out stays an error (CS8509),

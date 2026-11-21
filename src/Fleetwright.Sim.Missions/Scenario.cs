@@ -182,6 +182,12 @@ public sealed record Scenario
     /// <summary>The folder the file was read from: its <c>Designs/</c> holds the scenario's own designs.</summary>
     public string? Folder { get; init; }
 
+    /// <summary>The files it was read from, as read: its own first (its name as <c>"from"</c> names it, the file's without
+    /// .json), then its <c>"from"</c>'s, and so on. A replay carries them (<see cref="ReplayWriter"/>), so it reads back
+    /// to the same scenario wherever it's opened. A setup's are the written scenario's; the setup itself is
+    /// <see cref="Setup"/>.</summary>
+    public IReadOnlyList<(string Name, string Json)> Files { get; init; } = [];
+
     /// <summary>Every design named, once each, in the order first named.</summary>
     public List<string> DesignNames()
     {
@@ -205,7 +211,7 @@ public sealed record Scenario
     {
         try
         {
-            return Parse(File.ReadAllText(path), Path.GetDirectoryName(Path.GetFullPath(path)), 0, fromFolders ?? []);
+            return Parse(File.ReadAllText(path), Path.GetDirectoryName(Path.GetFullPath(path)), 0, fromFolders ?? [], Path.GetFileNameWithoutExtension(path));
         }
         catch (ScenarioException x)
         {
@@ -230,13 +236,13 @@ public sealed record Scenario
 
     static readonly JsonDocumentOptions Options = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
 
-    public static Scenario Parse(string json, string? folder = null) => Parse(json, folder, 0, []);
+    public static Scenario Parse(string json, string? folder = null) => Parse(json, folder, 0, [], "scenario");
 
     /// <summary>Reads a file whose <c>"from"</c> may be in <paramref name="fromFolders"/> too (a setup in the player's
     /// folder of a shipped scenario).</summary>
-    public static Scenario Parse(string json, string? folder, IReadOnlyList<string> fromFolders) => Parse(json, folder, 0, fromFolders);
+    public static Scenario Parse(string json, string? folder, IReadOnlyList<string> fromFolders) => Parse(json, folder, 0, fromFolders, "scenario");
 
-    static Scenario Parse(string json, string? folder, int depth, IReadOnlyList<string> fromFolders)
+    static Scenario Parse(string json, string? folder, int depth, IReadOnlyList<string> fromFolders, string fileName)
     {
         JsonDocument doc;
         try
@@ -268,7 +274,7 @@ public sealed record Scenario
                     ?? throw new ScenarioException($"from \"{fromName}\": not in {string.Join(" or ", look)}");
                 try
                 {
-                    from = Parse(File.ReadAllText(fromPath), Path.GetDirectoryName(fromPath), depth + 1, fromFolders);
+                    from = Parse(File.ReadAllText(fromPath), Path.GetDirectoryName(fromPath), depth + 1, fromFolders, fromName);
                 }
                 catch (ScenarioException x)
                 {
@@ -364,6 +370,7 @@ public sealed record Scenario
                 AimList = aims,
                 Units = units,
                 Folder = folder,
+                Files = [(fileName, json), .. from?.Files ?? []],
             };
         }
     }

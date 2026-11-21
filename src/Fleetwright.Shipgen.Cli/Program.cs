@@ -251,6 +251,10 @@ public static class Program
         shipgen fit DESIGN.json... --main SPEC [--secondary SPEC] [--aa SPEC] [--dry]
             batteries' fire-control fits set (docs/battle/fire-control.md F3): a preset's name or blocks joined by |;
             the design's fire_control_tech then holds the blocks its fits name
+        shipgen replay FILE.replay [--to HH:MM[:SS]] [--no-land]
+            a game's replay (My Games/Fleetwright/Replays, Sim.Missions/Replay.cs) played headless: what it holds, its
+            world made again from it and its commands played to the record's end (or --to, a time of day); at a clean
+            end, the world's hash against the recorded one. The game opens one with -replay=FILE[@HH:MM[:SS]]
         shipgen scenario [SCENARIO.json] [--minutes 60] [--every 5] [--threads N] [--at 10] [--no-land] [--replay]
             a scenario headless at full tilt (default Content/Scenarios/jutland.json): its classes' build time (no
             art), the land and the placing, then game minutes on the sim's work alone: ships on the fine tick and on
@@ -307,6 +311,8 @@ public static class Program
                 "svg-check" => Check(a, RenderGolden.CheckSvgs),
                 "sprite-check" => Check(a, RenderGolden.CheckSprite),
                 "sim" => SimCmd(a),
+                "replay" => ReplayRun.Run(a.Positional.FirstOrDefault() ?? throw new ArgumentException("replay: give a .replay file"),
+                    a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("to"), !a.Has("no-land")),
                 "workers" => WorkersBench.Run(a.Int("items", 250), D(a, "item-ns", 160), D(a, "gap-us", 100), a.Int("dispatches", 20_000)),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
                 "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ && (ScenarioPlay.SalvoLog = a.Get("salvo-log")) is var _ && (ScenarioPlay.Ammo = a.Has("ammo")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),

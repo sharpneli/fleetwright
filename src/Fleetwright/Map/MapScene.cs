@@ -228,6 +228,7 @@ public sealed unsafe partial class MapScene : IScene
         CursorVerb(s);
         HoverTip(s);
         Briefing();
+        Controls();
         Result(s);
         probes.Add(probeUiRest, t);
         Theme.Pop();

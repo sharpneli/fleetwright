@@ -96,6 +96,7 @@ public sealed class SimHost : IDisposable
         wake.Set();
         if (thread.IsAlive)
             thread.Join();
+        stopped = true;
         wake.Dispose();
         if (ReportGaps)
             Console.WriteLine($"sim: the longest gap between snapshots while running {LongestGapMs:F0} ms, at {LongestGapAt}");
@@ -156,8 +157,40 @@ public sealed class SimHost : IDisposable
         }
         while (commands.TryDequeue(out var c))
             world.Apply(c);
+        Mirror();
         world.Elapse(real);
     }
+
+    // the commands applied (the world's log), passed on for a replay's record (TakeApplied): the sim thread's, or the
+    // caller's once the thread has stopped
+    readonly List<StampedCommand> applied = new(64);
+    int mirrored;
+
+    void Mirror()
+    {
+        var log = world.CommandLog;
+        if (log.Count == mirrored)
+            return;
+        lock (applied)
+            for (; mirrored < log.Count; mirrored++)
+                applied.Add(log[mirrored]);
+    }
+
+    /// <summary>The commands the world has applied from outside since the last call, with the times they landed, from its
+    /// first (those applied before the host started too): a replay's record (<c>Fleetwright.Sim.Missions.ReplayWriter</c>).
+    /// Any thread; after <see cref="Dispose"/>, the last of them.</summary>
+    public void TakeApplied(List<StampedCommand> into)
+    {
+        if (stopped)
+            Mirror();   // the thread's gone: nothing else reads the log
+        lock (applied)
+        {
+            into.AddRange(applied);
+            applied.Clear();
+        }
+    }
+
+    volatile bool stopped;
 
     /// <summary>A diagnostic, the host's (-frametimes reports it): the longest wall-clock time between two snapshots while the world
     /// ran, ms, and the game time it ended at; the map stands still that long (docs/battle/workers.md W16f).</summary>

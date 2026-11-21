@@ -4,6 +4,7 @@ public static unsafe class Program
 {
     public static int Main(string[] args)
     {
+        AppLog.Start(args);   // the log and the crash handlers before anything else
         // Parse command line arguments
         int screenshotFrame = -1;
         TimeSpan? screenshotAt = null;
@@ -47,7 +48,9 @@ public static unsafe class Program
         var devGroups = new List<string>();
         var devForces = new List<string>();
         bool frameTimes = false;
-        string? variants = null, scenarioArg = null, wakeBake = null;
+        string? variants = null, scenarioArg = null, wakeBake = null, replayArg = null;
+        TimeSpan? replayAt = null;
+        string? crashTest = null;
 
         foreach (string arg in args)
         {
@@ -430,6 +433,18 @@ public static unsafe class Program
             {
                 scenarioArg = arg.Substring("-scenario=".Length);
             }
+            else if (arg.StartsWith("-crash="))   // a crash on purpose, to see the report (AppLog): frame:N (the frame loop throws at frame N), thread:N (a thread nothing catches, after N s)
+            {
+                crashTest = arg.Substring("-crash=".Length);
+            }
+            else if (arg.StartsWith("-replay="))   // a replay played to its end, or @HH:MM[:SS] (Sim.Missions/Replay.cs), then paused: the player's from there
+            {
+                string r = arg.Substring("-replay=".Length);
+                int at = r.LastIndexOf('@');
+                if (at > 0 && TimeSpan.TryParse(r.Substring(at + 1), System.Globalization.CultureInfo.InvariantCulture, out var when))
+                    (r, replayAt) = (r.Substring(0, at), when);
+                replayArg = r;
+            }
             else if (arg.StartsWith("-output="))
             {
                 screenshotPath = arg.Substring("-output=".Length);
@@ -608,7 +623,12 @@ public static unsafe class Program
                     Console.Error.WriteLine($"Bad damage: {damage} (want -hole=ship:mid|bow|stern|x:z:m2[:p], -flood=ship:kind[:n], -jam=ship:mount[:min], " +
                                             "-wreck=ship:kind[:nth[:damaged|disabled|destroyed]], -burn=ship:x, -sink=ship:foundered|capsized|magazine[:mount], -ignite=ship[:mount])");
             worldRef = world;
-            if (scenarioArg != null)
+            AppLog.State = () => world.Scenario is { } played
+                ? $"scenario: {played.Name}, world time {world.Current.Time.ToUtc():yyyy-MM-dd HH:mm:ss}, speed {world.Current.Speed:0.#}x\nreplay: {world.ReplayPath ?? "none"}"
+                : $"no scenario (world time {world.Current.Time.ToUtc():yyyy-MM-dd HH:mm:ss})";
+            if (replayArg != null)
+                world.LoadReplay(replayArg, replayAt);
+            else if (scenarioArg != null)
             {
                 string found = FindScenario(scenarioArg, out string looked);
                 if (File.Exists(found))
@@ -627,12 +647,31 @@ public static unsafe class Program
             if (noPause)
                 world.Send(Sim.Command.SetInterest(Sim.InterestKind.Own, Sim.InterestAction.Nothing));
             engine.FrameStarted = world.Frame;
+            if (crashTest?.Split(':') is [var crashKind, var crashN] && int.TryParse(crashN, out int crashAt))
+            {
+                if (crashKind == "thread")
+                    new Thread(() =>
+                    {
+                        Thread.Sleep(crashAt * 1000);
+                        throw new InvalidOperationException("-crash=thread: a crash on purpose");
+                    }) { IsBackground = true }.Start();
+                else
+                {
+                    int frames = 0;
+                    engine.FrameStarted = dt =>
+                    {
+                        world.Frame(dt);
+                        if (++frames == crashAt)
+                            throw new InvalidOperationException("-crash=frame: a crash on purpose");
+                    };
+                }
+            }
 
             // the world opens by default; -view=designer (or any designer flag), -view=hitbox, -view=ship or -view=profile
             // opens the others
             // the launch screen first (docs/map-ui/launch.md L1) unless the command line asks for a world: a scenario, dev
             // ships, a camera, a view of the designer's
-            bool launchFirst = launchFlag || scenarioArg == null && devShips.Count == 0 && !mapGiven && view == null && !designerFlags;
+            bool launchFirst = launchFlag || scenarioArg == null && replayArg == null && devShips.Count == 0 && !mapGiven && view == null && !designerFlags;
             view ??= designerFlags ? "designer" : null;
             var launch = launchRef = new Map.LaunchScene(world, shipArt, launchName)
             {
@@ -677,8 +716,7 @@ public static unsafe class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Engine error: {ex.Message}");
-            Console.Error.WriteLine(ex.StackTrace);
+            AppLog.Crash(ex, "the engine's error");
             return 1;
         }
     }

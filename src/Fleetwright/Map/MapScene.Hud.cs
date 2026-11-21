@@ -752,6 +752,11 @@ public sealed partial class MapScene : ISceneMenu
             shut = true;
             OpenLaunch();
         }
+        if (ImGui.Button("Controls", full))
+        {
+            shut = true;
+            OpenControls();
+        }
         if (world.LoadError is { } e)
             ImGui.TextColored(Bad, e);
         var s = world.Current;
@@ -804,6 +809,8 @@ public sealed partial class MapScene : ISceneMenu
             rightHeld = false;   // the order being aimed is dropped: the release gives nothing
         else if (briefOpen)
             briefShut = true;
+        else if (controlsOpen)
+            controlsShut = true;
         else if (resultOpen)
             resultShut = true;
         else if (logOpen)

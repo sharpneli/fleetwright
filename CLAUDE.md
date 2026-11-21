@@ -32,6 +32,8 @@ dotnet run --project src/Fleetwright -- -ships=nassau:1:0@56.5,4.0,0,0 -ships=de
 dotnet run --project src/Fleetwright -- -ships=nassau:1:0@56.5,4.0,0,0 -ships=destroyer:1:1@56.5,4.02,180,0 -challenge=1:2 -time=1916-06-01T00:30 -map=56.5,4.01,3 -nopause -speed=1   # a dev ship challenges a contact (docs/battle/night.md Q6): ship:target; her bridge lamp flashes at her 8 s, the reply's awaited 20 s; unanswered, her navy knows the contact for a foe
 dotnet run --project src/Fleetwright -- -ships=super_dreadnought:1:0@56.5,4.0,0,0 -ships=destroyer:1:1@56.5,4.04,0,0 -torpedo=2:1:4 -nopause -speed=10 -map=56.5,4.02,2.2   # a dev spread: ship:target[:n], aimed at the truth (the strip's Torpedoes "Fire at…", then click an enemy)
 dotnet run --project src/Fleetwright -- -scenario=jutland [-map=56.82,4.63,4]   # a scenario (Content/Scenarios; also the world tab's picker, or drop the file on the window): the Jutland, 250 ships
+dotnet run --project src/Fleetwright -- "-replay=C:/Users/.../My Games/Fleetwright/Replays/20261121-105836 Squadrons.replay@15:45"   # a replay (Sim.Missions/Replay.cs) made again and played to its end or @HH:MM[:SS], then paused: the player's from there (a tester's bug at its moment)
+dotnet run --project src/Fleetwright -- -scenario=squadrons -crash=frame:300   # a crash on purpose (frame:N the frame loop throws, thread:N a thread nothing catches after N s): the crash report in My Games/Fleetwright/Logs (AppLog)
 dotnet run --project src/Fleetwright -c DevRelease -- -scenario=jutland -paused -builders=4,8 -screenshot=1500   # the load's lines (docs/map-ui/launch.md L0): classes compiled, placed, running, art in, memory; -builders= the class registry's threads beside a running world[,while none runs]
 dotnet run --project src/Fleetwright -- -view=designer                    # the designer on bismarck (any designer flag below opens it too)
 dotnet run --project src/Fleetwright -- -ship=shipgen/designs/yamato.json [-new] [-section=0-7] [-units=imperial] [-steps=speed:-2,belt:+3]
@@ -181,7 +183,18 @@ saves the poster as a PNG in Documents/My Games/Fleetwright/Cards (`FrameCapture
 the window as seen a couple of frames later, cropped to the poster). The profile is made only while the tab is open,
 off the render thread with a baker of its own, at the scale nearest above the poster's.
 
-F2 shows the stats window, Alt+Enter toggles borderless fullscreen, Escape quits. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
+F2 shows the stats window, Alt+Enter toggles borderless fullscreen, Escape quits. The app menu's Controls (`MapScene.Controls.cs`)
+lists every control, the strip's orders read from its key table.
+
+**Logs, crash reports and replays** (for the playtests): `AppLog` tees the console into Documents/My Games/Fleetwright/Logs
+(a file a run, the newest 20 kept), and an exception nothing caught, the engine's error or the sim thread's stop writes a
+`crash-*.txt` there (the build, the scenario and world time, the log and the replay); Release shows a message box saying
+where. Every scenario world records a replay (`Fleetwright.Sim.Missions/Replay.cs`, `WorldSession`) in
+My Games/Fleetwright/Replays, a line a record flushed as it goes: the scenario's files and setup, the designs, the
+doctrine and settings, the seed, then every command from outside with its stamp (from `SimHost.TakeApplied`), the
+game's progress and its end's hash. `shipgen replay FILE` checks one headless, `-replay=FILE@HH:MM` opens it in the game.
+The world's hash names ships' classes by design hash, never registry id, so a replay's own registry hashes the same.
+The build's commit is in the informational version (`Directory.Build.props`), in the log's header and the replay's. `-screenshot` captures the scene alone; with `-ui` it is the window as seen,
 ImGui on top. Both go through the window's blit shader, and a capture run reads no `imgui.ini` and writes none, so
 the UI shows its defaults. `-size=WxH` sets the window size.
 
@@ -230,6 +243,7 @@ dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- verify out_design
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sprite-check          # every design's sprite.json
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shell-test shipgen/designs/bismarck.json [--gratings] [--underwater 4] [--path 5] [--dump DIR]   # shells at the citadel through the hit query's tracer: leaks through neither armour nor water
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- mono-check [bismarck ...] [--steps 4]   # trim levers swept: more weight in, never a lighter ship
+dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- replay "My Games/Fleetwright/Replays/X.replay" [--to 16:40] [--no-land]   # a game's replay made again and played headless: what it holds, its commands to the record's end (or --to), the end's hash against the recorded one
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- sim [--from 1916-05-31T14:00] [--speed 30000] [--seconds 3]   # the world on its thread: clock, speed asked/achieved, sun, sim allocations
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- shore [--points 100000]   # the land index: build time, memory, IsLand vs Land, query costs
 dotnet run --project src/Fleetwright.Shipgen.Cli -c Release -- trials shipgen/designs/yamato.json [--out out]   # sea trials on the ship model: turning circles, 0 -> full, coasting, crash stop, beside the research's bands

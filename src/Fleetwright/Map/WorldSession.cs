@@ -95,6 +95,8 @@ public sealed class WorldSession : IDisposable
         public string? Path;   // the file it was read from, if it was
         public Task<(World World, AiSystem Ai, ScenarioStart Start)>? Task;
         public Func<EndView?>? Judge;
+        public int Placed;   // the commands the placing gave: a replay's first (ReplayWriter)
+        public bool Replayed;   // a replay played to its moment (LoadReplay): begun paused
         public readonly Stopwatch Clock = Stopwatch.StartNew();   // from its pick
         public double BeginSeconds, ClassesSeconds, PlacedSeconds;
     }
@@ -165,7 +167,8 @@ public sealed class WorldSession : IDisposable
     {
         Classes = classes;
         Shore = shore;
-        Settings = SimSettings.Load(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
+        settingsJson = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Content", "Sim", "settings.json"));
+        Settings = SimSettings.Parse(settingsJson);
         if (SmokeField is bool smoke)
             Settings = Settings with { Smoke = smoke };
         var w = new World(start, seed, Settings, classes, shore);
@@ -175,6 +178,142 @@ public sealed class WorldSession : IDisposable
         w.Workers = workers = new Workers(Workers.AppCount);
         host = Start(w);
         Current = host.Latest();
+    }
+
+    readonly string settingsJson;   // as read: a replay carries it
+
+    // ------------------------------------------------------------------ replays
+
+    /// <summary>The replay being written of the scenario running (docs/missions/plan.md: the file plus the command log), or
+    /// null (no scenario, or it couldn't be opened). Its commands come from the host (<see cref="SimHost.TakeApplied"/>) each
+    /// frame; the world's time every few seconds; its end, time and hash, when the world gives way or the app quits.</summary>
+    public string? ReplayPath => replay?.Path ?? lastReplay;
+
+    string? lastReplay;   // the one ended last: a crash report after the session's gone names it
+
+    ReplayWriter? replay;
+    World? replayWorld;   // read only once its host has stopped, for the end's hash
+    readonly List<StampedCommand> taken = new(64);
+    double replayClock;
+    bool errorRecorded, stoppedReported;
+
+    void BeginReplay(Pending p, World w)
+    {
+        try
+        {
+            replay = ReplayWriter.Begin(p.Scenario, DesignFolders, settingsJson, SmokeField, AppLog.Version, p.Placed);
+            replayWorld = w;
+            Console.WriteLine($"  replay: {replay.Path}");
+        }
+        catch (Exception x) when (x is IOException or UnauthorizedAccessException or ScenarioException)
+        {
+            Console.Error.WriteLine($"  replay: not recorded ({x.Message})");
+            (replay, replayWorld) = (null, null);
+        }
+    }
+
+    /// <summary>The commands the host has passed on since the last frame into the replay, every few seconds how far the
+    /// game has got, and the sim's error if it stopped.</summary>
+    void RecordReplay(double dt)
+    {
+        if (replay == null)
+            return;
+        try
+        {
+            host.TakeApplied(taken);
+            foreach (var c in taken)
+                replay.Command(c);
+            taken.Clear();
+            if ((replayClock += dt) >= 5)
+            {
+                replayClock = 0;
+                replay.Progress(Current.Time);
+            }
+            if (Current.Error is { } error && !errorRecorded)
+            {
+                errorRecorded = true;
+                replay.Error(error);
+            }
+        }
+        catch (IOException x)
+        {
+            Console.Error.WriteLine($"replay: stopped recording ({x.Message})");
+            replay.Dispose();
+            (replay, replayWorld) = (null, null);
+        }
+    }
+
+    /// <summary>The replay's end, once its world's host has stopped (<paramref name="stopped"/>): the last commands, the
+    /// time and the world's hash (none after the sim's error: the world stopped part way through a step).</summary>
+    void EndReplay(SimHost stopped)
+    {
+        if (replay == null)
+            return;
+        try
+        {
+            stopped.TakeApplied(taken);
+            foreach (var c in taken)
+                replay.Command(c);
+            taken.Clear();
+            if (replayWorld is { } w && !errorRecorded)
+            {
+                var clock = Stopwatch.StartNew();
+                replay.End(w.Time, w.ComputeHash());
+                Console.WriteLine($"replay: ended at {w.Time.ToUtc():HH:mm:ss}, {w.CommandLog.Count} commands ({clock.Elapsed.TotalMilliseconds:F0} ms for the hash)");
+            }
+        }
+        catch (IOException x)
+        {
+            Console.Error.WriteLine($"replay: its end not written ({x.Message})");
+        }
+        replay.Dispose();
+        lastReplay = replay.Path;
+        (replay, replayWorld) = (null, null);
+        errorRecorded = false;
+    }
+
+    /// <summary>Opens a replay (<see cref="Replay"/>) as a new world: its scenario made again from the file, its classes asked
+    /// for here, the world placed and the commands played to <paramref name="at"/> (a time of day: the first at or after the
+    /// start; null: as far as the record got) on a thread, then swapped in paused, the player's from there. The world
+    /// records a replay of its own, the played commands in it. A replay that can't be played is <see cref="LoadError"/>.</summary>
+    public void LoadReplay(string path, TimeSpan? at)
+    {
+        LoadError = null;
+        try
+        {
+            var r = Replay.Read(path);
+            if (r.Build != AppLog.Version)
+                Console.WriteLine($"replay: recorded by {r.Build}, played by {AppLog.Version}: it may go its own way");
+            string scratch = Path.Combine(Path.GetTempPath(), "Fleetwright", "Replay", Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            var s = r.Unpack(scratch);
+            var to = r.Reached;
+            if (at is { } t)
+            {
+                var day = r.Start.ToUtc().Date + t;
+                to = WorldTime.FromUtc(day < r.Start.ToUtc() ? day.AddDays(1) : day);
+            }
+            var p = new Pending { Scenario = s, Classes = ScenarioLoader.RequestClasses(s, Classes, []), Path = path, Replayed = true };
+            p.Task = Task.Run(() =>
+            {
+                var rb = r.Rebuild(s, p.Classes, Classes, Shore);   // waits for the classes
+                p.ClassesSeconds = p.Clock.Elapsed.TotalSeconds;
+                p.Placed = rb.World.CommandLog.Count;
+                var clock = Stopwatch.StartNew();
+                int next = r.Play(rb.World, r.Placed, to);
+                string error = r.Error is { } e ? $"; it stopped on: {e.Split('\n')[0]}" : "";
+                Console.WriteLine($"replay {Path.GetFileName(path)}: {next - r.Placed} of {r.Commands.Count - r.Placed} commands played to " +
+                                  $"{to.ToUtc():HH:mm:ss} in {clock.Elapsed.TotalSeconds:F1} s" + (r.End is null ? " (it has no end: a crash?)" : "") + error);
+                p.Judge = MakeJudge(s, rb.World, rb.Ai, rb.Start);
+                p.PlacedSeconds = p.Clock.Elapsed.TotalSeconds;
+                return (rb.World, rb.Ai, rb.Start);
+            });
+            (selected, loading) = (null, p);
+        }
+        catch (Exception x) when (x is ReplayException or ScenarioException or IOException or UnauthorizedAccessException)
+        {
+            LoadError = x.Message;
+            Console.Error.WriteLine($"replay {path}: {x.Message}");
+        }
     }
 
     /// <summary>Starts a world's thread and waits for its first snapshot, so no frame shows an empty one.</summary>
@@ -273,6 +412,7 @@ public sealed class WorldSession : IDisposable
                 var w = new World(s.Start, s.Seed, Settings, Classes, Shore);
                 var ai = new AiSystem(w);
                 var start = ScenarioLoader.Apply(s, w, ai, p.Classes);
+                p.Placed = w.CommandLog.Count;
                 p.Judge = MakeJudge(s, w, ai, start);
                 p.PlacedSeconds = p.Clock.Elapsed.TotalSeconds;
                 return (w, ai, start);
@@ -332,6 +472,9 @@ public sealed class WorldSession : IDisposable
             {
                 var (w, ai, start) = p.Task.Result;
                 // the clock as the player left it: the new world runs at the speed asked of the old, paused if it was
+                // (a replay's paused at its moment, the player's from there)
+                if (p.Replayed)
+                    askedPaused = true;
                 w.Apply(askedSpeed);
                 if (askedPaused)
                     w.Apply(Command.Pause());
@@ -345,6 +488,8 @@ public sealed class WorldSession : IDisposable
                 host.Detail = detail;
                 old.Dispose();
                 oldWorkers.Dispose();   // the old sim thread is done with them
+                EndReplay(old);
+                stoppedReported = false;
                 (Ai, Scenario, ScenarioStart) = (ai, p.Scenario, start);
                 Generation++;
                 LoadSeconds = (p.Clock.Elapsed.TotalSeconds, p.ClassesSeconds);
@@ -360,6 +505,7 @@ public sealed class WorldSession : IDisposable
                                   string.Join(", ", times.Take(3).Select(x => $"{x.Key} {x.T.Build + x.T.Compile:F2} s")) +
                                   $"; art {Drawn(p.Classes)} of {p.Classes.Count} in");
                 Console.WriteLine($"  memory: {Memory()}");
+                BeginReplay(p, w);
                 drawing = p;
             }
         }
@@ -372,6 +518,12 @@ public sealed class WorldSession : IDisposable
         }
         host.Elapse(dt);
         Current = host.Latest();
+        RecordReplay(dt);
+        if (Current.Error is { } simError && !stoppedReported)
+        {
+            stoppedReported = true;
+            AppLog.Crash(null, "the sim thread stopped on an error", fatal: false, detail: simError);
+        }
         // every building thread while no world runs: an empty one, or paused (docs/map-ui/launch.md L0)
         Classes.Idle = Current.Paused || Current.Ships.Count == 0;
         Clock(dt);
@@ -507,5 +659,6 @@ public sealed class WorldSession : IDisposable
     {
         host.Dispose();
         workers.Dispose();
+        EndReplay(host);
     }
 }
