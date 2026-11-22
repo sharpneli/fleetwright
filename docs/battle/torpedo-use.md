@@ -30,12 +30,11 @@ and measured again with the same tally.
 
 - Torpedoes are scarce: a WW1 boat has two to four tubes and few reloads. One spent on a destroyer is one fewer for the
   battle line. Against light craft the guns do the work.
-- **At will, only where torpedoes are the better weapon.** The matchup already says it (`MatchupJudge.AttackerShare`,
-  used by `RoundHeavies`): whether her torpedoes do more than her guns against the class the target may be. Relative,
-  never a tonnage cut-off or a type switch.
-- **Point blank, by the chance** (the user, 2026-11-22: yes): a night mêlée or a sudden meeting at a few hundred metres
-  leaves no time to dodge (Dover Strait 1917). At-will fire at a target torpedoes aren't the better weapon against needs
-  a high chance, which only a short run reaches. No ship-type rule.
+- **At will, only where a torpedo is worth what it would take kept** (TU1; first written as "where torpedoes are the
+  better weapon", which TU0 finding 3 turned down): relative to the enemy held, never a tonnage cut-off or a type switch.
+- **Point blank, by the forecast** (the user, 2026-11-22: yes): a night mêlée or a sudden meeting at a few hundred metres
+  leaves no time to dodge (Dover Strait 1917). Only a short run makes a light ship worth a torpedo kept for heavier ones
+  (TU1). No ship-type rule.
 - **Attacks only when sent.** No self-started attack, neither the admiral's by doctrine nor the captain's by his matchup:
   the player or a layer above (`FlotillaAttacks`, the task layer) sends a flotilla in. An uncommanded flotilla is
   judged by `FlotillaAttacks`' `CommanderPhase.None`.
@@ -52,10 +51,9 @@ and measured again with the same tally.
   target ("better"), whether such a target was in sight within `FightCompareM` when she fired at another ("near"); the
   hits on the target and on others. `TU_CSV=FILE` appends a line a spread for the panel's totals. Built 2026-11-22;
   baseline below.
-- **TU1 At will by the torpedo's worth** (revised by TU0's findings 3 and 4, awaiting the user): a target taken when what
-  a torpedo is likely to take from her (the matchup's forecast times her size) stands against what it's worth kept for
-  the heavy enemy the side holds, rather than by the better-weapon test; point blank by that same forecast, not by
-  `TorpedoChance`. Measured.
+- **TU1 At will by the torpedo's worth** (revised by TU0's findings 3 and 4; the user, 2026-11-22: "Opportunity cost is
+  the right call. We want the heavy ships to use them if someone brings the battlelines too close"). **Built 2026-11-22**,
+  below.
 - **TU2 Attacks only when sent**: the two self-starts removed; every AI-held flotilla confirmed to reach
   `FlotillaAttacks`. Measured, with the flotilla and night scenarios watched for attacks that no longer happen.
 - **TU3 Escorts hold for orders.** Measured.
@@ -102,3 +100,43 @@ What it says:
    against, 51% were fired with a target worth them in sight.
 6. **Ordered attacks at night** were sometimes aimed at a contact made out only as a shape (the Jutland's night, 92
    torpedoes): "better" reads under 0.5 for her estimate, not for what she is.
+
+## TU1 built (2026-11-22)
+
+`CaptainLayer.WorthKeeping`, at will only (not in an attack, nor at the ship he's ordered on under doctrine's "on
+order"), beside the old tests:
+
+- **Worth:** what one torpedo fired now is likely to take from her (`TorpedoWorth`): the matchup's forecast of a hit
+  (`Matchup.TorpedoHit`, the one model the judgement reads) on her speed as held and her length, less duds, times the
+  tonnes a hit puts out as her navy takes her size (`Matchup.OutShare` of `Matchup.TorpedoExponent`).
+- **Kept:** that of the heaviest enemy her side holds (`HeaviestOf`, once a side a moment), fired from where an attack
+  fires (`MatchupProfile.AttackRangeM`'s range). She fires at will where the worth is at least `TorpedoKeepShare` (0.5)
+  of it: a heavy ship's tubes at a heavy ship within reach; a boat at a destroyer only close in while a battle line is
+  held; with none held, light ships are what there is.
+- **Floor:** a forecast hit of `TorpedoMinHit` (0.04) or better, whatever she is: the long shots at the edge of the
+  reach. `TorpedoMinChance` stays for attacks and the flotilla's signal.
+
+Measured with the TU0 panel at each step (22 scenarios, 6 seeds, the Jutland 3). The Jutland's 3 seeds swing too far to
+read alone (71, 61, 100 and 60 hits across the runs below), so the totals are given without it too:
+
+| run | torpedoes | hits on the target | t struck | without the Jutland: torpedoes, hits, t struck | at will at ships under 6,000 t (no Jutland) |
+|---|---|---|---|---|---|
+| TU0 | 2,873 | 158 | 2.16 Mt | 1,930, 87, 0.46 Mt | 1,464, 63 hits |
+| the worth gate, keep 0.5 | 2,549 | 154 | 1.88 Mt | 1,803, 93, 0.76 Mt | 1,353, 59 |
+| keep 1 | 2,290 | 134 | 1.17 Mt | | |
+| keep 0.5, floor 0.02 | 2,375 | 198 | 2.57 Mt | 1,622, 98, 0.87 Mt | 1,162, 53 |
+| **keep 0.5, floor 0.04** | **1,943** | **166** | **1.67 Mt** | **1,336, 106, 0.84 Mt** | **891, 67** |
+
+1. **The gate alone works where a battle line is held** (the Dogger Bank 114 torpedoes for 2 hits → 66 for 7), and by
+   design does little where light ships are all there is (Åland, the Heligoland Bight before the battlecruisers).
+2. **Keep 1 is too strict:** the heavy ships' own hits on heavy ships at will fell from 40 to 16. 0.5 kept them.
+3. **What was left was long shots:** day torpedoes at will from 4 km out hit 1% (1,040 of them in TU0), often at the
+   heaviest enemy held, which no opportunity gate turns down. **The forecast is calibrated** on these spreads (at will,
+   both floor runs): forecast under 0.01 hit 0.9%, 0.01-0.03 0.7% (3 in 419), 0.03-0.05 4.0% (forecast 4.1%), 0.05-0.1
+   3.6% (7.4%), 0.1-0.2 11.2% (13.8%), 0.2 and over 25.2% (29.5%). So 0.04 is the knee: the day's at-will torpedoes from
+   4 km out fell from 1,040 to 211, hitting 3.8%.
+4. **Losses** move little; the biggest: Åland's Finns 6.5 → 4.2 of 13 lost (the Swedes' cruisers no longer throw their
+   torpedoes away at 5 km), the Heligoland Bight's Germans 6.2 → 4.5 of 16, Cape Sarych's Russians 1.7 → 3.0 of 7. The
+   balance panel is TU5's.
+5. **Not touched yet:** the escorts (TU3): the Jutland's screens still fire at will within the gate; and the flotillas'
+   own attacks (TU2).

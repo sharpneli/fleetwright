@@ -21,7 +21,7 @@ static partial class ScenarioPlay
             public string Scenario = "", Why = "", Task = "";
             public ulong Seed;
             public ShipType Shooter, Target;
-            public double TargetT, RangeM, Chance, Better;
+            public double TargetT, RangeM, Chance, Better, Forecast;
             public bool Night, BetterNear;
             public int Count, Hits, Others, Aimed;
         }
@@ -76,11 +76,16 @@ static partial class ScenarioPlay
                 for (int i = 0; i < pic.Count && !near; i++)
                     near = pic[i].Foe && !pic[i].Out && pic[i].Entity != e.Target && (pic[i].Position - sh.Position).Length <= w.Settings.FightCompareM &&
                            ai.Judge.AttackerShare(w, pic[i], profile, sh.Side, theyAttack: false) >= 0.5;
+            bool night = Light.SunElevationDeg(sh.Position, w.Time) < -6;
+            double range = (tg.Position - sh.Position).Length;
+            // the matchup's forecast a torpedo (docs/battle/balance.md P11), on the setting she'd fire at will on
+            double forecast = profile.TubesBearing > 0 || sh.Handling.Class.Launchers.Length > 0
+                ? Matchup.TorpedoHit(profile.Torpedo, range, tg.Speed, tg.Handling.Class.Motion.LengthM, w.Settings, w.Settings.TorpedoFireShare, slow: !night) : double.NaN;
             var sp = new Spread
             {
                 Scenario = Scenario, Seed = seed, Why = by, Task = task, Shooter = w.Types.Of(sh.Handling.Class), Target = w.Types.Of(tg.Handling.Class),
-                TargetT = tg.Handling.Class.Motion.FullDisplacementT, RangeM = (tg.Position - sh.Position).Length, Chance = chance, Better = better,
-                Night = Light.SunElevationDeg(sh.Position, w.Time) < -6, BetterNear = near, Count = e.Count, Aimed = e.Target,
+                TargetT = tg.Handling.Class.Motion.FullDisplacementT, RangeM = range, Chance = chance, Better = better, Forecast = forecast,
+                Night = night, BetterNear = near, Count = e.Count, Aimed = e.Target,
             };
             spreads.Add(sp);
             last[(seed, e.Shooter, e.Battery)] = sp;
@@ -146,10 +151,10 @@ static partial class ScenarioPlay
             bool fresh = !File.Exists(path);
             using var f = new StreamWriter(path, append: true);
             if (fresh)
-                f.WriteLine("scenario,seed,why,task,night,shooter,target,target_t,range_m,chance,better,better_near,count,hits,others");
+                f.WriteLine("scenario,seed,why,task,night,shooter,target,target_t,range_m,chance,better,better_near,count,hits,others,forecast");
             foreach (var x in spreads)
                 f.WriteLine(string.Join(",", x.Scenario, x.Seed, x.Why, x.Task, x.Night ? 1 : 0, x.Shooter, x.Target, Math.Round(x.TargetT), Math.Round(x.RangeM),
-                    Math.Round(x.Chance, 3), Math.Round(x.Better, 2), x.BetterNear ? 1 : 0, x.Count, x.Hits, x.Others).Replace("NaN", ""));
+                    Math.Round(x.Chance, 3), Math.Round(x.Better, 2), x.BetterNear ? 1 : 0, x.Count, x.Hits, x.Others, Math.Round(x.Forecast, 4)).Replace("NaN", ""));
         }
     }
 }

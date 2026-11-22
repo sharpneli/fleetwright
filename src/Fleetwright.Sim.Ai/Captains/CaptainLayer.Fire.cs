@@ -611,9 +611,12 @@ public sealed partial class CaptainLayer
         var (reach, speed) = AttackSetting(ctx, cls, own.Position);
         reach *= s.TorpedoFireShare;
         int target = 0;
+        // at will, a torpedo goes only where it's worth what it would take kept for the heaviest enemy held (TU1); in an
+        // attack, or on doctrine's "on order" at the ship he's told to engage, where he's sent
+        double keep = cap.Attacking || onOrder ? -1 : double.NaN;   // worked out when first asked
         // in sight, or seen by her lights lately: the record's boats fired on searchlights and flashes (docs/battle/night.md Q14)
         if (cap.Fire == FireOrder.Engage && pic.IndexOf(cap.FireTarget) is int ei and >= 0 && pic.Aimable(ei, now, s) && Run(ctx, pic, own, ei, speed) is var er &&
-            er <= reach && TorpedoChance(ctx, pic, ei, er, speed) >= s.TorpedoMinChance)
+            er <= reach && TorpedoChance(ctx, pic, ei, er, speed) >= s.TorpedoMinChance && WorthKeeping(ctx, own, pic, ei, ref keep))
             target = cap.FireTarget;
         if (target == 0 && !onOrder)
         {
@@ -623,7 +626,7 @@ public sealed partial class CaptainLayer
                 if (!Opens(ctx, own, pic[i], seen.Position(own.Side, i)))
                     continue;   // not known for a foe (docs/battle/night.md Q6)
                 double run = Run(ctx, pic, own, i, speed), by = run * TorpedoSized(s, Size(ctx, own, pic[i]));
-                if (run <= reach && by < bestBy && TorpedoChance(ctx, pic, i, run, speed) >= s.TorpedoMinChance)
+                if (run <= reach && by < bestBy && TorpedoChance(ctx, pic, i, run, speed) >= s.TorpedoMinChance && WorthKeeping(ctx, own, pic, i, ref keep))
                     (target, bestBy) = (pic[i].Entity, by);
             }
         }
@@ -859,6 +862,100 @@ public sealed partial class CaptainLayer
     /// <see cref="SimSettings.TorpedoSizeShare"/> for each step of her size's rank (<see cref="SizeRank"/>) under a capital
     /// ship's; an unarmed ship by her size too (<see cref="Size"/>).</summary>
     internal static double TorpedoSized(SimSettings s, double size) => 1 + s.TorpedoSizeShare * (SizeRank.Capital - Math.Min(size, SizeRank.Capital));
+
+    /// <summary>Whether a torpedo at will at a contact is worth firing (docs/battle/torpedo-use.md TU1): what it's likely to
+    /// take from her now (<see cref="TorpedoWorth"/> at her range) at least <see cref="SimSettings.TorpedoKeepShare"/> of
+    /// what it would take kept for the heaviest enemy her side holds, fired in an attack from its range
+    /// (<see cref="KeepWorth"/>). Its opportunity cost, not a type or a size cut: a heavy ship's tubes at a heavy ship near
+    /// enough go; at a destroyer a boat fires only close in, where a torpedo can't miss her much, while a battle line is
+    /// about; with none held, light ships are what there is. And never on a forecast hit under
+    /// <see cref="SimSettings.TorpedoMinHit"/>, whatever she is: a long shot at the edge of the reach, a torpedo thrown
+    /// away (the forecast in place of <see cref="TorpedoChance"/>, which doesn't measure hits: TU0 finding 4).
+    /// <paramref name="keep"/> is the kept worth, worked out on the first ask (NaN) and kept for the think (negative: no
+    /// gate, an attack or a ship ordered on).</summary>
+    bool WorthKeeping(in AiContext ctx, ShipState own, Picture pic, int i, ref double keep)
+    {
+        if (keep < 0)
+            return true;
+        var s = ctx.Settings;
+        ref readonly var t = ref Longest(own.Handling.Class);
+        bool dark = AiNight.At(ctx, own.Position, ctx.World.Time);
+        if (double.IsNaN(keep))
+            keep = KeepWorth(ctx, own, pic, t, dark);
+        double range = (pic.EstimateAt(i, ctx.NowMs, s).Position - own.Position).Length;
+        double worth = TorpedoWorth(ctx, pic, i, t, range, s.TorpedoFireShare, !dark, SizeRank.TonnageOf(ctx.World, Judge.Matchups, own.Side, pic[i]), out double hit);
+        return hit >= s.TorpedoMinHit && worth >= s.TorpedoKeepShare * keep;
+    }
+
+    /// <summary>What one torpedo fired at a contact from a range is likely to take from her, tonnes: the matchup's forecast of
+    /// its hit (<see cref="Matchup.TorpedoHit"/>, fitted on play: docs/battle/balance.md P11) on her speed as her navy holds
+    /// it and her length, less its duds, times the tonnes a hit puts out of the fight as her navy takes her size
+    /// (<see cref="Matchup.OutShare(double, double)"/> of its <see cref="Matchup.TorpedoExponent"/>): the one model the
+    /// matchup's judgement reads.</summary>
+    double TorpedoWorth(in AiContext ctx, Picture pic, int i, in TorpedoRow t, double rangeM, double reachShare, bool slow, double tonnes, out double hit)
+    {
+        var s = ctx.Settings;
+        hit = 0;
+        if (ctx.Ships.SlotOf(pic[i].Entity) is not (int slot and >= 0))
+            return 0;
+        double v = pic.EstimateAt(i, ctx.NowMs, s).Velocity.Length;
+        hit = Matchup.TorpedoHit(t, rangeM, v, ctx.Ships[slot].Handling.Class.Motion.LengthM, s, reachShare, slow);
+        return hit * (1 - t.DudShare) * tonnes * Matchup.OutShare(Matchup.TorpedoExponent(t.ChargeKg, tonnes, s), Matchup.OutShape(tonnes, s));
+    }
+
+    /// <summary>What her torpedo is worth kept (<see cref="WorthKeeping"/>): fired at the heaviest enemy her side holds
+    /// (<see cref="HeaviestOf"/>) from where an attack fires (<see cref="MatchupProfile.AttackRangeM"/>'s range on her
+    /// torpedo); 0 with none held.</summary>
+    double KeepWorth(in AiContext ctx, ShipState own, Picture pic, in TorpedoRow t, bool dark)
+    {
+        var s = ctx.Settings;
+        HeaviestOf(ctx, own.Side, pic);
+        var (i, tonnes) = sideHeavy[own.Side];
+        if (i < 0)
+            return 0;
+        double range = s.TorpedoAttackShare * (dark ? t.FastRangeM : Math.Max(t.FastRangeM, s.TorpedoDayShare * t.SlowRangeM));
+        return TorpedoWorth(ctx, pic, i, t, range, 1, !dark, tonnes, out _);
+    }
+
+    // each side's heaviest enemy held (her slot in the side's picture, -1 none; her tonnage as the side takes her), worked
+    // out once a side a moment by the first of its ships to ask (as EnemiesOf)
+    readonly long[] sideHeavyMs = new long[256];
+    readonly (int Pic, double Tonnes)[] sideHeavy = new (int, double)[256];
+
+    void HeaviestOf(in AiContext ctx, byte side, Picture pic)
+    {
+        if (Volatile.Read(ref sideHeavyMs[side]) == ctx.NowMs + 1)
+            return;
+        lock (sideHeavy)
+        {
+            if (sideHeavyMs[side] == ctx.NowMs + 1)
+                return;
+            (int best, double bestT, double unmade) = (-1, 0.0, double.NaN);
+            for (int i = 0; i < pic.Count; i++)
+            {
+                ref readonly var c = ref pic[i];
+                if (c.Out || !ctx.World.Relations.Hostile(side, c.Side))
+                    continue;
+                // before she's made out to her type, the mean of what's unaccounted for, the same for every such one
+                double t = c.Level >= ContactLevel.Type ? SizeRank.TonnageOf(ctx.World, Judge.Matchups, side, c)
+                    : double.IsNaN(unmade) ? unmade = SizeRank.TonnageOf(ctx.World, Judge.Matchups, side, c) : unmade;
+                if (t > bestT)
+                    (best, bestT) = (i, t);
+            }
+            sideHeavy[side] = (best, bestT);
+            Volatile.Write(ref sideHeavyMs[side], ctx.NowMs + 1);
+        }
+    }
+
+    /// <summary>A class's longest-ranged torpedo (the one the matchup's profile takes for her).</summary>
+    static ref readonly TorpedoRow Longest(ShipClass cls)
+    {
+        int best = cls.Launchers[0].Torpedo;
+        foreach (ref readonly var l in cls.Launchers)
+            if (cls.Torpedoes[l.Torpedo].FastRangeM > cls.Torpedoes[best].FastRangeM)
+                best = l.Torpedo;
+        return ref cls.Torpedoes[best];
+    }
 
     /// <summary>Whether a ship has torpedoes left in launchers that work. Whether she attacks with them is the matchup's
     /// (<see cref="Knowledge.MatchupJudge.Attacks"/>): no ship is torpedo craft by her design.</summary>

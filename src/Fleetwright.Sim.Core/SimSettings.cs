@@ -2729,6 +2729,17 @@ public sealed record SimSettings
     public double TorpedoLineM { get; init; } = 3000;
     public double TorpedoMinChance { get; init; } = 0.1;
 
+    /// <summary>A torpedo at will goes at a target only where what it's likely to take from her is at least this share of
+    /// what it would take kept for the heaviest enemy held, fired in an attack from its range (docs/battle/torpedo-use.md
+    /// TU1, CaptainLayer.WorthKeeping): its opportunity cost. Under 1 since a torpedo kept may never be fired [EST; at 1 the
+    /// heavy ships' own hits on heavy ships at will fell from 40 to 16 over the shipped scenarios, at 0.5 they held].</summary>
+    public double TorpedoKeepShare { get; init; } = 0.5;
+
+    /// <summary>A torpedo at will goes only on a forecast hit of this or better (Matchup.TorpedoHit: docs/battle/torpedo-use.md
+    /// TU1). Measured at 0.02 and 0.04 over the shipped scenarios: torpedoes at will on a forecast under 0.03 hit under 1%
+    /// (6 in 757), from 0.03 to 0.05 4% as forecast; 0.04 the knee, a third fewer torpedoes for more hits.</summary>
+    public double TorpedoMinHit { get; init; } = 0.04;
+
     /// <summary>A cripple's escape (docs/battle/balance.md BL5; the user: "a bit more sneaky"): she runs from every enemy her
     /// navy holds within FightCompareM, each by its bearing weighted by the inverse square of its range, and bends toward
     /// home as the nearest falls back past this range, m, fully home at twice it [EST].</summary>
