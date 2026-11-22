@@ -262,11 +262,12 @@ public static class Program
             --replay runs the command log again and compares the hashes; --fire-trace logs each battery's target,
             state and phase as they change (the time a new target takes to come under fire)
         shipgen scenario [SCENARIO.json] --play [--seeds N] [--fast 1000] [--tier fine|coarse] [--fine 1] [--threads N] [--no-land]
-                         [--watch ID,...] [--every 10] [--salvo-log FILE] [--ammo]
+                         [--watch ID,...] [--every 10] [--salvo-log FILE] [--ammo] [--torpedo-use]
             the scenario played to its end with the AI on every side (docs/battle/command.md 5.0): one seed's
             timeline and result, or a line a seed and the spread; the asked speed is --fine while an encounter is
             open (1x, or 1000x with --tier coarse) and --fast otherwise; --watch prints each side's commander and
             aims and the ships named every --every game minutes; --salvo-log writes every salvo's fall and spot as CSV;
+            --torpedo-use every spread by why it was fired and what at (docs/battle/torpedo-use.md TU0; TU_CSV=FILE appends them)
             --ammo the chief batteries' spending: outfit fired, rounds a gun a minute, run dry, the salvos' pace
         shipgen coarse-parity [--panel quick|standard|full] [--layer duels,dodging,fights,scenarios] [--tier both|fine|coarse]
                               [--runs N] [--seeds N] [--threads N] [--only SCENARIO,...] [--out FILE.json] [--fine-from FILE.json]
@@ -315,7 +316,7 @@ public static class Program
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Get("to"), !a.Has("no-land")),
                 "workers" => WorkersBench.Run(a.Int("items", 250), D(a, "item-ns", 160), D(a, "gap-us", 100), a.Int("dispatches", 20_000)),
                 "shore" => ShoreBench.Run(a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), a.Int("points", 100_000)),
-                "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ && (ScenarioPlay.SalvoLog = a.Get("salvo-log")) is var _ && (ScenarioPlay.Ammo = a.Has("ammo")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
+                "scenario" when a.Has("play") && (ScenarioPlay.Hashes = a.Has("hashes")) is var _ && (ScenarioPlay.SalvoLog = a.Get("salvo-log")) is var _ && (ScenarioPlay.Ammo = a.Has("ammo")) is var _ && (ScenarioPlay.TorpedoUse = a.Has("torpedo-use")) is var _ => ScenarioPlay.Run(a.Positional.FirstOrDefault() ?? Path.Combine(Root(a), "..", "Content", "Scenarios", "jutland.json"),
                     a.Get("settings") ?? Path.Combine(Root(a), "..", "Content", "Sim", "settings.json"),
                     a.Get("land") ?? Path.Combine(Root(a), "..", "Content", "World", "land-10m.bin"), Path.Combine(Root(a), "designs"),
                     a.Int("threads", 0), !a.Has("no-land"), a.Int("seeds", 1), D(a, "fast", 1000), D(a, "fine", TierSpeed(a)), SmokeSwitch(a),
@@ -466,7 +467,7 @@ public static class Program
                 int eq = s.IndexOf('=');
                 if (eq > 0)
                     flags[s[2..eq]] = s[(eq + 1)..];
-                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes" or "--anchors" or "--explain" or "--ammo")   // the switches
+                else if (s is "--no-limits" or "--no-sprites" or "--previews" or "--gratings" or "--no-land" or "--replay" or "--research" or "--trace" or "--damage" or "--cells" or "--play" or "--dry" or "--loadouts" or "--summary" or "--rooms" or "--write" or "--materials" or "--fire-trace" or "--race" or "--smoke" or "--no-smoke" or "--fire-table" or "--developed" or "--hashes" or "--wet" or "--held" or "--girder" or "--volumes" or "--slices" or "--passes" or "--anchors" or "--explain" or "--ammo" or "--torpedo-use")   // the switches
                     flags[s[2..]] = null;
                 else if (i + 1 < list.Count)
                     flags[s[2..]] = list[++i];

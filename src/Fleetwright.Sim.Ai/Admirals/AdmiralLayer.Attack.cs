@@ -42,6 +42,10 @@ public sealed partial class AdmiralLayer
     public (AttackPhase Phase, int Target, int Side) AttackOf(int groupId) =>
         Find(groupId) is int i and >= 0 ? (admirals[i].Attack, admirals[i].AttackTarget, admirals[i].AttackSide) : (AttackPhase.None, 0, 0);
 
+    /// <summary>Whether a group's attack was ordered (an Attack order: the player's, or a layer above's) rather than taken up
+    /// by doctrine (tools: docs/battle/torpedo-use.md TU0).</summary>
+    public bool AttackOrderedOf(int groupId) => Find(groupId) is int i and >= 0 && admirals[i].AttackOrdered;
+
     /// <summary>The side of a target's bow a flotilla attacks from in the dark (docs/battle/night.md Q7: from the dark side),
     /// 1 starboard, -1 port, 0 if neither is better: the one whose gain point (<see cref="SimSettings.AttackGainDeg"/> off his
     /// bow) has him against the moon's path, else against a twilight sky <see cref="SimSettings.AttackSkyRatio"/> times as

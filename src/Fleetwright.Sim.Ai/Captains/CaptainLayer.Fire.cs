@@ -5,6 +5,22 @@ using Fleetwright.Sim.Ships;
 
 namespace Fleetwright.Sim.Ai.Captains;
 
+/// <summary>Which of the captains' paths fired a spread (tools: docs/battle/torpedo-use.md TU0).</summary>
+public enum TorpedoWhy : byte
+{
+    None,
+    /// <summary>Torpedoes at will, at a target of his own choosing.</summary>
+    AtWill,
+    /// <summary>At will, at the ship he's ordered to engage.</summary>
+    Engaged,
+    /// <summary>His own attack in Fight, taken up by his unit's matchup.</summary>
+    OwnAttack,
+    /// <summary>His attack in Fight, on an Attack order.</summary>
+    OrderedAttack,
+    /// <summary>His flotilla's signal (an attack together under its admiral).</summary>
+    Signal,
+}
+
 /// <summary>The captains' guns and fighting (docs/battle/fighting.md 4.2c). A captain keeps his ship's fire order (at
 /// will by default, hold fire, or engage a contact) and is the only one who puts its batteries on a target
 /// (<see cref="GunnerySystem.Engage"/>, <see cref="GunnerySystem.Cease"/>), as he's the only one who orders its helm.
@@ -42,8 +58,9 @@ namespace Fleetwright.Sim.Ai.Captains;
 /// group just given a fire order, reaches all of them.</item>
 /// <item><b>Fight:</b> a behaviour, as follow and station are: close to the band (where his unit's matchup is best, doctrine's
 /// share of its chief guns' reach where that hardly matters), hold it with
-/// them bearing, turn away when outgunned (<see cref="Behaviours.Fight"/>). A torpedo craft's (no gun of 6" or more, torpedoes left)
-/// is the attack: close to <see cref="SimSettings.TorpedoAttackShare"/> of its torpedoes' fast setting whatever
+/// them bearing, turn away when outgunned (<see cref="Behaviours.Fight"/>). With torpedoes left, one ordered to attack, in her
+/// flotilla's attack, or whose torpedoes her unit's matchup has as her better weapon there (<see cref="MatchupJudge.Attacks"/>;
+/// no ship is torpedo craft by her design) makes the attack: close to <see cref="SimSettings.TorpedoAttackShare"/> of its torpedoes' setting whatever
 /// guns it faces, fire, turn away for <see cref="SimSettings.TorpedoTurnAwayMs"/>, and again (docs/battle/fighting.md
 /// 4.6).</item>
 /// <item><b>Torpedoes at will</b> (4.6), beside the guns, unless holding fire: at the engaged ship, else the biggest
@@ -632,6 +649,9 @@ public sealed partial class CaptainLayer
         }
         ctx.Issue(TorpedoSystem.Launch(own.Entity, target, s.TorpedoSpread));
         (cap.TorpedoMs, cap.TorpedoDueMs) = (now, Math.Max(cap.TorpedoDueMs, now + (long)(runM / speed * 1000)));
+        cap.LaunchWhy = !cap.Attacking ? (target == cap.FireTarget && cap.Fire == FireOrder.Engage ? TorpedoWhy.Engaged : TorpedoWhy.AtWill)
+            : cap.AttackOrdered ? TorpedoWhy.OrderedAttack : TorpedoWhy.OwnAttack;
+        cap.LaunchChance = (float)TorpedoChance(ctx, pic, ti, runM, speed);
     }
 
     // the coarse fire watch's ships (docs/battle/night.md Q11): those whose think found a target for their torpedoes but
@@ -746,6 +766,7 @@ public sealed partial class CaptainLayer
             return false;
         ctx.Issue(TorpedoSystem.Launch(entity, target, s.TorpedoSpread));
         (cap.TorpedoMs, cap.TorpedoDueMs) = (ctx.NowMs, Math.Max(cap.TorpedoDueMs, ctx.NowMs + (long)(runM / speed * 1000)));
+        (cap.LaunchWhy, cap.LaunchChance) = (TorpedoWhy.Signal, (float)TorpedoChance(ctx, pic, ti, runM, speed));
         return true;
     }
 

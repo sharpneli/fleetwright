@@ -163,7 +163,14 @@ public sealed partial class CaptainLayer(GroupSystem groups, Encounters encounte
         public long FleeMs;             // fleeing an enemy warship (docs/battle/aims.md A4): when one was last near (0: not fleeing)
         public double FleeBackDeg, FleeBackKn;   // and the course and speed she had before, for after
         public int Cover;               // a rearguard: the ship she covers (docs/battle/balance.md BL5; 0: none)
+        public TorpedoWhy LaunchWhy;    // tools only, never read by the AI: why his last spread was fired, and the hit chance
+        public float LaunchChance;      // he saw in it (docs/battle/torpedo-use.md TU0)
     }
+
+    /// <summary>Why a captain's last spread was fired and the chance a torpedo he gave it (tools: docs/battle/torpedo-use.md
+    /// TU0; written at the launch order, never read by the AI).</summary>
+    public (TorpedoWhy Why, double Chance) LaunchOf(int entity) =>
+        Find(entity) is int i and >= 0 ? (captains[i].LaunchWhy, captains[i].LaunchChance) : (TorpedoWhy.None, 0);
 
     /// <summary>What a battery's shell was last judged on (docs/battle/shell-choice.md A3): its target as the picture had
     /// her, and the range's step; judged again when any of them changes, and its rounds looked at again from CheckMs.</summary>

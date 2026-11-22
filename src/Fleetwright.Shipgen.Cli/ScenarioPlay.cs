@@ -76,6 +76,7 @@ static partial class ScenarioPlay
         var runs = new List<(ulong Seed, ScenarioEnd End, SideResult[] Result, double Wall)>();
         var all = new MainGuns();
         var ammo = Ammo ? new AmmoTally() : null;
+        var use = TorpedoUse ? new TorpedoUseTally { Scenario = Path.GetFileNameWithoutExtension(path) } : null;
         int crashed = 0;
         for (int i = 0; i < seeds; i++)
         {
@@ -213,6 +214,7 @@ static partial class ScenarioPlay
             if (salvoLog != null)
                 LogSalvos(w, seed, salvoLog);
             ammo?.Begin(w);
+            use?.Hook(w, ai, seed);
             foreach (var x in start.Warnings)
                 Console.WriteLine($"  {x}");
             var names = new Dictionary<int, string>(start.ShipNames);
@@ -253,6 +255,7 @@ static partial class ScenarioPlay
                         hours.Add(sw.Elapsed.TotalSeconds);
                     guns.Read(w);
                     ammo?.Sample(w);
+                    use?.Sample();
                     // a ship falling out for her main guns: why they're out, as she falls out
                     for (; seen < end.Timeline.Count; seen++)
                         if (end.Timeline[seen] is { Kind: PlayEvent.FellOut } l && (Fleetwright.Sim.Ai.Captains.CaptainReason)l.Count ==
@@ -278,6 +281,7 @@ static partial class ScenarioPlay
                     if (w.Ships.Store.IsAlive(slot))
                         guns.End.Add(w.Ships.Store.Combat.Condition(slot));
                 ammo?.End(ai);
+                use?.Sample();
                 if (fireTable)
                     attacks.EndSeed(w, ai);
                 foreach (var k in homeShips.Keys.Where(k => k.Seed == seed).ToList())
@@ -327,6 +331,7 @@ static partial class ScenarioPlay
             all.Print("  ");
         }
         ammo?.Print(s, runs.Count);
+        use?.Print();
         if (fireTable && fire.Count > 0)
         {
             string[] cals = ["under 120 mm", "120-200 mm", "200-300 mm", "300 mm and over"];
